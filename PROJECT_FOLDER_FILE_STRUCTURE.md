@@ -1,5 +1,6 @@
 ## Below Project File Structure is just a reference structure of the project not the actual project structure.
 
+```
 /home/tis/MyKarobar/
 ├── backend/
 │ ├── drizzle/
@@ -383,3 +384,4 @@
 │ └── vite.config.ts
 ├── firebase-setup.sh
 └── verify_domain_module.sh
+```
