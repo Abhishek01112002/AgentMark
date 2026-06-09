@@ -24,7 +24,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PublicRoute: React.FC<{ children: React.ReactNode; allowLoggedIn?: boolean }> = ({ children, allowLoggedIn = false }) => {
   const { user, loading } = useAuth();
   if (loading) {
     return (
@@ -33,7 +33,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       </div>
     );
   }
-  return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return user && !allowLoggedIn ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
 const App: React.FC = () => {
@@ -42,7 +42,7 @@ const App: React.FC = () => {
       <Route
         path="/"
         element={
-          <PublicRoute>
+          <PublicRoute allowLoggedIn>
             <LandingPage />
           </PublicRoute>
         }

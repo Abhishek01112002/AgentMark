@@ -94,7 +94,10 @@ const Sidebar: React.FC = () => {
       {/* ── Header ── */}
       <div className={`flex-shrink-0 p-4 ${isCollapsed ? 'mb-2' : 'mb-4'}`}>
         {/* Brand */}
-        <div className={`px-2 flex items-center gap-3 mb-2 ${isCollapsed && 'justify-center'}`}>
+        <button
+          onClick={() => navigate('/')}
+          className={`px-2 flex items-center gap-3 mb-2 ${isCollapsed && 'justify-center'} w-full bg-transparent border-none cursor-pointer transition-opacity hover:opacity-80`}
+        >
           <div className="flex items-center justify-center flex-shrink-0">
             <img
               src="/Novateches.png"
@@ -142,7 +145,7 @@ const Sidebar: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </button>
 
         {/* Toggle Button - Desktop only */}
         <button
