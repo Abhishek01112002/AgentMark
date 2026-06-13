@@ -258,8 +258,6 @@ def test_all_strategy_output_fields_exist():
     parsed = json.loads(result.strategy_output)
     
     required_fields = [
-        "campaign_name",
-        "brand_name",
         "positioning",
         "key_messages",
         "content_pillars",
@@ -270,7 +268,9 @@ def test_all_strategy_output_fields_exist():
         "competitive_differentiation",
         "market_opportunities",
         "strategic_approach",
-        "research_foundation"
+        "inferred_goal",
+        "research_foundation",
+        "execution"
     ]
     
     for field in required_fields:
@@ -825,47 +825,6 @@ def test_success_metrics_aligned_with_goal():
     print(f"   KPIs: {primary_kpis}")
 
 
-# ==================== TEST 16: Brief is Available in Strategy ====================
-
-def test_brief_available_in_strategy():
-    """
-    TEST 16: Verify brief context is preserved in strategy output
-    
-    WHAT: Check brief field in strategy output
-    EXPECT: Should contain the original campaign brief
-    WHY: Other agents need campaign context
-    """
-    print("\n" + "=" * 80)
-    print("TEST 16: Brief Available in Strategy")
-    print("=" * 80)
-    
-    brief_text = "Launch marketing campaign for AI automation platform targeting enterprises"
-    
-    research_data = create_mock_research_output()
-    manager_data = create_mock_manager_output()
-    
-    state = CampaignState(
-        campaign_name="Brief Test",
-        brand_name="TestBrand",
-        industry="saas",
-        primary_goal="lead_gen",
-        target_audience="Tech leaders",
-        brand_voice="professional",
-        brief=brief_text,
-        manager_output=json.dumps(manager_data),
-        research_output=json.dumps(research_data),
-        status="research_complete"
-    )
-    
-    result = strategy_agent(state)
-    parsed = json.loads(result.strategy_output)
-    
-    assert "brief" in parsed, "Strategy should preserve brief"
-    assert parsed["brief"] == brief_text, "Brief should match input"
-    
-    print(f"✅ PASS: Brief available in strategy")
-    print(f"   Brief: {parsed['brief'][:60]}...")
-
 
 # ==================== TEST 17: Competitive Differentiation from Research ====================
 
@@ -982,7 +941,7 @@ def test_strategy_agent_integration():
     parsed = json.loads(result.strategy_output)
     assert isinstance(parsed, dict), "strategy_output should be valid JSON dict"
     
-    # Verify key fields
+    # Verify key fields (13 fields - metadata removed)
     required_fields = [
         "positioning",
         "key_messages",
@@ -991,8 +950,12 @@ def test_strategy_agent_integration():
         "audience_segments",
         "timeline",
         "success_metrics",
+        "competitive_differentiation",
+        "market_opportunities",
+        "strategic_approach",
+        "inferred_goal",
         "research_foundation",
-        "strategic_approach"
+        "execution"
     ]
     
     for field in required_fields:
@@ -1320,7 +1283,6 @@ if __name__ == "__main__":
         test_different_research_produces_different_strategy,
         test_timeline_created,
         test_success_metrics_aligned_with_goal,
-        test_brief_available_in_strategy,
         test_competitive_differentiation_from_research,
         test_strategy_agent_integration,
         test_positioning_uses_exact_research_differentiation,

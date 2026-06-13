@@ -1,0 +1,1562 @@
+"""
+TEST SUITE FOR IMAGE PROMPT AGENT
+
+Tests verify that Image Prompt Agent:
+1. Takes strategy_output (required) as PRIMARY input for positioning, deliverables, research
+2. Takes copy_output (optional) for text overlay alignment (headlines + CTAs only)
+3. Reads metadata (brand_name, brand_voice, industry, target_audience) from state directly
+4. Produces DALL-E 3 prompts for each deliverable with all required sub-fields
+5. Visual style, color palette, aspect ratio align with brand_voice and deliverable type
+6. Text overlay uses copy headlines/CTAs (not body copy)
+7. Status is updated to 'image_complete'
+
+Image Prompt Agent Output Structure:
+{
+  "visual_direction": str,
+  "image_prompts": [
+    {
+      "deliverable": str,
+      "prompt": str,        # 50+ chars, production-ready DALL-E 3 prompt
+      "style": str,
+      "color_palette": str,
+      "text_overlay": str,
+      "aspect_ratio": str   # "16:9", "1:1", "9:16", "4:5", etc.
+    },
+    ...
+  ]
+}
+
+NOTE: campaign_name, brand_name, brand_voice, industry, target_audience are NOT in
+      image_output - they are read from state directly.
+
+Test Framework: pytest
+Run: pytest tests/test_image_prompt.py -v
+"""
+
+import sys
+from pathlib import Path
+import json
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    import pytest
+except ImportError:
+    pytest = None
+
+from agents.state import CampaignState
+from agents.image_prompt import image_prompt_agent
+
+
+# ==================== HELPER FUNCTIONS ====================
+
+def create_mock_strategy_output(
+    campaign_name="Test Campaign",
+    brand_name="TestBrand",
+    positioning="Enterprise AI without the complexity",
+    key_messages=None,
+    content_pillars=None,
+    inferred_goal="lead_gen",
+    channels=None,
+    deliverables=None,
+    pain_points=None,
+    motivations=None,
+    market_trends=None,
+    competitors=None,
+    competitive_advantage=None,
+    strategic_approach=None
+):
+    """
+    Helper to create realistic mock strategy output.
+    Simulates what the Strategy Agent produces (13 fields).
+    Image Agent reads: positioning, content_pillars, strategic_approach,
+    execution.deliverables, execution.channels, research_foundation.
+    """
+    if key_messages is None:
+        key_messages = [
+            "Deploy powerful AI workflows in hours, not months",
+            "Eliminate integration complexity and costs",
+            "Scale operations with enterprise-grade reliability"
+        ]
+    if content_pillars is None:
+        content_pillars = [
+            "AI automation insights",
+            "ROI and efficiency strategies",
+            "Enterprise success stories",
+            "Cost comparison analysis"
+        ]
+    if channels is None:
+        channels = ["linkedin", "tech blogs", "email"]
+    if deliverables is None:
+        deliverables = ["gated whitepaper", "landing page", "webinar", "email banner"]
+    if pain_points is None:
+        pain_points = ["Integration complexity", "High costs", "Long setup time"]
+    if motivations is None:
+        motivations = ["Save time", "Reduce costs", "Scale operations"]
+    if market_trends is None:
+        market_trends = ["AI adoption", "automation", "cost reduction", "workflow optimization"]
+    if competitors is None:
+        competitors = ["Zapier", "Make", "n8n"]
+    if competitive_advantage is None:
+        competitive_advantage = f"While competitors focus on complexity, {brand_name} delivers enterprise AI without the complexity"
+    if strategic_approach is None:
+        strategic_approach = "Create gated content and lead magnets to build qualified lead pipeline"
+
+    return {
+        "positioning": positioning,
+        "key_messages": key_messages,
+        "content_pillars": content_pillars,
+        "audience_segments": [
+            {
+                "segment_name": "High-Intent Enterprise",
+                "pain_point": "Integration complexity",
+                "motivation": "Save time and money",
+                "channels": ["linkedin", "tech blogs"]
+            }
+        ],
+        "channel_strategy": {
+            "linkedin": {
+                "priority": "HIGH",
+                "rationale": "Audience prefers LinkedIn",
+                "frequency": "4-5 posts per week"
+            }
+        },
+        "timeline": {
+            "phase_1": {
+                "name": "Planning & Setup",
+                "duration": "Week 1",
+                "focus": "Campaign setup"
+            }
+        },
+        "success_metrics": {
+            "primary": ["Lead volume", "Conversion rate"],
+            "targets": {"leads": "500+", "conversion": "3-5%"}
+        },
+        "competitive_differentiation": {
+            "primary_differentiation": "Enterprise AI without the complexity",
+            "competitors": competitors,
+            "competitive_advantage": competitive_advantage
+        },
+        "market_opportunities": [
+            {"opportunity_1": "Vertical SaaS expansion"},
+            {"opportunity_2": "AI-powered automation"}
+        ],
+        "strategic_approach": strategic_approach,
+        "inferred_goal": inferred_goal,
+        "research_foundation": {
+            "market_analysis": {
+                "total_addressable_market": "$50B",
+                "growth_rate": "40% YoY",
+                "market_trends": market_trends
+            },
+            "competitor_analysis": {
+                "top_competitors": competitors,
+                "differentiation_opportunity": "Enterprise AI without complexity"
+            },
+            "audience_insights": {
+                "pain_points": pain_points,
+                "motivations": motivations,
+                "preferred_channels": ["LinkedIn", "Industry blogs", "Webinars"]
+            }
+        },
+        "execution": {
+            "channels": channels,
+            "deliverables": deliverables,
+            "budget_allocation": {
+                "high_priority_channels": "50%",
+                "content_creation": "30%"
+            }
+        }
+    }
+
+
+def create_mock_copy_output(
+    brand_name="TestBrand",
+    inferred_goal="lead_gen",
+    email_subject=None,
+    email_headline=None,
+    email_cta=None,
+    linkedin_headline=None,
+    linkedin_cta=None,
+    social_headline=None,
+    social_cta=None,
+    ads_headline=None,
+    ads_cta=None
+):
+    """
+    Helper to create realistic mock copy output.
+    Simulates what the Copywriter Agent produces.
+    Image Agent reads: headlines + CTAs only (not body copy).
+    """
+    if email_subject is None:
+        email_subject = f"Limited spots: {brand_name} early access available now"
+    if email_headline is None:
+        email_headline = "Deploy powerful AI workflows in hours, not months"
+    if email_cta is None:
+        email_cta = f"Get Free Access to {brand_name} (Limited spots available)"
+    if linkedin_headline is None:
+        linkedin_headline = "Deploy powerful AI workflows in hours, not months"
+    if linkedin_cta is None:
+        linkedin_cta = "👇 Tell us in the comments: Are you facing this challenge?"
+    if social_headline is None:
+        social_headline = f"Unlock productivity with {brand_name} - no credit card needed"
+    if social_cta is None:
+        social_cta = "Learn more →"
+    if ads_headline is None:
+        ads_headline = f"Get {brand_name} free - see results in 7 days"
+    if ads_cta is None:
+        ads_cta = "Get Free Access"
+
+    return {
+        "inferred_goal": inferred_goal,
+        "email": {
+            "subject": email_subject,
+            "headline": email_headline,
+            "body": "This is the full email body copy - Image Agent should NOT use this.",
+            "ctas": {
+                "hero_cta": email_cta,
+                "secondary_cta": f"See {brand_name} in action →",
+                "footer_cta": "Questions? Reply to this email"
+            }
+        },
+        "linkedin": {
+            "headline": linkedin_headline,
+            "body": "This is the full LinkedIn body copy - Image Agent should NOT use this.",
+            "ctas": {
+                "post_cta": linkedin_cta,
+                "article_cta": "For the full analysis, read the full article →",
+                "ad_cta": "View This Opportunity →"
+            }
+        },
+        "social": {
+            "headline": social_headline,
+            "body": "This is the full social body copy - Image Agent should NOT use this.",
+            "ctas": {
+                "twitter_cta": social_cta,
+                "instagram_cta": "Link in bio 🔗",
+                "facebook_cta": "See how it works →"
+            }
+        },
+        "ads": {
+            "headline": ads_headline,
+            "body": "This is the full ads body copy - Image Agent should NOT use this.",
+            "ctas": {
+                "primary_cta": ads_cta,
+                "urgency_cta": "Claim your spot (3 left for this month)",
+                "secondary_cta": f"Try {brand_name} for Free →"
+            }
+        },
+        "messaging_framework": {
+            "brand_promise": f"{brand_name}: Enterprise AI without the complexity",
+            "message_hierarchy": {
+                "level_1_primary": "Deploy powerful AI workflows in hours, not months"
+            },
+            "segment_messaging": [],
+            "channel_messaging": {},
+            "voice_guidelines": {"do": [], "dont": []},
+            "messaging_principles": ["Always reinforce brand positioning"]
+        },
+        "strategic_alignment": {
+            "positioning_used": "Enterprise AI without the complexity",
+            "key_messages_count": 3,
+            "deliverables": ["gated whitepaper", "landing page", "webinar"]
+        },
+        "copy_readiness": {
+            "email_ready": True,
+            "linkedin_ready": True,
+            "social_ready": True,
+            "ads_ready": True,
+            "messaging_framework_complete": True
+        }
+    }
+
+
+def create_state_with_strategy_and_copy(
+    campaign_name="Test Campaign",
+    brand_name="TestBrand",
+    industry="saas",
+    primary_goal="lead_gen",
+    target_audience="Enterprise CTOs, tech leads",
+    brand_voice="professional",
+    brief="Test brief for image prompt agent",
+    strategy_data=None,
+    copy_data=None,
+    include_copy=True
+):
+    """
+    Helper to create a CampaignState ready for the Image Prompt Agent.
+    Allows omitting copy_output to test fallback behavior.
+    """
+    if strategy_data is None:
+        strategy_data = create_mock_strategy_output(
+            campaign_name=campaign_name,
+            brand_name=brand_name
+        )
+    if copy_data is None and include_copy:
+        copy_data = create_mock_copy_output(brand_name=brand_name)
+
+    state = CampaignState(
+        campaign_name=campaign_name,
+        brand_name=brand_name,
+        industry=industry,
+        primary_goal=primary_goal,
+        target_audience=target_audience,
+        brand_voice=brand_voice,
+        brief=brief,
+        strategy_output=json.dumps(strategy_data),
+        copy_output=json.dumps(copy_data) if copy_data else None,
+        status="copy_complete"
+    )
+    return state
+
+
+# ==================== TEST 1: Image Prompt Agent Executes Without Error ====================
+
+def test_image_prompt_agent_executes():
+    """
+    TEST 1: Verify Image Prompt Agent runs without crashing
+
+    WHAT: Call image_prompt_agent() with valid state
+    EXPECT: Returns a state object (no error)
+    """
+    print("\n" + "=" * 80)
+    print("TEST 1: Image Prompt Agent Executes")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+
+    assert result is not None, "Image Prompt Agent should return a state"
+    assert isinstance(result, CampaignState), "Should return CampaignState object"
+
+    print("✅ PASS: Image Prompt Agent executed successfully")
+
+
+# ==================== TEST 2: Image Output is Not Empty ====================
+
+def test_image_output_not_empty():
+    """
+    TEST 2: Verify Image Prompt Agent produces output
+
+    WHAT: Check if image_output field is filled
+    EXPECT: image_output should not be None or empty string
+    """
+    print("\n" + "=" * 80)
+    print("TEST 2: Image Output is Not Empty")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+
+    assert result.image_output is not None, "image_output should not be None"
+    assert result.image_output != "", "image_output should not be empty string"
+    assert len(result.image_output) > 0, "image_output should have content"
+
+    print(f"✅ PASS: Image output exists ({len(result.image_output)} characters)")
+
+
+# ==================== TEST 3: Image Output is Valid JSON ====================
+
+def test_image_output_is_json():
+    """
+    TEST 3: Verify Image Output is valid JSON
+
+    WHAT: Try to parse image_output as JSON
+    EXPECT: Should parse without error
+    WHY: Downstream agents and frontend need to read this as JSON
+    """
+    print("\n" + "=" * 80)
+    print("TEST 3: Image Output is Valid JSON")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+
+    try:
+        parsed = json.loads(result.image_output)
+        assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
+        print(f"✅ PASS: Image output is valid JSON")
+        print(f"   Keys in JSON: {list(parsed.keys())}")
+    except json.JSONDecodeError as e:
+        raise AssertionError(f"Image output is not valid JSON: {e}")
+
+
+# ==================== TEST 4: All Top-Level Output Fields Exist ====================
+
+def test_all_top_level_fields_exist():
+    """
+    TEST 4: Verify all required top-level fields exist in image output
+
+    WHAT: Check image_output contains every expected key
+    EXPECT: visual_direction, image_prompts
+    WHY: Downstream consumers depend on both fields
+    NOTE: campaign_name, brand_name, brand_voice NOT in output - read from state
+    """
+    print("\n" + "=" * 80)
+    print("TEST 4: All Top-Level Output Fields Exist")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    required_fields = [
+        "visual_direction",
+        "image_prompts"
+    ]
+
+    for field in required_fields:
+        assert field in parsed, f"Missing required field: {field}"
+        assert parsed[field] is not None, f"Field '{field}' should not be None"
+
+    print(f"✅ PASS: All top-level output fields exist")
+    for field in required_fields:
+        print(f"   ✓ {field}")
+
+
+# ==================== TEST 5: image_prompts is a Non-Empty List ====================
+
+def test_image_prompts_is_non_empty_list():
+    """
+    TEST 5: Verify image_prompts is a non-empty list
+
+    WHAT: Check image_prompts contains at least one prompt object
+    EXPECT: List with length >= 1
+    WHY: Agent must generate at least one visual asset
+    """
+    print("\n" + "=" * 80)
+    print("TEST 5: image_prompts is a Non-Empty List")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    image_prompts = parsed["image_prompts"]
+
+    assert isinstance(image_prompts, list), "image_prompts should be a list"
+    assert len(image_prompts) >= 1, "image_prompts should contain at least one prompt"
+
+    print(f"✅ PASS: image_prompts is a non-empty list ({len(image_prompts)} prompts)")
+
+
+# ==================== TEST 6: Each Prompt Object Has All Required Sub-fields ====================
+
+def test_each_prompt_has_required_subfields():
+    """
+    TEST 6: Verify each prompt object contains all required sub-fields
+
+    WHAT: Check every item in image_prompts has deliverable, prompt,
+          style, color_palette, text_overlay, aspect_ratio
+    EXPECT: All six keys present and non-empty in every prompt
+    WHY: DALL-E 3 rendering pipeline depends on these exact fields
+    """
+    print("\n" + "=" * 80)
+    print("TEST 6: Each Prompt Object Has All Required Sub-fields")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    required_subfields = [
+        "deliverable",
+        "prompt",
+        "style",
+        "color_palette",
+        "text_overlay",
+        "aspect_ratio"
+    ]
+
+    for i, prompt_obj in enumerate(parsed["image_prompts"]):
+        for subfield in required_subfields:
+            assert subfield in prompt_obj, \
+                f"Prompt {i+1} missing sub-field: '{subfield}'"
+            assert prompt_obj[subfield] is not None, \
+                f"Prompt {i+1} field '{subfield}' should not be None"
+            assert isinstance(prompt_obj[subfield], str) and len(prompt_obj[subfield]) > 0, \
+                f"Prompt {i+1} field '{subfield}' should be a non-empty string"
+
+    print(f"✅ PASS: All prompt objects have required sub-fields")
+    for i, prompt_obj in enumerate(parsed["image_prompts"]):
+        print(f"   Prompt {i+1} ({prompt_obj['deliverable']}): all fields ✓")
+
+
+# ==================== TEST 7: DALL-E Prompt Has Minimum Length ====================
+
+def test_dalle_prompt_minimum_length():
+    """
+    TEST 7: Verify each DALL-E prompt is at least 50 characters
+
+    WHAT: Check prompt field length in every prompt object
+    EXPECT: len(prompt) >= 50 for all prompts
+    WHY: DALL-E 3 generates poor images from prompts shorter than 50 chars
+    """
+    print("\n" + "=" * 80)
+    print("TEST 7: DALL-E Prompt Has Minimum Length")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    for i, prompt_obj in enumerate(parsed["image_prompts"]):
+        prompt_text = prompt_obj["prompt"]
+        assert len(prompt_text) >= 50, \
+            f"Prompt {i+1} ({prompt_obj['deliverable']}) is too short: " \
+            f"{len(prompt_text)} chars (minimum 50)"
+
+    print(f"✅ PASS: All DALL-E prompts meet minimum length requirement")
+    for i, prompt_obj in enumerate(parsed["image_prompts"]):
+        print(f"   Prompt {i+1}: {len(prompt_obj['prompt'])} chars ✓")
+
+
+# ==================== TEST 8: Status Updated to image_complete ====================
+
+def test_status_updated_to_image_complete():
+    """
+    TEST 8: Verify status is updated to 'image_complete'
+
+    WHAT: Check if status field is updated after agent runs
+    EXPECT: status should be 'image_complete'
+    WHY: Next agent checks status to know when to start
+    """
+    print("\n" + "=" * 80)
+    print("TEST 8: Status Updated to image_complete")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    assert state.status == "copy_complete", "Initial status should be 'copy_complete'"
+
+    result = image_prompt_agent(state)
+
+    assert result.status == "image_complete", \
+        f"Status should be 'image_complete' but got '{result.status}'"
+
+    print(f"✅ PASS: Status updated correctly")
+    print(f"   Before: copy_complete")
+    print(f"   After: {result.status}")
+
+
+# ==================== TEST 9: Brand Name Appears in Prompts ====================
+
+def test_brand_name_appears_in_prompts():
+    """
+    TEST 9: Verify brand name is used in generated DALL-E prompts
+
+    WHAT: Check that brand name appears in at least one prompt text
+    EXPECT: brand_name string found in one or more prompt fields
+    WHY: Brand-specific visuals require brand name in prompt for context
+    NOTE: brand_name NOT in image_output top-level (read from state), but used in prompts
+    """
+    print("\n" + "=" * 80)
+    print("TEST 9: Brand Name Appears in Prompts")
+    print("=" * 80)
+
+    brand = "UniqueVisualBrand"
+    strategy_data = create_mock_strategy_output(brand_name=brand)
+    copy_data = create_mock_copy_output(brand_name=brand)
+    state = create_state_with_strategy_and_copy(
+        brand_name=brand,
+        strategy_data=strategy_data,
+        copy_data=copy_data
+    )
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    # brand_name should NOT be a top-level key (read from state instead)
+    assert "brand_name" not in parsed, \
+        "brand_name should NOT be in image_output top-level (read from state instead)"
+
+    # But brand name MUST appear in actual prompt content
+    all_prompt_text = " ".join(
+        obj["prompt"] + " " + obj.get("text_overlay", "")
+        for obj in parsed["image_prompts"]
+    )
+
+    assert brand in all_prompt_text, \
+        f"Brand name '{brand}' should appear in prompt content"
+
+    print(f"✅ PASS: Brand name '{brand}' appears in prompt content")
+    print(f"   (brand_name correctly NOT in top-level output - read from state instead)")
+
+
+# ==================== TEST 10: Visual Direction is Non-Empty String ====================
+
+def test_visual_direction_is_non_empty_string():
+    """
+    TEST 10: Verify visual_direction is a non-empty string
+
+    WHAT: Check visual_direction field type and content
+    EXPECT: Non-empty string describing the overall visual strategy
+    WHY: Visual direction guides creative team across all assets
+    """
+    print("\n" + "=" * 80)
+    print("TEST 10: Visual Direction is Non-Empty String")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    visual_direction = parsed["visual_direction"]
+
+    assert isinstance(visual_direction, str), \
+        "visual_direction should be a string"
+    assert len(visual_direction) > 0, \
+        "visual_direction should not be empty"
+
+    print(f"✅ PASS: visual_direction is a non-empty string")
+    print(f"   Preview: {visual_direction[:80]}...")
+
+
+# ==================== TEST 11: Brand Voice Determines Visual Style ====================
+
+def test_brand_voice_determines_visual_style():
+    """
+    TEST 11: Verify brand_voice produces matching visual style in prompts
+
+    WHAT: Create campaigns with different brand voices, check style field
+    EXPECT: style should reflect the brand voice for each prompt
+    WHY: Visual consistency requires style to match brand voice
+    """
+    print("\n" + "=" * 80)
+    print("TEST 11: Brand Voice Determines Visual Style")
+    print("=" * 80)
+
+    voice_style_map = {
+        "professional": ["modern corporate", "corporate"],
+        "friendly":     ["approachable", "warm"],
+        "bold":         ["dramatic", "eye-catching"],
+        "luxury":       ["elegant", "sophisticated"]
+    }
+
+    for voice, expected_keywords in voice_style_map.items():
+        strategy_data = create_mock_strategy_output()
+        state = create_state_with_strategy_and_copy(
+            brand_voice=voice,
+            strategy_data=strategy_data
+        )
+
+        result = image_prompt_agent(state)
+        parsed = json.loads(result.image_output)
+
+        # Check style field in first prompt
+        first_prompt = parsed["image_prompts"][0]
+        style = first_prompt["style"].lower()
+
+        assert any(kw in style for kw in expected_keywords), \
+            f"Brand voice '{voice}' should produce style with {expected_keywords}, got: '{style}'"
+
+        print(f"   ✓ voice='{voice}' → style='{first_prompt['style']}' ✓")
+
+    print(f"\n✅ PASS: Brand voice correctly determines visual style for all 4 voices")
+
+
+# ==================== TEST 12: Brand Voice Determines Color Palette ====================
+
+def test_brand_voice_determines_color_palette():
+    """
+    TEST 12: Verify brand_voice produces matching color palette in prompts
+
+    WHAT: Create campaigns with different brand voices, check color_palette field
+    EXPECT: color_palette should reflect brand voice identity
+    WHY: Color consistency is core to brand identity across all visuals
+    """
+    print("\n" + "=" * 80)
+    print("TEST 12: Brand Voice Determines Color Palette")
+    print("=" * 80)
+
+    voice_color_map = {
+        "professional": ["navy", "blue", "silver", "white"],
+        "friendly":     ["orange", "warm", "cream", "light"],
+        "bold":         ["red", "black", "electric", "vibrant"],
+        "luxury":       ["purple", "gold", "black", "deep"]
+    }
+
+    for voice, expected_keywords in voice_color_map.items():
+        strategy_data = create_mock_strategy_output()
+        state = create_state_with_strategy_and_copy(
+            brand_voice=voice,
+            strategy_data=strategy_data
+        )
+
+        result = image_prompt_agent(state)
+        parsed = json.loads(result.image_output)
+
+        first_prompt = parsed["image_prompts"][0]
+        color_palette = first_prompt["color_palette"].lower()
+
+        assert any(kw in color_palette for kw in expected_keywords), \
+            f"Brand voice '{voice}' should produce palette with {expected_keywords}, " \
+            f"got: '{color_palette}'"
+
+        print(f"   ✓ voice='{voice}' → palette='{first_prompt['color_palette']}' ✓")
+
+    print(f"\n✅ PASS: Brand voice correctly determines color palette for all 4 voices")
+
+
+# ==================== TEST 13: Prompt Count Matches Deliverables ====================
+
+def test_prompt_count_matches_deliverables():
+    """
+    TEST 13: Verify one prompt is generated per deliverable
+
+    WHAT: Count image_prompts and compare to strategy deliverables list
+    EXPECT: len(image_prompts) == len(deliverables)
+    WHY: Every deliverable needs a production-ready visual prompt
+    """
+    print("\n" + "=" * 80)
+    print("TEST 13: Prompt Count Matches Deliverables")
+    print("=" * 80)
+
+    custom_deliverables = [
+        "email banner",
+        "linkedin social post",
+        "landing page",
+        "webinar"
+    ]
+
+    strategy_data = create_mock_strategy_output(deliverables=custom_deliverables)
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    prompt_count = len(parsed["image_prompts"])
+    deliverable_count = len(custom_deliverables)
+
+    assert prompt_count == deliverable_count, \
+        f"Expected {deliverable_count} prompts but got {prompt_count}"
+
+    print(f"✅ PASS: Prompt count matches deliverables ({prompt_count} prompts)")
+    for i, prompt_obj in enumerate(parsed["image_prompts"]):
+        print(f"   {i+1}. {prompt_obj['deliverable']} ✓")
+
+
+# ==================== TEST 14: Each Prompt References Its Deliverable ====================
+
+def test_each_prompt_references_its_deliverable():
+    """
+    TEST 14: Verify each prompt's deliverable field matches the strategy deliverable
+
+    WHAT: Check deliverable field in each prompt matches the input list
+    EXPECT: prompt.deliverable matches corresponding strategy deliverable
+    WHY: Ensures prompts are correctly mapped to their intended assets
+    """
+    print("\n" + "=" * 80)
+    print("TEST 14: Each Prompt References Its Deliverable")
+    print("=" * 80)
+
+    custom_deliverables = ["email banner", "linkedin social post", "gated whitepaper"]
+    strategy_data = create_mock_strategy_output(deliverables=custom_deliverables)
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    prompt_deliverables = [obj["deliverable"] for obj in parsed["image_prompts"]]
+
+    for expected in custom_deliverables:
+        assert expected in prompt_deliverables, \
+            f"Deliverable '{expected}' not found in prompt deliverables: {prompt_deliverables}"
+
+    print(f"✅ PASS: Each prompt correctly references its deliverable")
+    for deliverable in custom_deliverables:
+        print(f"   ✓ {deliverable}")
+
+
+# ==================== TEST 15: Aspect Ratio Correct for Email Banner ====================
+
+def test_aspect_ratio_correct_for_email_banner():
+    """
+    TEST 15: Verify email banner gets the correct aspect ratio (16:9)
+
+    WHAT: Create campaign with email banner deliverable, check aspect_ratio
+    EXPECT: aspect_ratio should be "16:9" for email banner
+    WHY: Email templates are designed for landscape 16:9 banners
+    """
+    print("\n" + "=" * 80)
+    print("TEST 15: Aspect Ratio Correct for Email Banner")
+    print("=" * 80)
+
+    strategy_data = create_mock_strategy_output(deliverables=["email banner"])
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    email_prompt = next(
+        (p for p in parsed["image_prompts"] if "email" in p["deliverable"].lower()),
+        None
+    )
+
+    assert email_prompt is not None, "Should have an email banner prompt"
+    assert email_prompt["aspect_ratio"] == "16:9", \
+        f"Email banner should have 16:9 aspect ratio, got: {email_prompt['aspect_ratio']}"
+
+    print(f"✅ PASS: Email banner has correct aspect ratio")
+    print(f"   Deliverable: {email_prompt['deliverable']}")
+    print(f"   Aspect Ratio: {email_prompt['aspect_ratio']}")
+
+
+# ==================== TEST 16: Aspect Ratio Correct for LinkedIn Post ====================
+
+def test_aspect_ratio_correct_for_linkedin_post():
+    """
+    TEST 16: Verify LinkedIn social post gets the correct aspect ratio (1:1)
+
+    WHAT: Create campaign with LinkedIn post deliverable, check aspect_ratio
+    EXPECT: aspect_ratio should be "1:1" for LinkedIn social post
+    WHY: LinkedIn feed posts render best as square (1:1) images
+    """
+    print("\n" + "=" * 80)
+    print("TEST 16: Aspect Ratio Correct for LinkedIn Post")
+    print("=" * 80)
+
+    strategy_data = create_mock_strategy_output(deliverables=["linkedin social post"])
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    linkedin_prompt = next(
+        (p for p in parsed["image_prompts"] if "linkedin" in p["deliverable"].lower()),
+        None
+    )
+
+    assert linkedin_prompt is not None, "Should have a LinkedIn prompt"
+    assert linkedin_prompt["aspect_ratio"] == "1:1", \
+        f"LinkedIn post should have 1:1 aspect ratio, got: {linkedin_prompt['aspect_ratio']}"
+
+    print(f"✅ PASS: LinkedIn post has correct aspect ratio")
+    print(f"   Deliverable: {linkedin_prompt['deliverable']}")
+    print(f"   Aspect Ratio: {linkedin_prompt['aspect_ratio']}")
+
+
+# ==================== TEST 17: Aspect Ratio Correct for Instagram Story ====================
+
+def test_aspect_ratio_correct_for_instagram_story():
+    """
+    TEST 17: Verify Instagram story gets the correct aspect ratio (9:16)
+
+    WHAT: Create campaign with Instagram story deliverable, check aspect_ratio
+    EXPECT: aspect_ratio should be "9:16" for Instagram story
+    WHY: Instagram stories are portrait-format (9:16) full-screen content
+    """
+    print("\n" + "=" * 80)
+    print("TEST 17: Aspect Ratio Correct for Instagram Story")
+    print("=" * 80)
+
+    strategy_data = create_mock_strategy_output(deliverables=["instagram story"])
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    instagram_prompt = next(
+        (p for p in parsed["image_prompts"] if "instagram" in p["deliverable"].lower()),
+        None
+    )
+
+    assert instagram_prompt is not None, "Should have an Instagram story prompt"
+    assert instagram_prompt["aspect_ratio"] == "9:16", \
+        f"Instagram story should have 9:16 aspect ratio, got: {instagram_prompt['aspect_ratio']}"
+
+    print(f"✅ PASS: Instagram story has correct aspect ratio")
+    print(f"   Deliverable: {instagram_prompt['deliverable']}")
+    print(f"   Aspect Ratio: {instagram_prompt['aspect_ratio']}")
+
+
+# ==================== TEST 18: Text Overlay Uses Copy Headlines ====================
+
+def test_text_overlay_uses_copy_headlines():
+    """
+    TEST 18: Verify text_overlay uses headlines from copy_output (not body copy)
+
+    WHAT: Set unique headlines in copy_output, check they appear in text_overlay
+    EXPECT: text_overlay should match email/linkedin/social/ads headlines from copy
+    WHY: Image Agent must use headline copy for text overlay, not body copy
+    """
+    print("\n" + "=" * 80)
+    print("TEST 18: Text Overlay Uses Copy Headlines")
+    print("=" * 80)
+
+    unique_headline = "Zero to AI-powered in 24 hours or your money back"
+    copy_data = create_mock_copy_output(
+        email_headline=unique_headline,
+        linkedin_headline=unique_headline
+    )
+    strategy_data = create_mock_strategy_output(
+        deliverables=["email banner", "linkedin social post"]
+    )
+    state = create_state_with_strategy_and_copy(
+        strategy_data=strategy_data,
+        copy_data=copy_data
+    )
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    all_overlays = " ".join(obj["text_overlay"] for obj in parsed["image_prompts"])
+
+    assert unique_headline in all_overlays or unique_headline[:50] in all_overlays, \
+        f"Unique headline should appear in text_overlay fields. Got overlays: {all_overlays}"
+
+    print(f"✅ PASS: Text overlay uses copy headlines")
+    print(f"   Unique headline: '{unique_headline}'")
+    for prompt_obj in parsed["image_prompts"]:
+        print(f"   {prompt_obj['deliverable']}: '{prompt_obj['text_overlay'][:60]}...'")
+
+
+# ==================== TEST 19: Works Without copy_output (Fallback) ====================
+
+def test_works_without_copy_output():
+    """
+    TEST 19: Verify Image Prompt Agent works when copy_output is not available
+
+    WHAT: Run agent with strategy_output only (no copy_output)
+    EXPECT: Agent completes successfully, falls back to positioning for text_overlay
+    WHY: Image Agent must work even if Copy Agent hasn't run yet
+    """
+    print("\n" + "=" * 80)
+    print("TEST 19: Works Without copy_output (Fallback)")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy(include_copy=False)
+    assert state.copy_output is None, "copy_output should be None for this test"
+
+    result = image_prompt_agent(state)
+
+    assert result is not None, "Should return a state even without copy_output"
+    assert result.image_output is not None, "image_output should be filled even without copy"
+    assert result.status == "image_complete", "Status should be image_complete"
+
+    parsed = json.loads(result.image_output)
+    assert len(parsed["image_prompts"]) >= 1, "Should still generate at least one prompt"
+
+    print(f"✅ PASS: Agent works without copy_output")
+    print(f"   Status: {result.status}")
+    print(f"   Prompts generated: {len(parsed['image_prompts'])}")
+    print(f"   (Fallback to positioning for text_overlay)")
+
+
+# ==================== TEST 20: Raises When strategy_output Missing ====================
+
+def test_raises_when_strategy_output_missing():
+    """
+    TEST 20: Verify Image Prompt Agent raises when strategy_output is missing
+
+    WHAT: Call image_prompt_agent() with no strategy_output
+    EXPECT: Should raise ValueError
+    WHY: Image Agent cannot operate without strategy; fail fast is better than silent errors
+    """
+    print("\n" + "=" * 80)
+    print("TEST 20: Raises When strategy_output Missing")
+    print("=" * 80)
+
+    state = CampaignState(
+        campaign_name="No Strategy",
+        brand_name="TestBrand",
+        industry="saas",
+        primary_goal="lead_gen",
+        target_audience="Test",
+        brand_voice="professional",
+        brief="Test brief",
+        strategy_output=None,  # Intentionally missing
+        copy_output=None,
+        status="copy_complete"
+    )
+
+    if pytest:
+        with pytest.raises((ValueError, Exception)):
+            image_prompt_agent(state)
+    else:
+        try:
+            image_prompt_agent(state)
+            assert False, "Should have raised an error"
+        except (ValueError, Exception):
+            pass  # Expected
+
+    print(f"✅ PASS: Raises correctly when strategy_output is missing")
+
+
+# ==================== TEST 21: Industry Influences Prompt Content ====================
+
+def test_industry_influences_prompt_content():
+    """
+    TEST 21: Verify industry type influences DALL-E prompt content
+
+    WHAT: Create campaigns with different industries, compare prompt text
+    EXPECT: SaaS prompts mention tech/UI; ecommerce mentions products/shopping;
+            finance mentions charts/security; healthcare mentions medical/professionals
+    WHY: Industry-specific imagery makes visuals relevant to the target audience
+    """
+    print("\n" + "=" * 80)
+    print("TEST 21: Industry Influences Prompt Content")
+    print("=" * 80)
+
+    industry_keyword_map = {
+        "saas":       ["tech", "interface", "dashboard", "UI", "software"],
+        "ecommerce":  ["product", "shopping", "showcase", "store"],
+        "finance":    ["financial", "chart", "security", "banking"],
+        "healthcare": ["health", "medical", "professional", "clinical"]
+    }
+
+    for industry, expected_keywords in industry_keyword_map.items():
+        strategy_data = create_mock_strategy_output()
+        state = create_state_with_strategy_and_copy(
+            industry=industry,
+            strategy_data=strategy_data
+        )
+
+        result = image_prompt_agent(state)
+        parsed = json.loads(result.image_output)
+
+        all_prompts = " ".join(obj["prompt"].lower() for obj in parsed["image_prompts"])
+
+        assert any(kw.lower() in all_prompts for kw in expected_keywords), \
+            f"Industry '{industry}' should produce prompts with {expected_keywords}"
+
+        print(f"   ✓ industry='{industry}': industry keywords found in prompts ✓")
+
+    print(f"\n✅ PASS: Industry correctly influences prompt content for all 4 industries")
+
+
+# ==================== TEST 22: Positioning Appears in Visual Direction ====================
+
+def test_positioning_appears_in_visual_direction():
+    """
+    TEST 22: Verify strategy positioning is embedded in visual_direction
+
+    WHAT: Set unique positioning in strategy, check visual_direction contains it
+    EXPECT: visual_direction should reference the brand positioning statement
+    WHY: Visual direction must reflect strategic positioning for brand alignment
+    """
+    print("\n" + "=" * 80)
+    print("TEST 22: Positioning Appears in Visual Direction")
+    print("=" * 80)
+
+    unique_positioning = "The only platform that eliminates AI complexity forever"
+    strategy_data = create_mock_strategy_output(positioning=unique_positioning)
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    visual_direction = parsed["visual_direction"]
+
+    assert unique_positioning in visual_direction, \
+        f"Positioning should appear in visual_direction. Got: {visual_direction}"
+
+    print(f"✅ PASS: Positioning appears in visual_direction")
+    print(f"   Positioning: '{unique_positioning}'")
+    print(f"   Visual Direction: '{visual_direction[:80]}...'")
+
+
+# ==================== TEST 23: Market Trends Appear in Visual Direction ====================
+
+def test_market_trends_appear_in_visual_direction():
+    """
+    TEST 23: Verify market trends from research are reflected in visual_direction
+
+    WHAT: Set specific market trends in strategy research_foundation, check visual_direction
+    EXPECT: visual_direction should incorporate market trend context
+    WHY: Research-driven visuals are more relevant to current market conditions
+    """
+    print("\n" + "=" * 80)
+    print("TEST 23: Market Trends Appear in Visual Direction")
+    print("=" * 80)
+
+    unique_trend = "quantum computing adoption"
+    strategy_data = create_mock_strategy_output(
+        market_trends=[unique_trend, "automation", "cloud migration"]
+    )
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    visual_direction = parsed["visual_direction"]
+
+    assert unique_trend in visual_direction, \
+        f"Market trend '{unique_trend}' should appear in visual_direction. " \
+        f"Got: {visual_direction}"
+
+    print(f"✅ PASS: Market trends appear in visual_direction")
+    print(f"   Trend: '{unique_trend}'")
+    print(f"   In visual_direction: ✓")
+
+
+# ==================== TEST 24: Pain Points Influence Prompt Content ====================
+
+def test_pain_points_influence_prompt_content():
+    """
+    TEST 24: Verify audience pain points from research influence prompt content
+
+    WHAT: Set specific pain points (complexity, cost, time), check prompt keywords
+    EXPECT: Prompts should use relevant visual metaphors based on pain points
+    WHY: Pain-point-driven visuals resonate with target audience motivations
+    """
+    print("\n" + "=" * 80)
+    print("TEST 24: Pain Points Influence Prompt Content")
+    print("=" * 80)
+
+    # Test complexity pain point → simplified workflow visualization
+    strategy_data = create_mock_strategy_output(
+        pain_points=["Overwhelming complexity in daily workflows", "High costs", "Slow setup"]
+    )
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    all_prompts = " ".join(obj["prompt"].lower() for obj in parsed["image_prompts"])
+
+    complexity_keywords = ["simplif", "workflow", "streamlin", "clean"]
+    assert any(kw in all_prompts for kw in complexity_keywords), \
+        f"Complexity pain point should trigger simplified workflow imagery. " \
+        f"Got prompts: {all_prompts[:200]}"
+
+    print(f"✅ PASS: Pain points influence prompt visual metaphors")
+    print(f"   Pain point: 'Overwhelming complexity in daily workflows'")
+    print(f"   Visual metaphors found: {[kw for kw in complexity_keywords if kw in all_prompts]}")
+
+
+# ==================== TEST 25: Different Brands Produce Different Prompts ====================
+
+def test_different_brands_produce_different_prompts():
+    """
+    TEST 25: Verify different brand names produce different image prompts
+
+    WHAT: Run agent with two different brand names, compare outputs
+    EXPECT: image_output should differ between brands
+    WHY: Brand-specific visuals must not bleed across campaigns
+    """
+    print("\n" + "=" * 80)
+    print("TEST 25: Different Brands Produce Different Prompts")
+    print("=" * 80)
+
+    strategy1 = create_mock_strategy_output(brand_name="AlphaVision")
+    copy1 = create_mock_copy_output(brand_name="AlphaVision")
+    state1 = create_state_with_strategy_and_copy(
+        brand_name="AlphaVision",
+        strategy_data=strategy1,
+        copy_data=copy1
+    )
+
+    strategy2 = create_mock_strategy_output(brand_name="BetaWave")
+    copy2 = create_mock_copy_output(brand_name="BetaWave")
+    state2 = create_state_with_strategy_and_copy(
+        brand_name="BetaWave",
+        strategy_data=strategy2,
+        copy_data=copy2
+    )
+
+    result1 = image_prompt_agent(state1)
+    result2 = image_prompt_agent(state2)
+
+    assert result1.image_output != result2.image_output, \
+        "Different brands should produce different image outputs"
+
+    parsed1 = json.loads(result1.image_output)
+    parsed2 = json.loads(result2.image_output)
+
+    prompts1 = " ".join(obj["prompt"] for obj in parsed1["image_prompts"])
+    prompts2 = " ".join(obj["prompt"] for obj in parsed2["image_prompts"])
+
+    assert "AlphaVision" in prompts1, "Brand 1 prompts should mention AlphaVision"
+    assert "BetaWave" in prompts2, "Brand 2 prompts should mention BetaWave"
+
+    print(f"✅ PASS: Different brands produce different image prompts")
+    print(f"   Brand 1 (AlphaVision): 'AlphaVision' in prompts ✓")
+    print(f"   Brand 2 (BetaWave): 'BetaWave' in prompts ✓")
+
+
+# ==================== TEST 26: Fallback to Channels When Deliverables Empty ====================
+
+def test_fallback_to_channels_when_deliverables_empty():
+    """
+    TEST 26: Verify agent infers deliverables from channels when deliverables list is empty
+
+    WHAT: Create strategy with no deliverables but with channels list
+    EXPECT: Agent generates prompts inferred from channels (not crashes)
+    WHY: Smart fallback prevents silent failures when deliverables aren't specified
+    """
+    print("\n" + "=" * 80)
+    print("TEST 26: Fallback to Channels When Deliverables Empty")
+    print("=" * 80)
+
+    strategy_data = create_mock_strategy_output(
+        deliverables=[],  # Empty deliverables
+        channels=["linkedin", "instagram", "email"]
+    )
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+
+    assert result is not None, "Should not crash with empty deliverables"
+    assert result.image_output is not None, "Should produce image_output"
+    assert result.status == "image_complete", "Status should be image_complete"
+
+    parsed = json.loads(result.image_output)
+    assert len(parsed["image_prompts"]) >= 1, \
+        "Should generate at least one prompt inferred from channels"
+
+    print(f"✅ PASS: Correctly falls back to channels when deliverables empty")
+    print(f"   Channels provided: ['linkedin', 'instagram', 'email']")
+    print(f"   Prompts inferred: {[obj['deliverable'] for obj in parsed['image_prompts']]}")
+
+
+# ==================== TEST 27: No Error Field Set on Success ====================
+
+def test_no_error_field_set_on_success():
+    """
+    TEST 27: Verify no error is set when Image Prompt Agent completes successfully
+
+    WHAT: Check error field after successful image prompt generation
+    EXPECT: error field should be None
+    WHY: Errors should only be set if something fails
+    """
+    print("\n" + "=" * 80)
+    print("TEST 27: No Error Field Set on Success")
+    print("=" * 80)
+
+    state = create_state_with_strategy_and_copy()
+    result = image_prompt_agent(state)
+
+    assert result.error is None, f"error field should be None on success, got: {result.error}"
+
+    print(f"✅ PASS: No error field set")
+    print(f"   error: {result.error}")
+
+
+# ==================== TEST 28: Text Overlay Does Not Use Body Copy ====================
+
+def test_text_overlay_does_not_use_body_copy():
+    """
+    TEST 28: Verify text_overlay does NOT contain body copy text
+
+    WHAT: Set unique body copy text in copy_output, check it doesn't leak to text_overlay
+    EXPECT: text_overlay should never equal the full body copy content
+    WHY: Image overlays use short text (headlines/CTAs), not long-form body copy
+    """
+    print("\n" + "=" * 80)
+    print("TEST 28: Text Overlay Does Not Use Body Copy")
+    print("=" * 80)
+
+    unique_body_marker = "UNIQUE_BODY_COPY_MARKER_SHOULD_NOT_APPEAR_IN_OVERLAY"
+
+    copy_data = create_mock_copy_output()
+    # Inject unique marker into body copy
+    copy_data["email"]["body"] = f"This is body copy. {unique_body_marker} More body text here."
+    copy_data["linkedin"]["body"] = f"LinkedIn body. {unique_body_marker} Even more body."
+    copy_data["social"]["body"] = f"Social body. {unique_body_marker} Social content."
+    copy_data["ads"]["body"] = f"Ads body. {unique_body_marker} Ad content."
+
+    strategy_data = create_mock_strategy_output()
+    state = create_state_with_strategy_and_copy(
+        strategy_data=strategy_data,
+        copy_data=copy_data
+    )
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    all_overlays = " ".join(obj["text_overlay"] for obj in parsed["image_prompts"])
+
+    assert unique_body_marker not in all_overlays, \
+        f"Body copy marker should NOT appear in text_overlay. " \
+        f"Image Agent should only use headlines/CTAs."
+
+    print(f"✅ PASS: Text overlay does not use body copy")
+    print(f"   Body marker correctly excluded from all text_overlays")
+
+
+# ==================== TEST 29: Different Deliverable Types Get Different Prompts ====================
+
+def test_different_deliverable_types_get_different_prompts():
+    """
+    TEST 29: Verify different deliverable types produce unique prompt content
+
+    WHAT: Create strategy with multiple diverse deliverables, compare prompt texts
+    EXPECT: Each deliverable type should have unique prompt content (not identical)
+    WHY: Each deliverable type needs tailored visual guidance (email ≠ social ≠ webinar)
+    """
+    print("\n" + "=" * 80)
+    print("TEST 29: Different Deliverable Types Get Different Prompts")
+    print("=" * 80)
+
+    diverse_deliverables = [
+        "email banner",
+        "linkedin social post",
+        "instagram story",
+        "gated whitepaper"
+    ]
+
+    strategy_data = create_mock_strategy_output(deliverables=diverse_deliverables)
+    state = create_state_with_strategy_and_copy(strategy_data=strategy_data)
+
+    result = image_prompt_agent(state)
+    parsed = json.loads(result.image_output)
+
+    prompt_texts = [obj["prompt"] for obj in parsed["image_prompts"]]
+    unique_prompts = set(prompt_texts)
+
+    assert len(unique_prompts) == len(diverse_deliverables), \
+        f"All {len(diverse_deliverables)} deliverables should produce unique prompts. " \
+        f"Got {len(unique_prompts)} unique prompts."
+
+    print(f"✅ PASS: Each deliverable type produces unique prompt content")
+    for obj in parsed["image_prompts"]:
+        print(f"   ✓ {obj['deliverable']}: unique prompt ({len(obj['prompt'])} chars)")
+
+
+# ==================== TEST 30: Full Integration Test ====================
+
+def test_image_prompt_agent_integration():
+    """
+    TEST 30: Full integration test
+
+    WHAT: Test complete flow with realistic strategy + copy data matching AgentMark
+    EXPECT: All validations pass - prompts generated for all deliverables,
+            brand voice consistent, text overlay from copy, research-driven visuals
+    WHY: Ensure Image Prompt Agent works end-to-end within the multi-agent pipeline
+    """
+    print("\n" + "=" * 80)
+    print("TEST 30: Full Integration Test")
+    print("=" * 80)
+
+    strategy_data = create_mock_strategy_output(
+        campaign_name="Q3 Product Launch",
+        brand_name="AgentMark",
+        positioning="Enterprise AI without the complexity - easier integration and faster setup",
+        key_messages=[
+            "Deploy powerful AI workflows in hours, not months",
+            "Eliminate integration complexity and costs",
+            "Scale operations with enterprise-grade reliability"
+        ],
+        content_pillars=[
+            "AI automation insights",
+            "ROI and efficiency strategies",
+            "Enterprise success stories",
+            "Cost comparison analysis"
+        ],
+        inferred_goal="lead_gen",
+        channels=["linkedin", "tech blogs", "email"],
+        deliverables=["gated whitepaper", "landing page", "webinar", "email banner"],
+        pain_points=["Integration complexity", "High costs", "Long setup time"],
+        motivations=["Save time", "Reduce costs", "Scale operations"],
+        market_trends=["AI adoption", "automation", "cost reduction", "workflow optimization"]
+    )
+
+    copy_data = create_mock_copy_output(
+        brand_name="AgentMark",
+        inferred_goal="lead_gen",
+        email_headline="Deploy powerful AI workflows in hours, not months",
+        email_cta="Get Free Access to AgentMark (Limited spots available)",
+        linkedin_headline="Deploy powerful AI workflows in hours, not months",
+        linkedin_cta="👇 Tell us in the comments: Are you facing this challenge?",
+        social_headline="Unlock productivity with AgentMark - no credit card needed",
+        social_cta="Learn more →",
+        ads_headline="Get AgentMark free - see results in 7 days",
+        ads_cta="Get Free Access"
+    )
+
+    state = CampaignState(
+        campaign_name="Q3 Product Launch",
+        brand_name="AgentMark",
+        industry="saas",
+        primary_goal="lead_gen",
+        target_audience="Enterprise CTOs, tech leads, companies with 1000+ employees",
+        brand_voice="professional",
+        brief="Launch marketing campaign for AI automation platform targeting enterprise CTOs",
+        strategy_output=json.dumps(strategy_data),
+        copy_output=json.dumps(copy_data),
+        status="copy_complete"
+    )
+
+    print(f"Input:")
+    print(f"  campaign_name: Q3 Product Launch")
+    print(f"  brand_name: AgentMark")
+    print(f"  industry: saas")
+    print(f"  brand_voice: professional")
+    print(f"  deliverables: {strategy_data['execution']['deliverables']}")
+
+    result = image_prompt_agent(state)
+
+    # Core state checks
+    assert result.status == "image_complete", \
+        f"Status should be 'image_complete' but got {result.status}"
+    assert result.image_output is not None, "image_output must be populated"
+    assert len(result.image_output) > 0, "image_output must not be empty"
+    assert result.error is None, f"error should be None but got {result.error}"
+
+    # JSON validity
+    parsed = json.loads(result.image_output)
+    assert isinstance(parsed, dict), "image_output should be valid JSON dict"
+
+    # All top-level fields
+    for field in ["visual_direction", "image_prompts"]:
+        assert field in parsed, f"Missing field: {field}"
+
+    # Prompt count
+    assert len(parsed["image_prompts"]) == 4, \
+        f"Should have 4 prompts (one per deliverable), got {len(parsed['image_prompts'])}"
+
+    # All prompts have required sub-fields
+    for prompt_obj in parsed["image_prompts"]:
+        for subfield in ["deliverable", "prompt", "style", "color_palette",
+                         "text_overlay", "aspect_ratio"]:
+            assert subfield in prompt_obj, f"Prompt missing: {subfield}"
+            assert len(prompt_obj[subfield]) > 0, f"Prompt {subfield} should not be empty"
+
+    # Minimum prompt lengths
+    for prompt_obj in parsed["image_prompts"]:
+        assert len(prompt_obj["prompt"]) >= 50, \
+            f"Prompt for '{prompt_obj['deliverable']}' is too short"
+
+    # Brand appears in prompts
+    all_prompts = " ".join(obj["prompt"] for obj in parsed["image_prompts"])
+    assert "AgentMark" in all_prompts, "Brand name should appear in prompts"
+
+    # Professional voice → modern corporate style
+    first_style = parsed["image_prompts"][0]["style"]
+    assert "corporate" in first_style.lower() or "modern" in first_style.lower(), \
+        f"Professional voice should yield corporate/modern style, got: '{first_style}'"
+
+    # Positioning in visual direction
+    assert "Enterprise AI without the complexity" in parsed["visual_direction"], \
+        "Positioning should appear in visual_direction"
+
+    print(f"\nOutput:")
+    print(f"  status: {result.status} ✅")
+    print(f"  campaign_name (from state): {state.campaign_name} ✅")
+    print(f"  brand_name (from state): {state.brand_name} ✅")
+    print(f"  brand_voice (from state): {state.brand_voice} ✅")
+    print(f"  visual_direction: {parsed['visual_direction'][:60]}... ✅")
+    print(f"  prompts generated: {len(parsed['image_prompts'])} ✅")
+    for prompt_obj in parsed["image_prompts"]:
+        print(f"    ✓ {prompt_obj['deliverable']} | "
+              f"{prompt_obj['aspect_ratio']} | "
+              f"{prompt_obj['style']} | "
+              f"{len(prompt_obj['prompt'])} chars")
+    print(f"  image_output length: {len(result.image_output)} chars ✅")
+    print(f"  output fields: 2 (visual_direction + image_prompts array) ✅")
+    print(f"  metadata (brand_name, brand_voice, etc.) read from state ✅")
+    print(f"\n✅ PASS: Full integration test successful")
+
+
+# ==================== RUN ALL TESTS ====================
+
+if __name__ == "__main__":
+    """
+    Run all tests manually (without pytest)
+
+    To run with pytest:
+        pytest tests/test_image_prompt.py -v
+
+    To run manually:
+        python tests/test_image_prompt.py
+    """
+
+    print("\n" + "=" * 80)
+    print("IMAGE PROMPT AGENT TEST SUITE")
+    print("=" * 80)
+
+    tests = [
+        test_image_prompt_agent_executes,
+        test_image_output_not_empty,
+        test_image_output_is_json,
+        test_all_top_level_fields_exist,
+        test_image_prompts_is_non_empty_list,
+        test_each_prompt_has_required_subfields,
+        test_dalle_prompt_minimum_length,
+        test_status_updated_to_image_complete,
+        test_brand_name_appears_in_prompts,
+        test_visual_direction_is_non_empty_string,
+        test_brand_voice_determines_visual_style,
+        test_brand_voice_determines_color_palette,
+        test_prompt_count_matches_deliverables,
+        test_each_prompt_references_its_deliverable,
+        test_aspect_ratio_correct_for_email_banner,
+        test_aspect_ratio_correct_for_linkedin_post,
+        test_aspect_ratio_correct_for_instagram_story,
+        test_text_overlay_uses_copy_headlines,
+        test_works_without_copy_output,
+        test_raises_when_strategy_output_missing,
+        test_industry_influences_prompt_content,
+        test_positioning_appears_in_visual_direction,
+        test_market_trends_appear_in_visual_direction,
+        test_pain_points_influence_prompt_content,
+        test_different_brands_produce_different_prompts,
+        test_fallback_to_channels_when_deliverables_empty,
+        test_no_error_field_set_on_success,
+        test_text_overlay_does_not_use_body_copy,
+        test_different_deliverable_types_get_different_prompts,
+        test_image_prompt_agent_integration,
+    ]
+
+    passed = 0
+    failed = 0
+
+    for test in tests:
+        try:
+            test()
+            passed += 1
+        except AssertionError as e:
+            failed += 1
+            print(f"❌ FAIL: {e}")
+        except Exception as e:
+            failed += 1
+            print(f"❌ ERROR: {type(e).__name__}: {e}")
+
+    # Summary
+    print("\n" + "=" * 80)
+    print("TEST SUMMARY")
+    print("=" * 80)
+    print(f"Total Tests: {len(tests)}")
+    print(f"✅ Passed: {passed}")
+    print(f"❌ Failed: {failed}")
+    print(f"\nTest Coverage:")
+    print(f"  - Agent execution and output not empty ✓")
+    print(f"  - Valid JSON output ✓")
+    print(f"  - All top-level fields present (visual_direction + image_prompts) ✓")
+    print(f"  - image_prompts is non-empty list ✓")
+    print(f"  - All prompt sub-fields present (6 sub-fields per prompt) ✓")
+    print(f"  - DALL-E prompt minimum length (50+ chars) ✓")
+    print(f"  - Status updated to 'image_complete' ✓")
+    print(f"  - Brand name in prompt content (not top-level output) ✓")
+    print(f"  - Visual direction is non-empty string ✓")
+    print(f"  - Brand voice → visual style (all 4 voices) ✓")
+    print(f"  - Brand voice → color palette (all 4 voices) ✓")
+    print(f"  - Prompt count matches deliverables ✓")
+    print(f"  - Each prompt references its deliverable ✓")
+    print(f"  - Aspect ratio: email banner (16:9) ✓")
+    print(f"  - Aspect ratio: LinkedIn post (1:1) ✓")
+    print(f"  - Aspect ratio: Instagram story (9:16) ✓")
+    print(f"  - Text overlay uses copy headlines (not body copy) ✓")
+    print(f"  - Works without copy_output (fallback) ✓")
+    print(f"  - Raises on missing strategy_output ✓")
+    print(f"  - Industry influences prompt content (4 industries) ✓")
+    print(f"  - Positioning in visual direction ✓")
+    print(f"  - Market trends in visual direction ✓")
+    print(f"  - Pain points influence visual metaphors ✓")
+    print(f"  - Multi-brand prompt isolation ✓")
+    print(f"  - Fallback to channels when deliverables empty ✓")
+    print(f"  - No error field on success ✓")
+    print(f"  - Body copy excluded from text_overlay ✓")
+    print(f"  - Different deliverable types get unique prompts ✓")
+    print(f"  - Full integration test ✓")
+    print(f"  - Total: {len(tests)} image prompt tests")
+    print(f"  - Output fields: 2 (visual_direction + image_prompts array)")
+    print(f"  - Metadata (campaign_name, brand_name, etc.) read from state (not duplicated)")
+
+    if failed == 0:
+        print(f"\n🎉 ALL {len(tests)} TESTS PASSED!")
+    else:
+        print(f"\n⚠️  {failed}/{len(tests)} tests failed")
+
+    print("=" * 80)

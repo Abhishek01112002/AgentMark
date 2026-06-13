@@ -23,18 +23,20 @@ INPUT (WHAT IT RECEIVES AND USES):
 
 TOTAL INPUT: 10 fields - ALL used, ZERO waste
 
-OUTPUT (Comprehensive Strategy JSON):
-  - positioning: From research.differentiation_opportunity
-  - key_messages: From research.audience_insights (already personalized by Research)
-  - content_pillars: From research.market_trends
-  - channel_strategy: Prioritized by research.preferred_channels, validated against manager.channels
-  - timeline: Generated with 4 phases
-  - success_metrics: Aligned with goal inferred from research.recommended_approach
-  - audience_segments: From research.audience_insights
-  - competitive_differentiation: From research.competitor_analysis
-  - inferred_goal: Extracted from research.recommended_approach
-  - research_foundation: All 5 research fields for transparency
-  - execution: manager.channels + manager.deliverables + budget_allocation
+OUTPUT (Strategy JSON - 13 top-level fields):
+  1. positioning: From research differentiation
+  2. key_messages: From research insights (3 messages)
+  3. content_pillars: From market trends (4 pillars)
+  4. channel_strategy: Prioritized channels with priority/rationale/frequency/content_focus
+  5. audience_segments: 3 segments with pain_point/motivation/messaging/channels
+  6. timeline: 4 phases with name/duration/dates/focus
+  7. success_metrics: Goal-aligned KPIs with primary/targets/research_alignment
+  8. competitive_differentiation: Competitors + advantage + positioning
+  9. market_opportunities: Tactical opportunities from research
+  10. strategic_approach: Research recommended_approach
+  11. inferred_goal: awareness/lead_gen/sales/retention
+  12. research_foundation: All 5 research fields (nested object)
+  13. execution: channels + deliverables + budget_allocation (nested object)
 
 ARCHITECTURE PRINCIPLE:
 Strategy is 100% RESEARCH-DRIVEN:
@@ -449,12 +451,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     print("-" * 80)
     
     strategy_plan = {
-        # Metadata
-        "campaign_name": campaign_name,
-        "brand_name": brand_name,
-        "brief": brief,
-        
-        # Research-driven strategic decisions
+        # Research-driven strategic decisions (metadata removed - read from state)
         "positioning": positioning,
         "key_messages": key_messages,
         "content_pillars": content_pillars,

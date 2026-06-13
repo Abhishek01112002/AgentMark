@@ -1,33 +1,43 @@
 """
-RESEARCH AGENT - Market Analysis & Insights
+RESEARCH AGENT - Market Analysis, Competitive Intel & Customized Insights
 
-Role: Market Researcher / Competitive Analyst
+Role: Market Researcher / Competitive Analyst / Audience Intelligence
 
 INPUT (From Manager Agent + State):
   FROM state:
-    ✅ brief: User's campaign brief (context for all research)
+    ✅ brief: User's campaign brief (context for research insights)
   
-  FROM manager_output (ONLY 4 fields needed):
-    ✅ industry: Lookup key for market/competitor data
-    ✅ primary_goal: Lookup key for audience insights
-    ✅ target_audience: Contextualizes pain points and messaging
-    ✅ brand_voice: Personalizes tone of recommendations
+  FROM manager_output (ONLY 4 fields needed for lookups + customization):
+    ✅ industry: Lookup key for market_analysis & competitor_analysis by industry
+    ✅ primary_goal: Lookup key for base audience_insights by goal type
+    ✅ target_audience: Used to CUSTOMIZE pain_points & motivations for specific audience
+    ✅ brand_voice: Used to PERSONALIZE recommended_approach tone
 
-OUTPUT (5 Fields - JSON - NO duplication):
-  1. market_analysis: TAM, growth rate, market trends (by industry)
-  2. competitor_analysis: Top competitors, differentiation opportunity (by industry)
-  3. audience_insights: Pain points, motivations, preferred channels (by goal + target_audience)
-  4. market_opportunities: Industry-specific growth opportunities (by industry)
-  5. recommended_approach: Strategic approach (by goal + brand_voice + target_audience)
+OUTPUT (5 Fields - JSON - Research foundation for Strategy & Copywriter):
+  1. market_analysis: TAM, growth_rate, market_trends (hardcoded lookup by industry)
+  2. competitor_analysis: top_competitors, differentiation_opportunity (hardcoded lookup by industry)
+  3. audience_insights: pain_points (CUSTOMIZED), motivations (CUSTOMIZED), preferred_channels (base by goal)
+  4. market_opportunities: Industry-specific growth opportunities (hardcoded lookup by industry)
+  5. recommended_approach: Strategic approach (personalized by goal + brand_voice + target_audience)
 
 HOW IT WORKS:
-1. Takes industry → looks up market data
-2. Takes primary_goal → looks up base audience insights
-3. Takes target_audience → CUSTOMIZES pain points to be audience-specific
-4. Takes brand_voice → PERSONALIZES recommended approach tone
-5. Takes brief → CONTEXTUALIZES all recommendations
+1. Extract 4 fields from manager_output
+2. Use industry → lookup hardcoded market/competitor data
+3. Use primary_goal → lookup base audience insights by goal
+4. Customize audience_insights:
+   - Pain points: Add target_audience-specific context (e.g., "CTOs" → technical complexity)
+   - Motivations: Add audience-specific motivations (e.g., "Enterprise" → security)
+5. Personalize recommended_approach: Combine goal + brand_voice + target_audience
+6. Return 5 fields (no strategy decisions - that’s Strategy Agent’s job)
 
-ZERO WASTE: No research_context duplication - Strategy gets what it needs from manager directly
+KEY PRINCIPLE:
+Research = Customized Intelligence Provider
+- Lookup base data from hardcoded maps (industry → market, goal → audience base)
+- Customize insights using target_audience context
+- Personalize approach using brand_voice tone
+- No strategic decisions - just research intelligence
+- Output becomes input for Strategy Agent (which makes strategy choices)
+- Also becomes nested data in Strategy output for Copywriter use
 """
 
 import sys

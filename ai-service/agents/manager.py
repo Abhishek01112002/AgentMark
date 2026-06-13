@@ -1,37 +1,39 @@
 """
-MANAGER AGENT - Campaign Orchestrator
+MANAGER AGENT - Campaign Orchestrator & Input Enricher
 
 Role: Project Manager / Campaign Director
 
 INPUT (From Frontend Form - 6 Fields):
-  - campaign_name: Name of the marketing campaign
-  - brand_name: Name of the brand being promoted
-  - industry: Industry sector (saas, ecommerce, finance, healthcare, other)
-  - primary_goal: Campaign goal (awareness, lead_gen, sales, retention)
-  - target_audience: Detailed description of target audience
-  - brand_voice: Tone style (professional, friendly, bold, luxury, casual, authoritative)
+  ✅ campaign_name: Name of the marketing campaign
+  ✅ brand_name: Name of the brand being promoted
+  ✅ industry: Industry sector (saas, ecommerce, finance, healthcare, other)
+  ✅ primary_goal: Campaign goal (awareness, lead_gen, sales, retention)
+  ✅ target_audience: Detailed description of target audience
+  ✅ brand_voice: Tone style (professional, friendly, bold, luxury, casual, authoritative)
 
-OUTPUT (8 Fields - JSON - ONLY what downstream needs):
+OUTPUT (8 Fields - JSON - for Research & Strategy):
   1. campaign_name: Campaign identifier
   2. brand_name: Brand identifier
-  3. industry: Industry context for Research
-  4. primary_goal: Campaign goal for Research & Strategy
-  5. target_audience: Audience description for Research & Strategy
-  6. brand_voice: Tone guidance for Research & Strategy
-  7. channels: Recommended distribution channels (based on industry)
-  8. deliverables: Content/assets to create (based on goal)
+  3. industry: Industry context for market/competitor data lookup (Research)
+  4. primary_goal: Campaign goal for audience insights lookup (Research)
+  5. target_audience: Audience description for pain point customization (Research & Strategy)
+  6. brand_voice: Tone guidance for approach personalization (Research & Strategy)
+  7. channels: Recommended distribution channels (based on industry → Strategy & Copywriter)
+  8. deliverables: Content/assets to create (based on goal → Strategy & Copywriter)
 
 WHAT MANAGER DOES:
-1. Takes 6 form inputs
+1. Receives 6 form inputs from frontend
 2. Enriches with context-aware decisions:
-   - Maps industry → channels (industry-based recommendations)
-   - Maps primary_goal → deliverables (goal-based content types)
-3. Passes ALL inputs + enriched data to Research
-4. Clean, minimal output - no waste
+   - Maps industry → channels (e.g., SaaS → LinkedIn, tech blogs)
+   - Maps primary_goal → deliverables (e.g., lead_gen → whitepaper, landing page)
+3. Creates clean JSON output (8 fields total)
+4. Passes output to Research Agent
 
-KEY INSIGHT:
-Manager enriches the input (adds channels & deliverables) and passes everything downstream.
-Every field is used by at least one downstream agent.
+KEY PRINCIPLE:
+Manager = Input Transformer
+- Takes form inputs (6 fields) → Adds strategic context (channels + deliverables)
+- No research or strategy decisions - just organizational logic
+- Every output field is used by downstream agents (Research, Strategy, Copywriter)
 """
 
 import sys
