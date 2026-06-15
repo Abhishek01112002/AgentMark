@@ -18,88 +18,59 @@ OUTPUT (8 Fields - JSON - for Research & Strategy):
   4. primary_goal: Campaign goal for audience insights lookup (Research)
   5. target_audience: Audience description for pain point customization (Research & Strategy)
   6. brand_voice: Tone guidance for approach personalization (Research & Strategy)
-  7. channels: Recommended distribution channels (based on industry → Strategy & Copywriter)
-  8. deliverables: Content/assets to create (based on goal → Strategy & Copywriter)
+  7. channels: Recommended distribution channels (LLM-generated based on industry/goal/audience)
+  8. deliverables: Content/assets to create (LLM-generated based on goal/audience/voice)
 
 WHAT MANAGER DOES:
-1. Receives 6 form inputs from frontend
-2. Enriches with context-aware decisions:
-   - Maps industry → channels (e.g., SaaS → LinkedIn, tech blogs)
-   - Maps primary_goal → deliverables (e.g., lead_gen → whitepaper, landing page)
-3. Creates clean JSON output (8 fields total)
-4. Passes output to Research Agent
+1. Receives 6 form inputs from state
+2. Uses LLM to analyze and generate strategic recommendations:
+   - Analyzes industry + goal + audience → Recommends optimal channels
+   - Analyzes goal + audience + voice → Recommends content deliverables
+3. Returns clean JSON output (8 fields total)
+4. Output is used by downstream agents (Research, Strategy, Copywriter)
 
 KEY PRINCIPLE:
-Manager = Input Transformer
-- Takes form inputs (6 fields) → Adds strategic context (channels + deliverables)
-- No research or strategy decisions - just organizational logic
-- Every output field is used by downstream agents (Research, Strategy, Copywriter)
+Manager = Strategic Analyzer (LLM-powered)
+- Takes 6 inputs → LLM generates context-aware channels + deliverables
+- No hardcoded mappings - fully dynamic AI recommendations
+- Uses prompt template from utils/prompts/manager_prompt.txt
 """
 
 import sys
 from pathlib import Path
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add project root to path so imports work
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.state import CampaignState
+from llm import get_llm_client
+from utils.prompt_loader import load_prompt
 
 
 # ==================== MANAGER AGENT FUNCTION ====================
 
 def manager_agent(state: CampaignState) -> CampaignState:
     """
-    Manager Agent - Campaign Orchestrator
+    Manager Agent - Campaign Orchestrator (LLM-Powered)
     
     Args:
-        state: CampaignState object containing campaign details
+        state: CampaignState object containing 6 input fields from form
     
     Returns:
-        Modified state with manager_output filled
+        Modified state with manager_output (8 fields JSON) and status updated
     
-    STEP-BY-STEP EXPLANATION:
-    
-    Step 1: Extract input from state
-    ────────────────────────────────
-    We read the following 6 fields from the frontend form:
-    - campaign_name: "Q3 Product Launch"
-    - brand_name: "AgentMark"
-    - industry: "saas"
-    - primary_goal: "lead_gen"
-    - target_audience: "CTOs, tech leads"
-    - brand_voice: "professional"
-    
-    Step 2: Analyze the inputs
-    ─────────────────────────
-    Manager reads all parameters and understands:
-    "This is a SaaS product launch for lead generation targeting CTOs with a professional tone."
-    
-    Step 3: Create a contextualized plan
-    ────────────────────────────────────
-    Manager decides channels, deliverables based on:
-    - Industry (SaaS → LinkedIn, tech blogs, webinars)
-    - Goal (Lead Gen → CTAs, forms, gated content)
-    - Audience (CTOs → technical content, ROI focus)
-    - Brand Voice (Professional → formal tone)
-    
-    Step 4: Output as JSON
-    ──────────────────────
-    Manager outputs a structured plan tailored to inputs:
-    {
-      "campaign_name": "Q3 Product Launch",
-      "brand_name": "AgentMark",
-      "industry": "saas",
-      "primary_goal": "lead_gen",
-      "objective": "Lead Gen for AgentMark",
-      "channels": ["linkedin", "tech blogs", "product hunt"],
-      "deliverables": ["gated whitepaper", "landing page", "webinar"],
-      ...
-    }
-    
-    Step 5: Update state
-    ───────────────────
-    Write to state.manager_output for next agents to read.
+    Process:
+    1. Extract 6 inputs from state (campaign_name, brand_name, industry, primary_goal, target_audience, brand_voice)
+    2. Load prompt template from utils/prompts/manager_prompt.txt
+    3. Send to LLM for analysis and strategic recommendations
+    4. Parse LLM response to get channels + deliverables
+    5. Create 8-field JSON output
+    6. Update state with output and mark status as complete
     """
     
     print("\n" + "=" * 80)
@@ -124,61 +95,50 @@ def manager_agent(state: CampaignState) -> CampaignState:
     print(f"✓ Target Audience: {target_audience}")
     print(f"✓ Brand Voice: {brand_voice}")
     
-    # ========== STEP 2: ANALYZE & PLAN BASED ON INPUTS ==========
-    print("\n[STEP 2] Manager analyzing campaign parameters...")
+    # ========== STEP 2: ANALYZE & PLAN USING LLM ==========
+    print("\n[STEP 2] Manager analyzing campaign parameters with LLM...")
     print("-" * 80)
-    print("🧠 Manager thinking:")
-    print(f"   'Campaign: {campaign_name}'")
-    print(f"   'Brand: {brand_name}'")
-    print(f"   'Industry: {industry}'")
-    print(f"   'Goal: {primary_goal}'")
-    print(f"   'Audience: {target_audience}'")
-    print(f"   'Tone: {brand_voice}'")
-    print()
-    print("   Creating contextual strategy based on inputs...")
+    print("🧠 Manager thinking with AI...")
     
-    # ========== STEP 3: DETERMINE CHANNELS BASED ON INDUSTRY & GOAL ==========
-    channels_map = {
-        "saas": ["linkedin", "tech blogs", "product hunt", "startup newsletters"],
-        "ecommerce": ["instagram", "tiktok", "facebook", "pinterest"],
-        "finance": ["linkedin", "financial blogs", "podcasts", "webinars"],
-        "healthcare": ["healthcare forums", "medical journals", "webinars", "conferences"],
-        "other": ["linkedin", "social media", "email", "content marketing"]
-    }
+    # Initialize LLM client
+    llm = get_llm_client()
     
-    goal_map = {
-        "awareness": ["blog post", "social media", "video"],
-        "lead_gen": ["gated whitepaper", "landing page", "webinar", "lead magnet"],
-        "sales": ["case study", "demo video", "comparison guide", "pricing page"],
-        "retention": ["email newsletter", "community post", "tutorial", "success story"]
-    }
+    # Load prompt from manager_prompt.txt and format with campaign data
+    prompt = load_prompt(
+        "manager",
+        campaign_name=campaign_name,
+        brand_name=brand_name,
+        industry=industry,
+        primary_goal=primary_goal,
+        target_audience=target_audience,
+        brand_voice=brand_voice
+    )
     
-    selected_channels = channels_map.get(industry, channels_map["other"])
-    deliverables = goal_map.get(primary_goal, goal_map["awareness"])
+    print("   Querying LLM...")
     
-    # ========== STEP 4: CREATE STRUCTURED PLAN ==========
-    print("\n[STEP 3] Manager creating contextualized plan...")
+    # Get LLM response
+    llm_response = llm.generate(prompt, temperature=0.7, max_tokens=500)
+    
+    # ========== STEP 3: PARSE LLM RESPONSE ==========
+    print("\n[STEP 3] Parsing LLM response...")
     print("-" * 80)
     
-    # Create clean plan - ONLY what downstream agents need (8 fields, no waste)
-    plan = {
-        "campaign_name": campaign_name,
-        "brand_name": brand_name,
-        "industry": industry,
-        "primary_goal": primary_goal,
-        "target_audience": target_audience,
-        "brand_voice": brand_voice,
-        "channels": selected_channels,
-        "deliverables": deliverables
-    }
+    # Extract JSON from response (handle potential markdown formatting)
+    llm_response = llm_response.strip()
+    if "```json" in llm_response:
+        llm_response = llm_response.split("```json")[1].split("```")[0].strip()
+    elif "```" in llm_response:
+        llm_response = llm_response.split("```")[1].split("```")[0].strip()
     
-    print("✅ Plan created!")
+    plan = json.loads(llm_response)
+    
+    print("✅ Plan created by LLM!")
     print(f"   Campaign: {plan['campaign_name']}")
     print(f"   Channels: {', '.join(plan['channels'])}")
     print(f"   Deliverables: {', '.join(plan['deliverables'])}")
     
-    # ========== STEP 5: CONVERT TO JSON STRING ==========
-    print("\n[STEP 4] Converting plan to JSON...")
+    # ========== STEP 4: WRITE TO STATE ==========
+    print("\n[STEP 4] Writing to state...")
     print("-" * 80)
     
     manager_output_json = json.dumps(plan, indent=2)
@@ -186,15 +146,11 @@ def manager_agent(state: CampaignState) -> CampaignState:
     print("Manager Output (JSON):")
     print(manager_output_json)
     
-    # ========== STEP 6: WRITE TO STATE ==========
-    print("\n[STEP 5] Writing to state...")
-    print("-" * 80)
-    
     state.manager_output = manager_output_json
     state.status = "manager_complete"
     
     print("✅ State updated:")
-    print(f"   manager_output: {state.manager_output[:100]}... (truncated)")
+    print(f"   manager_output: {state.manager_output[:200]}... (truncated)")
     print(f"   status: {state.status}")
     
     print("\n" + "=" * 80)
@@ -204,49 +160,11 @@ def manager_agent(state: CampaignState) -> CampaignState:
     return state
 
 
-# ==================== TEST THE AGENT ====================
+# ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    """
-    This section tests the Manager Agent in isolation.
-    Shows what input we give and what output we get.
-    """
-    
-    print("\n" + "=" * 80)
-    print("MANAGER AGENT - STANDALONE TEST")
-    print("=" * 80)
-    
-    # Create initial state with campaign details
-    print("\n[TEST] Creating initial state...")
-    initial_state = CampaignState(
-        campaign_name="Q3 Product Launch",
-        brand_name="AgentMark",
-        industry="saas",
-        primary_goal="lead_gen",
-        target_audience="Enterprise CTOs, tech leads, companies with 1000+ employees",
-        brand_voice="professional"
-    )
-    
-    print(f"Initial State Created:")
-    print(f"  campaign_name: {initial_state.campaign_name}")
-    print(f"  brand_name: {initial_state.brand_name}")
-    print(f"  industry: {initial_state.industry}")
-    print(f"  primary_goal: {initial_state.primary_goal}")
-    print(f"  target_audience: {initial_state.target_audience}")
-    print(f"  brand_voice: {initial_state.brand_voice}")
-    
-    # Run Manager Agent
-    print("\n[TEST] Running Manager Agent...")
-    final_state = manager_agent(initial_state)
-    
-    # Show results
-    print("\n[TEST] Results:")
-    print(f"Status: {final_state.status}")
-    print(f"\nManager Output (what other agents will read):")
-    print(final_state.manager_output)
-    
-    # Parse back to show structure
-    print("\n[TEST] Parsed Manager Plan:")
-    plan = json.loads(final_state.manager_output)
-    for key, value in plan.items():
-        print(f"  {key}: {value}")
+    print("\n" + "="*80)
+    print("⚠️  This is the agent module file.")
+    print("    To test the Manager Agent, run: python examples/run_manager.py")
+    print("    To customize input, edit: examples/inputs/campaign_input.json")
+    print("="*80)
