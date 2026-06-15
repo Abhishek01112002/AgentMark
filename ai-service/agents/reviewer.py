@@ -660,3 +660,236 @@ def reviewer_agent(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     agent = ReviewerAgent()
     return agent.execute(state)
+
+
+
+if __name__ == "__main__":
+    """
+    Demo: Run Reviewer Agent with sample data
+    
+    This demonstrates the Reviewer Agent reviewing all 4 agent outputs
+    and validating 28 fields across Research, Strategy, Copy, and Image agents.
+    """
+    
+    print("\n" + "="*80)
+    print("REVIEWER AGENT - STANDALONE DEMO")
+    print("="*80)
+    
+    # Sample perfect campaign data
+    sample_state = {
+        "campaign_name": "Q3 Product Launch",
+        "brand_name": "TechCorp AI Platform",
+        "industry": "saas",
+        "primary_goal": "lead_gen",
+        "brand_voice": "professional",
+        
+        "research_output": json.dumps({
+            "market_analysis": {
+                "total_addressable_market": "$50B",
+                "growth_rate": "35% YoY",
+                "market_trends": ["AI adoption", "Automation demand", "Cost optimization"]
+            },
+            "competitor_analysis": {
+                "top_competitors": ["Competitor A", "Competitor B", "Competitor C"],
+                "differentiation_opportunity": "Enterprise-grade AI without complexity"
+            },
+            "audience_insights": {
+                "pain_points": ["Integration complexity", "High costs", "Long setup time"],
+                "motivations": ["Save time", "Reduce costs", "Scale efficiently"],
+                "preferred_channels": ["LinkedIn", "Email", "Webinars"]
+            },
+            "market_opportunities": [
+                "Enterprise AI segment expansion",
+                "Mid-market automation adoption",
+                "Cost-conscious decision makers"
+            ],
+            "recommended_approach": "Focus on gated content and lead magnets targeting CTOs through LinkedIn and industry events."
+        }),
+        
+        "strategy_output": json.dumps({
+            "positioning": "Enterprise AI without the complexity - deploy in hours not months",
+            "key_messages": [
+                "Deploy AI in hours, not months",
+                "Enterprise-grade without the cost",
+                "Scale with zero technical debt"
+            ],
+            "content_pillars": [
+                "AI automation insights",
+                "ROI case studies",
+                "Technical deep-dives",
+                "Customer success stories"
+            ],
+            "channel_strategy": {
+                "linkedin": {"priority": "HIGH", "frequency": "4x/week"},
+                "email": {"priority": "HIGH", "frequency": "2x/week"}
+            },
+            "audience_segments": [
+                {"segment_name": "Enterprise CTOs", "pain_point": "Complexity", "motivation": "Efficiency"},
+                {"segment_name": "Tech Leaders", "pain_point": "Cost", "motivation": "ROI"},
+                {"segment_name": "Growth Teams", "pain_point": "Speed", "motivation": "Scale"}
+            ],
+            "timeline": {
+                "phase_1": {"name": "Planning", "duration": "Week 1"},
+                "phase_2": {"name": "Content", "duration": "Week 2-3"},
+                "phase_3": {"name": "Launch", "duration": "Week 4-6"},
+                "phase_4": {"name": "Scale", "duration": "Week 7-12"}
+            },
+            "success_metrics": {"primary": ["Leads", "Conversion"], "targets": {"leads": "500+"}},
+            "competitive_differentiation": {
+                "primary_differentiation": "Enterprise without complexity",
+                "competitors": ["A", "B"],
+                "competitive_advantage": "Faster and cheaper"
+            },
+            "market_opportunities": [{"opportunity": "Enterprise", "action": "Content"}],
+            "strategic_approach": "Gated content targeting CTOs through LinkedIn and events",
+            "inferred_goal": "lead_gen",
+            "research_foundation": {
+                "market_analysis": {"total_addressable_market": "$50B"},
+                "competitor_analysis": {"top_competitors": ["A", "B"]},
+                "audience_insights": {"pain_points": ["complexity"]}
+            },
+            "execution": {
+                "channels": ["linkedin", "email"],
+                "deliverables": ["whitepaper", "webinar"],
+                "budget_allocation": {}
+            }
+        }),
+        
+        "copy_output": json.dumps({
+            "inferred_goal": "lead_gen",
+            "email": {
+                "subject": "Get AI deployed in 24 hours - Free guide",
+                "headline": "Deploy Enterprise AI Without the Complexity",
+                "body": "Hi there,\n\nStruggling with AI complexity? You're not alone.\n\nOur platform helps teams like yours deploy enterprise-grade AI in hours, not months.\n\nNo technical debt. No integration nightmares. Just results.\n\nDownload our free guide to see how we do it.\n\nBest,\nTechCorp Team",
+                "ctas": {
+                    "hero_cta": "Download Free Guide",
+                    "secondary_cta": "See How It Works",
+                    "footer_cta": "Contact Sales"
+                }
+            },
+            "linkedin": {
+                "headline": "Enterprise AI Without the Complexity",
+                "body": "The market is growing at 35% YoY.\n\nCompanies are struggling with AI complexity, high costs, and long setup times.\n\nOur platform solves this by making enterprise AI accessible to everyone.\n\nWhat's your biggest AI challenge? Share in the comments.",
+                "ctas": {
+                    "post_cta": "Comment below",
+                    "article_cta": "Read more →",
+                    "ad_cta": "Learn more →"
+                }
+            },
+            "social": {
+                "headline": "Deploy AI in 24 hours - No complexity required",
+                "body": "Problem: AI is too complex.\n\nSolution: Our platform.\n\n✓ Enterprise-grade\n✓ Zero technical debt\n✓ Deploy in hours",
+                "ctas": {
+                    "twitter_cta": "Learn more →",
+                    "instagram_cta": "Link in bio",
+                    "facebook_cta": "See how →",
+                    "tiktok_cta": "Full story →"
+                }
+            },
+            "ads": {
+                "headline": "Enterprise AI - Deployed in Hours, Not Months",
+                "body": "Stop struggling with AI complexity.\n\nOur platform makes enterprise AI simple.\n\n✓ Deploy in 24 hours\n✓ No technical debt\n✓ Enterprise-grade reliability\n✓ Proven ROI\n\nJoin 500+ companies already using our platform.",
+                "ctas": {
+                    "primary_cta": "Get Started Free",
+                    "urgency_cta": "Limited spots available",
+                    "secondary_cta": "Watch Demo"
+                }
+            },
+            "messaging_framework": {
+                "brand_promise": "Enterprise AI without the complexity",
+                "message_hierarchy": {
+                    "level_1_primary": "Deploy AI in hours, not months",
+                    "level_2_supporting": ["Zero technical debt", "Enterprise reliability"],
+                    "level_3_proof": ["Proven ROI", "500+ customers"]
+                },
+                "segment_messaging": [{"segment": "CTOs", "message": "No IT involvement"}],
+                "channel_messaging": {"email": {"tone": "Professional"}},
+                "voice_guidelines": {"do": ["Be clear"], "dont": ["Be vague"]},
+                "messaging_principles": ["Clarity first"]
+            },
+            "strategic_alignment": {
+                "positioning_used": "Enterprise without complexity",
+                "key_messages_count": 3,
+                "content_pillars_count": 4,
+                "audience_segments_count": 3,
+                "deliverables": ["whitepaper", "webinar"]
+            },
+            "copy_readiness": {
+                "email_ready": True,
+                "linkedin_ready": True,
+                "social_ready": True,
+                "ads_ready": True,
+                "messaging_framework_complete": True
+            }
+        }),
+        
+        "image_output": json.dumps({
+            "visual_direction": "Modern tech aesthetic with navy blue and white color scheme. Clean, professional style emphasizing simplicity and enterprise credibility. Visual themes: AI, automation, simplicity, enterprise reliability.",
+            "image_prompts": [
+                {
+                    "deliverable": "whitepaper",
+                    "prompt": "Professional whitepaper cover for enterprise AI platform, modern tech interface, clean dashboard visualization, navy blue and white color scheme, simplified workflow diagram, professional lighting, high quality marketing asset",
+                    "style": "modern professional",
+                    "color_palette": "navy blue, white, light gray",
+                    "text_overlay": "Enterprise AI Without the Complexity",
+                    "aspect_ratio": "8.5:11"
+                },
+                {
+                    "deliverable": "webinar",
+                    "prompt": "Webinar promotional banner for AI platform, modern tech aesthetic, clean interface mockup, navy blue and white colors, professional presenter setup, enterprise feel, high quality",
+                    "style": "modern professional",
+                    "color_palette": "navy blue, white, light gray",
+                    "text_overlay": "Deploy AI in Hours - Live Webinar",
+                    "aspect_ratio": "16:9"
+                }
+            ]
+        }),
+        
+        "status": "image_complete"
+    }
+    
+    print("\n📋 Campaign Details:")
+    print(f"   Campaign: {sample_state['campaign_name']}")
+    print(f"   Brand: {sample_state['brand_name']}")
+    print(f"   Industry: {sample_state['industry']}")
+    print(f"   Goal: {sample_state['primary_goal']}")
+    print(f"   Voice: {sample_state['brand_voice']}")
+    
+    # Run reviewer
+    result = reviewer_agent(sample_state)
+    
+    # Display results
+    print("\n" + "="*80)
+    print("REVIEW RESULTS")
+    print("="*80)
+    
+    print(f"\n📌 Status: {result['status']}")
+    print(f"📌 Next Step: {result.get('next_step', 'N/A')}")
+    
+    if result.get('review_output'):
+        review = json.loads(result['review_output'])
+        print(f"\n🎯 Overall Quality Score: {review['overall_quality_score']}/100")
+        print(f"   Individual Threshold Met: {review['individual_threshold_met']}")
+        print(f"   Overall Threshold Met: {review['overall_threshold_met']}")
+        
+        print(f"\n📊 Agent Scores:")
+        print(f"   Research: {review['research_review']['score']}/100 - {review['research_review']['feedback']}")
+        print(f"   Strategy: {review['strategy_review']['score']}/100 - {review['strategy_review']['feedback']}")
+        print(f"   Copy: {review['copy_review']['score']}/100 - {review['copy_review']['feedback']}")
+        print(f"   Image: {review['image_review']['score']}/100 - {review['image_review']['feedback']}")
+    
+    if result.get('review_feedback'):
+        feedback = json.loads(result['review_feedback'])
+        print(f"\n⚠️  Revision Required:")
+        print(f"   Agent: {feedback['agent']}")
+        print(f"   Issues: {len(feedback['issues'])}")
+        for issue in feedback['issues'][:5]:  # Show first 5 issues
+            print(f"      • {issue}")
+        if len(feedback['issues']) > 5:
+            print(f"      ... and {len(feedback['issues']) - 5} more issues")
+    
+    print("\n" + "="*80)
+    print("✅ Demo Complete!")
+    print("="*80)
+    print("\nTo run tests: python tests/test_reviewer.py")
+    print("="*80 + "\n")
