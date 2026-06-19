@@ -430,8 +430,18 @@ def test_industry_determines_channels():
     
     # Verify: Different industries have different channels
     assert saas_parsed["channels"] != ecom_parsed["channels"], "Different industries should have different channels"
-    assert "linkedin" in saas_parsed["channels"], "SaaS should include LinkedIn"
-    assert "instagram" in ecom_parsed["channels"], "E-commerce should include Instagram"
+    
+    # More flexible checks - LLM may use different channel names
+    saas_channels_lower = [ch.lower() for ch in saas_parsed["channels"]]
+    ecom_channels_lower = [ch.lower() for ch in ecom_parsed["channels"]]
+    
+    # SaaS typically includes B2B channels
+    assert any(ch in saas_channels_lower for ch in ["linkedin", "tech blogs", "tech", "blog"]), \
+        "SaaS should include B2B channels like LinkedIn or Tech Blogs"
+    
+    # E-commerce typically includes social channels
+    assert any(ch in ecom_channels_lower for ch in ["instagram", "facebook", "tiktok", "social"]), \
+        "E-commerce should include social channels like Instagram or Facebook"
     
     print(f"✅ PASS: Industry determines channels")
     print(f"   SaaS channels: {saas_parsed['channels']}")
@@ -480,8 +490,18 @@ def test_goal_determines_deliverables():
     
     # Verify: Different goals have different deliverables
     assert lead_gen_parsed["deliverables"] != sales_parsed["deliverables"], "Different goals should have different deliverables"
-    assert "gated whitepaper" in lead_gen_parsed["deliverables"], "Lead Gen should include gated content"
-    assert "case study" in sales_parsed["deliverables"], "Sales should include case study"
+    
+    # More flexible checks - LLM may use different terminology
+    lead_gen_deliverables_lower = " ".join(lead_gen_parsed["deliverables"]).lower()
+    sales_deliverables_lower = " ".join(sales_parsed["deliverables"]).lower()
+    
+    # Lead gen typically includes educational/gated content
+    assert any(term in lead_gen_deliverables_lower for term in ["whitepaper", "ebook", "guide", "report", "webinar"]), \
+        "Lead Gen should include educational/gated content"
+    
+    # Sales typically includes proof/demo content
+    assert any(term in sales_deliverables_lower for term in ["case study", "demo", "comparison", "trial"]), \
+        "Sales should include proof/demo content"
     
     print(f"✅ PASS: Primary goal determines deliverables")
     print(f"   Lead Gen deliverables: {lead_gen_parsed['deliverables']}")

@@ -44,57 +44,29 @@ class CampaignState(BaseModel):
     7. Publisher Agent - Plans distribution and publishing strategy
     """
     
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "campaign_name": "Q3 Product Launch",
-                "brand_name": "AgentMark",
-                "industry": "saas",
-                "primary_goal": "lead_gen",
-                "target_audience": "Enterprise CTOs",
-                "brand_voice": "professional",
-                "manager_output": None,
-                "research_output": None,
-                "strategy_output": None,
-                "copy_output": None,
-                "image_output": None,
-                "review_output": None,
-                "publisher_output": None,
-                "status": "pending",
-                "error": None
-            }
-        }
-    )
-    
     # ==================== INPUT (User provides these) ====================
     campaign_name: str = Field(
-        description="Name of the marketing campaign",
-        json_schema_extra={"example": "Q3 Product Launch"}
+        description="Name of the marketing campaign"
     )
     
     brand_name: str = Field(
-        description="Brand name",
-        json_schema_extra={"example": "AgentMark"}
+        description="Brand name"
     )
     
     industry: str = Field(
-        description="Industry sector (saas, ecommerce, finance, healthcare, other)",
-        json_schema_extra={"example": "saas"}
+        description="Industry sector (saas, ecommerce, finance, healthcare, other)"
     )
     
     primary_goal: str = Field(
-        description="Primary campaign goal (awareness, lead_gen, sales, retention)",
-        json_schema_extra={"example": "lead_gen"}
+        description="Primary campaign goal (awareness, lead_gen, sales, retention)"
     )
     
     target_audience: str = Field(
-        description="Detailed description of target audience",
-        json_schema_extra={"example": "Enterprise CTOs, tech leads, companies with 1000+ employees, budget >$100k"}
+        description="Detailed description of target audience"
     )
     
     brand_voice: str = Field(
-        description="Brand voice style (professional, friendly, bold, luxury, casual, authoritative)",
-        json_schema_extra={"example": "professional"}
+        description="Brand voice style (professional, friendly, bold, luxury, casual, authoritative)"
     )
     
     brief: Optional[str] = Field(
@@ -150,81 +122,75 @@ class CampaignState(BaseModel):
         description="Current workflow status (pending, manager_complete, research_complete, strategy_complete, copy_complete, image_complete, review_complete, publisher_complete, completed, error)"
     )
     
+    next_step: Optional[str] = Field(
+        default=None,
+        description="Next action to take (proceed_to_publisher, await_research_revision, await_strategy_revision, await_copy_revision, await_image_revision)"
+    )
+    
+    review_feedback: Optional[str] = Field(
+        default=None,
+        description="Feedback from Reviewer Agent if revision is required"
+    )
+    
+    research_revision_count: Optional[int] = Field(
+        default=0,
+        description="Number of times Research Agent has been sent back for revision (max 3)"
+    )
+    
+    strategy_revision_count: Optional[int] = Field(
+        default=0,
+        description="Number of times Strategy Agent has been sent back for revision (max 3)"
+    )
+    
+    copy_revision_count: Optional[int] = Field(
+        default=0,
+        description="Number of times Copywriter Agent has been sent back for revision (max 3)"
+    )
+    
+    image_revision_count: Optional[int] = Field(
+        default=0,
+        description="Number of times Image Prompt Agent has been sent back for revision (max 3)"
+    )
+    
     error: Optional[str] = Field(
         default=None,
         description="Error message if any agent fails"
     )
-
-
-# Example usage:
-if __name__ == "__main__":
-    print("=" * 80)
-    print("AGENTMARK - 7 AGENT WORKFLOW STATE")
-    print("=" * 80)
     
-    # 1. INITIAL STATE (User Input) - All 6 required fields
-    print("\n[STEP 1] User Creates Campaign - Initial State:")
-    print("-" * 80)
-    initial_state = CampaignState(
-        campaign_name="Q3 Product Launch",
-        brand_name="AgentMark",
-        industry="saas",
-        primary_goal="lead_gen",
-        target_audience="Enterprise CTOs, tech leads",
-        brand_voice="professional",
-        brief="Launch new AI-powered SaaS product"
+    # ==================== HUMAN-IN-THE-LOOP (HITL) ====================
+    human_approval_status: Optional[str] = Field(
+        default=None,
+        description="Human approval status (pending, approved, rejected)"
     )
-    print(initial_state.model_dump_json(indent=2))
     
-    # 2. MANAGER AGENT processes
-    print("\n[STEP 2] Manager Agent Processes - Orchestration Plan:")
-    print("-" * 80)
-    initial_state.manager_output = "Orchestration Plan: Start research in parallel with strategy planning. Estimated timeline: 5 days. Dependencies: Research → Strategy → Copy."
-    initial_state.status = "manager_complete"
-    print(initial_state.model_dump_json(indent=2))
+    human_feedback: Optional[str] = Field(
+        default=None,
+        description="Human feedback message if revision is requested"
+    )
     
-    # 3. RESEARCH AGENT processes
-    print("\n[STEP 3] Research Agent Processes - Market Analysis:")
-    print("-" * 80)
-    initial_state.research_output = "Market Size: $50B. Growth Rate: 40% YoY. Top Competitors: Competitor A, B, C. Market Trends: AI adoption, automation, cost reduction. Customer Pain Points: Complexity, integration, pricing."
-    initial_state.status = "research_complete"
-    print(initial_state.model_dump_json(indent=2))
+    human_revision_target: Optional[str] = Field(
+        default=None,
+        description="Which agent to send back for revision based on human feedback (research, strategy, copywriter, image_prompt)"
+    )
     
-    # 4. STRATEGY AGENT processes
-    print("\n[STEP 4] Strategy Agent Processes - Marketing Strategy:")
-    print("-" * 80)
-    initial_state.strategy_output = "Strategy: Position as 'Enterprise AI Without the Complexity'. Primary Channels: LinkedIn, Tech Blogs, Industry Conferences. Budget Allocation: 40% LinkedIn Ads, 30% Content, 20% PR, 10% Events. Timeline: 12-week campaign."
-    initial_state.status = "strategy_complete"
-    print(initial_state.model_dump_json(indent=2))
+    awaiting_human_approval: bool = Field(
+        default=False,
+        description="Flag indicating workflow is paused and awaiting human approval"
+    )
     
-    # 5. COPYWRITER AGENT processes
-    print("\n[STEP 5] Copywriter Agent Processes - Marketing Copy:")
-    print("-" * 80)
-    initial_state.copy_output = "Headline: 'Enterprise AI Without the Complexity'. Subheading: 'Deploy powerful AI workflows in hours, not months'. Body Copy: 'Eliminate silos. Reduce complexity. Accelerate time-to-value.' CTA: 'Start Free Trial Now'."
-    initial_state.status = "copy_complete"
-    print(initial_state.model_dump_json(indent=2))
-    
-    # 6. IMAGE PROMPT AGENT processes
-    print("\n[STEP 6] Image Prompt Agent Processes - DALL-E Prompts:")
-    print("-" * 80)
-    initial_state.image_output = "Prompt 1: 'Modern tech office, person using AI dashboard, minimalist design, professional lighting'. Prompt 2: 'Abstract AI network visualization, connected nodes, enterprise setting'."
-    initial_state.status = "image_complete"
-    print(initial_state.model_dump_json(indent=2))
-    
-    # 7. REVIEWER AGENT processes
-    print("\n[STEP 7] Reviewer Agent Processes - Quality Review:")
-    print("-" * 80)
-    initial_state.review_output = "Quality Score: 8.5/10. Strengths: Clear positioning, strong copy, aligned with audience. Suggestions: Add more social proof, include pricing comparison table. Approval Status: APPROVED with minor revisions."
-    initial_state.status = "review_complete"
-    print(initial_state.model_dump_json(indent=2))
-    
-    # 8. PUBLISHER AGENT processes
-    print("\n[STEP 8] Publisher Agent Processes - Distribution Plan:")
-    print("-" * 80)
-    initial_state.publisher_output = "Distribution Channels: LinkedIn (Week 1-2), Tech Blogs (Week 2-3), Webinar (Week 3), Email Campaign (Week 1-4), Social Media (Daily). Expected Reach: 500K impressions. Lead Target: 5K MQLs."
-    initial_state.status = "completed"
-    print(initial_state.model_dump_json(indent=2))
-    
-    print("\n" + "=" * 80)
-    print("WORKFLOW COMPLETE - CAMPAIGN READY FOR EXECUTION")
-    print("=" * 80)
+    workflow_finished: bool = Field(
+        default=False,
+        description="Flag indicating workflow has completely finished (set by Publisher)"
+    )
+
+
+# Module-level information
+if __name__ == "__main__":
+    print("="*80)
+    print("CampaignState - Pydantic Model for LangGraph Workflow")
+    print("="*80)
+    print("\nThis module defines the state structure for the 7-agent workflow.")
+    print("\nUsage:")
+    print("  from agents.state import CampaignState")
+    print("\n  state = CampaignState(**user_data)")
+    print("="*80)

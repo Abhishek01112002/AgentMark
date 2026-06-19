@@ -36,3 +36,12 @@ coverage/
 .cache/
 temp/
 tmp/
+
+# AI Service - Learning & Verification Files
+ai-service/LANGGRAPH_LEARNING_GUIDE.md
+ai-service/ACTUAL_DEPENDENCIES.md
+ai-service/VERIFICATION_REPORT.txt
+ai-service/LANGGRAPH_SUMMARY.txt
+ai-service/STRUCTURED_OUTPUTS_AND_ERROR_HANDLING.md
+ai-service/HITL_SUMMARY.md
+ai-service/HITL_VISUAL_DIAGRAMS.md

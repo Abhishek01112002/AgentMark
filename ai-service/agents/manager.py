@@ -38,7 +38,6 @@ Manager = Strategic Analyzer (LLM-powered)
 
 import sys
 from pathlib import Path
-import json
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -50,6 +49,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
+from utils.error_handler import safe_llm_call
+from schemas import ManagerOutput
 
 
 # ==================== MANAGER AGENT FUNCTION ====================
@@ -114,34 +115,32 @@ def manager_agent(state: CampaignState) -> CampaignState:
         brand_voice=brand_voice
     )
     
-    print("   Querying LLM...")
+    print("   Querying LLM with structured output...")
     
-    # Get LLM response
-    llm_response = llm.generate(prompt, temperature=0.7, max_tokens=500)
+    # Get structured LLM response with error handling
+    plan, state = safe_llm_call(
+        state,
+        "Manager",
+        lambda: llm.generate_structured(prompt, ManagerOutput, temperature=0.7, max_tokens=500)
+    )
     
-    # ========== STEP 3: PARSE LLM RESPONSE ==========
-    print("\n[STEP 3] Parsing LLM response...")
+    if plan is None:
+        return state  # Error already logged in state
+    
+    # ========== STEP 3: DISPLAY PLAN ==========
+    print("\n[STEP 3] Plan created by LLM!")
     print("-" * 80)
     
-    # Extract JSON from response (handle potential markdown formatting)
-    llm_response = llm_response.strip()
-    if "```json" in llm_response:
-        llm_response = llm_response.split("```json")[1].split("```")[0].strip()
-    elif "```" in llm_response:
-        llm_response = llm_response.split("```")[1].split("```")[0].strip()
-    
-    plan = json.loads(llm_response)
-    
-    print("✅ Plan created by LLM!")
-    print(f"   Campaign: {plan['campaign_name']}")
-    print(f"   Channels: {', '.join(plan['channels'])}")
-    print(f"   Deliverables: {', '.join(plan['deliverables'])}")
+    print(f"✅ Plan created by LLM!")
+    print(f"   Campaign: {plan.campaign_name}")
+    print(f"   Channels: {', '.join(plan.channels)}")
+    print(f"   Deliverables: {', '.join(plan.deliverables)}")
     
     # ========== STEP 4: WRITE TO STATE ==========
     print("\n[STEP 4] Writing to state...")
     print("-" * 80)
     
-    manager_output_json = json.dumps(plan, indent=2)
+    manager_output_json = plan.model_dump_json(indent=2)
     
     print("Manager Output (JSON):")
     print(manager_output_json)

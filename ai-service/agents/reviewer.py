@@ -1,895 +1,581 @@
-"""Reviewer Agent - Quality Control Supervisor
+"""
+REVIEWER AGENT - Quality Control Supervisor
 
-Role: Quality Assurance Manager - Reviews ALL agent outputs (EVERY field) and sends back for revision if quality insufficient
+Role: Quality Assurance Manager - Reviews ALL agent outputs and sends back
+      for revision if quality is insufficient.
 
-INPUT (WHAT IT RECEIVES AND VALIDATES):
-  
+INPUT (From All Upstream Agents):
+
   FROM state (direct access):
-     ✅ research_output: JSON string from Research Agent
-     ✅ strategy_output: JSON string from Strategy Agent
-     ✅ copy_output: JSON string from Copywriter Agent
-     ✅ image_output: JSON string from Image Prompt Agent
-  
-  FROM research_output (Research produces 5 fields, Reviewer validates ALL 5):
-     ✅ market_analysis: TAM, growth_rate, key_trends
-     ✅ competitor_analysis: 2+ competitors, differentiation
-     ✅ audience_insights: 3+ pain_points, motivations, channels
-     ✅ market_opportunities: 3+ opportunities
-     ✅ recommended_approach: 50+ chars, not generic
-  
-  FROM strategy_output (Strategy produces 13 fields, Reviewer validates ALL 13):
-     ✅ positioning: Not generic, uses research differentiation
-     ✅ key_messages: 3+ messages, addresses research pain_points
-     ✅ content_pillars: 4+ pillars
-     ✅ channel_strategy: Aligns with research preferred_channels
-     ✅ audience_segments: 3 segments with pain/motivation/messaging
-     ✅ timeline: 4 phases with dates
-     ✅ success_metrics: KPIs aligned with goal
-     ✅ competitive_differentiation: competitors + advantage + positioning
-     ✅ market_opportunities: Tactical opportunities
-     ✅ strategic_approach: Research-based approach
-     ✅ inferred_goal: Valid goal (awareness/lead_gen/sales/retention)
-     ✅ research_foundation: All 5 research fields nested
-     ✅ execution: channels + deliverables + budget
-  
-  FROM copy_output (Copywriter produces 8 fields, Reviewer validates ALL 8):
-     ✅ inferred_goal: Matches strategy inferred_goal
-     ✅ email: subject (60 chars), headline, body (200+ chars), ctas (3)
-     ✅ linkedin: headline, body (150+ chars), ctas (3)
-     ✅ social: headline (140 chars), body, ctas (4 platforms)
-     ✅ ads: headline (60 chars), body (200+ chars), ctas (3)
-     ✅ messaging_framework: 5 sections (promise, hierarchy, segments, channels, voice)
-     ✅ strategic_alignment: positioning, message count, pillars, segments, deliverables
-     ✅ copy_readiness: 5 flags (email, linkedin, social, ads, framework)
-  
-  FROM image_output (Image produces 2 fields, Reviewer validates ALL 2):
-     ✅ visual_direction: Exists, 100+ chars, mentions brand/industry
-     ✅ image_prompts: Array with per-prompt validation:
-         - deliverable: Matches copy deliverables
-         - prompt: 50+ chars, production-ready
-         - style: Aligned with brand_voice
-         - color_palette: Defined
-         - text_overlay: Uses copy headlines
-         - aspect_ratio: Valid ratio (16:9, 1:1, 9:16, etc)
+    ✅ research_output: JSON string from Research Agent (5 fields)
+    ✅ strategy_output: JSON string from Strategy Agent (13 fields)
+    ✅ copy_output: JSON string from Copywriter Agent (8 fields)
+    ✅ image_output: JSON string from Image Prompt Agent (2 fields)
 
-TOTAL VALIDATION: 28 fields (5 + 13 + 8 + 2)
+  FROM state (campaign metadata):
+    ✅ campaign_name: Campaign identifier
+    ✅ brand_name: Brand being reviewed
+    ✅ brand_voice: Expected tone (for copy validation)
+    ✅ industry: Industry context (for research validation)
+    ✅ primary_goal: Campaign goal (for strategy/copy alignment)
+
+WHAT REVIEWER VALIDATES (28 total fields):
+  Research  (5 fields): market_analysis, competitor_analysis, audience_insights,
+                        market_opportunities, recommended_approach
+  Strategy (13 fields): positioning, key_messages, content_pillars, channel_strategy,
+                        audience_segments, timeline, success_metrics,
+                        competitive_differentiation, market_opportunities,
+                        strategic_approach, inferred_goal, research_foundation, execution
+  Copy      (8 fields): inferred_goal, email, linkedin, social, ads,
+                        messaging_framework, strategic_alignment, copy_readiness
+  Image     (2 fields): visual_direction, image_prompts (with per-prompt validation)
+
+OUTPUT (Quality Decision - JSON):
+  SCENARIO 1: ALL APPROVED (status = 'review_complete'):
+    state.status = 'review_complete'
+    state.review_output = JSON with all 4 agent reviews + quality scores
+    state.next_step = 'proceed_to_publisher'
+
+  SCENARIO 2: REVISION REQUIRED (status = '{agent}_revision_required'):
+    state.status = '{agent}_revision_required'
+    state.review_feedback = JSON with specific issues + action items
+    state.next_step = 'await_{agent}_revision'
+    state.{agent}_revision_count = int (max 3)
 
 QUALITY THRESHOLDS:
   - Individual Agent Minimum: 75% (each agent must score ≥75)
   - Overall Campaign Minimum: 80% (weighted average ≥80)
   - Both must pass for approval
 
-OUTPUT (What it gives to next agent/Publisher):
-  
-  SCENARIO 1: ALL APPROVED (status = 'review_complete'):
-    state['status'] = 'review_complete'
-    state['review_output'] = JSON with all 4 agent reviews + quality score
-    state['next_step'] = 'proceed_to_publisher'
-  
-  SCENARIO 2: REVISION REQUIRED:
-    state['status'] = '{agent}_revision_required'
-    state['review_feedback'] = JSON with specific issues + action
-    state['next_step'] = 'await_{agent}_revision'
-    state['{agent}_revision_count'] = int (max 3)
-
 REVISION PRIORITY: Research → Strategy → Copy → Image
+
+KEY PRINCIPLE:
+Reviewer = LLM-Powered Quality Analyst
+- Sends ALL 28 fields to LLM for intelligent quality assessment
+- LLM evaluates completeness, coherence, alignment, and strategic fit
+- No hardcoded scoring rules - fully dynamic AI quality analysis
+- Uses prompt template from utils/prompts/reviewer_prompt.txt
 """
 
+import sys
+from pathlib import Path
 import json
-from typing import Dict, Any
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Add project root to path so imports work
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from agents.state import CampaignState
+from llm import get_llm_client
+from utils.prompt_loader import load_prompt
+from utils.error_handler import safe_llm_call
+from schemas import ReviewerOutput
 
 
-class ReviewerAgent:
-    """Quality Assurance Manager - validates EVERY field from ALL agents"""
-    
-    MAX_REVISIONS = 3
-    MIN_QUALITY_SCORE = 80  # Overall minimum: 80%
-    MIN_AGENT_SCORE = 75    # Per-agent minimum: 75%
-    
-    def __init__(self):
-        self.name = "Reviewer Agent"
-        self.role = "Quality Control Supervisor"
-    
-    def execute(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Review ALL agent outputs comprehensively
-        
-        INPUT: state with research_output, strategy_output, copy_output, image_output
-        OUTPUT: state with review_output, review_feedback, status, next_step
-        """
-        print(f"\n{'='*60}")
-        print(f"🔍 {self.name.upper()} - COMPREHENSIVE QUALITY REVIEW")
-        print(f"{'='*60}\n")
-        
-        # Create a copy of state to avoid mutating the input
-        state = dict(state)
-        
-        # Parse all outputs
-        research = json.loads(state.get('research_output', '{}'))
-        strategy = json.loads(state.get('strategy_output', '{}'))
-        copy = json.loads(state.get('copy_output', '{}'))
-        image = json.loads(state.get('image_output', '{}'))
-        
-        # Comprehensive review of ALL fields
-        research_review = self._review_research_all_fields(research)
-        strategy_review = self._review_strategy_all_fields(strategy, research)
-        copy_review = self._review_copy_all_fields(copy, strategy, research)
-        image_review = self._review_image_all_fields(image, strategy, copy)
-        
-        # Calculate quality score
-        quality_score = self._calculate_quality_score(
-            research_review, strategy_review, copy_review, image_review
-        )
-        
-        # Check individual agent scores (each ≥75%)
-        agents_meet_threshold = all([
-            research_review['score'] >= self.MIN_AGENT_SCORE,
-            strategy_review['score'] >= self.MIN_AGENT_SCORE,
-            copy_review['score'] >= self.MIN_AGENT_SCORE,
-            image_review['score'] >= self.MIN_AGENT_SCORE
-        ])
-        
-        # Check if all approved (no blocking issues)
-        all_approved = all([
-            research_review['approved'],
-            strategy_review['approved'],
-            copy_review['approved'],
-            image_review['approved']
-        ])
-        
-        # Overall quality threshold (≥80%)
-        meets_quality_threshold = quality_score >= self.MIN_QUALITY_SCORE
-        
-        # Print individual scores
-        print("\n📊 Individual Agent Scores:")
-        print(f"   Research: {research_review['score']}/100 {'✅' if research_review['score'] >= self.MIN_AGENT_SCORE else '❌'}")
-        print(f"   Strategy: {strategy_review['score']}/100 {'✅' if strategy_review['score'] >= self.MIN_AGENT_SCORE else '❌'}")
-        print(f"   Copy: {copy_review['score']}/100 {'✅' if copy_review['score'] >= self.MIN_AGENT_SCORE else '❌'}")
-        print(f"   Image: {image_review['score']}/100 {'✅' if image_review['score'] >= self.MIN_AGENT_SCORE else '❌'}")
-        print(f"\n📈 Overall Quality Score: {quality_score}/100 (Threshold: {self.MIN_QUALITY_SCORE})")
-        
-        # Build review output
-        review_result = {
-            'status': 'approved' if (all_approved and meets_quality_threshold and agents_meet_threshold) else 'revision_required',
-            'research_review': research_review,
-            'strategy_review': strategy_review,
-            'copy_review': copy_review,
-            'image_review': image_review,
-            'overall_quality_score': quality_score,
-            'individual_threshold_met': agents_meet_threshold,
-            'overall_threshold_met': meets_quality_threshold,
-            'reviewed_at': datetime.now().isoformat(),
-            'reviewer': self.name
-        }
-        
-        # Update state based on all conditions
-        if all_approved and meets_quality_threshold and agents_meet_threshold:
-            print("\n✅ ALL OUTPUTS APPROVED - Ready for Publication")
-            print(f"   All agents meet individual threshold (≥{self.MIN_AGENT_SCORE})")
-            print(f"   Overall quality: {quality_score}/100 (≥{self.MIN_QUALITY_SCORE})\n")
-            state['status'] = 'review_complete'
-            state['review_output'] = json.dumps(review_result)
-            state['next_step'] = 'proceed_to_publisher'
-        else:
-            # Determine which agent needs revision
-            if not all_approved:
-                # Priority: Explicit failures first
-                revision_target = self._determine_revision_target(
-                    research_review, strategy_review, copy_review, image_review
-                )
-                print(f"\n⚠️  EXPLICIT FAILURE: {revision_target['agent']}")
-            elif not agents_meet_threshold:
-                # Individual agent below 75% threshold
-                revision_target = self._determine_lowest_scoring_agent(
-                    research_review, strategy_review, copy_review, image_review
-                )
-                print(f"\n⚠️  INDIVIDUAL QUALITY TOO LOW: {revision_target['agent']}")
-                print(f"   Score: {revision_target.get('score', 0)}/100 (Needs ≥{self.MIN_AGENT_SCORE})")
-            else:
-                # Overall quality score below 80%
-                revision_target = self._determine_lowest_scoring_agent(
-                    research_review, strategy_review, copy_review, image_review
-                )
-                print(f"\n⚠️  OVERALL QUALITY BELOW THRESHOLD: {quality_score}/100")
-                print(f"   Targeting lowest scorer: {revision_target['agent']}")
-            
-            print(f"📋 Issues Found: {len(revision_target['issues'])}\n")
-            
-            for issue in revision_target['issues']:
-                print(f"   • {issue}")
-            
-            state['status'] = revision_target['status']
-            state['review_feedback'] = json.dumps(revision_target)
-            state['review_output'] = json.dumps(review_result)
-            state['next_step'] = revision_target['next_step']
-            
-            # Use consistent key format: research_revision_count, strategy_revision_count, etc.
-            # But also check for legacy format: "Research Agent_revision_count"
-            agent_name_lower = revision_target['agent'].replace(' Agent', '').replace(' ', '_').lower()
-            revision_key = f"{agent_name_lower}_revision_count"
-            legacy_key = f"{revision_target['agent']}_revision_count"
-            
-            # Check both keys (legacy and new format) - take the higher value
-            new_count = state.get(revision_key, 0)
-            legacy_count = state.get(legacy_key, 0)
-            current_count = max(new_count, legacy_count)
-            
-            # Check if max revisions reached BEFORE incrementing
-            if current_count >= self.MAX_REVISIONS:
-                print(f"\n⚠️  Max revisions reached for {revision_target['agent']}")
-                state['status'] = 'review_complete'
-                state['next_step'] = 'proceed_to_publisher'
-                state['review_feedback'] = None
-            else:
-                # Increment and continue with revision
-                state[revision_key] = current_count + 1
-                # Also update legacy key if it exists
-                if legacy_key in state:
-                    state[legacy_key] = current_count + 1
-        
-        return state
-    
-    def _review_research_all_fields(self, research: Dict) -> Dict:
-        """Validate ALL 5 Research output fields
-        
-        Scoring: Critical fields = 25 points, Important = 20 points, Standard = 15 points
-        Total: 100 points distributed across 5 fields
-        """
-        issues = []
-        score_deduction = 0
-        
-        # Field 1: market_analysis (CRITICAL - 25 points)
-        market = research.get('market_analysis', {})
-        if not market.get('total_addressable_market'):
-            issues.append("market_analysis missing total_addressable_market")
-            score_deduction += 10
-        if not market.get('growth_rate'):
-            issues.append("market_analysis missing growth_rate")
-            score_deduction += 10
-        if not market.get('market_trends') or len(market.get('market_trends', [])) < 3:
-            issues.append("market_analysis needs 3+ market_trends")
-            score_deduction += 5
-        
-        # Field 2: competitor_analysis (CRITICAL - 25 points)
-        competitors = research.get('competitor_analysis', {})
-        if len(competitors.get('top_competitors', [])) < 2:
-            issues.append("competitor_analysis needs 2+ top_competitors")
-            score_deduction += 15
-        if not competitors.get('differentiation_opportunity'):
-            issues.append("competitor_analysis missing differentiation_opportunity")
-            score_deduction += 10
-        
-        # Field 3: audience_insights (CRITICAL - 25 points)
-        audience = research.get('audience_insights', {})
-        if len(audience.get('pain_points', [])) < 3:
-            issues.append("audience_insights needs 3+ pain_points")
-            score_deduction += 10
-        if not audience.get('motivations') or len(audience.get('motivations', [])) < 2:
-            issues.append("audience_insights needs 2+ motivations")
-            score_deduction += 8
-        if not audience.get('preferred_channels') or len(audience.get('preferred_channels', [])) < 2:
-            issues.append("audience_insights needs 2+ preferred_channels")
-            score_deduction += 7
-        
-        # Field 4: market_opportunities (IMPORTANT - 15 points)
-        opportunities = research.get('market_opportunities', [])
-        if len(opportunities) < 3:
-            issues.append("market_opportunities needs 3+ items")
-            score_deduction += 15
-        
-        # Field 5: recommended_approach (IMPORTANT - 10 points)
-        approach = research.get('recommended_approach', '')
-        if len(approach) < 50:
-            issues.append("recommended_approach too short (needs 50+ chars)")
-            score_deduction += 10
-        
-        final_score = max(0, 100 - score_deduction)
-        
-        return {
-            'approved': len(issues) == 0,
-            'issues': issues,
-            'feedback': 'All 5 research fields validated' if len(issues) == 0 else f'{len(issues)} issues found',
-            'score': final_score
-        }
-    
-    def _review_strategy_all_fields(self, strategy: Dict, research: Dict) -> Dict:
-        """Validate ALL 13 Strategy output fields
-        
-        Scoring: Proportional - 100 points / 13 fields = ~7.69 points per field
-        """
-        issues = []
-        score_per_field = 100 / 13  # ~7.69 points per field
-        score_deduction = 0
-        
-        # Field 1: positioning
-        positioning = strategy.get('positioning', '')
-        if len(positioning) < 20:
-            issues.append("positioning too short")
-            score_deduction += score_per_field
-        if any(term in positioning.lower() for term in ['leader', 'best', 'top']) and len(positioning) < 50:
-            issues.append("positioning too generic")
-            score_deduction += score_per_field
-        
-        # Field 2: key_messages
-        key_messages = strategy.get('key_messages', [])
-        if len(key_messages) < 3:
-            issues.append("key_messages needs 3+ items")
-            score_deduction += score_per_field
-        
-        # Field 3: content_pillars
-        if len(strategy.get('content_pillars', [])) < 3:
-            issues.append("content_pillars needs 3+ items")
-            score_deduction += score_per_field
-        
-        # Field 4: channel_strategy
-        if not strategy.get('channel_strategy'):
-            issues.append("channel_strategy missing")
-            score_deduction += score_per_field
-        
-        # Field 5: audience_segments
-        segments = strategy.get('audience_segments', [])
-        if len(segments) < 3:
-            issues.append("audience_segments needs 3 segments")
-            score_deduction += score_per_field
-        
-        # Field 6: timeline
-        timeline = strategy.get('timeline', {})
-        if len(timeline) < 4:
-            issues.append("timeline needs 4 phases")
-            score_deduction += score_per_field
-        
-        # Field 7: success_metrics
-        if not strategy.get('success_metrics'):
-            issues.append("success_metrics missing")
-            score_deduction += score_per_field
-        
-        # Field 8: competitive_differentiation
-        comp_diff = strategy.get('competitive_differentiation', {})
-        if not comp_diff.get('primary_differentiation'):
-            issues.append("competitive_differentiation missing primary_differentiation")
-            score_deduction += score_per_field
-        
-        # Field 9: market_opportunities
-        if not strategy.get('market_opportunities'):
-            issues.append("market_opportunities missing")
-            score_deduction += score_per_field
-        
-        # Field 10: strategic_approach
-        if not strategy.get('strategic_approach'):
-            issues.append("strategic_approach missing")
-            score_deduction += score_per_field
-        
-        # Field 11: inferred_goal
-        if strategy.get('inferred_goal') not in ['awareness', 'lead_gen', 'sales', 'retention']:
-            issues.append("inferred_goal invalid")
-            score_deduction += score_per_field
-        
-        # Field 12: research_foundation
-        if not strategy.get('research_foundation'):
-            issues.append("research_foundation missing")
-            score_deduction += score_per_field
-        
-        # Field 13: execution
-        execution = strategy.get('execution', {})
-        if not execution.get('channels'):
-            issues.append("execution missing channels")
-            score_deduction += score_per_field / 2
-        if not execution.get('deliverables'):
-            issues.append("execution missing deliverables")
-            score_deduction += score_per_field / 2
-        
-        final_score = max(0, int(100 - score_deduction))
-        
-        return {
-            'approved': len(issues) == 0,
-            'issues': issues,
-            'feedback': 'All 13 strategy fields validated' if len(issues) == 0 else f'{len(issues)} issues found',
-            'score': final_score,
-            'action': 'send_back_to_strategy' if issues else None
-        }
-    
-    def _review_copy_all_fields(self, copy: Dict, strategy: Dict, research: Dict) -> Dict:
-        """Validate ALL 8 Copywriter output fields
-        
-        Scoring: Proportional - 100 points / 8 fields = 12.5 points per field
-        """
-        issues = []
-        score_per_field = 100 / 8  # 12.5 points per field
-        score_deduction = 0
-        
-        # Field 1: inferred_goal
-        if copy.get('inferred_goal') != strategy.get('inferred_goal'):
-            issues.append("inferred_goal doesn't match strategy")
-            score_deduction += score_per_field
-        
-        # Field 2: email (weight: 12.5)
-        email = copy.get('email', {})
-        email_issues = 0
-        if not email.get('subject') or len(email.get('subject', '')) > 60:
-            issues.append("email subject missing or too long")
-            email_issues += 1
-        if not email.get('headline'):
-            issues.append("email headline missing")
-            email_issues += 1
-        if not email.get('body') or len(email.get('body', '')) < 100:
-            issues.append("email body too short (needs 100+ chars)")
-            email_issues += 1
-        if len(email.get('ctas', {})) < 2:
-            issues.append("email needs 2+ CTAs")
-            email_issues += 1
-        if email_issues > 0:
-            score_deduction += (score_per_field / 4) * email_issues  # Proportional within email
-        
-        # Field 3: linkedin (weight: 12.5)
-        linkedin = copy.get('linkedin', {})
-        linkedin_issues = 0
-        if not linkedin.get('headline'):
-            issues.append("linkedin headline missing")
-            linkedin_issues += 1
-        if not linkedin.get('body') or len(linkedin.get('body', '')) < 100:
-            issues.append("linkedin body too short")
-            linkedin_issues += 1
-        if not linkedin.get('ctas'):
-            issues.append("linkedin CTAs missing")
-            linkedin_issues += 1
-        if linkedin_issues > 0:
-            score_deduction += (score_per_field / 3) * linkedin_issues
-        
-        # Field 4: social (weight: 12.5)
-        social = copy.get('social', {})
-        social_issues = 0
-        if not social.get('headline') or len(social.get('headline', '')) > 140:
-            issues.append("social headline missing or too long (140 char limit)")
-            social_issues += 1
-        if not social.get('body'):
-            issues.append("social body missing")
-            social_issues += 1
-        if not social.get('ctas'):
-            issues.append("social CTAs missing")
-            social_issues += 1
-        if social_issues > 0:
-            score_deduction += (score_per_field / 3) * social_issues
-        
-        # Field 5: ads (weight: 12.5)
-        ads = copy.get('ads', {})
-        ads_issues = 0
-        if not ads.get('headline') or len(ads.get('headline', '')) > 60:
-            issues.append("ads headline missing or too long")
-            ads_issues += 1
-        if not ads.get('body') or len(ads.get('body', '')) < 100:
-            issues.append("ads body too short")
-            ads_issues += 1
-        if len(ads.get('ctas', {})) < 2:
-            issues.append("ads needs 2+ CTAs")
-            ads_issues += 1
-        if ads_issues > 0:
-            score_deduction += (score_per_field / 3) * ads_issues
-        
-        # Field 6: messaging_framework (weight: 12.5)
-        framework = copy.get('messaging_framework', {})
-        framework_issues = 0
-        if not framework.get('brand_promise'):
-            issues.append("messaging_framework missing brand_promise")
-            framework_issues += 1
-        if not framework.get('message_hierarchy'):
-            issues.append("messaging_framework missing message_hierarchy")
-            framework_issues += 1
-        if framework_issues > 0:
-            score_deduction += (score_per_field / 2) * framework_issues
-        
-        # Field 7: strategic_alignment (weight: 12.5)
-        if not copy.get('strategic_alignment'):
-            issues.append("strategic_alignment missing")
-            score_deduction += score_per_field
-        
-        # Field 8: copy_readiness (weight: 12.5)
-        readiness = copy.get('copy_readiness', {})
-        if not all([readiness.get('email_ready'), readiness.get('linkedin_ready'), 
-                    readiness.get('social_ready'), readiness.get('ads_ready')]):
-            issues.append("copy_readiness flags not all True")
-            score_deduction += score_per_field
-        
-        final_score = max(0, int(100 - score_deduction))
-        
-        return {
-            'approved': len(issues) == 0,
-            'issues': issues,
-            'feedback': 'All 8 copy fields validated' if len(issues) == 0 else f'{len(issues)} issues found',
-            'score': final_score,
-            'action': 'send_back_to_copywriter' if issues else None
-        }
-    
-    def _review_image_all_fields(self, image: Dict, strategy: Dict, copy: Dict) -> Dict:
-        """Validate ALL 2 Image output fields (with nested validations)
-        
-        Scoring: Proportional - 100 points / 2 fields = 50 points per field
-        - visual_direction: 50 points
-        - image_prompts: 50 points (divided by number of prompts)
-        """
-        issues = []
-        score_deduction = 0
-        
-        # Field 1: visual_direction (50 points)
-        visual_direction = image.get('visual_direction', '')
-        if len(visual_direction) < 100:
-            issues.append("visual_direction too short (needs 100+ chars)")
-            score_deduction += 50  # Full field weight
-        
-        # Field 2: image_prompts (50 points total, divided by number of prompts)
-        image_prompts = image.get('image_prompts', [])
-        if len(image_prompts) == 0:
-            issues.append("image_prompts array is empty")
-            score_deduction += 50  # Full field weight
-        else:
-            points_per_prompt = 50 / len(image_prompts)  # Distribute 50 points across all prompts
-            
-            for i, prompt in enumerate(image_prompts):
-                prompt_issues = 0
-                
-                if not prompt.get('deliverable'):
-                    issues.append(f"prompt {i+1} missing deliverable")
-                    prompt_issues += 1
-                if not prompt.get('prompt') or len(prompt.get('prompt', '')) < 50:
-                    issues.append(f"prompt {i+1} too short (needs 50+ chars)")
-                    prompt_issues += 1
-                if not prompt.get('style'):
-                    issues.append(f"prompt {i+1} missing style")
-                    prompt_issues += 1
-                if not prompt.get('color_palette'):
-                    issues.append(f"prompt {i+1} missing color_palette")
-                    prompt_issues += 1
-                if not prompt.get('text_overlay'):
-                    issues.append(f"prompt {i+1} missing text_overlay")
-                    prompt_issues += 1
-                if not prompt.get('aspect_ratio'):
-                    issues.append(f"prompt {i+1} missing aspect_ratio")
-                    prompt_issues += 1
-                
-                # Deduct proportionally: each prompt has 6 sub-validations
-                if prompt_issues > 0:
-                    score_deduction += (points_per_prompt / 6) * prompt_issues
-        
-        final_score = max(0, int(100 - score_deduction))
-        
-        return {
-            'approved': len(issues) == 0,
-            'issues': issues,
-            'feedback': 'All 2 image fields validated' if len(issues) == 0 else f'{len(issues)} issues found',
-            'score': final_score,
-            'action': 'send_back_to_image' if issues else None
-        }
-    
-    def _calculate_quality_score(self, research_rev: Dict, strategy_rev: Dict, 
-                                 copy_rev: Dict, image_rev: Dict) -> int:
-        """Calculate weighted overall quality score"""
-        weights = {'research': 0.25, 'strategy': 0.30, 'copy': 0.25, 'image': 0.20}
-        
-        score = (
-            research_rev['score'] * weights['research'] +
-            strategy_rev['score'] * weights['strategy'] +
-            copy_rev['score'] * weights['copy'] +
-            image_rev['score'] * weights['image']
-        )
-        
-        return int(score)
-    
-    def _determine_revision_target(self, research_rev: Dict, strategy_rev: Dict,
-                                   copy_rev: Dict, image_rev: Dict) -> Dict:
-        """Determine which agent needs revision (priority order for explicit failures)"""
-        
-        if not research_rev['approved']:
-            return {
-                'agent': 'Research Agent',
-                'status': 'research_revision_required',
-                'issues': research_rev['issues'],
-                'feedback': research_rev['feedback'],
-                'next_step': 'await_research_revision'
-            }
-        
-        if not strategy_rev['approved']:
-            return {
-                'agent': 'Strategy Agent',
-                'status': 'strategy_revision_required',
-                'issues': strategy_rev['issues'],
-                'feedback': strategy_rev['feedback'],
-                'next_step': 'await_strategy_revision'
-            }
-        
-        if not copy_rev['approved']:
-            return {
-                'agent': 'Copywriter Agent',
-                'status': 'copy_revision_required',
-                'issues': copy_rev['issues'],
-                'feedback': copy_rev['feedback'],
-                'next_step': 'await_copywriter_revision'
-            }
-        
-        if not image_rev['approved']:
-            return {
-                'agent': 'Image Prompt Agent',
-                'status': 'image_revision_required',
-                'issues': image_rev['issues'],
-                'feedback': image_rev['feedback'],
-                'next_step': 'await_image_revision'
-            }
-        
-        return {}
-    
-    def _determine_lowest_scoring_agent(self, research_rev: Dict, strategy_rev: Dict,
-                                        copy_rev: Dict, image_rev: Dict) -> Dict:
-        """When quality below threshold but no explicit failures, target lowest scorer"""
-        
-        scores = [
-            (research_rev['score'], 'Research Agent', 'research_revision_required', 'await_research_revision', research_rev),
-            (strategy_rev['score'], 'Strategy Agent', 'strategy_revision_required', 'await_strategy_revision', strategy_rev),
-            (copy_rev['score'], 'Copywriter Agent', 'copy_revision_required', 'await_copywriter_revision', copy_rev),
-            (image_rev['score'], 'Image Prompt Agent', 'image_revision_required', 'await_image_revision', image_rev)
-        ]
-        
-        # Sort by score (lowest first)
-        scores.sort(key=lambda x: x[0])
-        
-        lowest = scores[0]
-        return {
-            'agent': lowest[1],
-            'status': lowest[2],
-            'issues': lowest[4]['issues'] if lowest[4]['issues'] else [f"Quality score {lowest[0]}/100 needs improvement (threshold: {self.MIN_AGENT_SCORE})"],
-            'feedback': f"Lowest scoring agent ({lowest[0]}/100) - needs quality improvement",
-            'next_step': lowest[3],
-            'score': lowest[0]
-        }
+# ==================== CONSTANTS ====================
+
+MAX_REVISIONS = 3
+MIN_QUALITY_SCORE = 80   # Overall minimum: 80%
+MIN_AGENT_SCORE = 75     # Per-agent minimum: 75%
+
+REVISION_PRIORITY = ["research", "strategy", "copy", "image"]
 
 
-def reviewer_agent(state: Dict[str, Any]) -> Dict[str, Any]:
-    """Reviewer Agent Entry Point - Validates EVERY field from ALL agents
-    
-    INPUT:
-        - state['research_output']: 5 fields (ALL validated)
-        - state['strategy_output']: 13 fields (ALL validated)
-        - state['copy_output']: 8 fields (ALL validated)
-        - state['image_output']: 2 fields (ALL validated)
-    
-    OUTPUT:
-        - state['status']: 'review_complete' | '{agent}_revision_required'
-        - state['review_output']: Full review results (JSON)
-        - state['review_feedback']: Revision instructions (JSON, if needed)
-        - state['next_step']: 'proceed_to_publisher' | 'await_{agent}_revision'
-    
-    VALIDATES: 28 total fields (5+13+8+2)
-    THRESHOLDS: Individual ≥75%, Overall ≥80%
+# ==================== REVIEWER AGENT FUNCTION ====================
+
+def reviewer_agent(state: CampaignState) -> CampaignState:
     """
-    agent = ReviewerAgent()
-    return agent.execute(state)
+    Reviewer Agent - Comprehensive Quality Control (LLM-Powered)
+
+    Args:
+        state: CampaignState with research_output, strategy_output,
+               copy_output, image_output
+
+    Returns:
+        Modified state with review_output, review_feedback, status, next_step
+
+    Process:
+    1. Extract all 4 agent outputs from state
+    2. Extract campaign metadata for context
+    3. Load reviewer prompt template
+    4. Send ALL 28 fields to LLM for quality analysis
+    5. Parse LLM response to get per-agent scores + issues
+    6. Apply threshold logic and determine next action
+    7. Update state with review decision
+    """
+
+    print("\n" + "=" * 80)
+    print("🔍 REVIEWER AGENT ACTIVATED")
+    print("=" * 80)
+
+    # ========== STEP 1: READ ALL AGENT OUTPUTS ==========
+    print("\n[STEP 1] Reading all agent outputs from state...")
+    print("-" * 80)
+
+    if not state.research_output:
+        raise ValueError("research_output is required for review")
+    if not state.strategy_output:
+        raise ValueError("strategy_output is required for review")
+    if not state.copy_output:
+        raise ValueError("copy_output is required for review")
+    if not state.image_output:
+        raise ValueError("image_output is required for review")
+
+    try:
+        research_data = json.loads(state.research_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ValueError(f"Failed to parse research_output: {e}")
+
+    try:
+        strategy_data = json.loads(state.strategy_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ValueError(f"Failed to parse strategy_output: {e}")
+
+    try:
+        copy_data = json.loads(state.copy_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ValueError(f"Failed to parse copy_output: {e}")
+
+    try:
+        image_data = json.loads(state.image_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ValueError(f"Failed to parse image_output: {e}")
+
+    print(f"✓ Research Output: parsed ({len(state.research_output)} chars)")
+    print(f"✓ Strategy Output: parsed ({len(state.strategy_output)} chars)")
+    print(f"✓ Copy Output:     parsed ({len(state.copy_output)} chars)")
+    print(f"✓ Image Output:    parsed ({len(state.image_output)} chars)")
+
+    # ========== STEP 2: READ CAMPAIGN METADATA ==========
+    print("\n[STEP 2] Reading campaign metadata from state...")
+    print("-" * 80)
+
+    campaign_name = state.campaign_name or "Unknown Campaign"
+    brand_name = state.brand_name or "Unknown Brand"
+    brand_voice = state.brand_voice or "professional"
+    industry = state.industry or "other"
+    primary_goal = state.primary_goal or "awareness"
+    brief = state.brief or f"Marketing campaign for {brand_name}"
+
+    print(f"✓ Campaign:     {campaign_name}")
+    print(f"✓ Brand:        {brand_name}")
+    print(f"✓ Industry:     {industry}")
+    print(f"✓ Goal:         {primary_goal}")
+    print(f"✓ Brand Voice:  {brand_voice}")
+
+    # ========== STEP 3: READ REVISION COUNTS ==========
+    print("\n[STEP 3] Checking revision history...")
+    print("-" * 80)
+
+    research_revision_count = getattr(state, "research_revision_count", 0) or 0
+    strategy_revision_count = getattr(state, "strategy_revision_count", 0) or 0
+    copy_revision_count = getattr(state, "copy_revision_count", 0) or 0
+    image_revision_count = getattr(state, "image_revision_count", 0) or 0
+
+    print(f"✓ Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
+    print(f"✓ Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
+    print(f"✓ Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
+    print(f"✓ Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
+
+    # ========== STEP 4: EXTRACT KEY FIELDS FOR DISPLAY ==========
+    print("\n[STEP 4] Summarizing outputs for LLM review...")
+    print("-" * 80)
+
+    # Research summary
+    market = research_data.get("market_analysis", {})
+    competitors = research_data.get("competitor_analysis", {})
+    audience = research_data.get("audience_insights", {})
+    print(f"✓ Research — TAM: {market.get('total_addressable_market', 'N/A')} | "
+          f"Competitors: {len(competitors.get('top_competitors', []))} | "
+          f"Pain Points: {len(audience.get('pain_points', []))}")
+
+    # Strategy summary
+    print(f"✓ Strategy — Positioning: {str(strategy_data.get('positioning', 'N/A'))[:50]}... | "
+          f"Goal: {strategy_data.get('inferred_goal', 'N/A')} | "
+          f"Segments: {len(strategy_data.get('audience_segments', []))}")
+
+    # Copy summary
+    copy_channels = [
+        k for k in copy_data.keys()
+        if k not in ("inferred_goal", "messaging_framework", "strategic_alignment", "copy_readiness")
+    ]
+    print(f"✓ Copy — Channels: {', '.join(copy_channels)} | "
+          f"Goal: {copy_data.get('inferred_goal', 'N/A')}")
+
+    # Image summary
+    image_prompts = image_data.get("image_prompts", [])
+    print(f"✓ Image — Prompts: {len(image_prompts)} | "
+          f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
+
+    # ========== STEP 5: REVIEW WITH LLM ==========
+    print("\n[STEP 5] Sending ALL 28 fields to LLM for quality analysis...")
+    print("-" * 80)
+    print("🔍 AI Quality Analyst reviewing campaign outputs...")
+
+    # Initialize LLM client
+    llm = get_llm_client()
+
+    # Load reviewer prompt and format with ALL agent outputs
+    prompt = load_prompt(
+        "reviewer",
+        # Campaign metadata
+        campaign_name=campaign_name,
+        brand_name=brand_name,
+        brand_voice=brand_voice,
+        industry=industry,
+        primary_goal=primary_goal,
+        brief=brief,
+        # Quality thresholds
+        min_agent_score=MIN_AGENT_SCORE,
+        min_quality_score=MIN_QUALITY_SCORE,
+        max_revisions=MAX_REVISIONS,
+        # Revision history
+        research_revision_count=research_revision_count,
+        strategy_revision_count=strategy_revision_count,
+        copy_revision_count=copy_revision_count,
+        image_revision_count=image_revision_count,
+        # All agent outputs (full JSON for LLM to analyze)
+        research_output=json.dumps(research_data, indent=2),
+        strategy_output=json.dumps(strategy_data, indent=2),
+        copy_output=json.dumps(copy_data, indent=2),
+        image_output=json.dumps(image_data, indent=2)
+    )
+
+    print("   Querying LLM with structured output...")
+
+    # Get structured LLM response with error handling
+    review_analysis, state = safe_llm_call(
+        state,
+        "Reviewer",
+        lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.3, max_tokens=2000)
+    )
+    
+    if review_analysis is None:
+        return state  # Error already logged in state
+
+    # ========== STEP 6: EXTRACT SCORES AND DECISIONS ==========
+    print("\n[STEP 6] Processing quality scores and decisions...")
+    print("-" * 80)
+
+    # Extract per-agent reviews
+    research_review = review_analysis.research_review
+    strategy_review = review_analysis.strategy_review
+    copy_review = review_analysis.copy_review
+    image_review = review_analysis.image_review
+    overall = review_analysis.overall
+
+    research_score = research_review.score
+    strategy_score = strategy_review.score
+    copy_score = copy_review.score
+    image_score = image_review.score
+    overall_score = overall.quality_score
+
+    # ========== STEP 6.5: POST-PROCESSING VALIDATION ==========
+    # Add explicit validation checks for critical alignments that LLM might miss
+    _add_explicit_validation_checks(
+        strategy_data, copy_data, image_data,
+        strategy_review, copy_review, image_review
+    )
+
+    # IMPORTANT: approved should be based on threshold, not LLM judgment
+    # Override LLM's approved field with threshold-based logic
+    research_approved = research_score >= MIN_AGENT_SCORE
+    strategy_approved = strategy_score >= MIN_AGENT_SCORE
+    copy_approved = copy_score >= MIN_AGENT_SCORE
+    image_approved = image_score >= MIN_AGENT_SCORE
+
+    # ========== STEP 7: DISPLAY QUALITY SCORES ==========
+    print("✅ Quality analysis complete!")
+
+    print("\n📊 Individual Agent Scores:")
+    print(f"   Research:  {research_score}/100  {'✅' if research_score >= MIN_AGENT_SCORE else '❌'}  "
+          f"({'Approved' if research_approved else 'Issues Found'})")
+    print(f"   Strategy:  {strategy_score}/100  {'✅' if strategy_score >= MIN_AGENT_SCORE else '❌'}  "
+          f"({'Approved' if strategy_approved else 'Issues Found'})")
+    print(f"   Copy:      {copy_score}/100  {'✅' if copy_score >= MIN_AGENT_SCORE else '❌'}  "
+          f"({'Approved' if copy_approved else 'Issues Found'})")
+    print(f"   Image:     {image_score}/100  {'✅' if image_score >= MIN_AGENT_SCORE else '❌'}  "
+          f"({'Approved' if image_approved else 'Issues Found'})")
+    print(f"\n📈 Overall Quality Score: {overall_score}/100 "
+          f"(Threshold: {MIN_QUALITY_SCORE}) "
+          f"{'✅' if overall_score >= MIN_QUALITY_SCORE else '❌'}")
+
+    # Print issues per agent
+    for agent_name, agent_review in [
+        ("Research", research_review),
+        ("Strategy", strategy_review),
+        ("Copy", copy_review),
+        ("Image", image_review)
+    ]:
+        issues = agent_review.issues
+        if issues:
+            print(f"\n   ⚠️  {agent_name} Issues:")
+            for issue in issues[:3]:
+                print(f"      • {issue}")
+            if len(issues) > 3:
+                print(f"      ... and {len(issues) - 3} more")
+
+    # ========== STEP 8: APPLY THRESHOLD LOGIC ==========
+    print("\n[STEP 8] Applying threshold logic and determining action...")
+    print("-" * 80)
+
+    all_approved = research_approved and strategy_approved and copy_approved and image_approved
+    agents_meet_threshold = all([
+        research_score >= MIN_AGENT_SCORE,
+        strategy_score >= MIN_AGENT_SCORE,
+        copy_score >= MIN_AGENT_SCORE,
+        image_score >= MIN_AGENT_SCORE
+    ])
+    meets_overall_threshold = overall_score >= MIN_QUALITY_SCORE
+
+    # ========== STEP 9: BUILD REVIEW OUTPUT ==========
+    # Override LLM's approved field with threshold-based logic for consistency
+    research_review_dict = research_review.model_dump()
+    research_review_dict["approved"] = research_approved
+    
+    strategy_review_dict = strategy_review.model_dump()
+    strategy_review_dict["approved"] = strategy_approved
+    
+    copy_review_dict = copy_review.model_dump()
+    copy_review_dict["approved"] = copy_approved
+    
+    image_review_dict = image_review.model_dump()
+    image_review_dict["approved"] = image_approved
+    
+    review_output = {
+        "status": "approved" if (all_approved and agents_meet_threshold and meets_overall_threshold) else "revision_required",
+        "research_review": research_review_dict,
+        "strategy_review": strategy_review_dict,
+        "copy_review": copy_review_dict,
+        "image_review": image_review_dict,
+        "overall_quality_score": overall_score,
+        "individual_threshold_met": agents_meet_threshold,
+        "overall_threshold_met": meets_overall_threshold,
+        "reviewed_at": datetime.now().isoformat(),
+        "reviewer": "Reviewer Agent (LLM-Powered)"
+    }
+
+    # ========== STEP 11: UPDATE STATE ==========
+    print("\n[STEP 9] Updating state with review decision...")
+    print("-" * 80)
+
+    if all_approved and agents_meet_threshold and meets_overall_threshold:
+        # ✅ ALL APPROVED
+        print(f"✅ ALL OUTPUTS APPROVED - Ready for Publication")
+        print(f"   All agents meet individual threshold (≥{MIN_AGENT_SCORE})")
+        print(f"   Overall quality: {overall_score}/100 (≥{MIN_QUALITY_SCORE})")
+
+        state.status = "review_complete"
+        state.review_output = json.dumps(review_output, indent=2)
+        state.next_step = "proceed_to_publisher"
+        state.review_feedback = None
+
+    else:
+        # ⚠️ REVISION REQUIRED
+        # Determine which agent to send back (priority: research → strategy → copy → image)
+        revision_target = _determine_revision_target(
+            research_review, strategy_review, copy_review, image_review,
+            research_score, strategy_score, copy_score, image_score,
+            all_approved, agents_meet_threshold, meets_overall_threshold
+        )
+
+        agent_key = revision_target["agent_key"]  # e.g., "research", "strategy"
+        revision_count_attr = f"{agent_key}_revision_count"
+
+        # Get current revision count
+        current_count = getattr(state, revision_count_attr, 0) or 0
+
+        if current_count >= MAX_REVISIONS:
+            # Max revisions reached — force approve and proceed
+            print(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
+            print(f"   Proceeding to publisher despite quality issues")
+
+            state.status = "review_complete"
+            state.review_output = json.dumps(review_output, indent=2)
+            state.next_step = "proceed_to_publisher"
+            state.review_feedback = None
+
+        else:
+            # Send back for revision
+            new_count = current_count + 1
+            setattr(state, revision_count_attr, new_count)
+
+            print(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
+            print(f"   Reason: {revision_target['reason']}")
+            print(f"   Issues: {len(revision_target['issues'])}")
+            print(f"   Revision #{new_count}/{MAX_REVISIONS}")
+
+            for issue in revision_target["issues"][:5]:
+                print(f"   • {issue}")
+
+            review_feedback = {
+                "agent": revision_target["agent_name"],
+                "agent_key": agent_key,
+                "status": revision_target["status"],
+                "reason": revision_target["reason"],
+                "issues": revision_target["issues"],
+                "action_items": revision_target["action_items"],
+                "next_step": revision_target["next_step"],
+                "revision_number": new_count,
+                "max_revisions": MAX_REVISIONS
+            }
+
+            state.status = revision_target["status"]
+            state.review_output = json.dumps(review_output, indent=2)
+            state.review_feedback = json.dumps(review_feedback, indent=2)
+            state.next_step = revision_target["next_step"]
+
+    print(f"\n✅ State updated:")
+    print(f"   status:    {state.status}")
+    print(f"   next_step: {state.next_step}")
+
+    print("\n" + "=" * 80)
+    print("✅ REVIEWER AGENT COMPLETE")
+    print("=" * 80)
+
+    return state
 
 
+# ==================== HELPER FUNCTIONS ====================
+
+def _add_explicit_validation_checks(
+    strategy_data: dict,
+    copy_data: dict,
+    image_data: dict,
+    strategy_review,
+    copy_review,
+    image_review
+) -> None:
+    """
+    Add explicit validation checks for critical alignments.
+    Modifies review objects in-place by adding issues when mismatches found.
+    
+    This catches specific validation failures that the LLM might miss,
+    especially when overall content quality is high.
+    """
+    
+    # Check 1: Copy inferred_goal must match Strategy inferred_goal
+    strategy_goal = strategy_data.get("inferred_goal", "")
+    copy_goal = copy_data.get("inferred_goal", "")
+    
+    if strategy_goal and copy_goal and strategy_goal != copy_goal:
+        issue = f"Copy inferred_goal '{copy_goal}' doesn't match strategy inferred_goal '{strategy_goal}'"
+        if issue not in copy_review.issues:
+            copy_review.issues.append(issue)
+            if not copy_review.action_items:
+                copy_review.action_items = []
+            copy_review.action_items.append(f"Change copy inferred_goal to '{strategy_goal}' to match strategy")
+    
+    # Check 2: Image prompts array must not be empty
+    image_prompts = image_data.get("image_prompts", [])
+    if not image_prompts or len(image_prompts) == 0:
+        issue = "image_prompts array is empty - no visual assets defined"
+        if issue not in image_review.issues:
+            image_review.issues.append(issue)
+            if not image_review.action_items:
+                image_review.action_items = []
+            image_review.action_items.append("Create at least 3 image prompts for key campaign deliverables")
+
+
+def _determine_revision_target(
+    research_review,
+    strategy_review,
+    copy_review,
+    image_review,
+    research_score: int,
+    strategy_score: int,
+    copy_score: int,
+    image_score: int,
+    all_approved: bool,
+    agents_meet_threshold: bool,
+    meets_overall_threshold: bool
+) -> dict:
+    """
+    Determine which agent needs revision.
+    Priority order: Research → Strategy → Copy → Image
+
+    If explicit failures exist → use priority order.
+    If only threshold failures → target the lowest scoring agent.
+    """
+
+    agent_map = {
+        "research": {
+            "agent_name": "Research Agent",
+            "status": "research_revision_required",
+            "next_step": "await_research_revision",
+            "review": research_review,
+            "score": research_score
+        },
+        "strategy": {
+            "agent_name": "Strategy Agent",
+            "status": "strategy_revision_required",
+            "next_step": "await_strategy_revision",
+            "review": strategy_review,
+            "score": strategy_score
+        },
+        "copy": {
+            "agent_name": "Copywriter Agent",
+            "status": "copy_revision_required",
+            "next_step": "await_copy_revision",
+            "review": copy_review,
+            "score": copy_score
+        },
+        "image": {
+            "agent_name": "Image Prompt Agent",
+            "status": "image_revision_required",
+            "next_step": "await_image_revision",
+            "review": image_review,
+            "score": image_score
+        }
+    }
+
+    # Check for explicit failures in priority order
+    if not all_approved:
+        for agent_key in REVISION_PRIORITY:
+            agent_info = agent_map[agent_key]
+            if not agent_info["review"].approved:
+                return {
+                    "agent_key": agent_key,
+                    "agent_name": agent_info["agent_name"],
+                    "status": agent_info["status"],
+                    "next_step": agent_info["next_step"],
+                    "reason": f"Quality issues found: {agent_info['review'].feedback}",
+                    "issues": agent_info["review"].issues,
+                    "action_items": agent_info["review"].action_items
+                }
+
+    # No explicit failures but thresholds not met → target lowest scorer
+    scores = [(agent_map[k]["score"], k) for k in REVISION_PRIORITY]
+    scores.sort(key=lambda x: x[0])
+    lowest_score, lowest_key = scores[0]
+    agent_info = agent_map[lowest_key]
+
+    return {
+        "agent_key": lowest_key,
+        "agent_name": agent_info["agent_name"],
+        "status": agent_info["status"],
+        "next_step": agent_info["next_step"],
+        "reason": f"Score {lowest_score}/100 below threshold ({MIN_AGENT_SCORE}). Quality improvement needed.",
+        "issues": agent_info["review"].issues if agent_info["review"].issues else [
+            f"Quality score {lowest_score}/100 needs improvement to meet minimum threshold of {MIN_AGENT_SCORE}"
+        ],
+        "action_items": agent_info["review"].action_items if agent_info["review"].action_items else [
+            "Improve content quality and completeness",
+            "Ensure all required fields are present and well-developed",
+            "Strengthen alignment with campaign strategy"
+        ]
+    }
+
+
+# ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    """
-    Demo: Run Reviewer Agent with sample data
-    
-    This demonstrates the Reviewer Agent reviewing all 4 agent outputs
-    and validating 28 fields across Research, Strategy, Copy, and Image agents.
-    """
-    
-    print("\n" + "="*80)
-    print("REVIEWER AGENT - STANDALONE DEMO")
-    print("="*80)
-    
-    # Sample perfect campaign data
-    sample_state = {
-        "campaign_name": "Q3 Product Launch",
-        "brand_name": "TechCorp AI Platform",
-        "industry": "saas",
-        "primary_goal": "lead_gen",
-        "brand_voice": "professional",
-        
-        "research_output": json.dumps({
-            "market_analysis": {
-                "total_addressable_market": "$50B",
-                "growth_rate": "35% YoY",
-                "market_trends": ["AI adoption", "Automation demand", "Cost optimization"]
-            },
-            "competitor_analysis": {
-                "top_competitors": ["Competitor A", "Competitor B", "Competitor C"],
-                "differentiation_opportunity": "Enterprise-grade AI without complexity"
-            },
-            "audience_insights": {
-                "pain_points": ["Integration complexity", "High costs", "Long setup time"],
-                "motivations": ["Save time", "Reduce costs", "Scale efficiently"],
-                "preferred_channels": ["LinkedIn", "Email", "Webinars"]
-            },
-            "market_opportunities": [
-                "Enterprise AI segment expansion",
-                "Mid-market automation adoption",
-                "Cost-conscious decision makers"
-            ],
-            "recommended_approach": "Focus on gated content and lead magnets targeting CTOs through LinkedIn and industry events."
-        }),
-        
-        "strategy_output": json.dumps({
-            "positioning": "Enterprise AI without the complexity - deploy in hours not months",
-            "key_messages": [
-                "Deploy AI in hours, not months",
-                "Enterprise-grade without the cost",
-                "Scale with zero technical debt"
-            ],
-            "content_pillars": [
-                "AI automation insights",
-                "ROI case studies",
-                "Technical deep-dives",
-                "Customer success stories"
-            ],
-            "channel_strategy": {
-                "linkedin": {"priority": "HIGH", "frequency": "4x/week"},
-                "email": {"priority": "HIGH", "frequency": "2x/week"}
-            },
-            "audience_segments": [
-                {"segment_name": "Enterprise CTOs", "pain_point": "Complexity", "motivation": "Efficiency"},
-                {"segment_name": "Tech Leaders", "pain_point": "Cost", "motivation": "ROI"},
-                {"segment_name": "Growth Teams", "pain_point": "Speed", "motivation": "Scale"}
-            ],
-            "timeline": {
-                "phase_1": {"name": "Planning", "duration": "Week 1"},
-                "phase_2": {"name": "Content", "duration": "Week 2-3"},
-                "phase_3": {"name": "Launch", "duration": "Week 4-6"},
-                "phase_4": {"name": "Scale", "duration": "Week 7-12"}
-            },
-            "success_metrics": {"primary": ["Leads", "Conversion"], "targets": {"leads": "500+"}},
-            "competitive_differentiation": {
-                "primary_differentiation": "Enterprise without complexity",
-                "competitors": ["A", "B"],
-                "competitive_advantage": "Faster and cheaper"
-            },
-            "market_opportunities": [{"opportunity": "Enterprise", "action": "Content"}],
-            "strategic_approach": "Gated content targeting CTOs through LinkedIn and events",
-            "inferred_goal": "lead_gen",
-            "research_foundation": {
-                "market_analysis": {"total_addressable_market": "$50B"},
-                "competitor_analysis": {"top_competitors": ["A", "B"]},
-                "audience_insights": {"pain_points": ["complexity"]}
-            },
-            "execution": {
-                "channels": ["linkedin", "email"],
-                "deliverables": ["whitepaper", "webinar"],
-                "budget_allocation": {}
-            }
-        }),
-        
-        "copy_output": json.dumps({
-            "inferred_goal": "lead_gen",
-            "email": {
-                "subject": "Get AI deployed in 24 hours - Free guide",
-                "headline": "Deploy Enterprise AI Without the Complexity",
-                "body": "Hi there,\n\nStruggling with AI complexity? You're not alone.\n\nOur platform helps teams like yours deploy enterprise-grade AI in hours, not months.\n\nNo technical debt. No integration nightmares. Just results.\n\nDownload our free guide to see how we do it.\n\nBest,\nTechCorp Team",
-                "ctas": {
-                    "hero_cta": "Download Free Guide",
-                    "secondary_cta": "See How It Works",
-                    "footer_cta": "Contact Sales"
-                }
-            },
-            "linkedin": {
-                "headline": "Enterprise AI Without the Complexity",
-                "body": "The market is growing at 35% YoY.\n\nCompanies are struggling with AI complexity, high costs, and long setup times.\n\nOur platform solves this by making enterprise AI accessible to everyone.\n\nWhat's your biggest AI challenge? Share in the comments.",
-                "ctas": {
-                    "post_cta": "Comment below",
-                    "article_cta": "Read more →",
-                    "ad_cta": "Learn more →"
-                }
-            },
-            "social": {
-                "headline": "Deploy AI in 24 hours - No complexity required",
-                "body": "Problem: AI is too complex.\n\nSolution: Our platform.\n\n✓ Enterprise-grade\n✓ Zero technical debt\n✓ Deploy in hours",
-                "ctas": {
-                    "twitter_cta": "Learn more →",
-                    "instagram_cta": "Link in bio",
-                    "facebook_cta": "See how →",
-                    "tiktok_cta": "Full story →"
-                }
-            },
-            "ads": {
-                "headline": "Enterprise AI - Deployed in Hours, Not Months",
-                "body": "Stop struggling with AI complexity.\n\nOur platform makes enterprise AI simple.\n\n✓ Deploy in 24 hours\n✓ No technical debt\n✓ Enterprise-grade reliability\n✓ Proven ROI\n\nJoin 500+ companies already using our platform.",
-                "ctas": {
-                    "primary_cta": "Get Started Free",
-                    "urgency_cta": "Limited spots available",
-                    "secondary_cta": "Watch Demo"
-                }
-            },
-            "messaging_framework": {
-                "brand_promise": "Enterprise AI without the complexity",
-                "message_hierarchy": {
-                    "level_1_primary": "Deploy AI in hours, not months",
-                    "level_2_supporting": ["Zero technical debt", "Enterprise reliability"],
-                    "level_3_proof": ["Proven ROI", "500+ customers"]
-                },
-                "segment_messaging": [{"segment": "CTOs", "message": "No IT involvement"}],
-                "channel_messaging": {"email": {"tone": "Professional"}},
-                "voice_guidelines": {"do": ["Be clear"], "dont": ["Be vague"]},
-                "messaging_principles": ["Clarity first"]
-            },
-            "strategic_alignment": {
-                "positioning_used": "Enterprise without complexity",
-                "key_messages_count": 3,
-                "content_pillars_count": 4,
-                "audience_segments_count": 3,
-                "deliverables": ["whitepaper", "webinar"]
-            },
-            "copy_readiness": {
-                "email_ready": True,
-                "linkedin_ready": True,
-                "social_ready": True,
-                "ads_ready": True,
-                "messaging_framework_complete": True
-            }
-        }),
-        
-        "image_output": json.dumps({
-            "visual_direction": "Modern tech aesthetic with navy blue and white color scheme. Clean, professional style emphasizing simplicity and enterprise credibility. Visual themes: AI, automation, simplicity, enterprise reliability.",
-            "image_prompts": [
-                {
-                    "deliverable": "whitepaper",
-                    "prompt": "Professional whitepaper cover for enterprise AI platform, modern tech interface, clean dashboard visualization, navy blue and white color scheme, simplified workflow diagram, professional lighting, high quality marketing asset",
-                    "style": "modern professional",
-                    "color_palette": "navy blue, white, light gray",
-                    "text_overlay": "Enterprise AI Without the Complexity",
-                    "aspect_ratio": "8.5:11"
-                },
-                {
-                    "deliverable": "webinar",
-                    "prompt": "Webinar promotional banner for AI platform, modern tech aesthetic, clean interface mockup, navy blue and white colors, professional presenter setup, enterprise feel, high quality",
-                    "style": "modern professional",
-                    "color_palette": "navy blue, white, light gray",
-                    "text_overlay": "Deploy AI in Hours - Live Webinar",
-                    "aspect_ratio": "16:9"
-                }
-            ]
-        }),
-        
-        "status": "image_complete"
-    }
-    
-    print("\n📋 Campaign Details:")
-    print(f"   Campaign: {sample_state['campaign_name']}")
-    print(f"   Brand: {sample_state['brand_name']}")
-    print(f"   Industry: {sample_state['industry']}")
-    print(f"   Goal: {sample_state['primary_goal']}")
-    print(f"   Voice: {sample_state['brand_voice']}")
-    
-    # Run reviewer
-    result = reviewer_agent(sample_state)
-    
-    # Display results
-    print("\n" + "="*80)
-    print("REVIEW RESULTS")
-    print("="*80)
-    
-    print(f"\n📌 Status: {result['status']}")
-    print(f"📌 Next Step: {result.get('next_step', 'N/A')}")
-    
-    if result.get('review_output'):
-        review = json.loads(result['review_output'])
-        print(f"\n🎯 Overall Quality Score: {review['overall_quality_score']}/100")
-        print(f"   Individual Threshold Met: {review['individual_threshold_met']}")
-        print(f"   Overall Threshold Met: {review['overall_threshold_met']}")
-        
-        print(f"\n📊 Agent Scores:")
-        print(f"   Research: {review['research_review']['score']}/100 - {review['research_review']['feedback']}")
-        print(f"   Strategy: {review['strategy_review']['score']}/100 - {review['strategy_review']['feedback']}")
-        print(f"   Copy: {review['copy_review']['score']}/100 - {review['copy_review']['feedback']}")
-        print(f"   Image: {review['image_review']['score']}/100 - {review['image_review']['feedback']}")
-    
-    if result.get('review_feedback'):
-        feedback = json.loads(result['review_feedback'])
-        print(f"\n⚠️  Revision Required:")
-        print(f"   Agent: {feedback['agent']}")
-        print(f"   Issues: {len(feedback['issues'])}")
-        for issue in feedback['issues'][:5]:  # Show first 5 issues
-            print(f"      • {issue}")
-        if len(feedback['issues']) > 5:
-            print(f"      ... and {len(feedback['issues']) - 5} more issues")
-    
-    print("\n" + "="*80)
-    print("✅ Demo Complete!")
-    print("="*80)
-    print("\nTo run tests: python tests/test_reviewer.py")
-    print("="*80 + "\n")
+    print("\n" + "=" * 80)
+    print("⚠️  This is the agent module file.")
+    print("    To test the Reviewer Agent, run: python examples/run_reviewer.py")
+    print("    To customize input, edit: examples/inputs/campaign_input.json")
+    print("=" * 80)
