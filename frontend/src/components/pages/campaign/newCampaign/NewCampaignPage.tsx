@@ -1,12 +1,21 @@
-import React, { useState } from 'react';
-import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
 import TopNav from '../../../shared/topNav/TopNav';
+import CreateProjectModal from '../../projects/CreateProjectModal';
 
 const NewCampaignContent: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [projects] = useState([
+    { id: '1', name: 'Nike 2025 Campaign' },
+    { id: '2', name: 'Adidas Spring Collection' },
+    { id: '3', name: 'TechGadgets Pro Launch' },
+  ]);
   const [formData, setFormData] = useState({
+    projectId: searchParams.get('projectId') || '',
     campaignName: '',
     brandName: '',
     industry: '',
@@ -15,8 +24,24 @@ const NewCampaignContent: React.FC = () => {
     brandVoice: 'professional',
   });
 
+  useEffect(() => {
+    const projectIdFromUrl = searchParams.get('projectId');
+    if (projectIdFromUrl) {
+      setFormData((prev) => ({ ...prev, projectId: projectIdFromUrl }));
+    }
+  }, [searchParams]);
+
+  const handleCreateProject = (name: string, description: string) => {
+    console.log('Project created:', name, description);
+    setShowCreateProjectModal(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.projectId) {
+      alert('Please select a project');
+      return;
+    }
     const campaignId = 'temp-' + Date.now();
     navigate(`/campaign/${campaignId}/live`);
   };
@@ -31,33 +56,88 @@ const NewCampaignContent: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8" style={{ fontFamily: 'Sora, sans-serif' }}>
-      <style>{`
-        input[type="text"], select, textarea {
-          background-color: #131318;
-          border-color: #2A2A38;
-          color: #F1F1F3;
-        }
-        input:focus, select:focus, textarea:focus {
-          border-color: #c0c1ff !important;
-          box-shadow: 0 0 0 2px rgba(192, 193, 255, 0.2) !important;
-          outline: none;
-        }
-        ::placeholder {
-          color: #4A4A5E;
-        }
-      `}</style>
+    <>
+      <div className="space-y-8" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <style>{`
+          input[type="text"], select, textarea {
+            background-color: #131318;
+            border-color: #2A2A38;
+            color: #F1F1F3;
+          }
+          input:focus, select:focus, textarea:focus {
+            border-color: #c0c1ff !important;
+            box-shadow: 0 0 0 2px rgba(192, 193, 255, 0.2) !important;
+            outline: none;
+          }
+          ::placeholder {
+            color: #4A4A5E;
+          }
+        `}</style>
 
-      <header>
-        <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-          Launch New Campaign
-        </h1>
-        <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-          Define your campaign parameters and initialize the agent cluster
-        </p>
-      </header>
+        <header>
+          <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            Launch New Campaign
+          </h1>
+          <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+            Define your campaign parameters and initialize the agent cluster
+          </p>
+        </header>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Project Selection */}
+        <section className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <FolderOpen size={16} className="text-[#c0c1ff]" />
+            <h3 className="text-lg font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              Select Project
+            </h3>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+              Project *
+            </label>
+            <div className="flex gap-2">
+              <select
+                required
+                value={formData.projectId}
+                onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+                className="flex-1 rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
+                style={{ fontFamily: 'Sora, sans-serif' }}
+              >
+                <option value="">Select a project...</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowCreateProjectModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: 'rgba(99,102,241,0.1)',
+                  color: '#6366F1',
+                  border: '1px solid rgba(99,102,241,0.2)',
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                }}
+              >
+                <Plus size={14} />
+                New
+              </button>
+            </div>
+            <p className="text-xs" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>
+              Select which project this campaign belongs to, or create a new one
+            </p>
+          </div>
+        </section>
+
         <section className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
           <div className="flex items-center gap-2 mb-5">
             <Briefcase size={16} className="text-[#c0c1ff]" />
@@ -210,7 +290,15 @@ const NewCampaignContent: React.FC = () => {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+
+      {showCreateProjectModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateProjectModal(false)}
+          onCreate={handleCreateProject}
+        />
+      )}
+    </>
   );
 };
 

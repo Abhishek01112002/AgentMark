@@ -5,6 +5,8 @@ import LandingPage from './components/pages/landingPage/LandingPage';
 import Login from './components/pages/login/Login';
 import Signup from './components/pages/signup/Signup';
 import DashboardPage from './components/pages/dashboard/DashboardPage';
+import ProjectsPage from './components/pages/projects/ProjectsPage';
+import ProjectDetailPage from './components/pages/projects/ProjectDetailPage';
 import NewCampaignPage from './components/pages/campaign/newCampaign/NewCampaignPage';
 import CampaignLivePage from './components/pages/campaign/newCampaign/campaignLive/CampaignLivePage';
 import CampaignResultPage from './components/pages/campaign/newCampaign/campaignLive/campaignResult/CampaignResultPage';
@@ -68,6 +70,22 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects"
+        element={
+          <ProtectedRoute>
+            <ProjectsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:id"
+        element={
+          <ProtectedRoute>
+            <ProjectDetailPage />
           </ProtectedRoute>
         }
       />

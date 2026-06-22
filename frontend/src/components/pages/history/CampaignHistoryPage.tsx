@@ -5,7 +5,7 @@ import TopNav from '../../shared/topNav/TopNav';
 interface Campaign {
   id: string;
   name: string;
-  company: string;
+  projectName: string;
   status: 'running' | 'completed' | 'failed';
   score: number | null;
   agents: Agent[];
@@ -20,6 +20,8 @@ interface Agent {
 }
 
 // Mock data with 42 campaigns
+const mockProjects = ['Nike 2025 Campaign', 'Adidas Spring Collection', 'TechGadgets Pro Launch', 'Internal Marketing 2025'];
+
 const campaigns: Campaign[] = Array.from({ length: 42 }, (_, i) => {
   const statuses: Array<Campaign['status']> = ['running', 'completed', 'failed'];
   const icons = ['rocket_launch', 'mail', 'campaign'];
@@ -27,7 +29,7 @@ const campaigns: Campaign[] = Array.from({ length: 42 }, (_, i) => {
   return {
     id: `${i + 1}`,
     name: `Campaign ${i + 1}`,
-    company: `Company ${(i % 10) + 1}`,
+    projectName: mockProjects[i % mockProjects.length],
     status: statuses[i % 3],
     score: statuses[i % 3] === 'failed' ? null : 85 + Math.random() * 15,
     agents: [
@@ -289,7 +291,7 @@ const CampaignHistoryContent: React.FC = () => {
                                 {getCampaignIcon(campaign)}
                                 <div>
                                   <div className="text-text-primary font-medium">{campaign.name}</div>
-                                  <div className="text-text-muted text-xs mt-0.5">{campaign.company}</div>
+                                  <div className="text-text-muted text-xs mt-0.5">{campaign.projectName}</div>
                                 </div>
                               </div>
                             </td>

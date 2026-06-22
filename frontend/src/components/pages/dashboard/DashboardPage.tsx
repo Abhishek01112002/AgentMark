@@ -1,67 +1,76 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  LayoutDashboard,
-  Mail,
-  MessageSquare,
-  TrendingUp,
-  Star,
-  StarHalf,
-  RocketIcon,
   FolderOpen,
   CheckCircle,
   RefreshCw,
-  Eye,
-  Trash2,
+  Star,
+  Plus,
+  ArrowRight,
+  TrendingUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 
-type StatusTone = 'green' | 'neutral' | 'warning' | 'danger';
-type ScoreTone  = 'green' | 'warning' | 'neutral';
-
-type CampaignRow = {
-  name:       string;
-  icon:       LucideIcon;
-  status:     string;
-  statusTone: StatusTone;
-  score:      string;
-  scoreTone:  ScoreTone;
-  created:    string;
+type ProjectRow = {
+  id: string;
+  name: string;
+  description: string;
+  campaignCount: number;
+  status: 'Active' | 'Reviewing' | 'Idle';
+  updated: string;
 };
 
-// Mock data with 42 campaigns
-const campaigns: CampaignRow[] = Array.from({ length: 42 }, (_, i) => {
-  const statuses = ['Running', 'Completed', 'Review Needed', 'Failed'];
-  const icons = [LayoutDashboard, Mail, TrendingUp, MessageSquare];
-  const statusTones: StatusTone[] = ['green', 'neutral', 'warning', 'danger'];
-  
-  const statusIdx = i % 4;
-  const scoreTone: ScoreTone = statusIdx === 3 ? 'neutral' : (i % 2 === 0 ? 'green' : 'warning');
-  
-  return {
-    name: `Campaign ${i + 1}`,
-    icon: icons[i % 4],
-    status: statuses[statusIdx],
-    statusTone: statusTones[statusIdx],
-    score: statusIdx === 3 ? 'N/A' : (8 + Math.random() * 2).toFixed(1),
-    scoreTone: scoreTone,
-    created: `${Math.floor(Math.random() * 30)} days ago`,
-  };
-});
+const projects: ProjectRow[] = [
+  {
+    id: '1',
+    name: 'Nike 2025 Campaign',
+    description: 'Complete marketing strategy for Nike Q1 2025 product launches',
+    campaignCount: 12,
+    status: 'Active',
+    updated: '2 days ago',
+  },
+  {
+    id: '2',
+    name: 'Adidas Spring Collection',
+    description: 'Spring seasonal campaigns and social media strategy',
+    campaignCount: 5,
+    status: 'Active',
+    updated: '1 week ago',
+  },
+  {
+    id: '3',
+    name: 'TechGadgets Pro Launch',
+    description: 'Product launch campaigns for new tech gadget line',
+    campaignCount: 8,
+    status: 'Reviewing',
+    updated: '3 days ago',
+  },
+  {
+    id: '4',
+    name: 'Internal Marketing 2025',
+    description: 'Internal company marketing and brand awareness initiatives',
+    campaignCount: 15,
+    status: 'Active',
+    updated: '5 hours ago',
+  },
+];
 
-const badgeMap: Record<StatusTone, { text: string; dot: string }> = {
-  green:   { text: '#4edea3', dot: '#4edea3' },
-  neutral: { text: '#8B8B9E', dot: '#8B8B9E' },
-  warning: { text: '#F59E0B', dot: '#F59E0B' },
-  danger:  { text: '#F43F5E', dot: '#F43F5E' },
+const metrics = {
+  totalProjects: projects.length,
+  completedCampaigns: 98,
+  runningCampaigns: 11,
+  avgReviewScore: 9.2,
+  completionRate: 79,
 };
 
-const scoreMap: Record<ScoreTone, string> = {
-  green:   '#4edea3',
-  warning: '#F59E0B',
-  neutral: '#4A4A5E',
+const recentProjects = projects.slice(0, 3);
+
+const statusPill: Record<ProjectRow['status'], { text: string; dot: string }> = {
+  Active: { text: '#4edea3', dot: '#4edea3' },
+  Reviewing: { text: '#F59E0B', dot: '#F59E0B' },
+  Idle: { text: '#8B8B9E', dot: '#8B8B9E' },
 };
 
 function StatCard(props: {
@@ -75,7 +84,7 @@ function StatCard(props: {
   pulse?: boolean;
 }) {
   const { icon: Icon, label, value, trend, trendLabel, iconBg, iconColor, pulse } = props;
-  
+
   return (
     <div
       className="relative overflow-hidden rounded-xl p-4 sm:p-5 group transition-colors"
@@ -161,24 +170,7 @@ function StatCard(props: {
 }
 
 function DashboardContent() {
-  const activeCampaigns = campaigns.filter((c) => c.status === 'Running').length;
   const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-
-  const totalPages = Math.ceil(campaigns.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, campaigns.length);
-  const paginatedCampaigns = campaigns.slice(startIndex, endIndex);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
-  };
-
-  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setItemsPerPage(parseInt(e.target.value));
-    setCurrentPage(1);
-  };
 
   return (
     <>
@@ -198,47 +190,37 @@ function DashboardContent() {
         }
       `}</style>
 
-      <div
-        className="min-h-screen overflow-x-hidden"
-        style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}
-      >
+      <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
         <Sidebar />
         <TopNav
           title="Dashboard"
-          stats={[
-            { label: 'active campaigns', value: activeCampaigns, color: '#4edea3' },
-          ]}
+          stats={[{ label: 'active campaigns', value: metrics.runningCampaigns, color: '#4edea3' }]}
         />
 
-        <main
-          className="dashboard-main pt-14 min-h-screen"
-          style={{ fontFamily: 'Sora, sans-serif' }}
-        >
+        <main className="dashboard-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8">
-
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               <StatCard
                 icon={FolderOpen}
-                label="Total Campaigns"
-                value="124"
-                trend="12%"
-                trendLabel="vs last month"
+                label="Total Projects"
+                value={metrics.totalProjects}
+                trendLabel="workspace overview"
                 iconBg="rgba(99,102,241,0.12)"
                 iconColor="#6366F1"
               />
               <StatCard
                 icon={CheckCircle}
-                label="Completed"
-                value="98"
-                trendLabel="79% completion rate"
+                label="Completed Campaigns"
+                value={metrics.completedCampaigns}
+                trendLabel={`${metrics.completionRate}% campaign completion rate`}
                 iconBg="rgba(0,165,114,0.12)"
                 iconColor="#4edea3"
               />
               <StatCard
                 icon={RefreshCw}
-                label="Running Now"
-                value={<>{activeCampaigns}</>}
-                trendLabel="All systems nominal"
+                label="Running Campaigns"
+                value={metrics.runningCampaigns}
+                trendLabel="Campaigns currently in progress"
                 iconBg="rgba(215,119,33,0.12)"
                 iconColor="#ffb783"
                 pulse
@@ -246,7 +228,7 @@ function DashboardContent() {
               <StatCard
                 icon={Star}
                 label="Avg Review Score"
-                value="9.2"
+                value={metrics.avgReviewScore}
                 trend="0.4"
                 trendLabel="vs last month"
                 iconBg="rgba(245,158,11,0.12)"
@@ -283,7 +265,7 @@ function DashboardContent() {
                     marginBottom: '8px',
                   }}
                 >
-                  Ready for your next move?
+                  Ready to start a new project?
                 </h2>
                 <p
                   style={{
@@ -293,11 +275,11 @@ function DashboardContent() {
                     maxWidth: '560px',
                   }}
                 >
-                  Launch a new AI-driven marketing campaign. Our agents are primed and ready to execute research, strategy, and copy.
+                  Create a project first, then group campaigns underneath it for clearer ownership and reporting.
                 </p>
               </div>
               <button
-                onClick={() => navigate('/campaign/new')}
+                onClick={() => navigate('/projects')}
                 className="relative z-10 flex-shrink-0 flex items-center gap-2 transition-all hover:opacity-90"
                 style={{
                   backgroundColor: '#6366F1',
@@ -318,15 +300,12 @@ function DashboardContent() {
                   (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                 }}
               >
-                Start Campaign
-                <RocketIcon size={18} />
+                <FolderOpen size={18} />
+                View Projects
               </button>
             </div>
 
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
-            >
+            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
               <div
                 className="p-4 sm:p-5 flex justify-between items-center gap-4"
                 style={{ backgroundColor: '#111118', borderBottom: '1px solid #2A2A38' }}
@@ -341,12 +320,26 @@ function DashboardContent() {
                     color: '#F1F1F3',
                   }}
                 >
-                  Recent Campaigns
+                  Recent Projects
                 </h3>
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-all"
+                  style={{
+                    borderColor: '#2A2A38',
+                    color: '#F1F1F3',
+                    backgroundColor: '#131318',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '12px',
+                  }}
+                >
+                  View All
+                  <ArrowRight size={14} />
+                </button>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" style={{ minWidth: 600 }}>
+                <table className="w-full text-left border-collapse" style={{ minWidth: 700 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
                       <th
@@ -362,7 +355,22 @@ function DashboardContent() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        Campaign Name
+                        Project Name
+                      </th>
+                      <th
+                        style={{
+                          padding: '12px 20px',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: '11px',
+                          lineHeight: '16px',
+                          letterSpacing: '0.05em',
+                          fontWeight: 500,
+                          color: '#4A4A5E',
+                          textTransform: 'uppercase',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Campaigns
                       </th>
                       <th
                         style={{
@@ -392,22 +400,7 @@ function DashboardContent() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        Score
-                      </th>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#4A4A5E',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Created
+                        Updated
                       </th>
                       <th
                         style={{
@@ -423,20 +416,16 @@ function DashboardContent() {
                           textAlign: 'right',
                         }}
                       >
-                        Actions
+                        Open
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {paginatedCampaigns.map((row) => {
-                      const Icon = row.icon;
-                      const badge = badgeMap[row.statusTone];
-                      const scorColor = scoreMap[row.scoreTone];
-                      const isRunning = row.statusTone === 'green';
-
+                    {recentProjects.map((row) => {
+                      const badge = statusPill[row.status];
                       return (
                         <tr
-                          key={row.name}
+                          key={row.id}
                           className="group transition-colors"
                           style={{ borderBottom: '1px solid #2A2A38' }}
                           onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
@@ -448,20 +437,37 @@ function DashboardContent() {
                                 className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
                                 style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', color: '#F1F1F3' }}
                               >
-                                <Icon size={16} />
+                                <FolderOpen size={16} />
                               </div>
-                              <span
-                                className="truncate"
-                                style={{
-                                  fontFamily: 'Sora, sans-serif',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                  color: '#F1F1F3',
-                                }}
-                              >
-                                {row.name}
-                              </span>
+                              <div className="min-w-0">
+                                <span
+                                  className="truncate block"
+                                  style={{
+                                    fontFamily: 'Sora, sans-serif',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    color: '#F1F1F3',
+                                  }}
+                                >
+                                  {row.name}
+                                </span>
+                                <span
+                                  className="truncate block"
+                                  style={{
+                                    fontFamily: 'Sora, sans-serif',
+                                    fontSize: '12px',
+                                    color: '#4A4A5E',
+                                    marginTop: '2px',
+                                  }}
+                                >
+                                  {row.description}
+                                </span>
+                              </div>
                             </div>
+                          </td>
+
+                          <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
+                            {row.campaignCount}
                           </td>
 
                           <td style={{ padding: '16px 20px' }}>
@@ -476,31 +482,9 @@ function DashboardContent() {
                                 letterSpacing: '0.05em',
                               }}
                             >
-                              <span
-                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                style={{
-                                  backgroundColor: badge.dot,
-                                  animation: isRunning ? 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite' : 'none',
-                                }}
-                              />
+                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: badge.dot }} />
                               {row.status}
                             </span>
-                          </td>
-
-                          <td style={{ padding: '16px 20px' }}>
-                            <div className="flex items-center gap-2 whitespace-nowrap" style={{ color: scorColor }}>
-                              <span
-                                style={{
-                                  fontFamily: 'Sora, sans-serif',
-                                  fontSize: '14px',
-                                  fontWeight: 500,
-                                }}
-                              >
-                                {row.score}
-                              </span>
-                              {row.scoreTone === 'green'   && <Star     size={14} fill="currentColor" className="flex-shrink-0" />}
-                              {row.scoreTone === 'warning' && <StarHalf size={14} className="flex-shrink-0" />}
-                            </div>
                           </td>
 
                           <td
@@ -512,42 +496,24 @@ function DashboardContent() {
                               color: '#4A4A5E',
                             }}
                           >
-                            {row.created}
+                            {row.updated}
                           </td>
 
                           <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                className="p-1.5 rounded transition-colors"
-                                title="View Details"
-                                style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
-                                onMouseEnter={(e) => {
-                                  (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                                }}
-                                onMouseLeave={(e) => {
-                                  (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                }}
-                              >
-                                <Eye size={16} />
-                              </button>
-                              <button
-                                className="p-1.5 rounded transition-colors"
-                                title="Delete"
-                                style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
-                                onMouseEnter={(e) => {
-                                  (e.currentTarget as HTMLElement).style.color = '#F43F5E';
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(244,63,94,0.08)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                }}
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => navigate(`/projects/${row.id}`)}
+                              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                              style={{
+                                backgroundColor: '#1A1A24',
+                                color: '#F1F1F3',
+                                border: '1px solid #2A2A38',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                fontSize: '12px',
+                              }}
+                            >
+                              Open
+                              <ArrowRight size={14} />
+                            </button>
                           </td>
                         </tr>
                       );
@@ -556,88 +522,26 @@ function DashboardContent() {
                 </table>
               </div>
 
-              {/* Pagination Footer */}
-              <div
-                className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4"
-                style={{ backgroundColor: '#111118', borderTop: '1px solid #2A2A38' }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '12px',
-                    color: '#8B8B9E',
-                  }}
-                >
-                  Showing {startIndex + 1} to {endIndex} of {campaigns.length} campaigns
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4" style={{ backgroundColor: '#111118', borderTop: '1px solid #2A2A38' }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
+                  Showing {recentProjects.length} of {projects.length} projects
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                    className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                    style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                    title="First"
-                  >
-                    &lt;&lt;
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                    style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                    title="Previous"
-                  >
-                    &lt;
-                  </button>
-
-                  <div
-                    className="px-3 py-1 rounded border"
-                    style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                  >
-                    {currentPage}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                    style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                    title="Next"
-                  >
-                    &gt;
-                  </button>
-                  <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                    style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                    title="Last"
-                  >
-                    &gt;&gt;
-                  </button>
-                </div>
-
-                <select
-                  value={itemsPerPage}
-                  onChange={handleItemsPerPageChange}
-                  className="px-3 py-1 rounded border text-sm cursor-pointer"
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors"
                   style={{
-                    backgroundColor: '#111118',
                     borderColor: '#2A2A38',
-                    color: '#8B8B9E',
+                    backgroundColor: '#131318',
+                    color: '#F1F1F3',
                     fontFamily: 'JetBrains Mono, monospace',
                     fontSize: '12px',
                   }}
                 >
-                  <option value={5}>5 per page</option>
-                  <option value={10}>10 per page</option>
-                  <option value={25}>25 per page</option>
-                  <option value={50}>50 per page</option>
-                </select>
+                  <Plus size={14} />
+                  Manage Projects
+                </button>
               </div>
             </div>
-
           </div>
         </main>
       </div>

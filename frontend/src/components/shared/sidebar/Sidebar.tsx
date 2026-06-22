@@ -2,7 +2,7 @@
 import React, { useState, createContext, useContext, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Plus, History,
+  LayoutDashboard, FolderOpen, Plus, History,
   Settings, HelpCircle, LogOut,
   ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
@@ -48,6 +48,7 @@ const COLLAPSED_W = 72;
 
 const navItems = [
   { name: 'Dashboard',         icon: LayoutDashboard, path: '/dashboard', isLink: true  },
+  { name: 'Projects',          icon: FolderOpen,      path: '/projects', isLink: true   },
   { name: 'New Campaign',      icon: Plus,            path: '/campaign/new', isLink: true },
   { name: 'Campaign History',  icon: History,         path: '/history', isLink: true    },
 ];
@@ -67,6 +68,9 @@ const Sidebar: React.FC = () => {
   const isActive = (path: string) => {
     if (path === '/campaign/new') {
       return location.pathname.startsWith('/campaign');
+    }
+    if (path === '/projects') {
+      return location.pathname.startsWith('/projects');
     }
     return location.pathname === path;
   };
