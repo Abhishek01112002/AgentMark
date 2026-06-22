@@ -25,6 +25,8 @@ VERSION = "1.0.0"
 AI_SERVICE_NAME = "AgentMark AI Service"
 STATUS = "FROZEN"
 
+__version__ = VERSION
+
 # Version metadata
 VERSION_INFO = {
     "version": VERSION,

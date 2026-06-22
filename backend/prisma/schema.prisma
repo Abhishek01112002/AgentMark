@@ -12,82 +12,49 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
+  name      String
   email     String   @unique
   password  String
-  name      String?
+  
+  projects  Project[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  campaigns Campaign[]
 
   @@map("users")
 }
 
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  campaigns   Campaign[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("projects")
+}
+
 model Campaign {
   id              String   @id @default(uuid())
-  campaignName    String
-  brandName       String
+  name            String
   industry        String
-  goal            String
+  primaryGoal     String
   targetAudience  String   @db.Text
   brandVoice      String
-  status          CampaignStatus @default(DRAFT)
-  progress        Int      @default(0)
-  qualityScore    Float?
   
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status          String   @default("draft")
+  
+  projectId       String
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  completedAt     DateTime?
-
-  agentLogs       AgentLog[]
-  outputs         CampaignOutput[]
 
   @@map("campaigns")
-}
-
-enum CampaignStatus {
-  DRAFT
-  RUNNING
-  REVIEW_NEEDED
-  COMPLETED
-  FAILED
-}
-
-model AgentLog {
-  id          String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
-  agentName   String
-  status      AgentStatus
-  message     String   @db.Text
-  duration    Int?     // in seconds
-  
-  createdAt   DateTime @default(now())
-
-  @@map("agent_logs")
-}
-
-enum AgentStatus {
-  PENDING
-  RUNNING
-  COMPLETED
-  FAILED
-}
-
-model CampaignOutput {
-  id          String   @id @default(uuid())
-  campaignId  String
-  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  
-  outputType  String   // e.g., "research", "strategy", "copy", "visuals"
-  content     String   @db.Text
-  metadata    Json?
-  
-  createdAt   DateTime @default(now())
-
-  @@map("campaign_outputs")
 }
