@@ -1,9 +1,19 @@
 import { Response } from 'express';
 import { z } from 'zod';
+import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { campaignService } from './campaign.service';
 import { aiServiceClient } from '../../utils/ai-client';
+import type { AIServiceCampaignRequest } from '../../utils/ai-client';
 import prisma from '../../db';
+
+// ── Socket.io singleton ────────────────────────────────────────────────────
+// Set once from index.ts after the Socket.io Server is created.
+// Allows the background AI runner to emit socket events without threading `io`
+// through every route handler signature.
+let _io: SocketIOServer | null = null;
+export const setSocketIO = (io: SocketIOServer) => { _io = io; };
+const getIO = (): SocketIOServer | null => _io;
 
 const createCampaignSchema = z.object({
   projectId: z.string().uuid(),
@@ -29,9 +39,45 @@ const formatFriendlyError = (message: string) => {
   return 'We could not generate this campaign right now. Please try again.';
 };
 
+/**
+ * Background AI workflow runner.
+ *
+ * Called after the 201 response has already been sent. Any HTTP-level failure
+ * (FastAPI down, network error) updates the DB directly to "failed" AND emits
+ * a campaign_failed socket event so the live page shows an error immediately
+ * instead of hanging forever.
+ */
+async function runAIWorkflowBackground(
+  dbCampaignId: string,
+  payload: AIServiceCampaignRequest,
+  io: SocketIOServer
+): Promise<void> {
+  try {
+    console.log(`AI workflow started in background | campaign=${dbCampaignId}`);
+    await aiServiceClient.createCampaign(payload);
+    console.log(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
+  } catch (err: any) {
+    console.error(`AI workflow HTTP error | campaign=${dbCampaignId} | error=${err.message}`);
+    try {
+      await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', err.message);
+    } catch (dbErr: any) {
+      console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+    }
+    io.to(`campaign:${dbCampaignId}`).emit('campaign_failed', {
+      campaign_id: dbCampaignId,
+      agent: 'system',
+      status: 'failed',
+      error: err.message ?? 'AI service is unavailable. Please try again.',
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
 export const createCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const data = createCampaignSchema.parse(req.body);
+    // LLM config comes from the x-llm-config request header.
+    // The frontend axios interceptor (api.ts) attaches it automatically on every request.
     const llmConfigHeader = req.headers['x-llm-config'];
     let llmConfig: any = undefined;
     if (typeof llmConfigHeader === 'string') {
@@ -41,19 +87,19 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
         llmConfig = undefined;
       }
     }
-    
+
     // Verify project ownership
     const project = await prisma.project.findFirst({
       where: { id: data.projectId, userId: req.userId! },
     });
-    
+
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    
+
     const { projectId, ...campaignData } = data;
     const brandName = campaignData.brandName || project.name;
-    const briefParts = [];
+    const briefParts: string[] = [];
     if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(campaignData.industry.trim().toLowerCase())) {
       briefParts.push(`Custom industry: ${campaignData.industry}`);
     }
@@ -61,15 +107,23 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
       briefParts.push(`Custom goal: ${campaignData.primaryGoal}`);
     }
 
-    // Step 1: Create campaign record in database (status: "processing")
+    // ── Step 1: Create DB record (status: "processing") ──────────────────────
     const campaign = await campaignService.create(projectId, { ...campaignData, brandName });
-    console.log(`📝 Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
-    
-    try {
-      // Step 2: Call FastAPI AI Service (BLOCKS for 2-3 minutes)
-      console.log(`🚀 Triggering AI agents for campaign: ${campaign.name}`);
-      
-      const aiResult = await aiServiceClient.createCampaign({
+    console.log(`Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
+
+    // ── Step 2: Respond 201 immediately ──────────────────────────────────────
+    // Frontend receives the campaign object and navigates to /live right away.
+    // No waiting — the 2-3 min AI pipeline runs entirely in the background.
+    res.status(201).json({ campaign });
+
+    // ── Step 3: Fire AI workflow in background (fire-and-forget) ────────────
+    // `void` intentionally suppresses the unhandled Promise lint warning.
+    // The `campaign_id` passed here equals the DB UUID so FastAPI can publish
+    // to the correct Redis channel (campaign:{id}) for the Redis subscriber.
+    // `getIO()` returns the singleton socket.io Server set at startup in index.ts.
+    const io = getIO();
+    if (io) {
+      void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
         brand_name: campaign.brandName || brandName,
         industry: campaign.industry,
@@ -78,42 +132,13 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
         brand_voice: campaign.brandVoice,
         brief: briefParts.length > 0 ? briefParts.join('. ') : undefined,
         llm_config: llmConfig,
-      });
-      
-      console.log(`✅ AI workflow completed: ${aiResult.status}`);
-      
-      // Step 3: Update campaign with AI outputs (status: "completed")
-      const updatedCampaign = await campaignService.updateWithAIOutputs(
-        campaign.id,
-        aiResult.campaign_id,
-        aiResult.outputs,
-        'completed'
-      );
-      
-      console.log(`💾 Campaign updated with AI outputs: ${updatedCampaign.id}`);
-      
-      // Step 4: Return complete campaign to frontend
-      return res.status(201).json({ campaign: updatedCampaign });
-      
-    } catch (aiError: any) {
-      // AI Service failed - update campaign status to "failed"
-      console.error(`❌ AI Service error: ${aiError.message}`);
-      
-      await campaignService.updateWithAIOutputs(
-        campaign.id,
-        '',
-        {},
-        'failed',
-        aiError.message
-      );
-      
-      return res.status(500).json({ 
-        error: 'AI campaign generation failed',
-        details: formatFriendlyError(aiError.message),
-        campaignId: campaign.id // Return campaign ID so user can retry later
-      });
+        campaign_id: campaign.id,
+      }, io);
+    } else {
+      // io not yet set (shouldn't happen in production — Redis init runs before any request)
+      console.warn(`[Campaign] Socket.io not initialised — background runner will not emit socket events | campaign=${campaign.id}`);
     }
-    
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
@@ -125,67 +150,147 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
 
 export const getCampaigns = async (req: AuthRequest, res: Response) => {
   const { projectId } = req.query;
-  
+
   if (!projectId || typeof projectId !== 'string') {
     return res.status(400).json({ error: 'projectId is required' });
   }
-  
+
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: req.userId! },
   });
-  
+
   if (!project) {
     return res.status(404).json({ error: 'Project not found' });
   }
-  
+
   const campaigns = await campaignService.getAll(projectId);
   res.json({ campaigns });
 };
 
 export const getCampaign = async (req: AuthRequest, res: Response) => {
   const { projectId } = req.query;
-  
-  if (!projectId || typeof projectId !== 'string') {
-    return res.status(400).json({ error: 'projectId is required' });
-  }
-  
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId: req.userId! },
+
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: req.params.id },
   });
-  
-  if (!project) {
-    return res.status(404).json({ error: 'Project not found' });
-  }
-  
-  const campaign = await campaignService.getById(req.params.id, projectId);
-  
+
   if (!campaign) {
     return res.status(404).json({ error: 'Campaign not found' });
   }
-  
+
+  if (projectId && typeof projectId === 'string' && campaign.projectId !== projectId) {
+    return res.status(400).json({ error: 'Campaign does not belong to the specified project' });
+  }
+
+  // Verify project ownership
+  const project = await prisma.project.findFirst({
+    where: { id: campaign.projectId, userId: req.userId! },
+  });
+
+  if (!project) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
   res.json({ campaign });
 };
 
 export const deleteCampaign = async (req: AuthRequest, res: Response) => {
   const { projectId } = req.query;
-  
+
   if (!projectId || typeof projectId !== 'string') {
     return res.status(400).json({ error: 'projectId is required' });
   }
-  
+
   const project = await prisma.project.findFirst({
     where: { id: projectId, userId: req.userId! },
   });
-  
+
   if (!project) {
     return res.status(404).json({ error: 'Project not found' });
   }
-  
+
   const campaign = await campaignService.delete(req.params.id, projectId);
-  
+
   if (!campaign) {
     return res.status(404).json({ error: 'Campaign not found' });
   }
-  
+
   res.json({ message: 'Campaign deleted successfully' });
 };
+
+export const approveCampaign = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { action, feedback, revisionTarget } = req.body;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    // Verify project ownership
+    const project = await prisma.project.findFirst({
+      where: { id: campaign.projectId, userId: req.userId! },
+    });
+
+    if (!project) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Extract LLM config from request headers
+    const llmConfigHeader = req.headers['x-llm-config'];
+    let llmConfig: any = undefined;
+    if (typeof llmConfigHeader === 'string') {
+      try {
+        llmConfig = JSON.parse(llmConfigHeader);
+      } catch {
+        llmConfig = undefined;
+      }
+    }
+
+    // Update campaign status in database to 'processing'
+    const updatedCampaign = await prisma.campaign.update({
+      where: { id },
+      data: {
+        status: 'processing',
+      },
+    });
+
+    // Send 200 response immediately
+    res.json({ message: 'Campaign approval submitted', campaign: updatedCampaign });
+
+    // Call FastAPI in background to execute publisher agent
+    const io = getIO();
+    if (io) {
+      const aiOutputs = campaign.aiOutputs ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) : {};
+      
+      void runAIWorkflowBackground(campaign.id, {
+        campaign_name: campaign.name,
+        brand_name: campaign.brandName || project.name,
+        industry: campaign.industry,
+        primary_goal: campaign.primaryGoal,
+        target_audience: campaign.targetAudience,
+        brand_voice: campaign.brandVoice,
+        campaign_id: campaign.id,
+        llm_config: llmConfig,
+        // Pass existing outputs as strings
+        manager_output: aiOutputs.manager_output ? JSON.stringify(aiOutputs.manager_output) : null,
+        research_output: aiOutputs.research_output ? JSON.stringify(aiOutputs.research_output) : null,
+        strategy_output: aiOutputs.strategy_output ? JSON.stringify(aiOutputs.strategy_output) : null,
+        copy_output: aiOutputs.copy_output ? JSON.stringify(aiOutputs.copy_output) : null,
+        image_output: aiOutputs.image_output ? JSON.stringify(aiOutputs.image_output) : null,
+        review_output: aiOutputs.review_output ? JSON.stringify(aiOutputs.review_output) : null,
+        human_approval_status: action === 'approve' ? 'approved' : 'rejected',
+        human_feedback: feedback || null,
+        human_revision_target: revisionTarget || null,
+      }, io);
+    }
+  } catch (error) {
+    console.error('Campaign approval error:', error);
+    res.status(500).json({ error: 'Failed to submit campaign approval' });
+  }
+};
+

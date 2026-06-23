@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FolderOpen,
   CheckCircle,
@@ -149,28 +149,40 @@ function DashboardContent() {
     totalReviewedCampaigns: 0,
   });
   const [loading, setLoading] = useState(true);
-  const didFetchRef = useRef(false);
 
   useEffect(() => {
-    if (didFetchRef.current) return;
-    didFetchRef.current = true;
+    let active = true;
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = async (silent = false) => {
       try {
         const statsResponse = await api.get('/projects/stats/dashboard');
-        setMetrics(statsResponse.data);
+        if (active) setMetrics(statsResponse.data);
         
         const projectsResponse = await api.get('/projects');
-        const projectsData = projectsResponse.data.projects || [];
-        setProjects(projectsData);
+        if (active) setProjects(projectsResponse.data.projects || []);
       } catch (error: any) {
         console.error('Failed to fetch dashboard data:', error);
-        toast.error('Failed to load dashboard data');
+        if (!silent) {
+          toast.error('Failed to load dashboard data');
+        }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
+
     fetchDashboardData();
+
+    // Re-fetch stats silently when the window receives focus
+    const handleFocus = () => {
+      fetchDashboardData(true);
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      active = false;
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   const recentProjects = projects.slice(0, 3);

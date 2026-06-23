@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
@@ -56,6 +57,7 @@ const formatGoalLabel = (goal: string) => {
 };
 
 const CampaignHistoryContent: React.FC = () => {
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -308,6 +310,9 @@ const CampaignHistoryContent: React.FC = () => {
                             <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
                               CREATED
                             </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase', textAlign: 'right' }}>
+                              ACTIONS
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
@@ -382,6 +387,31 @@ const CampaignHistoryContent: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '16px 20px', fontFamily: 'Sora, sans-serif', fontSize: '13px', color: '#8B8B9E' }}>
                                   {getTimeAgo(campaign.createdAt)}
+                                </td>
+                                <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                  <button
+                                    onClick={() => {
+                                      const inProgress = ['processing', 'awaiting_human_approval', 'running'];
+                                      if (inProgress.includes(campaign.status.toLowerCase())) {
+                                        navigate(`/campaign/${campaign.id}/live`);
+                                      } else {
+                                        navigate(`/campaign/${campaign.id}/result?projectId=${campaign.projectId}`);
+                                      }
+                                    }}
+                                    className="p-1.5 rounded transition-colors"
+                                    title="View Details"
+                                    style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    onMouseEnter={(e) => {
+                                      (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
+                                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                    }}
+                                  >
+                                    <Eye size={16} />
+                                  </button>
                                 </td>
                               </tr>
                             );

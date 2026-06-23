@@ -163,8 +163,15 @@ const ProjectDetailContent: React.FC = () => {
     }
   };
 
-  const handleViewCampaign = (campaignId: string) => {
-    navigate(`/campaign/${campaignId}/result?projectId=${id}`);
+  const handleViewCampaign = (campaignId: string, campaignStatus?: string) => {
+    // Route campaigns that are still running to the live page.
+    // Completed/failed campaigns go to the result page.
+    const inProgress = ['processing', 'awaiting_human_approval', 'running'];
+    if (campaignStatus && inProgress.includes(campaignStatus)) {
+      navigate(`/campaign/${campaignId}/live`);
+    } else {
+      navigate(`/campaign/${campaignId}/result?projectId=${id}`);
+    }
   };
 
   if (loading) {
@@ -556,7 +563,7 @@ const ProjectDetailContent: React.FC = () => {
                               <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                 <div className="flex items-center justify-end gap-2">
                                   <button
-                                    onClick={() => handleViewCampaign(row.id)}
+                                    onClick={() => handleViewCampaign(row.id, row.status)}
                                     className="p-1.5 rounded transition-colors"
                                     title="View Details"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}

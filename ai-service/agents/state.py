@@ -45,6 +45,11 @@ class CampaignState(BaseModel):
     """
     
     # ==================== INPUT (User provides these) ====================
+    campaign_id: Optional[str] = Field(
+        default=None,
+        description="Unique campaign ID (PostgreSQL UUID) passed from Express. Used as the Redis Pub/Sub channel ID for live status updates."
+    )
+
     campaign_name: str = Field(
         description="Name of the marketing campaign"
     )

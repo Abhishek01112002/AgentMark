@@ -59,6 +59,20 @@ class CampaignCreateRequest(BaseModel):
         default=None,
         description="Provider API keys sent from the frontend",
     )
+    campaign_id: Optional[str] = Field(
+        default=None,
+        description="PostgreSQL campaign UUID passed from Express. Used as the Redis channel ID for real-time status updates. If omitted, a new UUID is generated.",
+    )
+    manager_output: Optional[str] = Field(default=None)
+    research_output: Optional[str] = Field(default=None)
+    strategy_output: Optional[str] = Field(default=None)
+    copy_output: Optional[str] = Field(default=None)
+    image_output: Optional[str] = Field(default=None)
+    review_output: Optional[str] = Field(default=None)
+    publisher_output: Optional[str] = Field(default=None)
+    human_approval_status: Optional[str] = Field(default=None)
+    human_feedback: Optional[str] = Field(default=None)
+    human_revision_target: Optional[str] = Field(default=None)
 
     model_config = {"use_enum_values": True}
 

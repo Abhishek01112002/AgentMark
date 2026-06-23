@@ -6,6 +6,7 @@ import api from '../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
 import TopNav from '../../../shared/topNav/TopNav';
 import CreateProjectModal from '../../projects/CreateProjectModal';
+import { llmSettingsService } from '../../../../services/llm-settings.service';
 
 interface OptionItem {
   value: string;
@@ -125,18 +126,27 @@ const NewCampaignContent: React.FC = () => {
       return;
     }
 
+    // Warning check for custom API keys
+    const keys = llmSettingsService.get();
+    const hasKeys = !!(keys.gemini.key.trim() || keys.groq.key.trim() || keys.openai.key.trim());
+    if (!hasKeys) {
+      const proceed = window.confirm(
+        "You haven't configured any custom API keys in Settings > API Keys. The campaign will run using the server's default fallback keys. Do you want to proceed?"
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
     setIsCreating(true);
-    
-    const toastId = toast.loading(
-      'Launching AI agents... This will take 2-3 minutes',
-      { duration: Infinity }
-    );
 
     try {
       const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
       const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
 
-      await api.post('/campaigns', {
+      // Read API keys saved by the user in Settings → API Keys.
+      // These are passed to FastAPI as llm_config so the correct provider is used.
+      const response = await api.post('/campaigns', {
         projectId: formData.projectId,
         name: formData.campaignName,
         brandName: formData.brandName,
@@ -144,23 +154,25 @@ const NewCampaignContent: React.FC = () => {
         primaryGoal: finalGoal,
         targetAudience: formData.targetAudience,
         brandVoice: formData.brandVoice,
+        // Note: API keys are attached automatically as x-llm-config header by
+        // the axios interceptor in api.ts — no need to include them in the body.
       });
 
-      toast.dismiss(toastId);
-      toast.success('Campaign created successfully! \u{1F389}');
-      
-      // Navigate to campaign detail or history
-      navigate(`/projects/${formData.projectId}`);
-      
+      const { campaign } = response.data;
+
+      // API returns instantly (status: "processing") — navigate to live page immediately.
+      // The live page uses socket.io to receive real-time agent progress updates.
+      toast.success('Campaign launched! Agents are running...');
+      navigate(`/campaign/${campaign.id}/live`);
+
     } catch (error: any) {
-      toast.dismiss(toastId);
       console.error('Campaign creation failed:', error);
-      
+
       const errorMessage =
         error.response?.data?.details ||
         error.response?.data?.error ||
         'We could not generate the campaign right now. Please try again.';
-      
+
       toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsCreating(false);

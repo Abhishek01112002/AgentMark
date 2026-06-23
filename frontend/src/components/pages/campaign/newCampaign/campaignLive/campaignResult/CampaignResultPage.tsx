@@ -59,15 +59,9 @@ const CampaignResultPage: React.FC = () => {
       if (!campaignId) return;
       
       try {
-        // We need to get the projectId first - let's fetch from campaign history or URL
         const projectId = new URLSearchParams(window.location.search).get('projectId');
-        
-        if (!projectId) {
-          toast.error('Project ID is required');
-          return;
-        }
-        
-        const response = await api.get(`/campaigns/${campaignId}?projectId=${projectId}`);
+        const url = projectId ? `/campaigns/${campaignId}?projectId=${projectId}` : `/campaigns/${campaignId}`;
+        const response = await api.get(url);
         setCampaign(response.data.campaign);
       } catch (error: any) {
         console.error('Failed to fetch campaign:', error);

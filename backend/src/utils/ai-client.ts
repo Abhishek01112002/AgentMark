@@ -5,7 +5,7 @@
  * Handles synchronous campaign creation (blocks for 2-3 minutes while agents run).
  */
 
-interface AIServiceCampaignRequest {
+export interface AIServiceCampaignRequest {
   campaign_name: string;
   brand_name: string;
   industry: string;
@@ -18,6 +18,21 @@ interface AIServiceCampaignRequest {
     groq_api_key?: string | null;
     openai_api_key?: string | null;
   };
+  /**
+   * PostgreSQL campaign UUID — passed so FastAPI publishes Redis Pub/Sub events
+   * to the correct channel (campaign:{campaign_id}) instead of a random UUID.
+   */
+  campaign_id?: string;
+  manager_output?: string | null;
+  research_output?: string | null;
+  strategy_output?: string | null;
+  copy_output?: string | null;
+  image_output?: string | null;
+  review_output?: string | null;
+  publisher_output?: string | null;
+  human_approval_status?: string | null;
+  human_feedback?: string | null;
+  human_revision_target?: string | null;
 }
 
 interface AIServiceCampaignResponse {
@@ -76,7 +91,7 @@ class AIServiceClient {
 
   constructor() {
     this.baseUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
-    this.timeout = 180000; // 3 minutes timeout
+    this.timeout = 600000; // 10 minutes timeout
   }
 
   /**

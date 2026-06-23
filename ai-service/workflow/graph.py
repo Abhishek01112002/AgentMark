@@ -48,6 +48,7 @@ from agents.reviewer import reviewer_agent
 from agents.publisher import publisher_agent
 from agents.human_approval import human_approval_node
 from workflow.routing import should_continue_after_reviewer, route_after_human_approval
+from utils.redis_publisher import publish_agent_event
 
 
 # ==================== NODE WRAPPER FUNCTIONS ====================
@@ -60,19 +61,21 @@ def manager_node(state: CampaignState) -> CampaignState:
     - Defines channels, deliverables, timeline
     """
     print("\n" + "="*80)
-    print("🎯 LANGGRAPH: EXECUTING MANAGER NODE")
+    print("LANGGRAPH: EXECUTING MANAGER NODE")
     print("="*80)
     
     # Skip if manager already completed (in any revision/approval mode)
     if state.manager_output:
-        print("⏭️  Skipping Manager (already completed)")
+        print("Skipping Manager (already completed)")
         return state
     
     try:
         updated_state = manager_agent(state)
+        publish_agent_event(state.campaign_id, "manager", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Manager Node Error: {e}")
+        print(f"Manager Node Error: {e}")
+        publish_agent_event(state.campaign_id, "manager", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -110,16 +113,18 @@ def research_node(state: CampaignState) -> CampaignState:
         if is_targeted_for_revision:
             current_count = updated_state.research_revision_count or 0
             updated_state.research_revision_count = current_count + 1
-            print(f"\n📊 Research revision count: {updated_state.research_revision_count}/3 (human/AI requested revision)")
+            print(f"\nResearch revision count: {updated_state.research_revision_count}/3 (human/AI requested revision)")
         
         # Clear target after completing targeted revision
         if is_targeted_for_revision:
-            print("🧹 Clearing human_revision_target (research revision complete)")
+            print("Clearing human_revision_target (research revision complete)")
             updated_state.human_revision_target = None
         
+        publish_agent_event(state.campaign_id, "research", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Research Node Error: {e}")
+        print(f"Research Node Error: {e}")
+        publish_agent_event(state.campaign_id, "research", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -165,17 +170,19 @@ def strategy_node(state: CampaignState) -> CampaignState:
         if is_targeted_for_revision:
             current_count = updated_state.strategy_revision_count or 0
             updated_state.strategy_revision_count = current_count + 1
-            print(f"\n📊 Strategy revision count: {updated_state.strategy_revision_count}/3 (human/AI requested revision)")
+            print(f"\nStrategy revision count: {updated_state.strategy_revision_count}/3 (human/AI requested revision)")
             # Clear target after completing targeted revision
-            print("🧹 Clearing human_revision_target (strategy revision complete)")
+            print("Clearing human_revision_target (strategy revision complete)")
             updated_state.human_revision_target = None
         elif upstream_was_targeted:
             # Don't increment for downstream re-runs
-            print(f"\n📊 Strategy revision count: {updated_state.strategy_revision_count or 0}/3 (no increment - downstream re-run)")
+            print(f"\nStrategy revision count: {updated_state.strategy_revision_count or 0}/3 (no increment - downstream re-run)")
         
+        publish_agent_event(state.campaign_id, "strategy", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Strategy Node Error: {e}")
+        print(f"Strategy Node Error: {e}")
+        publish_agent_event(state.campaign_id, "strategy", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -220,17 +227,19 @@ def copywriter_node(state: CampaignState) -> CampaignState:
         if is_targeted_for_revision:
             current_count = updated_state.copy_revision_count or 0
             updated_state.copy_revision_count = current_count + 1
-            print(f"\n📊 Copywriter revision count: {updated_state.copy_revision_count}/3 (human/AI requested revision)")
+            print(f"\nCopywriter revision count: {updated_state.copy_revision_count}/3 (human/AI requested revision)")
             # Clear target after completing targeted revision
-            print("🧹 Clearing human_revision_target (copywriter revision complete)")
+            print("Clearing human_revision_target (copywriter revision complete)")
             updated_state.human_revision_target = None
         elif upstream_was_targeted:
             # Don't increment for downstream re-runs
-            print(f"\n📊 Copywriter revision count: {updated_state.copy_revision_count or 0}/3 (no increment - downstream re-run)")
+            print(f"\nCopywriter revision count: {updated_state.copy_revision_count or 0}/3 (no increment - downstream re-run)")
         
+        publish_agent_event(state.campaign_id, "copywriter", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Copywriter Node Error: {e}")
+        print(f"Copywriter Node Error: {e}")
+        publish_agent_event(state.campaign_id, "copywriter", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -275,17 +284,19 @@ def image_prompt_node(state: CampaignState) -> CampaignState:
         if is_targeted_for_revision:
             current_count = updated_state.image_revision_count or 0
             updated_state.image_revision_count = current_count + 1
-            print(f"\n📊 Image revision count: {updated_state.image_revision_count}/3 (human/AI requested revision)")
+            print(f"\nImage revision count: {updated_state.image_revision_count}/3 (human/AI requested revision)")
             # Clear target after completing targeted revision
-            print("🧹 Clearing human_revision_target (image_prompt revision complete)")
+            print("Clearing human_revision_target (image_prompt revision complete)")
             updated_state.human_revision_target = None
         elif upstream_was_targeted:
             # Don't increment for downstream re-runs
-            print(f"\n📊 Image revision count: {updated_state.image_revision_count or 0}/3 (no increment - downstream re-run)")
+            print(f"\nImage revision count: {updated_state.image_revision_count or 0}/3 (no increment - downstream re-run)")
         
+        publish_agent_event(state.campaign_id, "image_prompt", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Image Prompt Node Error: {e}")
+        print(f"Image Prompt Node Error: {e}")
+        publish_agent_event(state.campaign_id, "image_prompt", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -310,9 +321,11 @@ def reviewer_node(state: CampaignState) -> CampaignState:
     
     try:
         updated_state = reviewer_agent(state)
+        publish_agent_event(state.campaign_id, "reviewer", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Reviewer Node Error: {e}")
+        print(f"Reviewer Node Error: {e}")
+        publish_agent_event(state.campaign_id, "reviewer", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state
@@ -352,16 +365,18 @@ def publisher_node(state: CampaignState) -> CampaignState:
     
     # Check if we're actually waiting for human approval
     if state.awaiting_human_approval:
-        print("⏸️  Workflow paused - awaiting human approval")
+        print("Workflow paused - awaiting human approval")
         print("   Publisher will NOT execute")
         print("   After human approves, invoke workflow again")
         return state
     
     try:
         updated_state = publisher_agent(state)
+        publish_agent_event(state.campaign_id, "publisher", "completed")
         return updated_state
     except Exception as e:
-        print(f"❌ Publisher Node Error: {e}")
+        print(f"Publisher Node Error: {e}")
+        publish_agent_event(state.campaign_id, "publisher", "failed", error=str(e))
         state.error = str(e)
         state.status = "error"
         return state

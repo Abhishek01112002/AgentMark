@@ -3,8 +3,16 @@ Campaign Routes
 
 POST /campaigns/create  -  Accepts campaign input, runs the full LangGraph
                            multi-agent pipeline, and returns all agent outputs.
+
+Redis Integration:
+  - The `campaign_id` from Express (PostgreSQL UUID) is passed in the request payload.
+  - During workflow execution, each agent node publishes a progress event to Redis.
+  - After workflow.invoke() returns, this route publishes the final terminal event
+    (campaign_complete or awaiting_human_approval) which includes all agent outputs
+    so Express can update the PostgreSQL record without a direct HTTP callback.
 """
 
+import json
 import logging
 import uuid
 
@@ -19,6 +27,7 @@ from schemas.campaign import (
     try_parse_json,
 )
 from llm.factory import set_llm_config
+from utils.redis_publisher import publish_agent_event
 
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
@@ -42,14 +51,17 @@ def _run_workflow(workflow, state: CampaignState) -> CampaignState:
     summary="Create a new marketing campaign",
     description=(
         "Runs the complete LangGraph multi-agent pipeline for the given input:\n\n"
-        "**Manager** → **Research** → **Strategy** → **Copywriter** → **Image Prompt** → **Reviewer** → **Publisher**\n\n"
+        "**Manager** \u2192 **Research** \u2192 **Strategy** \u2192 **Copywriter** \u2192 **Image Prompt** \u2192 **Reviewer** \u2192 **Publisher**\n\n"
         "The workflow pauses at the Human-in-the-Loop approval gate "
         "(`awaiting_human_approval: true`) if manual review is required. "
-        "When `workflow_finished: true` the Publisher has executed successfully."
+        "When `workflow_finished: true` the Publisher has executed successfully.\n\n"
+        "**Redis Live Updates:** If `campaign_id` (PostgreSQL UUID) is provided in the "
+        "request body, each agent completion is published to the Redis channel "
+        "`campaign:{campaign_id}` for real-time frontend status updates."
     ),
     responses={
         200: {"description": "Workflow completed (or paused at HITL gate)"},
-        422: {"description": "Validation error — check field values and enums"},
+        422: {"description": "Validation error \u2014 check field values and enums"},
         500: {"description": "Unexpected error during agent execution"},
     },
 )
@@ -58,10 +70,19 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
     """
     Accept campaign input, invoke `workflow.invoke(state)`, return all agent outputs.
 
-    The LangGraph workflow is a long-running synchronous operation (1–3 min).
+    The LangGraph workflow is a long-running synchronous operation (1-3 min).
     It is executed in a thread pool to avoid blocking the async event loop.
+
+    campaign_id flow:
+      - Express creates the campaign in PostgreSQL and gets a DB UUID.
+      - Express passes that UUID as `campaign_id` in this request.
+      - We store it in CampaignState so every graph node can publish to the
+        correct Redis channel without needing to know the channel name.
+      - If campaign_id is not provided (e.g. direct Swagger calls), we generate
+        a local UUID so the response is still valid.
     """
-    campaign_id = str(uuid.uuid4())
+    # Use the Express-provided DB campaign_id if available, otherwise generate.
+    campaign_id = payload.campaign_id or str(uuid.uuid4())
 
     logger.info(
         "Campaign run started | id=%s | brand=%s | goal=%s | industry=%s",
@@ -71,8 +92,9 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         payload.industry,
     )
 
-    # Build initial state
+    # Build initial state — campaign_id flows through all nodes for Redis publishing.
     state = CampaignState(
+        campaign_id=campaign_id,
         campaign_name=payload.campaign_name,
         brand_name=payload.brand_name,
         industry=payload.industry,
@@ -80,6 +102,16 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         target_audience=payload.target_audience,
         brand_voice=payload.brand_voice,
         brief=payload.brief,
+        manager_output=payload.manager_output,
+        research_output=payload.research_output,
+        strategy_output=payload.strategy_output,
+        copy_output=payload.copy_output,
+        image_output=payload.image_output,
+        review_output=payload.review_output,
+        publisher_output=payload.publisher_output,
+        human_approval_status=payload.human_approval_status,
+        human_feedback=payload.human_feedback,
+        human_revision_target=payload.human_revision_target,
     )
 
     # Retrieve the pre-built workflow from app.state (set at startup via lifespan)
@@ -91,6 +123,13 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         final_state = await run_in_threadpool(_run_workflow, workflow, state)
     except Exception as exc:
         logger.error("Workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
+        # Publish failure event to Redis so Express can update DB status.
+        publish_agent_event(
+            campaign_id=campaign_id,
+            agent="system",
+            status="failed",
+            error=str(exc),
+        )
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {exc}") from exc
 
     logger.info(
@@ -99,6 +138,36 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         final_state.status,
         final_state.workflow_finished,
     )
+
+    # ── Publish terminal Redis event ──────────────────────────────────────────
+    # This is the single place where the final/terminal event is published,
+    # keeping graph node publishes lightweight (progress ticks only).
+    # The full agent outputs are included so Express can update PostgreSQL
+    # without needing a synchronous HTTP response.
+    outputs_dict = {
+        "manager_output": try_parse_json(final_state.manager_output),
+        "research_output": try_parse_json(final_state.research_output),
+        "strategy_output": try_parse_json(final_state.strategy_output),
+        "copy_output": try_parse_json(final_state.copy_output),
+        "image_output": try_parse_json(final_state.image_output),
+        "review_output": try_parse_json(final_state.review_output),
+        "publisher_output": try_parse_json(final_state.publisher_output),
+    }
+
+    if final_state.awaiting_human_approval:
+        publish_agent_event(
+            campaign_id=campaign_id,
+            agent="system",
+            status="awaiting_human_approval",
+            extra={"outputs": outputs_dict},
+        )
+    else:
+        publish_agent_event(
+            campaign_id=campaign_id,
+            agent="system",
+            status="campaign_complete",
+            extra={"outputs": outputs_dict, "workflow_finished": final_state.workflow_finished},
+        )
 
     return CampaignCreateResponse(
         campaign_id=campaign_id,
