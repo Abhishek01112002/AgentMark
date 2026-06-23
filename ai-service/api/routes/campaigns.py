@@ -18,6 +18,7 @@ from schemas.campaign import (
     AgentOutputs,
     try_parse_json,
 )
+from llm.factory import set_llm_config
 
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
@@ -85,6 +86,7 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
     workflow = request.app.state.workflow
 
     try:
+        set_llm_config(payload.llm_config)
         # Run blocking LangGraph call in a thread pool — never block the event loop
         final_state = await run_in_threadpool(_run_workflow, workflow, state)
     except Exception as exc:

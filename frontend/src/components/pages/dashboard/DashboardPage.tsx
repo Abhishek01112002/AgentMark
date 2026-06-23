@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FolderOpen,
   CheckCircle,
@@ -7,9 +7,12 @@ import {
   Plus,
   ArrowRight,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 
@@ -18,59 +21,24 @@ type ProjectRow = {
   name: string;
   description: string;
   campaignCount: number;
-  status: 'Active' | 'Reviewing' | 'Idle';
-  updated: string;
+  mostRecentCampaignStatus: string | null;
+  updatedAt: string;
+  createdAt: string;
 };
 
-const projects: ProjectRow[] = [
-  {
-    id: '1',
-    name: 'Nike 2025 Campaign',
-    description: 'Complete marketing strategy for Nike Q1 2025 product launches',
-    campaignCount: 12,
-    status: 'Active',
-    updated: '2 days ago',
-  },
-  {
-    id: '2',
-    name: 'Adidas Spring Collection',
-    description: 'Spring seasonal campaigns and social media strategy',
-    campaignCount: 5,
-    status: 'Active',
-    updated: '1 week ago',
-  },
-  {
-    id: '3',
-    name: 'TechGadgets Pro Launch',
-    description: 'Product launch campaigns for new tech gadget line',
-    campaignCount: 8,
-    status: 'Reviewing',
-    updated: '3 days ago',
-  },
-  {
-    id: '4',
-    name: 'Internal Marketing 2025',
-    description: 'Internal company marketing and brand awareness initiatives',
-    campaignCount: 15,
-    status: 'Active',
-    updated: '5 hours ago',
-  },
-];
-
-const metrics = {
-  totalProjects: projects.length,
-  completedCampaigns: 98,
-  runningCampaigns: 11,
-  avgReviewScore: 9.2,
-  completionRate: 79,
+type DashboardMetrics = {
+  totalProjects: number;
+  completedCampaigns: number;
+  runningCampaigns: number;
+  avgReviewScore: number;
+  completionRate: number;
+  totalReviewedCampaigns?: number;
 };
 
-const recentProjects = projects.slice(0, 3);
-
-const statusPill: Record<ProjectRow['status'], { text: string; dot: string }> = {
-  Active: { text: '#4edea3', dot: '#4edea3' },
-  Reviewing: { text: '#F59E0B', dot: '#F59E0B' },
-  Idle: { text: '#8B8B9E', dot: '#8B8B9E' },
+const statusPill: Record<string, { text: string; dot: string }> = {
+  'active': { text: '#4edea3', dot: '#4edea3' },
+  'reviewing': { text: '#F59E0B', dot: '#F59E0B' },
+  'idle': { text: '#8B8B9E', dot: '#8B8B9E' },
 };
 
 function StatCard(props: {
@@ -106,7 +74,7 @@ function StatCard(props: {
               lineHeight: '16px',
               letterSpacing: '0.05em',
               fontWeight: 500,
-              color: '#4A4A5E',
+              color: '#A0A0D2',
               textTransform: 'uppercase',
               marginBottom: '4px',
             }}
@@ -162,7 +130,7 @@ function StatCard(props: {
               {trend}
             </span>
           )}
-          {trendLabel && <span style={{ color: '#4A4A5E' }}>{trendLabel}</span>}
+          {trendLabel && <span style={{ color: '#A0A0D2' }}>{trendLabel}</span>}
         </div>
       )}
     </div>
@@ -171,6 +139,49 @@ function StatCard(props: {
 
 function DashboardContent() {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalProjects: 0,
+    completedCampaigns: 0,
+    runningCampaigns: 0,
+    avgReviewScore: 0,
+    completionRate: 0,
+    totalReviewedCampaigns: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const didFetchRef = useRef(false);
+
+  useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
+
+    const fetchDashboardData = async () => {
+      try {
+        const statsResponse = await api.get('/projects/stats/dashboard');
+        setMetrics(statsResponse.data);
+        
+        const projectsResponse = await api.get('/projects');
+        const projectsData = projectsResponse.data.projects || [];
+        setProjects(projectsData);
+      } catch (error: any) {
+        console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);
+
+  const recentProjects = projects.slice(0, 3);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
+        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -220,17 +231,16 @@ function DashboardContent() {
                 icon={RefreshCw}
                 label="Running Campaigns"
                 value={metrics.runningCampaigns}
-                trendLabel="Campaigns currently in progress"
+                trendLabel={metrics.runningCampaigns > 0 ? 'Campaigns currently in progress' : 'No Campaign running'}
                 iconBg="rgba(215,119,33,0.12)"
                 iconColor="#ffb783"
-                pulse
+                pulse={metrics.runningCampaigns > 0}
               />
               <StatCard
                 icon={Star}
                 label="Avg Review Score"
-                value={metrics.avgReviewScore}
-                trend="0.4"
-                trendLabel="vs last month"
+                value={metrics.avgReviewScore > 0 ? `${metrics.avgReviewScore}/100` : '0'}
+                trendLabel={metrics.totalReviewedCampaigns ? `out of ${metrics.totalReviewedCampaigns} campaigns` : 'No reviews yet'}
                 iconBg="rgba(245,158,11,0.12)"
                 iconColor="#F59E0B"
               />
@@ -350,7 +360,7 @@ function DashboardContent() {
                           lineHeight: '16px',
                           letterSpacing: '0.05em',
                           fontWeight: 500,
-                          color: '#4A4A5E',
+                          color: '#A0A0D2',
                           textTransform: 'uppercase',
                           whiteSpace: 'nowrap',
                         }}
@@ -365,7 +375,7 @@ function DashboardContent() {
                           lineHeight: '16px',
                           letterSpacing: '0.05em',
                           fontWeight: 500,
-                          color: '#4A4A5E',
+                          color: '#A0A0D2',
                           textTransform: 'uppercase',
                           whiteSpace: 'nowrap',
                         }}
@@ -380,7 +390,7 @@ function DashboardContent() {
                           lineHeight: '16px',
                           letterSpacing: '0.05em',
                           fontWeight: 500,
-                          color: '#4A4A5E',
+                          color: '#A0A0D2',
                           textTransform: 'uppercase',
                           whiteSpace: 'nowrap',
                         }}
@@ -395,7 +405,7 @@ function DashboardContent() {
                           lineHeight: '16px',
                           letterSpacing: '0.05em',
                           fontWeight: 500,
-                          color: '#4A4A5E',
+                          color: '#A0A0D2',
                           textTransform: 'uppercase',
                           whiteSpace: 'nowrap',
                         }}
@@ -410,7 +420,7 @@ function DashboardContent() {
                           lineHeight: '16px',
                           letterSpacing: '0.05em',
                           fontWeight: 500,
-                          color: '#4A4A5E',
+                          color: '#A0A0D2',
                           textTransform: 'uppercase',
                           whiteSpace: 'nowrap',
                           textAlign: 'right',
@@ -422,7 +432,7 @@ function DashboardContent() {
                   </thead>
                   <tbody>
                     {recentProjects.map((row) => {
-                      const badge = statusPill[row.status];
+                      const timeAgo = new Date(row.updatedAt).toLocaleDateString();
                       return (
                         <tr
                           key={row.id}
@@ -456,35 +466,52 @@ function DashboardContent() {
                                   style={{
                                     fontFamily: 'Sora, sans-serif',
                                     fontSize: '12px',
-                                    color: '#4A4A5E',
+                                    color: '#A0A0D2',
                                     marginTop: '2px',
                                   }}
                                 >
-                                  {row.description}
+                                  {row.description || 'No description'}
                                 </span>
                               </div>
                             </div>
                           </td>
 
                           <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                            {row.campaignCount}
+                            {row.campaignCount || 0}
                           </td>
 
                           <td style={{ padding: '16px 20px' }}>
-                            <span
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                              style={{
-                                backgroundColor: '#1A1A24',
-                                border: '1px solid #2A2A38',
-                                color: badge.text,
-                                fontFamily: 'JetBrains Mono, monospace',
-                                fontSize: '12px',
-                                letterSpacing: '0.05em',
-                              }}
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: badge.dot }} />
-                              {row.status}
-                            </span>
+                            {row.mostRecentCampaignStatus ? (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                style={{
+                                  backgroundColor: '#1A1A24',
+                                  border: '1px solid #2A2A38',
+                                  color: statusPill[row.mostRecentCampaignStatus]?.text || '#A0A0D2',
+                                  fontFamily: 'JetBrains Mono, monospace',
+                                  fontSize: '12px',
+                                  letterSpacing: '0.05em',
+                                }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusPill[row.mostRecentCampaignStatus]?.dot || '#8B8B9E' }} />
+                                {row.mostRecentCampaignStatus.charAt(0).toUpperCase() + row.mostRecentCampaignStatus.slice(1)}
+                              </span>
+                            ) : (
+                              <span
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                style={{
+                                  backgroundColor: '#1A1A24',
+                                  border: '1px solid #2A2A38',
+                                  color: '#A0A0D2',
+                                  fontFamily: 'JetBrains Mono, monospace',
+                                  fontSize: '12px',
+                                  letterSpacing: '0.05em',
+                                }}
+                              >
+                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#8B8B9E' }} />
+                                No Campaigns
+                              </span>
+                            )}
                           </td>
 
                           <td
@@ -493,10 +520,10 @@ function DashboardContent() {
                               padding: '16px 20px',
                               fontFamily: 'Sora, sans-serif',
                               fontSize: '13px',
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                             }}
                           >
-                            {row.updated}
+                            {timeAgo}
                           </td>
 
                           <td style={{ padding: '16px 20px', textAlign: 'right' }}>

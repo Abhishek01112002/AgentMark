@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 interface ProfileProps {
@@ -9,6 +9,13 @@ interface ProfileProps {
 
 const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
   const { user, logout } = useAuth();
+  const avatarUrl = user?.avatarUrl || null;
+  const initials = (user?.name || 'User')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
 
   const handleLogout = () => {
     logout();
@@ -31,22 +38,15 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
         }}
         onClick={onToggle}
       >
-        <img
-          className="w-full h-full object-cover"
-          src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop"
-          alt="Profile"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const parent = target.parentElement;
-            if (parent) {
-              parent.style.backgroundColor = '#111118';
-              const icon = parent.querySelector('.fallback-icon');
-              if (icon) (icon as HTMLElement).style.display = 'block';
-            }
-          }}
-        />
-        <User size={18} style={{ color: '#8B8B9E', display: 'none' }} className="fallback-icon" />
+        {avatarUrl ? (
+          <img className="w-full h-full object-cover" src={avatarUrl} alt="Profile" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#c0c1ff] bg-[#111118]">
+            <span style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700, letterSpacing: '0.04em' }}>
+              {initials || <UserIcon size={18} />}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Dropdown - positioned below */}

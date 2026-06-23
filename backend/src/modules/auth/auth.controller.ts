@@ -14,6 +14,11 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+const updateProfileSchema = z.object({
+  name: z.string().min(1).optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+});
+
 export const signup = async (req: Request, res: Response) => {
   try {
     const { email, password, name } = signupSchema.parse(req.body);
@@ -51,5 +56,19 @@ export const me = async (req: AuthRequest, res: Response) => {
     res.json({ user });
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const payload = updateProfileSchema.parse(req.body);
+    const userId = req.userId!;
+    const user = await authService.updateProfile(userId, payload);
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(400).json({ error: (error as Error).message });
   }
 };

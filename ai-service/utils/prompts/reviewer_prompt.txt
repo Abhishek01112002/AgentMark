@@ -276,56 +276,56 @@ Respond ONLY with valid JSON matching the ReviewerOutput schema exactly:
 {{
   "status": "approved",
   "research_review": {{
-    "score": 85,
+    "score": <research_score>,
     "approved": true,
     "feedback": "Brief summary of research quality",
     "issues": [
-      "Specific issue 1 (e.g., 'market_trends only has 2 items, needs 3+')",
+      "Specific issue 1",
       "Specific issue 2"
     ],
     "action_items": [
-      "Specific fix 1 (e.g., 'Add 1 more market trend specific to {industry}')",
+      "Specific fix 1",
       "Specific fix 2"
     ]
   }},
   "strategy_review": {{
-    "score": 88,
+    "score": <strategy_score>,
     "approved": true,
     "feedback": "Brief summary of strategy quality",
     "issues": [
-      "Specific issue (e.g., 'timeline phase_4 missing end_date')"
+      "Specific issue"
     ],
     "action_items": [
-      "Specific fix (e.g., 'Add end_date to phase_4 in timeline')"
+      "Specific fix"
     ]
   }},
   "copy_review": {{
-    "score": 82,
+    "score": <copy_score>,
     "approved": true,
     "feedback": "Brief summary of copy quality",
     "issues": [
-      "Specific issue (e.g., 'ads headline is 65 chars, exceeds 60 char limit')"
+      "Specific issue"
     ],
     "action_items": [
-      "Specific fix (e.g., 'Trim ads headline to under 60 characters')"
+      "Specific fix"
     ]
   }},
   "image_review": {{
-    "score": 79,
+    "score": <image_score>,
     "approved": true,
     "feedback": "Brief summary of image prompt quality",
     "issues": [
-      "Specific issue (e.g., 'prompt 2 missing visual_elements field')"
+      "Specific issue"
     ],
     "action_items": [
-      "Specific fix (e.g., 'Add visual_elements array to prompt 2')"
+      "Specific fix"
     ]
   }},
   "overall": {{
-    "quality_score": 84,
+    "quality_score": <overall_score>,
     "summary": "One paragraph summary of the overall campaign quality, noting strengths and key areas for improvement",
     "strengths": [
-      "Campaign strength 1 (cross-agent)",
+      "Campaign strength 1",
       "Campaign strength 2",
       "Campaign strength 3"
     ],
@@ -344,3 +344,5 @@ IMPORTANT:
 - overall.quality_score = (research × 0.25) + (strategy × 0.30) + (copy × 0.25) + (image × 0.20)
 - If agent is approved, issues list should be empty [] (no issues = approved)
 - action_items must be specific and actionable
+- Do not reuse the same scores across unrelated campaigns unless the outputs are genuinely equivalent in quality.
+- Base scores on the actual completeness, specificity, and cross-agent alignment of the current campaign.

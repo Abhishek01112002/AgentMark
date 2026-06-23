@@ -15,6 +15,7 @@ model User {
   name      String
   email     String   @unique
   password  String
+  avatarUrl String?
   
   projects  Project[]
   
@@ -28,6 +29,7 @@ model Project {
   id          String   @id @default(uuid())
   name        String
   description String?
+  status      String   @default("active") // active, idle, archived
   
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -43,12 +45,19 @@ model Project {
 model Campaign {
   id              String   @id @default(uuid())
   name            String
+  brandName       String?
   industry        String
   primaryGoal     String
   targetAudience  String   @db.Text
   brandVoice      String
   
   status          String   @default("draft")
+  reviewScore     Float?   // AI review agent score (0-10)
+  
+  // AI Service Integration
+  aiCampaignId    String?  // FastAPI campaign ID
+  aiOutputs       Json?    // All 7 agent outputs (manager, research, strategy, copy, image, review, publisher)
+  aiError         String?  @db.Text // Error message if AI workflow fails
   
   projectId       String
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)

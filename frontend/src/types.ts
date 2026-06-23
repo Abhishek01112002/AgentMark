@@ -3,6 +3,7 @@ export type User = {
   name: string;
   email: string;
   avatar?: string | null;
+  avatarUrl?: string | null;
   createdAt?: string;
 };
 
@@ -14,20 +15,30 @@ export type AuthResponse = {
   };
 };
 
+export type AIAgentOutputs = {
+  manager_output?: any;
+  research_output?: any;
+  strategy_output?: any;
+  copy_output?: any;
+  image_output?: any;
+  review_output?: any;
+  publisher_output?: any;
+};
+
 export type Campaign = {
   id: string;
   name: string;
-  brandName?: string | null;
-  industry?: string | null;
-  goal?: string | null;
-  targetAudience?: string | null;
+  industry: string;
+  primaryGoal: string;
+  targetAudience: string;
   brandVoice: string;
   status: string;
-  score?: number | null;
-  progress: number;
+  projectId: string;
+  aiCampaignId?: string | null;
+  aiOutputs?: AIAgentOutputs | null;
+  aiError?: string | null;
   createdAt: string;
   updatedAt: string;
-  agents: Agent[];
 };
 
 export type Agent = {
@@ -39,4 +50,3 @@ export type Agent = {
   duration?: number | null;
   order: number;
 };
-

@@ -17,7 +17,7 @@ const CampaignLive: React.FC = () => {
   // Typewriter effect
   useEffect(() => {
     const currentString = typewriterStrings[currentStringIndex];
-    let timeout: number;
+    let timeout: ReturnType<typeof setTimeout>;
 
     const type = () => {
       if (isDeleting) {

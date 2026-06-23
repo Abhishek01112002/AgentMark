@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import CreateProjectModal from './CreateProjectModal';
@@ -9,54 +11,40 @@ import DeleteProjectModal from './DeleteProjectModal';
 interface Project {
   id: string;
   name: string;
-  description: string;
-  campaignCount: number;
-  lastActive: string;
-  created: string;
+  description: string | null;
+  status?: string;
+  campaignCount?: number;
+  mostRecentCampaignStatus?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
-
-// Mock data
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'Nike 2025 Campaign',
-    description: 'Complete marketing strategy for Nike Q1 2025 product launches',
-    campaignCount: 12,
-    lastActive: '2 days ago',
-    created: '3 months ago',
-  },
-  {
-    id: '2',
-    name: 'Adidas Spring Collection',
-    description: 'Spring seasonal campaigns and social media strategy',
-    campaignCount: 5,
-    lastActive: '1 week ago',
-    created: '2 months ago',
-  },
-  {
-    id: '3',
-    name: 'TechGadgets Pro Launch',
-    description: 'Product launch campaigns for new tech gadget line',
-    campaignCount: 8,
-    lastActive: '3 days ago',
-    created: '1 month ago',
-  },
-  {
-    id: '4',
-    name: 'Internal Marketing 2025',
-    description: 'Internal company marketing and brand awareness initiatives',
-    campaignCount: 15,
-    lastActive: '5 hours ago',
-    created: '6 months ago',
-  },
-];
 
 const ProjectsContent: React.FC = () => {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
   const [visibleCount, setVisibleCount] = useState(15);
+  const didFetchRef = useRef(false);
+
+  useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const response = await api.get('/projects');
+      setProjects(response.data.projects || []);
+    } catch (error: any) {
+      console.error('Failed to fetch projects:', error);
+      toast.error('Failed to load projects');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const visibleProjects = projects.slice(0, visibleCount);
   const showingAll = visibleCount >= projects.length;
@@ -65,30 +53,49 @@ const ProjectsContent: React.FC = () => {
     setVisibleCount((count) => Math.min(count + 15, projects.length));
   };
 
-  const handleCreateProject = (name: string, description: string) => {
-    const newProject: Project = {
-      id: `${projects.length + 1}`,
-      name,
-      description,
-      campaignCount: 0,
-      lastActive: 'Just now',
-      created: 'Just now',
-    };
-    setProjects([newProject, ...projects]);
-    setVisibleCount((count) => count + 1);
-    setShowCreateModal(false);
+  const handleCreateProject = async (name: string, description: string) => {
+    try {
+      const response = await api.post('/projects', { name, description });
+      setProjects([response.data.project, ...projects]);
+      setVisibleCount((count) => count + 1);
+      setShowCreateModal(false);
+      toast.success('Project created successfully');
+    } catch (error: any) {
+      console.error('Failed to create project:', error);
+      toast.error(error.response?.data?.error || 'Failed to create project');
+    }
   };
 
   const handleDeleteClick = (project: Project) => {
     setDeleteModal({ show: true, project });
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteModal.project) {
-      setProjects(projects.filter((p) => p.id !== deleteModal.project!.id));
-      setDeleteModal({ show: false, project: null });
+      try {
+        await api.delete(`/projects/${deleteModal.project.id}`);
+        setProjects(projects.filter((p) => p.id !== deleteModal.project!.id));
+        setDeleteModal({ show: false, project: null });
+        toast.success('Project deleted successfully');
+      } catch (error: any) {
+        console.error('Failed to delete project:', error);
+        toast.error(error.response?.data?.error || 'Failed to delete project');
+      }
     }
   };
+
+  const getTimeAgo = (date: string) => {
+    const past = new Date(date);
+    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
+        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -110,7 +117,7 @@ const ProjectsContent: React.FC = () => {
           title="Projects"
           stats={[
             { label: 'total projects', value: projects.length, color: '#6366F1' },
-            { label: 'total campaigns', value: projects.reduce((sum, p) => sum + p.campaignCount, 0), color: '#4edea3' },
+            { label: 'total campaigns', value: projects.reduce((sum, p) => sum + (p.campaignCount ?? 0), 0), color: '#4edea3' },
           ]}
         />
 
@@ -147,18 +154,24 @@ const ProjectsContent: React.FC = () => {
 
             {/* Projects Grid */}
             {projects.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FolderOpen size={48} className="text-[#2A2A38] mb-4" />
-                <h3 className="text-[15px] font-medium text-[#4A4A5E] mb-2">
+              <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
+                  <FolderOpen size={32} style={{ color: '#6366F1' }} />
+                </div>
+                <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
                   No projects yet
                 </h3>
-                <p className="text-[13px] text-[#4A4A5E] mb-6">
+                <p className="text-sm mb-6" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
                   Create your first project to organize your campaigns
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-[#6366F1] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8083ff] transition"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all"
+                  style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
                 >
+                  <Plus size={16} />
                   Create First Project
                 </button>
               </div>
@@ -198,7 +211,7 @@ const ProjectsContent: React.FC = () => {
                       className="text-sm mb-4 line-clamp-2"
                       style={{ color: '#8B8B9E', minHeight: '40px' }}
                     >
-                      {project.description}
+                      {project.description || 'No description provided'}
                     </p>
 
                     {/* Stats */}
@@ -209,7 +222,7 @@ const ProjectsContent: React.FC = () => {
                           className="text-xs"
                           style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         >
-                          {project.campaignCount} campaigns
+                          {project.campaignCount || 0} campaigns
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -218,7 +231,7 @@ const ProjectsContent: React.FC = () => {
                           className="text-xs"
                           style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         >
-                          {project.lastActive}
+                          {getTimeAgo(project.updatedAt)}
                         </span>
                       </div>
                     </div>

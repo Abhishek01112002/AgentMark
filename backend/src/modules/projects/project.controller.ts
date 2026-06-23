@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { projectService } from './project.service';
+import prisma from '../../db';
 
 const createProjectSchema = z.object({
   name: z.string().min(1),
@@ -22,8 +23,36 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 };
 
 export const getProjects = async (req: AuthRequest, res: Response) => {
-  const projects = await projectService.getAll(req.userId!);
-  res.json({ projects });
+  const projects = await prisma.project.findMany({
+    where: { userId: req.userId! },
+    include: {
+      campaigns: {
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          status: true,
+          updatedAt: true,
+        },
+      },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  const projectsWithMostRecentCampaignStatus = projects.map(project => {
+    const mostRecentCampaign = project.campaigns[0];
+    const campaignCount = project.campaigns.length;
+    
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      campaignCount,
+      mostRecentCampaignStatus: mostRecentCampaign?.status || null,
+      updatedAt: mostRecentCampaign?.updatedAt || project.updatedAt,
+      createdAt: project.createdAt,
+    };
+  });
+
+  res.json({ projects: projectsWithMostRecentCampaignStatus });
 };
 
 export const getProject = async (req: AuthRequest, res: Response) => {
@@ -44,4 +73,97 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
   }
   
   res.json({ message: 'Project deleted successfully' });
+};
+
+export const getDashboardStats = async (req: AuthRequest, res: Response) => {
+  const userId = req.userId!;
+
+  // Get all projects with campaigns
+  const projects = await prisma.project.findMany({
+    where: { userId },
+    include: {
+      campaigns: {
+        select: {
+          status: true,
+          reviewScore: true,
+          aiOutputs: true,
+        },
+      },
+    },
+  });
+
+  // Calculate metrics
+  const totalProjects = projects.length;
+  
+  let completedCampaigns = 0;
+  let runningCampaigns = 0;
+  let totalReviewScore = 0;
+  let reviewedCampaigns = 0;
+  let totalCampaignsCount = 0;
+
+  projects.forEach(project => {
+    project.campaigns.forEach(campaign => {
+      totalCampaignsCount++;
+      if (campaign.status === 'completed') {
+        completedCampaigns++;
+      }
+      if (campaign.status === 'processing') {
+        runningCampaigns++;
+      }
+      
+      let reviewScore = campaign.reviewScore;
+      
+      if (!reviewScore && campaign.aiOutputs) {
+        try {
+          const outputs = typeof campaign.aiOutputs === 'string' 
+            ? JSON.parse(campaign.aiOutputs) 
+            : campaign.aiOutputs;
+          
+          const reviewOutput = outputs.review_output 
+            ? (typeof outputs.review_output === 'string' 
+                ? JSON.parse(outputs.review_output) 
+                : outputs.review_output)
+            : null;
+          
+          if (reviewOutput) {
+            const scores: number[] = [];
+            if (reviewOutput.research_review?.score) scores.push(reviewOutput.research_review.score);
+            if (reviewOutput.strategy_review?.score) scores.push(reviewOutput.strategy_review.score);
+            if (reviewOutput.copy_review?.score) scores.push(reviewOutput.copy_review.score);
+            if (reviewOutput.image_review?.score) scores.push(reviewOutput.image_review.score);
+            
+            if (scores.length > 0) {
+              const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
+              reviewScore = parseFloat(avgScore100.toFixed(1));
+            }
+          }
+        } catch (e) {
+          console.error('Failed to extract review score:', e);
+        }
+      }
+      
+      if (reviewScore !== null && reviewScore !== undefined) {
+        totalReviewScore += reviewScore;
+        reviewedCampaigns++;
+      }
+    });
+  });
+
+  const avgReviewScore = reviewedCampaigns > 0 
+    ? parseFloat((totalReviewScore / reviewedCampaigns).toFixed(1))
+    : 0;
+
+  const totalCampaigns = completedCampaigns + runningCampaigns;
+  const completionRate = totalCampaigns > 0
+    ? Math.round((completedCampaigns / totalCampaigns) * 100)
+    : 0;
+
+  res.json({
+    totalProjects,
+    completedCampaigns,
+    runningCampaigns,
+    avgReviewScore,
+    completionRate,
+    totalReviewedCampaigns: totalCampaignsCount,
+  });
 };

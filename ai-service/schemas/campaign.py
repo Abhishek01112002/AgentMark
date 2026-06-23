@@ -5,36 +5,8 @@ Request/response models and enums for campaign creation.
 """
 
 import json
-from typing import Optional
-from enum import Enum
+from typing import Optional, Dict
 from pydantic import BaseModel, Field
-
-
-# ── Enums ─────────────────────────────────────────────────────────────────────
-
-class Industry(str, Enum):
-    saas = "saas"
-    ecommerce = "ecommerce"
-    finance = "finance"
-    healthcare = "healthcare"
-    other = "other"
-
-
-class PrimaryGoal(str, Enum):
-    awareness = "awareness"
-    lead_gen = "lead_gen"
-    sales = "sales"
-    retention = "retention"
-
-
-class BrandVoice(str, Enum):
-    professional = "professional"
-    friendly = "friendly"
-    bold = "bold"
-    luxury = "luxury"
-    casual = "casual"
-    authoritative = "authoritative"
-
 
 # ── Request Model ─────────────────────────────────────────────────────────────
 
@@ -53,13 +25,17 @@ class CampaignCreateRequest(BaseModel):
         description="Brand name",
         examples=["TechGadgets Pro"],
     )
-    industry: Industry = Field(
-        description="Industry sector",
-        examples=["ecommerce"],
+    industry: str = Field(
+        min_length=1,
+        max_length=80,
+        description="Industry sector or custom industry text",
+        examples=["ecommerce", "Sports Entertainment"],
     )
-    primary_goal: PrimaryGoal = Field(
-        description="Primary campaign objective",
-        examples=["sales"],
+    primary_goal: str = Field(
+        min_length=1,
+        max_length=120,
+        description="Primary campaign objective or custom goal text",
+        examples=["sales", "Increase Popularity"],
     )
     target_audience: str = Field(
         min_length=10,
@@ -67,15 +43,21 @@ class CampaignCreateRequest(BaseModel):
         description="Detailed description of the target audience",
         examples=["Tech enthusiasts aged 25-45, early adopters with disposable income"],
     )
-    brand_voice: BrandVoice = Field(
+    brand_voice: str = Field(
+        min_length=1,
+        max_length=80,
         description="Brand voice style",
-        examples=["bold"],
+        examples=["bold", "friendly"],
     )
     brief: Optional[str] = Field(
         default=None,
         max_length=1000,
         description="Campaign brief (optional — auto-generated if omitted)",
         examples=["Drive 100 free trial signups in 30 days targeting Product Managers."],
+    )
+    llm_config: Optional[Dict[str, Optional[str]]] = Field(
+        default=None,
+        description="Provider API keys sent from the frontend",
     )
 
     model_config = {"use_enum_values": True}

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { llmSettingsService } from './llm-settings.service';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -15,6 +16,16 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    const llmConfigRaw = localStorage.getItem('agentmark_llm_config');
+    if (llmConfigRaw) {
+      try {
+        const llmConfig = llmSettingsService.normalize(JSON.parse(llmConfigRaw));
+        config.headers['x-llm-config'] = JSON.stringify(llmSettingsService.toHeaderPayload(llmConfig));
+      } catch {
+        // ignore malformed local storage and continue without provider config
+      }
     }
     return config;
   },

@@ -30,6 +30,4 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5001")
 # WebSocket Configuration
 WS_URL = os.getenv("WS_URL", "ws://localhost:5002")
 
-# Verify critical keys
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not set in .env file")
+# Keys are optional now; the frontend can supply them per request.

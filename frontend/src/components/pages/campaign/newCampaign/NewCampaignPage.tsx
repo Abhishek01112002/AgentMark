@@ -1,25 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
 import TopNav from '../../../shared/topNav/TopNav';
 import CreateProjectModal from '../../projects/CreateProjectModal';
+
+interface OptionItem {
+  value: string;
+  label: string;
+}
+
+interface Constants {
+  industries: OptionItem[];
+  primaryGoals: OptionItem[];
+  brandVoices: OptionItem[];
+}
+
+const VOICE_ICONS: Record<string, any> = {
+  professional: Briefcase,
+  friendly: Smile,
+  bold: Flame,
+  luxury: Crown,
+  casual: Coffee,
+  authoritative: Scale,
+};
 
 const NewCampaignContent: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
-  const [projects] = useState([
-    { id: '1', name: 'Nike 2025 Campaign' },
-    { id: '2', name: 'Adidas Spring Collection' },
-    { id: '3', name: 'TechGadgets Pro Launch' },
-  ]);
+  const [isCreating, setIsCreating] = useState(false);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [constants, setConstants] = useState<Constants | null>(null);
+  const [loadingConstants, setLoadingConstants] = useState(true);
+  const didFetchProjectsRef = useRef(false);
+  const didFetchConstantsRef = useRef(false);
   const [formData, setFormData] = useState({
     projectId: searchParams.get('projectId') || '',
     campaignName: '',
     brandName: '',
     industry: '',
+    customIndustry: '',
     goal: '',
+    customGoal: '',
     targetAudience: '',
     brandVoice: 'professional',
   });
@@ -31,29 +57,131 @@ const NewCampaignContent: React.FC = () => {
     }
   }, [searchParams]);
 
-  const handleCreateProject = (name: string, description: string) => {
-    console.log('Project created:', name, description);
-    setShowCreateProjectModal(false);
+  useEffect(() => {
+    if (didFetchProjectsRef.current) return;
+    didFetchProjectsRef.current = true;
+
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get('/projects');
+        setProjects(response.data.projects || []);
+      } catch (error: any) {
+        console.error('Failed to fetch projects:', error);
+        toast.error('Failed to load projects');
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (didFetchConstantsRef.current) return;
+    didFetchConstantsRef.current = true;
+
+    const fetchConstants = async () => {
+      try {
+        const response = await api.get('/constants');
+        setConstants(response.data);
+      } catch (error: any) {
+        console.error('Failed to fetch constants:', error);
+        toast.error('Failed to load form options');
+      } finally {
+        setLoadingConstants(false);
+      }
+    };
+    fetchConstants();
+  }, []);
+
+  const handleCreateProject = async (name: string, description: string) => {
+    try {
+      const response = await api.post('/projects', { name, description });
+      const newProject = response.data.project;
+      setProjects((prev) => [newProject, ...prev]);
+      setFormData((prev) => ({ ...prev, projectId: newProject.id }));
+      toast.success('Project created successfully');
+      setShowCreateProjectModal(false);
+    } catch (error: any) {
+      console.error('Failed to create project:', error);
+      toast.error(error.response?.data?.error || 'Failed to create project');
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!formData.projectId) {
-      alert('Please select a project');
+      toast.error('Please select a project');
       return;
     }
-    const campaignId = 'temp-' + Date.now();
-    navigate(`/campaign/${campaignId}/live`);
+
+    if (formData.industry === 'other' && !formData.customIndustry.trim()) {
+      toast.error('Please specify your industry');
+      return;
+    }
+
+    if (formData.goal === 'other' && !formData.customGoal.trim()) {
+      toast.error('Please specify your goal');
+      return;
+    }
+
+    setIsCreating(true);
+    
+    const toastId = toast.loading(
+      'Launching AI agents... This will take 2-3 minutes',
+      { duration: Infinity }
+    );
+
+    try {
+      const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
+      const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
+
+      await api.post('/campaigns', {
+        projectId: formData.projectId,
+        name: formData.campaignName,
+        brandName: formData.brandName,
+        industry: finalIndustry,
+        primaryGoal: finalGoal,
+        targetAudience: formData.targetAudience,
+        brandVoice: formData.brandVoice,
+      });
+
+      toast.dismiss(toastId);
+      toast.success('Campaign created successfully! \u{1F389}');
+      
+      // Navigate to campaign detail or history
+      navigate(`/projects/${formData.projectId}`);
+      
+    } catch (error: any) {
+      toast.dismiss(toastId);
+      console.error('Campaign creation failed:', error);
+      
+      const errorMessage =
+        error.response?.data?.details ||
+        error.response?.data?.error ||
+        'We could not generate the campaign right now. Please try again.';
+      
+      toast.error(errorMessage, { duration: 5000 });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const voiceOptions = [
-    { value: 'professional', label: 'Professional', icon: Briefcase },
-    { value: 'friendly', label: 'Friendly', icon: Smile },
-    { value: 'bold', label: 'Bold', icon: Flame },
-    { value: 'luxury', label: 'Luxury', icon: Crown },
-    { value: 'casual', label: 'Casual', icon: Coffee },
-    { value: 'authoritative', label: 'Authoritative', icon: Scale },
-  ];
+  if (loadingConstants) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
+      </div>
+    );
+  }
+
+  if (!constants) {
+    return (
+      <div className="text-center py-8">
+        <p style={{ color: '#8B8B9E' }}>Failed to load form options. Please refresh the page.</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -71,6 +199,19 @@ const NewCampaignContent: React.FC = () => {
           }
           ::placeholder {
             color: #4A4A5E;
+          }
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
           }
         `}</style>
 
@@ -103,8 +244,9 @@ const NewCampaignContent: React.FC = () => {
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
                 className="flex-1 rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
+                disabled={loadingProjects || isCreating}
               >
-                <option value="">Select a project...</option>
+                <option value="">{loadingProjects ? 'Loading projects...' : 'Select a project...'}</option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.name}
@@ -192,17 +334,29 @@ const NewCampaignContent: React.FC = () => {
               <select
                 required
                 value={formData.industry}
-                onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, industry: e.target.value, customIndustry: '' })}
                 className="w-full rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 <option value="">Select industry...</option>
-                <option value="saas">SaaS & Technology</option>
-                <option value="ecommerce">E-Commerce</option>
-                <option value="finance">Finance & Fintech</option>
-                <option value="healthcare">Healthcare</option>
-                <option value="other">Other</option>
+                {constants.industries.map((industry) => (
+                  <option key={industry.value} value={industry.value}>
+                    {industry.label}
+                  </option>
+                ))}
+                <option value="other">Other (Specify)</option>
               </select>
+              {formData.industry === 'other' && (
+                <input
+                  type="text"
+                  required
+                  value={formData.customIndustry}
+                  onChange={(e) => setFormData({ ...formData, customIndustry: e.target.value })}
+                  className="w-full rounded-lg px-3 py-2 text-sm border transition-all animate-fadeIn"
+                  placeholder="Enter your industry..."
+                  style={{ fontFamily: 'Sora, sans-serif' }}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
@@ -211,16 +365,29 @@ const NewCampaignContent: React.FC = () => {
               <select
                 required
                 value={formData.goal}
-                onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, goal: e.target.value, customGoal: '' })}
                 className="w-full rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 <option value="">Select goal...</option>
-                <option value="awareness">Brand Awareness</option>
-                <option value="lead_gen">Lead Generation</option>
-                <option value="sales">Direct Sales</option>
-                <option value="retention">Customer Retention</option>
+                {constants.primaryGoals.map((goal) => (
+                  <option key={goal.value} value={goal.value}>
+                    {goal.label}
+                  </option>
+                ))}
+                <option value="other">Other (Specify)</option>
               </select>
+              {formData.goal === 'other' && (
+                <input
+                  type="text"
+                  required
+                  value={formData.customGoal}
+                  onChange={(e) => setFormData({ ...formData, customGoal: e.target.value })}
+                  className="w-full rounded-lg px-3 py-2 text-sm border transition-all animate-fadeIn"
+                  placeholder="Enter your goal..."
+                  style={{ fontFamily: 'Sora, sans-serif' }}
+                />
+              )}
             </div>
           </div>
           <div className="space-y-2">
@@ -247,22 +414,22 @@ const NewCampaignContent: React.FC = () => {
             </h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {voiceOptions.map((option) => {
-              const IconComponent = option.icon;
+            {constants.brandVoices.map((voice) => {
+              const IconComponent = VOICE_ICONS[voice.value] || Briefcase;
               return (
-                <label key={option.value} className="relative cursor-pointer">
+                <label key={voice.value} className="relative cursor-pointer">
                   <input
                     type="radio"
                     name="brand_voice"
-                    value={option.value}
-                    checked={formData.brandVoice === option.value}
+                    value={voice.value}
+                    checked={formData.brandVoice === voice.value}
                     onChange={(e) => setFormData({ ...formData, brandVoice: e.target.value })}
                     className="sr-only peer"
                   />
                   <div className="p-3 rounded-lg border border-[#2A2A38] bg-[#131318] peer-checked:border-[#c0c1ff] peer-checked:bg-[rgba(192,193,255,0.05)] transition-all hover:border-[#464554] text-center flex flex-col items-center gap-2">
                     <IconComponent size={20} className="text-[#c0c1ff]" />
                     <span className="text-xs font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-                      {option.label}
+                      {voice.label}
                     </span>
                   </div>
                 </label>
@@ -280,13 +447,23 @@ const NewCampaignContent: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all"
+            disabled={isCreating}
+            className="px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: '#6366F1', color: '#F1F1F3' }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
+            onMouseEnter={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
+            onMouseLeave={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
           >
-            <Zap size={16} />
-            Launch Campaign
+            {isCreating ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Launching Agents...
+              </>
+            ) : (
+              <>
+                <Zap size={16} />
+                Launch Campaign
+              </>
+            )}
           </button>
         </div>
       </form>

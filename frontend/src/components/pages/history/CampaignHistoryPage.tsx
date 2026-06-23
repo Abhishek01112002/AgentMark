@@ -1,57 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 
 interface Campaign {
   id: string;
   name: string;
-  projectName: string;
-  status: 'running' | 'completed' | 'failed';
-  score: number | null;
-  agents: Agent[];
-  duration: string;
-  created: string;
-  icon: string;
+  projectId: string;
+  industry: string;
+  primaryGoal: string;
+  status: string;
+  reviewScore?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  aiOutputs?: any;
 }
 
-interface Agent {
+interface Project {
+  id: string;
   name: string;
-  status: 'complete' | 'in-progress' | 'pending' | 'error';
+  campaigns?: Campaign[];
 }
 
-// Mock data with 42 campaigns
-const mockProjects = ['Nike 2025 Campaign', 'Adidas Spring Collection', 'TechGadgets Pro Launch', 'Internal Marketing 2025'];
-
-const campaigns: Campaign[] = Array.from({ length: 42 }, (_, i) => {
-  const statuses: Array<Campaign['status']> = ['running', 'completed', 'failed'];
-  const icons = ['rocket_launch', 'mail', 'campaign'];
-  
-  return {
-    id: `${i + 1}`,
-    name: `Campaign ${i + 1}`,
-    projectName: mockProjects[i % mockProjects.length],
-    status: statuses[i % 3],
-    score: statuses[i % 3] === 'failed' ? null : 85 + Math.random() * 15,
-    agents: [
-      { name: 'Research', status: 'complete' },
-      { name: 'Strategy', status: 'complete' },
-      { name: 'Copywriting', status: i % 3 === 0 ? 'complete' : 'in-progress' },
-      { name: 'Design', status: i % 3 === 0 ? 'complete' : 'pending' },
-      { name: 'Review', status: i % 3 === 2 ? 'error' : 'pending' },
-      { name: 'Distribution', status: 'pending' },
-      { name: 'Analytics', status: 'pending' },
-    ],
-    duration: `${Math.floor(Math.random() * 10)}d ${Math.floor(Math.random() * 24)}h`,
-    created: `${Math.floor(Math.random() * 60)} days ago`,
-    icon: icons[i % 3],
+const formatIndustryLabel = (industry: string) => {
+  const normalized = (industry || '').trim().toLowerCase();
+  if (!normalized) return 'Not specified';
+  const industryMap: Record<string, string> = {
+    'saas': 'SaaS',
+    'fintech': 'FinTech',
+    'ai': 'AI',
+    'ml': 'ML',
+    'ios': 'iOS',
+    'android': 'Android',
+    'api': 'API',
+    'b2b': 'B2B',
+    'b2c': 'B2C',
   };
-});
+  if (industryMap[normalized]) return industryMap[normalized];
+  return normalized
+    .split(/[\s_-]+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const formatGoalLabel = (goal: string) => {
+  const normalized = (goal || '').replace(/_/g, ' ').trim();
+  if (!normalized) return 'Not specified';
+  const lower = normalized.toLowerCase();
+  if (lower === 'lead gen' || lower === 'lead_generation' || lower === 'lead generation' || lower === 'lead_gen') {
+    return 'Lead Generation';
+  }
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
 
 const CampaignHistoryContent: React.FC = () => {
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'completed' | 'failed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'processing' | 'completed' | 'failed'>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const didFetchRef = useRef(false);
+
+  useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
+
+    const fetchCampaigns = async () => {
+      try {
+        const projectsResponse = await api.get('/projects');
+        const projectsData = projectsResponse.data.projects || [];
+        setProjects(projectsData);
+        
+        // Fetch campaigns for each project
+        const allCampaigns: Campaign[] = [];
+        for (const project of projectsData) {
+          try {
+            const campaignsResponse = await api.get(`/campaigns?projectId=${project.id}`);
+            const projectCampaigns = campaignsResponse.data.campaigns || [];
+            allCampaigns.push(...projectCampaigns);
+          } catch (error) {
+            console.error(`Failed to fetch campaigns for project ${project.id}:`, error);
+          }
+        }
+        setCampaigns(allCampaigns);
+      } catch (error: any) {
+        console.error('Failed to fetch campaigns:', error);
+        toast.error('Failed to load campaign history');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCampaigns();
+  }, []);
 
   const filteredCampaigns = campaigns.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -73,93 +117,62 @@ const CampaignHistoryContent: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const getStatusBadge = (status: Campaign['status']) => {
-    const styles = {
-      running: {
-        bg: 'bg-secondary/10',
-        border: 'border-secondary/20',
-        text: 'text-secondary',
-        dot: 'bg-secondary pulse-dot',
+  const getStatusBadge = (status: string) => {
+    const styles: Record<string, any> = {
+      processing: {
+        bg: 'rgba(245,158,11,0.1)',
+        border: 'rgba(245,158,11,0.2)',
+        text: '#F59E0B',
+        dot: '#F59E0B',
       },
       completed: {
-        bg: 'bg-surface-container-high',
-        border: 'border-border-base',
-        text: 'text-text-secondary',
-        dot: 'bg-text-secondary',
+        bg: 'rgba(78,222,163,0.1)',
+        border: 'rgba(78,222,163,0.2)',
+        text: '#4edea3',
+        dot: '#4edea3',
       },
       failed: {
-        bg: 'bg-danger/10',
-        border: 'border-danger/20',
-        text: 'text-danger',
-        dot: 'bg-danger',
+        bg: 'rgba(244,63,94,0.1)',
+        border: 'rgba(244,63,94,0.2)',
+        text: '#F43F5E',
+        dot: '#F43F5E',
       },
     };
 
-    const style = styles[status];
+    const style = styles[status] || styles.completed;
 
     return (
       <div
-        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm ${style.bg} border ${style.border} ${style.text}`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+        style={{
+          backgroundColor: style.bg,
+          border: `1px solid ${style.border}`,
+          color: style.text,
+          fontFamily: 'JetBrains Mono, monospace',
+        }}
       >
-        <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: style.dot }} />
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </div>
     );
   };
 
-  const getAgentBar = (agents: Agent[]) => {
-    return (
-      <div className="flex gap-1">
-        {agents.map((agent, idx) => {
-          const colors = {
-            complete: 'bg-secondary',
-            'in-progress': 'bg-primary pulse-dot',
-            error: 'bg-danger',
-            pending: 'bg-border-base',
-          };
-          return (
-            <div
-              key={idx}
-              className={`w-1.5 h-4 rounded-full ${colors[agent.status]}`}
-              title={`${agent.name}: ${agent.status}`}
-            />
-          );
-        })}
-      </div>
-    );
+  const getTimeAgo = (date: string) => {
+    const past = new Date(date);
+    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const getCampaignIcon = (campaign: Campaign) => {
-    const iconColors = {
-      running: { bg: 'bg-primary/10', border: 'border-primary/20', text: 'text-primary' },
-      completed: { bg: 'bg-surface-container-high', border: 'border-border-base', text: 'text-text-secondary' },
-      failed: { bg: 'bg-danger/10', border: 'border-danger/20', text: 'text-danger' },
-    };
-    const colors = iconColors[campaign.status];
-
+  if (loading) {
     return (
-      <div className={`w-8 h-8 rounded ${colors.bg} flex items-center justify-center border ${colors.border}`}>
-        <span className={`material-symbols-outlined ${colors.text} text-sm`}>{campaign.icon}</span>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
+        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
       </div>
     );
-  };
+  }
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Sora:wght@400;600;700&display=swap');
-        
-        .pulse-dot {
-          animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
-        @keyframes pulse-ring {
-          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-          70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-        }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         .history-main {
           margin-left: 0;
           transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
@@ -188,224 +201,270 @@ const CampaignHistoryContent: React.FC = () => {
               </header>
 
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-64">
-                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm">
-                        search
-                      </span>
-                      <input
-                        className="w-full bg-surface border border-border-base rounded text-text-primary font-body-sm text-sm py-2 pl-10 pr-3 focus:outline-none focus:border-[#6366F1] transition-colors placeholder:text-text-muted"
-                        placeholder="Search campaigns..."
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => {
-                          setSearchQuery(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                      />
-                    </div>
-                    <button className="bg-surface border border-border-base rounded px-3 py-2 flex items-center justify-center hover:bg-elevated transition-colors">
-                      <span className="material-symbols-outlined text-text-secondary">filter_list</span>
+                <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                  <div className="relative flex-1">
+                    <input
+                      className="w-full rounded-lg px-4 py-2 text-sm border transition-all focus:outline-none focus:border-[#6366F1]"
+                      style={{ backgroundColor: '#111118', borderColor: '#2A2A38', color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}
+                      placeholder="Search campaigns..."
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => setStatusFilter('all')}
+                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap transition-colors"
+                      style={{
+                        backgroundColor: statusFilter === 'all' ? 'rgba(99,102,241,0.1)' : '#111118',
+                        color: statusFilter === 'all' ? '#6366F1' : '#8B8B9E',
+                        border: `1px solid ${statusFilter === 'all' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    >
+                      All Campaigns
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('processing')}
+                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      style={{
+                        backgroundColor: statusFilter === 'processing' ? 'rgba(99,102,241,0.1)' : '#111118',
+                        color: statusFilter === 'processing' ? '#6366F1' : '#8B8B9E',
+                        border: `1px solid ${statusFilter === 'processing' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" /> Processing
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('completed')}
+                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      style={{
+                        backgroundColor: statusFilter === 'completed' ? 'rgba(99,102,241,0.1)' : '#111118',
+                        color: statusFilter === 'completed' ? '#6366F1' : '#8B8B9E',
+                        border: `1px solid ${statusFilter === 'completed' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3]" /> Completed
+                    </button>
+                    <button
+                      onClick={() => setStatusFilter('failed')}
+                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      style={{
+                        backgroundColor: statusFilter === 'failed' ? 'rgba(99,102,241,0.1)' : '#111118',
+                        color: statusFilter === 'failed' ? '#6366F1' : '#8B8B9E',
+                        border: `1px solid ${statusFilter === 'failed' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E]" /> Failed
                     </button>
                   </div>
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  <button
-                    onClick={() => {
-                      setStatusFilter('all');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-1.5 rounded-full font-label-sm text-xs whitespace-nowrap transition-colors ${
-                      statusFilter === 'all'
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'bg-surface border border-border-base text-text-secondary hover:bg-elevated'
-                    }`}
-                  >
-                    All Campaigns
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('running');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-1.5 rounded-full font-label-sm text-xs whitespace-nowrap flex items-center gap-2 transition-colors ${
-                      statusFilter === 'running'
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'bg-surface border border-border-base text-text-secondary hover:bg-elevated'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary" /> Running
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('completed');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-1.5 rounded-full font-label-sm text-xs whitespace-nowrap flex items-center gap-2 transition-colors ${
-                      statusFilter === 'completed'
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'bg-surface border border-border-base text-text-secondary hover:bg-elevated'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-text-secondary" /> Completed
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('failed');
-                      setCurrentPage(1);
-                    }}
-                    className={`px-4 py-1.5 rounded-full font-label-sm text-xs whitespace-nowrap flex items-center gap-2 transition-colors ${
-                      statusFilter === 'failed'
-                        ? 'bg-primary/10 text-primary border border-primary/20'
-                        : 'bg-surface border border-border-base text-text-secondary hover:bg-elevated'
-                    }`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-danger" /> Failed
-                  </button>
-                </div>
-
-                <div className="rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-border-base bg-elevated/50 font-label-sm text-xs text-text-muted">
-                          <th className="py-4 px-6 font-medium tracking-wider">CAMPAIGN</th>
-                          <th className="py-4 px-6 font-medium tracking-wider">STATUS</th>
-                          <th className="py-4 px-6 font-medium tracking-wider">SCORE</th>
-                          <th className="py-4 px-6 font-medium tracking-wider">AGENTS</th>
-                          <th className="py-4 px-6 font-medium tracking-wider">DURATION</th>
-                          <th className="py-4 px-6 font-medium tracking-wider">CREATED</th>
-                          <th className="py-4 px-6 font-medium tracking-wider text-right">ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody className="font-body-sm text-sm">
-                        {paginatedCampaigns.map((campaign) => (
-                          <tr
-                            key={campaign.id}
-                            className="border-b border-border-base/50 hover:bg-elevated/30 transition-colors group"
-                          >
-                            <td className="py-4 px-6">
-                              <div className="flex items-center gap-3">
-                                {getCampaignIcon(campaign)}
-                                <div>
-                                  <div className="text-text-primary font-medium">{campaign.name}</div>
-                                  <div className="text-text-muted text-xs mt-0.5">{campaign.projectName}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">{getStatusBadge(campaign.status)}</td>
-                            <td className="py-4 px-6">
-                              <div
-                                className={`font-label-md text-sm ${
-                                  campaign.status === 'failed' ? 'text-danger' : campaign.status === 'running' ? 'text-secondary' : 'text-text-primary'
-                                }`}
-                              >
-                                {campaign.score ? campaign.score.toFixed(1) : '--'}
-                              </div>
-                            </td>
-                            <td className="py-4 px-6">
-                              <div className={campaign.status === 'completed' ? 'opacity-60' : ''}>
-                                {getAgentBar(campaign.agents)}
-                              </div>
-                            </td>
-                            <td className="py-4 px-6 text-text-secondary">{campaign.duration}</td>
-                            <td className="py-4 px-6 text-text-secondary">{campaign.created}</td>
-                            <td className="py-4 px-6 text-right">
-                              <div className="flex items-center justify-end gap-2 transition-opacity">
-                                <button className="p-1.5 text-text-muted hover:text-text-primary transition-colors">
-                                  <span className="material-symbols-outlined text-sm">visibility</span>
-                                </button>
-                                <button className="p-1.5 text-text-muted hover:text-text-primary transition-colors">
-                                  <span className="material-symbols-outlined text-sm">download</span>
-                                </button>
-                                <button className="p-1.5 text-text-muted hover:text-danger transition-colors">
-                                  <span className="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {campaigns.length === 0 ? (
+                  <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                      No campaigns yet
+                    </h3>
+                    <p className="text-sm mb-6" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                      Create your first campaign to see it here
+                    </p>
                   </div>
-
-                  {/* Pagination Footer */}
-                  <div
-                    className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t"
-                    style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}
-                  >
-                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
-                      Showing {paginatedCampaigns.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filteredCampaigns.length} campaigns
+                                ) : filteredCampaigns.length === 0 ? (
+                  <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                      No campaigns match your filters
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse" style={{ minWidth: 700 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              CAMPAIGN
+                            </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              STATUS
+                            </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              SCORE
+                            </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              INDUSTRY
+                            </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              GOAL
+                            </th>
+                            <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
+                              CREATED
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paginatedCampaigns.map((campaign) => {
+                            const project = projects.find(p => p.id === campaign.projectId);
+                            
+                            let reviewScore = campaign.reviewScore;
+                            
+                            if (!reviewScore && campaign.aiOutputs) {
+                              try {
+                                const outputs = typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs;
+                                const reviewOutput = typeof outputs.review_output === 'string' ? JSON.parse(outputs.review_output) : outputs.review_output;
+                                
+                                if (reviewOutput) {
+                                  const scores: number[] = [];
+                                  if (reviewOutput.research_review?.score) scores.push(reviewOutput.research_review.score);
+                                  if (reviewOutput.strategy_review?.score) scores.push(reviewOutput.strategy_review.score);
+                                  if (reviewOutput.copy_review?.score) scores.push(reviewOutput.copy_review.score);
+                                  if (reviewOutput.image_review?.score) scores.push(reviewOutput.image_review.score);
+                                  
+                                  if (scores.length > 0) {
+                                    reviewScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                                  }
+                                }
+                              } catch (e) {
+                                console.error('Failed to extract review score:', e);
+                              }
+                            }
+                            
+                            return (
+                              <tr
+                                key={campaign.id}
+                                className="transition-colors"
+                                style={{ borderBottom: '1px solid rgba(42,42,56,0.5)' }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(27,27,32,0.3)')}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                              >
+                                <td style={{ padding: '16px 20px' }}>
+                                  <div>
+                                    <div style={{ fontFamily: 'Sora, sans-serif', fontSize: '14px', fontWeight: 500, color: '#F1F1F3' }}>
+                                      {campaign.name}
+                                    </div>
+                                    <div style={{ fontFamily: 'Sora, sans-serif', fontSize: '12px', color: '#A0A0D2', marginTop: '2px' }}>
+                                      {project?.name || 'Unknown Project'}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '16px 20px' }}>{getStatusBadge(campaign.status)}</td>
+                                <td style={{ padding: '16px 20px', fontFamily: 'Sora, sans-serif', fontSize: '13px', color: '#8B8B9E' }}>
+                                  {reviewScore !== null && reviewScore !== undefined ? (
+                                    <span
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded"
+                                      style={{
+                                        backgroundColor: reviewScore >= 80 ? 'rgba(78,222,163,0.1)' : reviewScore >= 60 ? 'rgba(245,158,11,0.1)' : 'rgba(244,63,94,0.1)',
+                                        color: reviewScore >= 80 ? '#4edea3' : reviewScore >= 60 ? '#F59E0B' : '#F43F5E',
+                                        fontFamily: 'JetBrains Mono, monospace',
+                                        fontSize: '12px',
+                                        fontWeight: 600,
+                                      }}
+                                    >
+                                      {reviewScore.toFixed(1)}/100
+                                    </span>
+                                  ) : (
+                                    '--'
+                                  )}
+                                </td>
+                                <td style={{ padding: '16px 20px', fontFamily: 'Sora, sans-serif', fontSize: '13px', color: '#8B8B9E' }}>
+                                  {formatIndustryLabel(campaign.industry) || '--'}
+                                </td>
+                                <td style={{ padding: '16px 20px', fontFamily: 'Sora, sans-serif', fontSize: '13px', color: '#8B8B9E' }}>
+                                  {formatGoalLabel(campaign.primaryGoal) || '--'}
+                                </td>
+                                <td style={{ padding: '16px 20px', fontFamily: 'Sora, sans-serif', fontSize: '13px', color: '#8B8B9E' }}>
+                                  {getTimeAgo(campaign.createdAt)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
 
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1 || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                        title="First"
-                      >
-                        &lt;&lt;
-                      </button>
-                      <button
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1 || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                        title="Previous"
-                      >
-                        &lt;
-                      </button>
-
-                      <div
-                        className="px-3 py-1 rounded border"
-                        style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                      >
-                        {totalPages === 0 ? 0 : currentPage}
+                    <div
+                      className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t"
+                      style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}
+                    >
+                      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
+                        Showing {paginatedCampaigns.length === 0 ? 0 : startIndex + 1} to {endIndex} of {filteredCampaigns.length} campaigns
                       </div>
 
-                      <button
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                        title="Next"
-                      >
-                        &gt;
-                      </button>
-                      <button
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
-                        title="Last"
-                      >
-                        &gt;&gt;
-                      </button>
-                    </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handlePageChange(1)}
+                          disabled={currentPage === 1 || totalPages === 0}
+                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          title="First"
+                        >
+                          &lt;&lt;
+                        </button>
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1 || totalPages === 0}
+                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          title="Previous"
+                        >
+                          &lt;
+                        </button>
 
-                    <select
-                      value={itemsPerPage}
-                      onChange={handleItemsPerPageChange}
-                      className="px-3 py-1 rounded border text-sm cursor-pointer"
-                      style={{
-                        backgroundColor: '#111118',
-                        borderColor: '#2A2A38',
-                        color: '#8B8B9E',
-                        fontFamily: 'JetBrains Mono, monospace',
-                        fontSize: '12px',
-                      }}
-                    >
-                      <option value={5}>5 per page</option>
-                      <option value={10}>10 per page</option>
-                      <option value={25}>25 per page</option>
-                      <option value={50}>50 per page</option>
-                    </select>
+                        <div
+                          className="px-3 py-1 rounded border"
+                          style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        >
+                          {totalPages === 0 ? 0 : currentPage}
+                        </div>
+
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          title="Next"
+                        >
+                          &gt;
+                        </button>
+                        <button
+                          onClick={() => handlePageChange(totalPages)}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          title="Last"
+                        >
+                          &gt;&gt;
+                        </button>
+                      </div>
+
+                      <select
+                        value={itemsPerPage}
+                        onChange={handleItemsPerPageChange}
+                        className="px-3 py-1 rounded border text-sm cursor-pointer"
+                        style={{
+                          backgroundColor: '#111118',
+                          borderColor: '#2A2A38',
+                          color: '#8B8B9E',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <option value={5}>5 per page</option>
+                        <option value={10}>10 per page</option>
+                        <option value={25}>25 per page</option>
+                        <option value={50}>50 per page</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

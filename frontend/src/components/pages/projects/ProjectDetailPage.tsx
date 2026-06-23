@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -7,7 +7,6 @@ import {
   Trash2,
   FolderOpen,
   LayoutDashboard,
-  Mail,
   MessageSquare,
   TrendingUp,
   Star,
@@ -16,72 +15,27 @@ import {
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import DeleteCampaignModal from './DeleteCampaignModal';
+import api from '../../../services/api';
+import toast from 'react-hot-toast';
 
 type StatusTone = 'green' | 'neutral' | 'warning' | 'danger';
 type ScoreTone = 'green' | 'warning' | 'neutral';
 
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
 interface Campaign {
   id: string;
   name: string;
-  icon: any;
   status: string;
-  statusTone: StatusTone;
-  score: string;
-  scoreTone: ScoreTone;
-  created: string;
+  reviewScore?: number | null;
+  aiOutputs?: any;
+  createdAt: string;
 }
-
-// Mock project data
-const mockProject = {
-  id: '1',
-  name: 'Nike 2025 Campaign',
-  description: 'Complete marketing strategy for Nike Q1 2025 product launches',
-  created: '3 months ago',
-};
-
-// Mock campaigns for this project
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    name: 'Summer Launch',
-    icon: LayoutDashboard,
-    status: 'Completed',
-    statusTone: 'neutral',
-    score: '9.2',
-    scoreTone: 'green',
-    created: '10 days ago',
-  },
-  {
-    id: '2',
-    name: 'Instagram Push',
-    icon: Mail,
-    status: 'Running',
-    statusTone: 'green',
-    score: 'N/A',
-    scoreTone: 'neutral',
-    created: '2 days ago',
-  },
-  {
-    id: '3',
-    name: 'Email Series',
-    icon: MessageSquare,
-    status: 'Review Needed',
-    statusTone: 'warning',
-    score: '8.5',
-    scoreTone: 'warning',
-    created: '5 days ago',
-  },
-  {
-    id: '4',
-    name: 'Social Media Ads',
-    icon: TrendingUp,
-    status: 'Completed',
-    statusTone: 'neutral',
-    score: '9.5',
-    scoreTone: 'green',
-    created: '15 days ago',
-  },
-];
 
 const badgeMap: Record<StatusTone, { text: string; dot: string }> = {
   green: { text: '#4edea3', dot: '#4edea3' },
@@ -99,16 +53,88 @@ const scoreMap: Record<ScoreTone, string> = {
 const ProjectDetailContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  const [project, setProject] = useState<Project | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; campaign: Campaign | null }>({ show: false, campaign: null });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const project = mockProject;
+  const didFetchRef = useRef(false);
+
+  useEffect(() => {
+    if (didFetchRef.current) return;
+    didFetchRef.current = true;
+
+    const fetchProjectData = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        const [projectResponse, campaignsResponse] = await Promise.all([
+          api.get(`/projects/${id}`),
+          api.get(`/campaigns?projectId=${id}`)
+        ]);
+        
+        setProject(projectResponse.data.project);
+        setCampaigns(campaignsResponse.data.campaigns || []);
+      } catch (error: any) {
+        console.error('Failed to fetch project data:', error);
+        toast.error(error.response?.data?.message || 'Failed to load project data');
+        
+        if (error.response?.status === 404) {
+          setTimeout(() => navigate('/projects'), 2000);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProjectData();
+  }, [id, navigate]);
 
   const totalPages = Math.ceil(campaigns.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, campaigns.length);
   const paginatedCampaigns = campaigns.slice(startIndex, endIndex);
+
+  const getStatusTone = (status: string): StatusTone => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'neutral';
+      case 'processing':
+      case 'running':
+        return 'green';
+      case 'failed':
+        return 'danger';
+      default:
+        return 'warning';
+    }
+  };
+
+  const getScoreTone = (score?: number | null): ScoreTone => {
+    if (!score) return 'neutral';
+    if (score >= 8) return 'green';
+    if (score >= 6) return 'warning';
+    return 'neutral';
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getCampaignIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return LayoutDashboard;
+      case 'processing':
+      case 'running':
+        return TrendingUp;
+      default:
+        return MessageSquare;
+    }
+  };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
@@ -123,12 +149,75 @@ const ProjectDetailContent: React.FC = () => {
     setDeleteModal({ show: true, campaign });
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteModal.campaign) {
-      setCampaigns(campaigns.filter((c) => c.id !== deleteModal.campaign!.id));
-      setDeleteModal({ show: false, campaign: null });
+  const handleDeleteConfirm = async () => {
+    if (deleteModal.campaign && id) {
+      try {
+        await api.delete(`/campaigns/${deleteModal.campaign.id}?projectId=${id}`);
+        setCampaigns(campaigns.filter((c) => c.id !== deleteModal.campaign!.id));
+        toast.success('Campaign deleted successfully');
+        setDeleteModal({ show: false, campaign: null });
+      } catch (error: any) {
+        console.error('Failed to delete campaign:', error);
+        toast.error(error.response?.data?.message || 'Failed to delete campaign');
+      }
     }
   };
+
+  const handleViewCampaign = (campaignId: string) => {
+    navigate(`/campaign/${campaignId}/result?projectId=${id}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6366F1] mx-auto mb-4" />
+          <p className="text-sm" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>Loading project...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <>
+        <style>{`
+          .project-detail-main {
+            margin-left: 0;
+            transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
+          }
+          @media (min-width: 768px) {
+            .project-detail-main {
+              margin-left: var(--sidebar-w, 240px);
+            }
+          }
+        `}</style>
+        <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F' }}>
+          <Sidebar />
+          <TopNav title="Project Not Found" />
+          <main className="project-detail-main pt-14 flex items-center justify-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
+            <div className="text-center max-w-md mx-auto px-4">
+              <div className="w-20 h-20 rounded-full bg-[#F43F5E]/10 border-2 border-[#F43F5E]/20 flex items-center justify-center mx-auto mb-6">
+                <FolderOpen size={40} style={{ color: '#F43F5E' }} />
+              </div>
+              <h2 className="text-2xl font-semibold mb-3" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>Project not found</h2>
+              <p className="text-sm mb-6" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>
+                The project you're looking for doesn't exist or has been deleted.
+              </p>
+              <button
+                onClick={() => navigate('/projects')}
+                className="px-6 py-3 rounded-lg bg-[#6366F1] text-white text-sm font-medium hover:bg-[#8083ff] transition-all inline-flex items-center gap-2"
+                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+              >
+                <ArrowLeft size={16} />
+                Back to Projects
+              </button>
+            </div>
+          </main>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -158,7 +247,6 @@ const ProjectDetailContent: React.FC = () => {
         <main className="project-detail-main pt-14" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6">
             
-            {/* Back Button */}
             <button
               onClick={() => navigate('/projects')}
               className="flex items-center gap-2 text-sm font-medium transition-colors"
@@ -170,7 +258,6 @@ const ProjectDetailContent: React.FC = () => {
               Back to Projects
             </button>
 
-            {/* Project Header */}
             <div
               className="rounded-xl p-6"
               style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
@@ -188,13 +275,13 @@ const ProjectDetailContent: React.FC = () => {
                       {project.name}
                     </h1>
                     <p className="text-sm mb-3" style={{ color: '#8B8B9E' }}>
-                      {project.description}
+                      {project.description || 'No description provided'}
                     </p>
                     <div
                       className="text-xs"
-                      style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}
+                      style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}
                     >
-                      Created {project.created}
+                      Created {formatDate(project.createdAt)}
                     </div>
                   </div>
                 </div>
@@ -222,7 +309,6 @@ const ProjectDetailContent: React.FC = () => {
               </div>
             </div>
 
-            {/* Campaigns Section */}
             <div>
               <h2
                 className="text-lg font-semibold mb-4 flex items-center gap-2"
@@ -237,18 +323,22 @@ const ProjectDetailContent: React.FC = () => {
                   className="rounded-xl p-12 text-center"
                   style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
                 >
-                  <LayoutDashboard size={48} className="mx-auto mb-4" style={{ color: '#2A2A38' }} />
-                  <h3 className="text-[15px] font-medium mb-2" style={{ color: '#4A4A5E' }}>
+                  <div className="w-20 h-20 rounded-full bg-[#6366F1]/10 border-2 border-[#6366F1]/20 flex items-center justify-center mx-auto mb-6">
+                    <LayoutDashboard size={40} style={{ color: '#6366F1' }} />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>
                     No campaigns yet
                   </h3>
-                  <p className="text-[13px] mb-6" style={{ color: '#4A4A5E' }}>
-                    Create your first campaign in this project
+                  <p className="text-sm mb-8 max-w-md mx-auto" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>
+                    Start building your first marketing campaign for this project. Our AI agents will help you create a complete campaign strategy.
                   </p>
                   <button
                     onClick={() => navigate(`/campaign/new?projectId=${id}`)}
-                    className="bg-[#6366F1] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#8083ff] transition"
+                    className="bg-[#6366F1] text-white px-6 py-3 rounded-lg text-sm font-medium hover:bg-[#8083ff] transition-all inline-flex items-center gap-2"
+                    style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    Create Campaign
+                    <Plus size={18} />
+                    Create Your First Campaign
                   </button>
                 </div>
               ) : (
@@ -268,7 +358,7 @@ const ProjectDetailContent: React.FC = () => {
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -283,7 +373,7 @@ const ProjectDetailContent: React.FC = () => {
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -298,7 +388,7 @@ const ProjectDetailContent: React.FC = () => {
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -313,7 +403,7 @@ const ProjectDetailContent: React.FC = () => {
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -328,7 +418,7 @@ const ProjectDetailContent: React.FC = () => {
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#4A4A5E',
+                              color: '#A0A0D2',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                               textAlign: 'right',
@@ -340,10 +430,37 @@ const ProjectDetailContent: React.FC = () => {
                       </thead>
                       <tbody>
                         {paginatedCampaigns.map((row) => {
-                          const Icon = row.icon;
-                          const badge = badgeMap[row.statusTone];
-                          const scorColor = scoreMap[row.scoreTone];
-                          const isRunning = row.statusTone === 'green';
+                          const Icon = getCampaignIcon(row.status);
+                          const statusTone = getStatusTone(row.status);
+                          const badge = badgeMap[statusTone];
+                          
+                          let reviewScore = row.reviewScore;
+                          
+                          if (!reviewScore && row.aiOutputs) {
+                            try {
+                              const outputs = typeof row.aiOutputs === 'string' ? JSON.parse(row.aiOutputs) : row.aiOutputs;
+                              const reviewOutput = typeof outputs.review_output === 'string' ? JSON.parse(outputs.review_output) : outputs.review_output;
+                              
+                              if (reviewOutput) {
+                                const scores: number[] = [];
+                                if (reviewOutput.research_review?.score) scores.push(reviewOutput.research_review.score);
+                                if (reviewOutput.strategy_review?.score) scores.push(reviewOutput.strategy_review.score);
+                                if (reviewOutput.copy_review?.score) scores.push(reviewOutput.copy_review.score);
+                                if (reviewOutput.image_review?.score) scores.push(reviewOutput.image_review.score);
+                                
+                                if (scores.length > 0) {
+                                  reviewScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+                                }
+                              }
+                            } catch (e) {
+                              console.error('Failed to extract review score:', e);
+                            }
+                          }
+                          
+                          const scoreTone = getScoreTone(reviewScore ? reviewScore / 10 : null);
+                          const scorColor = scoreMap[scoreTone];
+                          const isRunning = statusTone === 'green';
+                          const displayScore = reviewScore ? `${reviewScore.toFixed(1)}/100` : 'N/A';
 
                           return (
                             <tr
@@ -417,10 +534,10 @@ const ProjectDetailContent: React.FC = () => {
                                       fontWeight: 500,
                                     }}
                                   >
-                                    {row.score}
+                                    {displayScore}
                                   </span>
-                                  {row.scoreTone === 'green' && <Star size={14} fill="currentColor" className="flex-shrink-0" />}
-                                  {row.scoreTone === 'warning' && <StarHalf size={14} className="flex-shrink-0" />}
+                                  {scoreTone === 'green' && <Star size={14} fill="currentColor" className="flex-shrink-0" />}
+                                  {scoreTone === 'warning' && <StarHalf size={14} className="flex-shrink-0" />}
                                 </div>
                               </td>
 
@@ -430,15 +547,16 @@ const ProjectDetailContent: React.FC = () => {
                                   padding: '16px 20px',
                                   fontFamily: 'Sora, sans-serif',
                                   fontSize: '13px',
-                                  color: '#4A4A5E',
+                                  color: '#A0A0D2',
                                 }}
                               >
-                                {row.created}
+                                {formatDate(row.createdAt)}
                               </td>
 
                               <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                 <div className="flex items-center justify-end gap-2">
                                   <button
+                                    onClick={() => handleViewCampaign(row.id)}
                                     className="p-1.5 rounded transition-colors"
                                     title="View Details"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -478,7 +596,6 @@ const ProjectDetailContent: React.FC = () => {
                     </table>
                   </div>
 
-                  {/* Pagination */}
                   <div
                     className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t"
                     style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}
