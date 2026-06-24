@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Calendar, Copy, Check, Code, Package, Megaphone, Mail, MessageCircle, ShieldCheck, FileDown } from 'lucide-react';
+import { Download, Calendar, Copy, Check, Code, Package, ShieldCheck, FileDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PublisherContentProps {
@@ -25,13 +25,8 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
   const [downloading, setDownloading] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  const defaultAssets = [
-    { platform: 'LinkedIn', type: 'Post', icon: Megaphone, color: '#0A66C2', preview: 'The rules of high-performance marketing just changed. Say hello to Velocity, the tool that cuts campaign generation time by 80 percent. If you are still doing manual audience research, you are falling behind.', hashtags: ['#MarketingTech', '#AI'], action: 'Copy to Clipboard' },
-    { platform: 'Email', type: 'Newsletter', icon: Mail, color: '#d97721', preview: 'Hi [Name], we know how long it takes to build a cohesive campaign. That is why we built Velocity. Join our exclusive webinar to see it live.', subject: 'Unlock 5x Marketing Speed', action: 'View HTML' },
-    { platform: 'Twitter', type: 'Thread', icon: MessageCircle, color: '#1DA1F2', preview: '1/5 Marketing teams are broken.\n\nToo much time on manual tasks, not enough on strategy. We are fixing that today with Velocity. Here is how it works.', replies: '4 replies included', action: 'Copy All' },
-  ];
-
-  const displayAssets = Array.isArray(assets) && assets.length > 0 ? assets : defaultAssets;
+  // Only render real AI-generated assets — no hardcoded fallbacks
+  const displayAssets = Array.isArray(assets) && assets.length > 0 ? assets : [];
 
   // ─── Copy single asset ────────────────────────────────────────────────────
   const handleCopyAsset = async (asset: any, idx: number) => {
@@ -47,7 +42,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIdx(idx);
-      toast.success(`${label} copied!`);
+      toast.success(`${label} copied to clipboard!`, { id: 'copy-success' });
       setTimeout(() => setCopiedIdx(null), 2500);
     } catch {
       try {
@@ -59,10 +54,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
         document.execCommand('copy');
         document.body.removeChild(ta);
         setCopiedIdx(idx);
-        toast.success(`${label} copied!`);
+        toast.success(`${label} copied to clipboard!`, { id: 'copy-success' });
         setTimeout(() => setCopiedIdx(null), 2500);
       } catch {
-        toast.error('Unable to copy — please copy manually.');
+        toast.error('Unable to copy — please copy manually.', { id: 'copy-success' });
       }
     }
   };
@@ -316,7 +311,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       .decision-rationale { font-size: 12px; line-height: 1.6; margin-top: 6px; }
 
       /* Section */
-      .section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; break-inside: avoid; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+      .section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; break-inside: auto; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
       .section-title { font-size: 13px; font-weight: 700; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 2.5px solid; letter-spacing: .02em; }
       .summary-text { font-size: 13px; color: #374151; line-height: 1.75; }
 
@@ -379,7 +374,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       .bullet { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #4b5563; margin-bottom: 6px; }
       .dot { width: 6px; height: 6px; border-radius: 50%; background: #6366F1; flex-shrink: 0; margin-top: 5px; }
 
-      @page { size: A4; margin: 16mm 14mm; }
+      @page { size: A4; margin: 12mm 12mm; }
       @media print { body { background: white; } .page { padding: 0; } .section, .plan-card, .placement-card, .week-block { box-shadow: none; } }
     `;
 
@@ -699,6 +694,17 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           <h2 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Generated Placements</h2>
           <span className="bg-[#111118] border border-[#2A2A38] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{displayAssets.length} Assets</span>
         </div>
+        {displayAssets.length === 0 ? (
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-8 flex flex-col items-center justify-center text-center">
+            <div className="w-14 h-14 rounded-full bg-[#1A1A24] border border-[#2A2A38] flex items-center justify-center text-[#6366F1] mb-4">
+              <Package size={24} />
+            </div>
+            <p className="text-base font-medium mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>No placements yet</p>
+            <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+              Generated placements will appear here after the AI publisher agent completes its work.
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayAssets.slice(0, 9).map((asset: any, idx: number) => {
             const isCopied = copiedIdx === idx;
@@ -735,6 +741,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
             );
           })}
         </div>
+      )}
       </div>
     </div>
   );

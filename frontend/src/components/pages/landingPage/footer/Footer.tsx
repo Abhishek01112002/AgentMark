@@ -3,7 +3,7 @@ export const Footer = () => (
     <div className="pointer-events-none absolute left-1/2 top-0 h-20 sm:h-28 w-[20rem] sm:w-[30rem] -translate-x-1/2 rounded-full bg-[rgba(99,102,241,0.06)] blur-3xl" />
     <div className="max-w-screen-xl mx-auto px-3 sm:px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 relative z-10">
       <div className="flex items-center gap-2">
-        <img src="/Novateches.png" alt="AgentMark Logo" className="h-5 sm:h-6 w-auto" />
+        <img src="/novateches.png" alt="AgentMark Logo" className="h-5 sm:h-6 w-auto" />
         <span className="text-lg sm:text-xl font-bold">
           AgentMark
         </span>

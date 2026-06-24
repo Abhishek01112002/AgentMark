@@ -85,4 +85,29 @@ export const notificationService = {
       WHERE "userId" = ${userId} AND "isRead" = FALSE
     `;
   },
+
+  async delete(id: string, userId: string) {
+    const rows = await prisma.$queryRaw<NotificationRow[]>`
+      DELETE FROM notifications
+      WHERE id = ${id} AND "userId" = ${userId}
+      RETURNING id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
+    `;
+    return rows[0] || null;
+  },
+
+  async deleteBatch(ids: string[], userId: string) {
+    if (ids.length === 0) return 0;
+    let deletedCount = 0;
+    for (const id of ids) {
+      const result = await prisma.$executeRaw`
+        DELETE FROM notifications
+        WHERE id = ${id} AND "userId" = ${userId}
+      `;
+      if (result > 0) {
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  },
 };
+

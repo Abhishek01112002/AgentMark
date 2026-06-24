@@ -33,4 +33,13 @@ export const notificationsService = {
   async markAllRead() {
     await api.put('/notifications/read-all');
   },
+
+  async delete(id: string) {
+    await api.delete(`/notifications/${id}`);
+  },
+
+  async deleteBatch(ids: string[]) {
+    await api.post('/notifications/delete-batch', { ids });
+  },
 };
+

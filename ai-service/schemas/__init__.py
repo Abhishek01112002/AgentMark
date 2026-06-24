@@ -33,6 +33,7 @@ from .agent_outputs import (
     ImagePromptOutput,
     ImagePrompt,
     VisualDirection,
+    TextOverlay,
     
     # Reviewer
     ReviewerOutput,
@@ -56,6 +57,7 @@ __all__ = [
     "StrategyOutput",
     "CopywriterOutput",
     "ImagePromptOutput",
+    "TextOverlay",
     "ReviewerOutput",
     "PublisherOutput",
 ]

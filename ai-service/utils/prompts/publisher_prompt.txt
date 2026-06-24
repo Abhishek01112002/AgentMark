@@ -13,8 +13,13 @@ CAMPAIGN METADATA:
 - Target Audience: {target_audience}
 - Campaign Brief: {brief}
 
-CAMPAIGN CHANNELS (publish for ALL of these):
+CAMPAIGN CHANNELS (publish for ALL of these, and ONLY these):
 {channels}
+
+⚠️ STRICT PUBLISHING CONSTRAINTS:
+1. CHANNEL EXCLUSIVITY: Create publishing plans, calendar entries, and placements ONLY for the channels listed above. Do NOT plan for LinkedIn if it's not listed. Do NOT plan for any unlisted channel.
+2. BRAND NAME: All copy, placements, and recommendations must use "{brand_name}" as the brand name. Do NOT substitute a different brand name.
+3. AUDIENCE ALIGNMENT: All messaging must target "{target_audience}" — do not write for a generic corporate/enterprise audience unless that is what {target_audience} specifies.
 
 CAMPAIGN DELIVERABLES:
 {deliverables}

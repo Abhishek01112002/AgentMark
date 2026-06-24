@@ -6,7 +6,7 @@ interface NavbarProps {
 export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => (
   <nav className="fixed top-0 w-full z-50 border-b flex justify-between items-center h-14 sm:h-16 px-3 sm:px-6 md:px-12 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-[#2A2A38]">
     <div className="flex items-center gap-2">
-      <img src="/Novateches.png" alt="AgentMark Logo" className="h-6 sm:h-7 w-auto" />
+      <img src="/novateches.png" alt="AgentMark Logo" className="h-6 sm:h-7 w-auto" />
       <span className="font-bold text-lg sm:text-xl text-[#F1F1F3]">
         AgentMark
       </span>
@@ -17,7 +17,7 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => (
         { label: "How It Works", href: "#how-it-works" },
         { label: "Agents", href: "#agents" },
         { label: "Features", href: "#features" },
-        { label: "Pricing", href: "#pricing" },
+        { label: "Why AgentMark", href: "#why-agentmark" },
       ].map((item) => (
         <a
           key={item.label}

@@ -94,16 +94,16 @@ const SignUp = () => {
         .animate-slide-right { animation: slideInRight 0.5s ease forwards; }
       `}</style>
 
-      <div className={`min-h-screen h-screen flex flex-col md:flex-row bg-[#0A0A0F] antialiased overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
         {/* LEFT — Form */}
-        <div className={`w-full md:w-1/2 bg-[#0A0A0F] overflow-y-auto ${mounted ? 'animate-slide-left' : 'opacity-0'}`}>
-          <div className="relative flex flex-col justify-center items-center w-full h-full px-6 sm:px-8 lg:px-12 xl:px-14 py-8 lg:py-12">
+        <div className={`w-full md:w-1/2 bg-[#0A0A0F] overflow-y-auto overflow-x-hidden ${mounted ? 'animate-slide-left' : 'opacity-0'}`}>
+          <div className="relative flex flex-col justify-center items-center w-full min-h-screen md:h-full px-6 sm:px-8 lg:px-12 xl:px-14 py-8 lg:py-12">
             <div className="absolute top-1/4 left-0 w-64 h-64 bg-indigo-600/8 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute bottom-1/4 right-0 w-48 h-48 bg-violet-600/8 rounded-full blur-[80px] pointer-events-none" />
 
             <div className="absolute top-6 left-6 flex md:hidden items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
               <div className="w-9 h-9 rounded-lg bg-[#111118] border border-[#2A2A38] flex items-center justify-center">
-                <img src="/Novateches.png" alt="AgentMark" className="h-5 w-5" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                <img src="/novateches.png" alt="AgentMark" className="h-5 w-5" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <span className="text-base font-bold text-white">AgentMark</span>
             </div>
@@ -208,8 +208,8 @@ const SignUp = () => {
         </div>
 
         {/* RIGHT — Brand (desktop only) */}
-        <div className={`hidden md:flex md:w-1/2 border-l border-[#1C1C26] overflow-y-auto ${mounted ? 'animate-slide-right' : 'opacity-0'}`}>
-          <div className="relative flex flex-col justify-between h-full w-full p-6 sm:p-8 lg:p-12 xl:p-16 overflow-hidden">
+        <div className={`hidden md:flex md:w-1/2 border-l border-[#1C1C26] overflow-y-auto overflow-x-hidden ${mounted ? 'animate-slide-right' : 'opacity-0'}`}>
+          <div className="relative flex flex-col justify-between min-h-full w-full p-6 sm:p-8 lg:p-12 xl:p-16 gap-8">
             <div className="absolute -top-24 -right-24 w-72 h-72 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none" />
             <div className="absolute top-1/2 -left-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
             <div className="absolute -bottom-20 right-1/3 w-64 h-64 bg-violet-600/15 rounded-full blur-[100px] pointer-events-none" />
@@ -218,12 +218,12 @@ const SignUp = () => {
 
             <div className="relative z-10 flex items-center gap-3 cursor-pointer group flex-shrink-0" onClick={() => navigate('/')}>
               <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-xl bg-[#111118] border border-[#2A2A38] flex items-center justify-center group-hover:border-indigo-500/50 transition-colors">
-                <img src="/Novateches.png" alt="AgentMark" className="h-5 w-5 lg:h-6 lg:w-6" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                <img src="/novateches.png" alt="AgentMark" className="h-5 w-5 lg:h-6 lg:w-6" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
               </div>
               <span className="text-lg lg:text-xl xl:text-2xl font-bold text-white tracking-tight">AgentMark</span>
             </div>
 
-            <div className="relative z-10 flex-1 flex flex-col justify-center py-6 lg:py-8 min-h-0">
+            <div className="relative z-10 flex flex-col gap-6 py-6 lg:py-8">
               <div className="mb-6 lg:mb-10">
                 <Quote className="text-indigo-500/40 w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 mb-3 lg:mb-4" />
                 <p className="text-sm lg:text-base xl:text-xl 2xl:text-2xl font-medium text-white leading-relaxed mb-4 lg:mb-6">

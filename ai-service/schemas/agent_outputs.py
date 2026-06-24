@@ -160,12 +160,21 @@ class CopywriterOutput(BaseModel):
 
 # ==================== IMAGE PROMPT OUTPUT SCHEMA ====================
 
+class TextOverlay(BaseModel):
+    headline: str = Field(description="Headline text")
+    cta: str = Field(description="CTA button text")
+    placement: str = Field(description="Where to place the text overlay (e.g. bottom-left, top-right, center)")
+
 class ImagePrompt(BaseModel):
     deliverable_name: str = Field(description="Name of the deliverable")
     prompt: str = Field(description="DALL-E image generation prompt")
     rationale: str = Field(description="Reasoning for this prompt")
     visual_elements: List[str] = Field(description="Key visual elements")
     style_keywords: List[str] = Field(description="Style keywords for consistency")
+    aspect_ratio: str = Field(description="Aspect ratio (16:9, 1:1, 9:16, 4:5, or 2:3)")
+    style: str = Field(description="Artistic style description (e.g. modern corporate photography)")
+    color_palette: str = Field(description="Color palette recommendation")
+    text_overlay: Optional[TextOverlay] = Field(description="Suggested text overlay details", default=None)
 
 class VisualDirection(BaseModel):
     overall_style: str = Field(description="Overall visual style")

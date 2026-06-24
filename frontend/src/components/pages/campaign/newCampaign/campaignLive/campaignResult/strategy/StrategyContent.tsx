@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Lightbulb, Calendar, PlayCircle, FileDown, Briefcase, Mail, Target, AlertTriangle } from 'lucide-react';
+import { Lightbulb, Calendar, PlayCircle, FileDown, Briefcase, Target, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface StrategyContentProps {
@@ -28,22 +28,9 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
   const channels = data?.channels || data?.marketing_channels || [];
   const contentCalendar = data?.content_calendar || data?.content_plan || [];
 
-  const defaultChannels = [
-    { name: 'LinkedIn', icon: Briefcase, bg: 'rgba(10, 102, 194, 0.1)', color: '#0A66C2', badge: 'Primary', badgeColor: '#4edea3', desc: 'Thought leadership and B2B case studies targeting decision makers.' },
-    { name: 'Email', icon: Mail, bg: '#1A1A24', color: '#F1F1F3', badge: 'Nurture', badgeColor: '#A0A0D2', desc: 'Segmented weekly sequences focusing on ROI and feature deep-dives.' },
-    { name: 'Google Ads', icon: Target, bg: 'rgba(234, 67, 53, 0.1)', color: '#EA4335', badge: 'Conversion', badgeColor: '#A0A0D2', desc: 'High-intent keyword targeting for bottom-of-funnel capture.' },
-  ];
-
-  const defaultCalendar = [
-    { week: 'Week 1', channel: 'LinkedIn', type: 'Infographic', topic: 'The Cost of Manual Marketing', status: 'ready', statusLabel: 'Ready' },
-    { week: 'Week 1', channel: 'Email', type: 'Newsletter', topic: 'Launch Announcement & Offer', status: 'ready', statusLabel: 'Ready' },
-    { week: 'Week 2', channel: 'LinkedIn', type: 'Video Snippet', topic: 'Feature Spotlight: Automation', status: 'review', statusLabel: 'In Review' },
-    { week: 'Week 3', channel: 'Google Ads', type: 'Search Ad', topic: 'Competitor Conquesting', status: 'drafting', statusLabel: 'Drafting' },
-    { week: 'Week 4', channel: 'Email', type: 'Case Study', topic: 'Enterprise Success Story', status: 'planned', statusLabel: 'Planned' },
-  ];
-
-  const displayCalendar = Array.isArray(contentCalendar) && contentCalendar.length > 0 ? contentCalendar : defaultCalendar;
-  const displayChannels = Array.isArray(channels) && channels.length > 0 ? channels : defaultChannels;
+  // Only use real data — no hardcoded fallbacks
+  const displayCalendar = Array.isArray(contentCalendar) && contentCalendar.length > 0 ? contentCalendar : [];
+  const displayChannels = Array.isArray(channels) && channels.length > 0 ? channels : [];
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -177,17 +164,19 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
       ));
     }
 
-    sections += sectionWrap('Active Channels', grid2(
-      displayChannels.slice(0, 4).map((ch: any) => card(`
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <div class="card-title" style="margin:0">${esc(ch.name || ch.channel || '')}</div>
-          ${ch.badge ? tag(ch.badge, ch.badgeColor || '#6366F1') : ''}
-        </div>
-        <div class="card-body">${esc(ch.desc || ch.description || '')}</div>
-      `))
-    ));
+    if (displayChannels.length > 0) {
+      sections += sectionWrap('Active Channels', grid2(
+        displayChannels.slice(0, 4).map((ch: any) => card(`
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div class="card-title" style="margin:0">${esc(ch.name || ch.channel || '')}</div>
+            ${ch.badge ? tag(ch.badge, ch.badgeColor || '#6366F1') : ''}
+          </div>
+          <div class="card-body">${esc(ch.desc || ch.description || '')}</div>
+        `))
+      ));
+    }
 
-    const calRows = displayCalendar.slice(0, 12).map((row: any) => {
+    const calRows = (displayCalendar as any[]).slice(0, 12).map((row: any) => {
       const statusColors: Record<string, string> = { ready: '#059669', review: '#D97706', drafting: '#6366F1', planned: '#6B7280' };
       const color = statusColors[row.status] || '#6B7280';
       return `<tr>
@@ -199,12 +188,14 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
       </tr>`;
     }).join('');
 
-    sections += sectionWrap('Content Rollout Calendar', `
-      <table>
-        <thead><tr><th>Week</th><th>Channel</th><th>Content Type</th><th>Topic / Asset</th><th>Status</th></tr></thead>
-        <tbody>${calRows}</tbody>
-      </table>
-    `);
+    if (calRows.length > 0) {
+      sections += sectionWrap('Content Rollout Calendar', `
+        <table>
+          <thead><tr><th>Week</th><th>Channel</th><th>Content Type</th><th>Topic / Asset</th><th>Status</th></tr></thead>
+          <tbody>${calRows}</tbody>
+        </table>
+      `);
+    }
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -223,7 +214,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
     .cover-right{text-align:right}
     .cover-date{font-size:11px;opacity:.7}
     .cover-goal{display:inline-block;margin-top:8px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 14px;font-size:11px;font-weight:600;letter-spacing:.08em}
-    .section{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;margin-bottom:18px;break-inside:avoid;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .section{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;margin-bottom:18px;break-inside:auto;box-shadow:0 1px 4px rgba(0,0,0,.06)}
     .section-title{font-size:13px;font-weight:700;color:#111;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid #6366F1;letter-spacing:.02em}
     .positioning-block{background:linear-gradient(to right,#ede9fe,#f5f3ff);border-left:4px solid #6366F1;border-radius:10px;padding:18px 22px;margin-bottom:18px;break-inside:avoid}
     .positioning-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6366F1;margin-bottom:8px}
@@ -248,7 +239,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
     td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
     tbody tr:nth-child(even) td{background:#fafafa}
     .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
-    @page{size:A4;margin:18mm 14mm}
+    @page{size:A4;margin:12mm 12mm}
     @media print{body{background:white}.page{padding:0}.section{box-shadow:none}}
   </style>
 </head>
@@ -772,6 +763,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
             </div>
           )}
 
+          {displayChannels.length > 0 && (
           <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
             {displayChannels.slice(0, 3).map((channel: any, idx: number) => {
               const channelIcon = channel.icon || Briefcase;
@@ -792,6 +784,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Content Rollout Table */}
@@ -835,6 +828,13 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
             </table>
           </div>
         </div>
+        {displayCalendar.length === 0 && (
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+              No content calendar data yet. This will be populated after AI strategy agent completes work.
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

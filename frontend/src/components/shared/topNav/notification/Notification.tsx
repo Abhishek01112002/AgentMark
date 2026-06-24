@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
 import { Check } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
   success: { icon: 'task_alt', bg: 'bg-secondary-container/20', color: 'text-secondary' },
@@ -43,14 +44,36 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
     navigate('/settings', { state: { tab: 'notifications' } });
   };
 
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsService.markAllRead();
+      await loadNotifications();
+      toast.success('All notifications marked as read!', { id: 'mark-all-read' });
+    } catch {
+      toast.error('Failed to mark all as read');
+    }
+  };
+
   return (
     <div className="w-full" style={{ width: '520px' }}>
       <div className="bg-surface border border-border-base rounded-xl overflow-hidden shadow-2xl">
         <div className="p-4 border-b border-border-base flex items-center justify-between">
-          <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
-          <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary text-on-primary">
-            {notifications.length}
-          </span>
+          <div className="flex items-center gap-2">
+            <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
+            {notifications.length > 0 && (
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary text-on-primary">
+                {notifications.length}
+              </span>
+            )}
+          </div>
+          {notifications.length > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="text-xs text-primary hover:underline font-semibold"
+            >
+              Mark all as read
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -86,16 +109,18 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
                       </p>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleNotificationClick(notification.id);
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold self-center"
-                    >
-                      <Check size={12} />
-                      Read
-                    </button>
+                    <div className="flex items-center gap-1.5 self-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleNotificationClick(notification.id);
+                        }}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
+                      >
+                        <Check size={12} />
+                        Read
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

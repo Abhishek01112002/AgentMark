@@ -40,3 +40,34 @@ export const markAllNotificationsRead = async (req: AuthRequest, res: Response) 
   await notificationService.markAllAsRead(req.userId!);
   res.json({ message: 'Notifications marked as read' });
 };
+
+export const deleteNotification = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const notification = await notificationService.delete(id, req.userId!);
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    res.json({ message: 'Notification deleted successfully', notification });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+  }
+};
+
+const deleteBatchSchema = z.object({
+  ids: z.array(z.string().uuid()),
+});
+
+export const deleteNotificationsBatch = async (req: AuthRequest, res: Response) => {
+  try {
+    const { ids } = deleteBatchSchema.parse(req.body);
+    const count = await notificationService.deleteBatch(ids, req.userId!);
+    res.json({ message: 'Notifications deleted successfully', count });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    res.status(400).json({ error: (error as Error).message });
+  }
+};
+

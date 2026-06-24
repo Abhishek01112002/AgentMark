@@ -76,7 +76,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
-      toast.success('Copy pasted to clipboard!');
+      toast.success('Campaign copy copied to clipboard!', { id: 'copy-success' });
       setTimeout(() => setCopied(false), 2500);
     } catch {
       // Fallback for environments where clipboard API is not available
@@ -90,10 +90,10 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
         document.execCommand('copy');
         document.body.removeChild(ta);
         setCopied(true);
-        toast.success('Copy pasted to clipboard!');
+        toast.success('Campaign copy copied to clipboard!', { id: 'copy-success' });
         setTimeout(() => setCopied(false), 2500);
       } catch {
-        toast.error('Unable to copy — please copy manually.');
+        toast.error('Unable to copy — please copy manually.', { id: 'copy-success' });
       }
     }
   };

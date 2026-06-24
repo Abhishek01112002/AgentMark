@@ -34,6 +34,19 @@ Respond ONLY with valid JSON in this exact structure (no additional text or expl
   "deliverables": ["deliverable1", "deliverable2", "deliverable3", "deliverable4"]
 }}
 
+CRITICAL CHANNEL CONSTRAINT:
+The "channels" list must ONLY contain channels from this exact set of supported platforms (all lowercase):
+- "instagram"
+- "facebook"
+- "linkedin"
+- "twitter"
+- "tiktok"
+- "youtube"
+- "email"
+- "google_ads"
+Do NOT recommend any other platforms or use free-form descriptive text (e.g., use "youtube" instead of "YouTube (Tech Reviewer Partnerships)", and use "instagram" instead of "Instagram (Reels and Shoppable Ads)").
+
+
 GUIDELINES FOR RECOMMENDATIONS:
 
 Channels - Consider:

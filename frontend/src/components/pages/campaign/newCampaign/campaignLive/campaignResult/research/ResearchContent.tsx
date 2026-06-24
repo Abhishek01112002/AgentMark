@@ -39,11 +39,6 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             {hasRealData ? 'AI-powered market intelligence and audience insights' : 'Real-time market intelligence powered by autonomous agents.'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="px-3 py-1 rounded-full bg-[#111118] border border-[#2A2A38] text-xs md:text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-            GPT-4o-mini
-          </span>
-        </div>
       </div>
 
       {!hasRealData && (

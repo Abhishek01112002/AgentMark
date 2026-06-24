@@ -77,16 +77,25 @@ For EACH deliverable in the campaign, generate a complete prompt object:
    - 4:5 → instagram feed portrait, facebook feed portrait
 
    PROMPT ENGINEERING RULES (must follow for every prompt):
-   - Start with the SUBJECT: What is the primary visual subject? (person, object, scene, abstract concept)
-   - Add CONTEXT: What setting or environment? (office, abstract background, product close-up, etc.)
-   - Add LIGHTING: (natural light, studio lighting, dramatic side lighting, soft diffused light)
-   - Add COMPOSITION: (rule of thirds, centered, left-aligned for text space, overhead shot, etc.)
-   - Add STYLE: (photorealistic, 3D render, flat design, editorial, cinematic, etc.)
-   - Add MOOD: (aspirational, professional, energetic, calm, luxurious, etc.)
-   - Add COLOR: Specific color palette from visual identity
-   - Add QUALITY MARKERS: ("ultra-high resolution", "marketing quality", "award-winning photography")
-   - Add "no text, no words, no letters" at the end (text overlay is handled separately)
-   - Minimum prompt length: 80 characters. Target: 150-250 characters for maximum DALL-E 3 quality
+   - Write deep, rich, hyper-detailed storytelling prompts. Do NOT use simple, generic descriptions.
+   - Target length: 450-900 characters for DALL-E 3 quality.
+   - Structure every prompt with three distinct parts:
+     1. CONTEXT INJECTION PREFIX: Start the prompt with a structured markdown block inside square brackets `[CONTEXT - DO NOT RENDER TEXT FROM THIS BLOCK. USE FOR GENERATION INSIGHTS ONLY]`:
+        - Campaign Name: {campaign_name}
+        - Brand Name: {brand_name}
+        - Target Audience: {target_audience}
+        - Brand Voice: {brand_voice}
+        - Strategy: Briefly summarize the positioning statement and key messages used.
+        - Research Findings (Pain Point & Motivation): Mention the customer pain point and motivation this visual represents.
+        - Copywrite Overlay Alignment: List the headline and CTA overlay message that will be placed on this image.
+        - Instruction: "Use this context to guide the visual tone, emotional resonance, and composition. Do NOT draw or write any of these words on the image."
+     2. VISUAL SCENE SPECIFICATION (Narrative Storytelling Style):
+        - Every prompt must tell a visual story or capture a narrative moment (a slice of life, a moment of action, or visual metaphor) representing the campaign's core value.
+        - Weave the customer pain points (struggle/complication) or core motivations (relief/success) directly into the scene.
+        - Describe the subject in detail (specific age, clothing, expression, and emotional state) capturing a genuine human emotion.
+        - Describe the environment, textures, and ambient background details (matte textures, plants, office structure, home setting).
+        - Describe lighting and style: photorealistic editorial photography or raytraced 3D render, light direction, camera angle, and lens depth.
+     3. DALL-E 3 SAFETY: End every single prompt with "no text, no words, no letters, no labels, clean composition" to ensure no gibberish text is generated on the image.
 
    TEXT OVERLAY GUIDE (what copy to suggest over the image):
    - Use copy context provided above if available for that channel
@@ -103,17 +112,41 @@ RESPONSE FORMAT:
 Respond ONLY with valid JSON matching the exact structure below. No markdown, no explanations, no prefix or suffix.
 
 {{
-  "visual_direction": "Comprehensive visual strategy statement covering style, color palette, visual metaphors, photography approach, and how the visuals reinforce the brand positioning for {brand_name}",
+  "visual_direction": {{
+    "overall_style": "Comprehensive visual style statement — artistic approach, photography/illustration style, and brand aesthetic for {brand_name}",
+    "color_palette": [
+      "Primary color name with hex (e.g., Deep Navy #1A2B4A)",
+      "Secondary color name with hex (e.g., Electric Blue #0066FF)",
+      "Accent color name with hex (e.g., Crisp White #FFFFFF)"
+    ],
+    "mood": "Visual tone and mood description — emotional atmosphere the visuals should convey",
+    "key_visual_themes": [
+      "Visual theme 1 (e.g., Digital Transformation)",
+      "Visual theme 2 (e.g., Human-Centered Design)",
+      "Visual theme 3 (e.g., Precision and Trust)"
+    ]
+  }},
   "image_prompts": [
     {{
-      "deliverable": "exact deliverable name from the list",
-      "prompt": "Full production-ready DALL-E 3 prompt (minimum 80 characters, target 150-250). Must follow: Subject + Context + Lighting + Composition + Style + Mood + Color palette + Quality markers + 'no text, no words, no letters'",
+      "deliverable_name": "exact deliverable name from the list",
+      "prompt": "Full DALL-E 3 prompt containing: [CONTEXT - DO NOT RENDER TEXT FROM THIS BLOCK. USE FOR GENERATION INSIGHTS ONLY. Campaign: {campaign_name}. Brand: {brand_name}. Target Audience: {target_audience}. Brand Voice: {brand_voice}. Strategy: positioning and key message. Research: pain point and motivation being visualized. Copywrite Overlay: headline and CTA. Instruction: Use this context to guide visual tone and composition. Do NOT draw or write any of these words.] VISUAL SCENE SPECIFICATION: [Detailed narrative scene description with subject, environment, lighting, camera angle, and emotional tone — all tailored to the pain point or motivation being visualized]. no text, no words, no letters, no labels, clean composition",
+      "rationale": "Strategic reasoning: why this visual approach serves the brand positioning and resonates with the target audience's pain points or motivations",
+      "visual_elements": [
+        "Key visual element 1 (e.g., confident professional at modern workstation)",
+        "Key visual element 2 (e.g., ambient bokeh background with city lights)",
+        "Key visual element 3 (e.g., subtle upward motion trajectory)"
+      ],
+      "style_keywords": [
+        "photorealistic",
+        "editorial",
+        "professional"
+      ],
       "style": "Specific artistic style (e.g., modern corporate photography, 3D minimalist render, editorial lifestyle, flat design illustration)",
-      "color_palette": "Specific colors with hex codes or descriptive names (e.g., deep navy #1a2b4a, crisp white #ffffff, electric blue #0066ff accents)",
+      "color_palette": "Specific colors for this deliverable with hex codes (e.g., deep navy #1a2b4a, crisp white #ffffff, electric blue #0066ff accents)",
       "text_overlay": {{
         "headline": "Suggested headline text from copy context or derived from positioning",
         "cta": "Suggested CTA button text",
-        "placement": "Where to place text (e.g., bottom-left third, centered, top overlay)"
+        "placement": "Where to place text (e.g., bottom-left, center, top-right)"
       }},
       "aspect_ratio": "16:9 or 1:1 or 9:16 or 4:5 or 2:3"
     }}
@@ -122,21 +155,16 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
 
 QUALITY CHECKLIST (ensure all are true before responding):
 - Exactly {deliverables_count} prompt objects in image_prompts array (one per deliverable)
-- Every prompt is minimum 80 characters and follows Subject + Context + Lighting + Composition + Style + Mood + Color + Quality + "no text" structure
-- Every prompt ends with "no text, no words, no letters"
+- Every prompt contains the [CONTEXT - DO NOT RENDER TEXT...] block AND the visual scene specification
+- Every prompt ends with "no text, no words, no letters, no labels, clean composition"
+- visual_direction is an OBJECT with: overall_style, color_palette (array), mood, key_visual_themes (array)
+- Every image_prompt has ALL required fields: deliverable_name, prompt, rationale, visual_elements (array), style_keywords (array), style, color_palette, text_overlay (object), aspect_ratio
 - Color palette is specific and consistent with brand_voice "{brand_voice}" and industry "{industry}"
+- Each deliverable has a UNIQUE, DISTINCT prompt — no two prompts should be similar or share the same opening sentences
 - Aspect ratio matches the deliverable type (16:9 for banners, 1:1 for posts, 9:16 for stories)
 - Text overlay uses copy context where available, otherwise derived from positioning: "{positioning}"
 - Visual metaphors connect to at least one pain point or market trend from research
-- visual_direction is comprehensive (covers style, color, metaphors, photography approach)
-- Brand name "{brand_name}" is referenced in visual_direction
-- JSON is valid with no trailing commas or syntax errors
-
-BRAND VOICE VISUAL TRANSLATION GUIDE:
-- professional: Think Bloomberg, McKinsey, Salesforce — clean lines, data visualization, authoritative humans in controlled environments
-- friendly: Think Mailchimp, Slack, Notion — warm humans, bright accents, approachable settings, smiling faces
-- bold: Think Nike, Oatly, Red Bull — dramatic contrast, kinetic movement, provocative compositions, maximum visual impact
-- luxury: Think Apple, Rolex, LVMH — negative space, premium materials, precise lighting, aspirational lifestyle
+- Brand name "{brand_name}" is referenced in visual_direction.overall_style
 - casual: Think Basecamp, Buffer, Patagonia — real settings, authentic moments, natural light, honest imagery
 - authoritative: Think IBM, Harvard, JP Morgan — institutional weight, structured grids, powerful establishing shots
 

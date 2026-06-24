@@ -40,18 +40,58 @@ RESEARCH INSIGHTS:
 CAMPAIGN CHANNELS:
 {channels}
 
+⚠️ CRITICAL CONSTRAINTS — READ BEFORE GENERATING:
+1. BRAND NAME: You MUST use "{brand_name}" as the brand in ALL copy. Do NOT invent or substitute a different brand name (e.g., do NOT use 'Velocity', 'Nova', or any placeholder). Every piece of copy must mention the actual brand name provided.
+2. BRAND VOICE: Apply ONLY the "{brand_voice}" voice style. Do not default to a B2B corporate tone unless the brand_voice explicitly requires it.
+3. CHANNEL EXCLUSIVITY: Write copy ONLY for channels listed in {channels} above. Do NOT generate copy for any channel not in the list. For any channel not listed in {channels}, you MUST set its corresponding field in the JSON schema to null, and set its flag in copy_readiness to false.
+4. TARGET AUDIENCE: All copy must be written for the target audience defined in the brief — do not assume a generic enterprise/B2B audience.
+
 COPYWRITING INSTRUCTIONS:
 
 Write copy ONLY for the channels listed above. Every channel must feel tailored to where and how the audience consumes it.
 
-CHANNEL-SPECIFIC GUIDELINES:
-- Each channel needs: headline, body, ctas object with primary/secondary/tertiary
-- CTAs must use: primary (main action), secondary (soft action), tertiary (optional fallback)
-- All CTAs should align with the campaign goal
+CHANNEL-SPECIFIC GUIDELINES & LENGTH REQUIREMENTS:
+You MUST generate realistic, comprehensive, and detailed copy. Do NOT use short paragraphs or lazy summaries. Make every asset feel ready for prime-time marketing.
+
+1. EMAIL (Long-form):
+   - body: Generate a complete, multi-paragraph, professional email copy of at least 200-350 words.
+   - It MUST include:
+     * A compelling greeting (e.g., "Hi [Name]," or similar)
+     * An attention-grabbing story, hook, or problem setup
+     * Detailed paragraphs explaining the value proposition of {brand_name} and how it addresses "{pain_points_primary}"
+     * A bulleted list of 3-4 key features, benefits, or metrics
+     * An urgency/scarcity trigger or a powerful closing argument
+     * A professional sign-off (e.g., "Best regards, The {brand_name} Team")
+     * Formatting with clean line breaks and professional spacing
+
+2. LINKEDIN & FACEBOOK (Long-form Social Posts):
+   - body: Generate a detailed post of at least 150-250 words.
+   - It MUST include:
+     * A strong hook statement in the first line
+     * 2-3 body paragraphs outlining the challenges/pain points and how {brand_name} solves them
+     * A bulleted list highlighting key advantages
+     * Spacing/emojis for high readability
+
+3. INSTAGRAM & TIKTOK (Engaging Captions):
+   - body: Generate a detailed caption of at least 100-150 words.
+   - It MUST include:
+     * Emojis, a call-to-engagement (e.g., "Drop a comment below..."), and scene/visual context suggestions
+     * A clean block of relevant hashtags at the bottom
+
+4. YOUTUBE (Video Outline & Description):
+   - body: Generate a detailed description of at least 150-200 words.
+   - It MUST include:
+     * Video hook summary and value points
+     * Section/timestamp placeholders (e.g., "0:00 - Introduction", "1:30 - The Problem...")
+     * Link placeholders and subscription prompts
+
+5. GOOGLE ADS (Search Copy):
+   - headline: A benefit-driven ad headline under 30 characters
+   - body: A highly compelling, realistic ad description under 90 characters, mentioning {brand_name} and containing a clear CTA
 
 For EACH channel in the campaign, generate:
-- headline: Channel-appropriate hook (60-140 chars depending on platform)
-- body: Platform-optimized copy addressing pain point "{pain_points_primary}" and mentioning {brand_name}
+- headline: Channel-appropriate hook (60-140 chars depending on platform; under 30 for Google Ads)
+- body: Platform-optimized copy matching the detailed length requirements above, addressing pain point "{pain_points_primary}" and mentioning {brand_name}
 - ctas: Object with primary, secondary, and optionally tertiary. Primary CTA must contain: {goal_keywords}
 
 5. MESSAGING FRAMEWORK
@@ -101,6 +141,7 @@ GOAL-SPECIFIC CTA STRATEGY FOR "{inferred_goal}":
 
 RESPONSE FORMAT:
 You MUST return valid JSON matching the CopywriterOutput schema.
+CRITICAL: If a channel is NOT listed in {channels}, you MUST set its field to null (e.g. "linkedin": null) and set its flag in copy_readiness to false.
 
 {{
   "inferred_goal": "{inferred_goal}",

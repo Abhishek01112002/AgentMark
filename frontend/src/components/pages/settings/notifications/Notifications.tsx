@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
-import { Check } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 
 const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
   success: { icon: 'task_alt', bg: 'bg-secondary-container/20', color: 'text-secondary' },
@@ -14,12 +14,16 @@ const Notifications: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [loading, setLoading] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const loadNotifications = async () => {
     setLoading(true);
     try {
       const data = await notificationsService.list();
       setNotifications(data);
+      // Auto-cap current page to new totalPages on delete to avoid out-of-bounds pages
+      const newTotalPages = Math.max(1, Math.ceil(data.length / itemsPerPage));
+      setCurrentPage(prev => Math.min(prev, newTotalPages));
     } finally {
       setLoading(false);
     }
@@ -41,6 +45,38 @@ const Notifications: React.FC = () => {
   const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setItemsPerPage(parseInt(e.target.value));
     setCurrentPage(1);
+  };
+
+  const handleSelectOne = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const currentPageIds = currentNotifications.map(n => n.id);
+      setSelectedIds(prev => {
+        const otherIds = prev.filter(id => !currentPageIds.includes(id));
+        return [...otherIds, ...currentPageIds];
+      });
+    } else {
+      const currentPageIds = currentNotifications.map(n => n.id);
+      setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+    }
+  };
+
+  const deleteOne = async (id: string) => {
+    await notificationsService.delete(id);
+    setSelectedIds(prev => prev.filter(item => item !== id));
+    await loadNotifications();
+  };
+
+  const deleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+    await notificationsService.deleteBatch(selectedIds);
+    setSelectedIds([]);
+    await loadNotifications();
   };
 
   const markAllRead = async () => {
@@ -68,40 +104,81 @@ const Notifications: React.FC = () => {
         </button>
       </div>
 
+      {notifications.length > 0 && (
+        <div className="px-6 py-3 bg-surface-container-low border-b border-border-base flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={currentNotifications.length > 0 && currentNotifications.every(n => selectedIds.includes(n.id))}
+              onChange={(e) => handleSelectAll(e.target.checked)}
+              className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
+            />
+            <span className="font-body-sm text-body-sm text-text-secondary">
+              {selectedIds.length > 0 ? `${selectedIds.length} selected` : 'Select All'}
+            </span>
+          </div>
+          {selectedIds.length > 0 && (
+            <button
+              onClick={() => void deleteSelected()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors text-xs font-semibold"
+            >
+              <Trash2 size={14} />
+              Delete Selected
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="divide-y divide-border-base max-h-[600px] overflow-y-auto">
         {loading ? (
           <div className="p-6 text-text-secondary">Loading notifications...</div>
         ) : currentNotifications.length > 0 ? (
           currentNotifications.map((notification) => {
             const meta = iconMap[notification.type] || iconMap.info;
+            const isSelected = selectedIds.includes(notification.id);
             return (
-              <div key={notification.id} className="p-4 hover:bg-surface-container-low transition-colors group">
-                  <div className="flex gap-4">
-                    <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color}`}>
-                      <span className="material-symbols-outlined">{meta.icon}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
+              <div key={notification.id} className="p-4 hover:bg-surface-container-low transition-colors group flex items-start gap-4">
+                <div className="pt-2 flex-shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => handleSelectOne(notification.id)}
+                    className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
+                  />
+                </div>
+                <div className="flex-1 flex gap-4 min-w-0">
+                  <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color} flex-shrink-0`}>
+                    <span className="material-symbols-outlined">{meta.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2">
                       <p className="font-body-md text-body-md text-text-primary font-semibold truncate">{notification.title}</p>
                       <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
                         {new Date(notification.createdAt).toLocaleString()}
                       </span>
                     </div>
                     <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">{notification.message}</p>
-                    </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {!notification.isRead ? (
-                      <button
-                        onClick={() => void markOneRead(notification.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold"
-                      >
-                        <Check size={14} />
-                        Mark as read
-                      </button>
-                    ) : (
-                      <span className="text-xs text-text-muted">Read</span>
-                    )}
                   </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {!notification.isRead ? (
+                    <button
+                      onClick={() => void markOneRead(notification.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold"
+                    >
+                      <Check size={14} />
+                      <span className="hidden sm:inline">Mark as read</span>
+                    </button>
+                  ) : (
+                    <span className="text-xs text-text-muted px-2">Read</span>
+                  )}
+                  <button
+                    onClick={() => void deleteOne(notification.id)}
+                    className="inline-flex items-center justify-center p-2 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
+                    title="Delete notification"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               </div>
             );

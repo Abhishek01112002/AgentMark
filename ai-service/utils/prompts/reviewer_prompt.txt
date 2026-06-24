@@ -12,6 +12,14 @@ CAMPAIGN CONTEXT (What the outputs should align with):
 - Industry: {industry}
 - Primary Goal: {primary_goal}
 - Campaign Brief: {brief}
+- Manager-Defined Channels: {channels}
+
+⚠️ CAMPAIGN ALIGNMENT AUDIT — MANDATORY:
+Before scoring, you MUST check if ALL downstream agents respected the Manager's constraints:
+1. CHANNEL DRIFT: Did Strategy or Copywriter generate output for channels NOT in {channels}? (e.g., LinkedIn when only Facebook/Email were selected) → If YES, this is a CRITICAL ISSUE. Deduct 20 points from that agent's score and set passed=false.
+2. BRAND NAME DRIFT: Does any copy use a different brand name instead of "{brand_name}"? (e.g., calling the brand 'Velocity' when the actual brand name is different) → If YES, this is a CRITICAL ISSUE. Deduct 20 points from copywriter score.
+3. AUDIENCE MISMATCH: Does the copy/strategy target a completely different audience than specified in the brief? → If YES, deduct 15 points.
+Document ALL drift issues clearly in your feedback with specific examples from the agent outputs.
 
 QUALITY THRESHOLDS:
 - Individual Agent Minimum: {min_agent_score}/100 (each agent must score ≥{min_agent_score})
@@ -149,6 +157,8 @@ Scoring Guidance for Strategy:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COPYWRITER AGENT REVIEW CRITERIA (8 fields, 100 points total)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL: Only evaluate and grade fields for channels that are listed in "{channels}". If a channel is NOT in the manager-defined channels ("{channels}"), its corresponding field in the copywriter output (e.g. linkedin, twitter, facebook, tiktok, youtube, email, google_ads) is EXPECTED to be null. Do NOT deduct points for null fields of unselected channels.
+
 Each of the 8 fields is worth 12.5 points. Evaluate all:
 
 Field 1 — inferred_goal (12.5 pts):
@@ -186,7 +196,7 @@ Field 7 — strategic_alignment (12.5 pts):
     audience_segments_count, deliverables. Deduct proportionally for missing fields.
 
 Field 8 — copy_readiness (12.5 pts):
-  - All channel ready flags must be true. Deduct proportionally for false flags.
+  - The readiness flags for all manager-defined channels ({channels}) must be true. The flags for any other unselected channels must be false or null. Deduct proportionally if a requested channel is marked false.
 
 Copy Quality Standards (apply across all fields):
   - Does copy sound like {brand_voice}? (professional/friendly/bold/luxury/casual/authoritative)

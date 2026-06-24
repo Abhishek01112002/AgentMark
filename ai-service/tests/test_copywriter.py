@@ -996,12 +996,19 @@ def test_copy_readiness_flags_all_channels():
     # Verify at least one channel readiness flag exists (dynamic channels)
     channel_flags = [k for k in readiness.keys() if k != "messaging_framework_complete"]
     assert len(channel_flags) > 0, "Should have at least one channel readiness flag"
-    
-    # All channel flags should be True
-    for flag in channel_flags:
-        assert readiness[flag] is True, f"copy_readiness.{flag} should be True"
 
-    print(f"✅ PASS: All copy readiness flags are True")
+    # linkedin must be True
+    assert readiness.get("linkedin") is True, "copy_readiness.linkedin should be True"
+
+    # Verify internal consistency: if readiness is True, copy must exist; if False, copy must be null
+    for flag in channel_flags:
+        copy_field = parsed.get(flag)
+        if readiness[flag]:
+            assert copy_field is not None, f"Copy should be generated for ready channel {flag}"
+        else:
+            assert copy_field is None, f"Copy should be null for non-ready channel {flag}"
+
+    print(f"✅ PASS: Copy readiness flags match channel exclusivity rules")
     print(f"   ✓ messaging_framework_complete: {readiness['messaging_framework_complete']}")
     for flag in channel_flags:
         print(f"   ✓ {flag}: {readiness[flag]}")

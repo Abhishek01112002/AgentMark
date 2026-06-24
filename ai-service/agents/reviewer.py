@@ -160,12 +160,29 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     industry = state.industry or "other"
     primary_goal = state.primary_goal or "awareness"
     brief = state.brief or f"Marketing campaign for {brand_name}"
+    channels_list = []
+    if state.manager_output:
+        try:
+            manager_data = json.loads(state.manager_output)
+            channels_list = manager_data.get("channels", [])
+        except Exception:
+            pass
+    if not channels_list and state.strategy_output:
+        try:
+            strategy_data = json.loads(state.strategy_output)
+            channels_list = strategy_data.get("execution", {}).get("channels", [])
+        except Exception:
+            pass
+    if not channels_list:
+        channels_list = getattr(state, "channels", []) or []
+    channels = ', '.join(channels_list) if isinstance(channels_list, list) else str(channels_list)
 
     print(f"✓ Campaign:     {campaign_name}")
     print(f"✓ Brand:        {brand_name}")
     print(f"✓ Industry:     {industry}")
     print(f"✓ Goal:         {primary_goal}")
     print(f"✓ Brand Voice:  {brand_voice}")
+    print(f"✓ Channels:     {channels}")
 
     # ========== STEP 3: READ REVISION COUNTS ==========
     print("\n[STEP 3] Checking revision history...")
@@ -229,6 +246,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         industry=industry,
         primary_goal=primary_goal,
         brief=brief,
+        channels=channels,
         # Quality thresholds
         min_agent_score=MIN_AGENT_SCORE,
         min_quality_score=MIN_QUALITY_SCORE,

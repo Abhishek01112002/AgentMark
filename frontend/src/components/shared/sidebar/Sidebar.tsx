@@ -67,10 +67,11 @@ const Sidebar: React.FC = () => {
 
   const isActive = (path: string) => {
     if (path === '/campaign/new') {
-      return location.pathname.startsWith('/campaign');
+      return location.pathname === '/campaign/new';
     }
     if (path === '/projects') {
-      return location.pathname.startsWith('/projects');
+      return location.pathname.startsWith('/projects') || 
+             (location.pathname.startsWith('/campaign/') && location.pathname !== '/campaign/new');
     }
     return location.pathname === path;
   };
@@ -104,7 +105,7 @@ const Sidebar: React.FC = () => {
         >
           <div className="flex items-center justify-center flex-shrink-0">
             <img
-              src="/Novateches.png"
+              src="/novateches.png"
               alt="AgentMark"
               className="w-10 h-10 object-contain"
               onError={(e) => {
