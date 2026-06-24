@@ -100,6 +100,24 @@ const CampaignLivePage: React.FC = () => {
   const [campaignFailed, setCampaignFailed] = useState(false);
   const [failedError, setFailedError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
+  
+  // HITL Modal State
+  const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');
+  const [revisionFeedback, setRevisionFeedback] = useState<string>('');
+  const [revisionCounts, setRevisionCounts] = useState({
+    research: 0,
+    strategy: 0,
+    copywriter: 0,
+    image_prompt: 0,
+  });
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
+  const [agentScores, setAgentScores] = useState<{
+    research: number | null;
+    strategy: number | null;
+    copywriter: number | null;
+    image_prompt: number | null;
+  }>({ research: null, strategy: null, copywriter: null, image_prompt: null });
+  const [reviewerCompleted, setReviewerCompleted] = useState(false);
 
   const [typewriterText, setTypewriterText] = useState('');
   const [currentStringIndex, setCurrentStringIndex] = useState(0);
@@ -127,6 +145,28 @@ const CampaignLivePage: React.FC = () => {
             setFailedError(campaign.aiError || 'Campaign failed during processing.');
           } else if (campaign.status === 'awaiting_human_approval') {
             setShowHumanReview(true);
+            setRevisionCounts({
+              research: campaign.researchRevisionCount || 0,
+              strategy: campaign.strategyRevisionCount || 0,
+              copywriter: campaign.copyRevisionCount || 0,
+              image_prompt: campaign.imageRevisionCount || 0,
+            });
+            if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
+            
+            // Extract individual agent scores from reviewOutput
+            if (campaign.reviewOutput) {
+              try {
+                const reviewData = JSON.parse(campaign.reviewOutput);
+                setAgentScores({
+                  research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
+                  strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
+                  copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
+                  image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
+                });
+              } catch (e) {
+                console.error('Failed to parse reviewOutput for agent scores:', e);
+              }
+            }
             setAgents((prev) =>
               prev.map((a) => {
                 if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
@@ -190,6 +230,11 @@ const CampaignLivePage: React.FC = () => {
       const { agent: agentKey, status } = data;
       console.log('[Socket.io] agent_update | agent=', agentKey, '| status=', status);
 
+      // Track when reviewer completes to show quality score
+      if (agentKey === 'reviewer' && status === 'completed') {
+        setReviewerCompleted(true);
+      }
+
       if (status === 'completed' || status === 'running' || status === 'failed') {
         setAgents((prev) => {
           const updated = prev.map((a) => {
@@ -237,8 +282,39 @@ const CampaignLivePage: React.FC = () => {
     });
 
     // ── Human approval required ──────────────────────────────────────────────
-    socket.on('human_approval_required', () => {
+    socket.on('human_approval_required', async () => {
       setShowHumanReview(true);
+      // Fetch latest campaign data to get revision counts
+      try {
+        const response = await api.get(`/campaigns/${campaignId}`);
+        const { campaign } = response.data;
+        if (campaign) {
+          setRevisionCounts({
+            research: campaign.researchRevisionCount || 0,
+            strategy: campaign.strategyRevisionCount || 0,
+            copywriter: campaign.copyRevisionCount || 0,
+            image_prompt: campaign.imageRevisionCount || 0,
+          });
+          if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
+          
+          // Extract individual agent scores from reviewOutput
+          if (campaign.reviewOutput) {
+            try {
+              const reviewData = JSON.parse(campaign.reviewOutput);
+              setAgentScores({
+                research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
+                strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
+                copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
+                image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
+              });
+            } catch (e) {
+              console.error('Failed to parse reviewOutput for agent scores:', e);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch revision counts:', error);
+      }
       // Mark reviewer as completed and publisher as pending (awaiting approval).
       setAgents((prev) =>
         prev.map((a) => {
@@ -298,25 +374,52 @@ const CampaignLivePage: React.FC = () => {
   };
 
   const handleRequestRevision = async () => {
+    if (!revisionFeedback.trim()) {
+      toast.error('Please provide feedback for the revision');
+      return;
+    }
+    
     try {
       setShowHumanReview(false);
+      
+      // Determine which agents will re-run based on the selected agent
+      const agentsToReRun: string[] = [selectedAgent];
+      
+      // Add downstream agents that depend on the selected agent
+      if (selectedAgent === 'research') {
+        agentsToReRun.push('strategy', 'copywriter', 'image_prompt', 'reviewer');
+      } else if (selectedAgent === 'strategy') {
+        agentsToReRun.push('copywriter', 'image_prompt', 'reviewer');
+      } else if (selectedAgent === 'copywriter') {
+        agentsToReRun.push('image_prompt', 'reviewer');
+      } else if (selectedAgent === 'image_prompt') {
+        agentsToReRun.push('reviewer');
+      }
+      
+      // Reset all affected agents to show they're re-running
       setAgents((prev) =>
         prev.map((a) => {
-          if (a.key === 'copywriter')   return { ...a, status: 'running',  description: 'Revising content based on feedback...', duration: undefined };
-          if (a.key === 'image_prompt') return { ...a, status: 'pending',  description: 'Waiting for revised content...',          duration: undefined };
-          if (a.key === 'reviewer')     return { ...a, status: 'pending',  description: 'Will re-evaluate after revision...',       duration: undefined };
+          if (a.key === selectedAgent) {
+            return { ...a, status: 'running', description: 'Revising based on feedback...', duration: undefined };
+          } else if (agentsToReRun.includes(a.key)) {
+            return { ...a, status: 'pending', description: 'Will re-run with new data...', duration: undefined };
+          }
           return a;
         })
       );
+      
       await api.post(`/campaigns/${campaignId}/approve`, {
         action: 'reject',
-        revisionTarget: 'copywriter',
-        feedback: 'Please revise the ad copy variants for better conversion.',
+        revisionTarget: selectedAgent,
+        feedback: revisionFeedback,
       });
-      toast.success('Revision requested successfully!');
-    } catch (error) {
+      
+      toast.success(`Revision requested! ${agentsToReRun.length} agent${agentsToReRun.length > 1 ? 's' : ''} will re-run.`);
+      setRevisionFeedback('');
+    } catch (error: any) {
       console.error('Failed to request revision:', error);
-      toast.error('Failed to submit revision request');
+      toast.error(error.response?.data?.error || 'Failed to submit revision request');
+      setShowHumanReview(true);
     }
   };
 
@@ -593,7 +696,7 @@ const CampaignLivePage: React.FC = () => {
         {/* Human Review Modal */}
         {showHumanReview && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-[#111118] border border-[#c0c1ff]/30 rounded-2xl p-8 max-w-lg w-full shadow-2xl relative">
+            <div className="bg-[#111118] border border-[#c0c1ff]/30 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
               <div className="flex flex-col items-center text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-[#c0c1ff]/10 ring-4 ring-[#c0c1ff]/20 flex items-center justify-center mb-4">
                   <span className="material-symbols-outlined text-[32px] text-[#c0c1ff]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
@@ -605,13 +708,123 @@ const CampaignLivePage: React.FC = () => {
               </div>
 
               <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38] flex items-center justify-between">
-                <div className="text-sm font-medium text-[#F1F1F3]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Quality Score</div>
+                <div className="text-sm font-medium text-[#F1F1F3]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Overall Quality</div>
                 <div className="text-[40px] leading-none text-[#4edea3]" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700 }}>
-                  8.7<span className="text-lg text-[#4A4A5E]">/10</span>
+                  {qualityScore !== null ? (
+                    <>{qualityScore.toFixed(1)}<span className="text-lg text-[#4A4A5E]">/10</span></>
+                  ) : reviewerCompleted ? (
+                    <span className="text-2xl text-[#8B8B9E]">Calculating...</span>
+                  ) : (
+                    <span className="text-2xl text-[#8B8B9E]">Reviewing...</span>
+                  )}
                 </div>
               </div>
 
-              <div className="mb-8">
+              {/* Individual Agent Quality Scores */}
+              <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38]">
+                <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Agent Quality Scores:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: 'research', label: 'Research' },
+                    { key: 'strategy', label: 'Strategy' },
+                    { key: 'copywriter', label: 'Copywriter' },
+                    { key: 'image_prompt', label: 'Image Prompt' },
+                  ].map(({ key, label }) => {
+                    const score = agentScores[key as keyof typeof agentScores];
+                    const getScoreColor = (s: number | null) => {
+                      if (s === null) return '#4A4A5E';
+                      if (s >= 8.5) return '#4edea3';
+                      if (s >= 7.5) return '#FFA500';
+                      return '#F43F5E';
+                    };
+                    const scoreColor = getScoreColor(score);
+                    return (
+                      <div key={key} className="flex items-center justify-between bg-[#111118] px-3 py-2 rounded border border-[#2A2A38]">
+                        <span className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>{label}</span>
+                        <span className="text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: scoreColor }}>
+                          {score !== null ? `${score.toFixed(1)}/10` : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-[#4A4A5E] mt-3" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  💡 Tip: Revise agents with lower scores for maximum improvement
+                </p>
+              </div>
+
+              {/* Agent Revision Counters */}
+              <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38]">
+                <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Agent Revisions:</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(revisionCounts).map(([key, count]) => {
+                    const MAX = 3;
+                    const isMax = count >= MAX;
+                    const isWarning = count === MAX - 1;
+                    const label = key === 'copywriter' ? 'Copywriter' : key === 'image_prompt' ? 'Image Prompt' : key.charAt(0).toUpperCase() + key.slice(1);
+                    return (
+                      <div key={key} className="flex items-center justify-between bg-[#111118] px-3 py-2 rounded border border-[#2A2A38]">
+                        <span className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>{label}</span>
+                        <span className={`text-xs font-bold ${
+                          isMax ? 'text-[#F43F5E]' : isWarning ? 'text-[#FFA500]' : 'text-[#4edea3]'
+                        }`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                          {count}/{MAX} {isMax ? '🚫' : isWarning ? '⚠️' : ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Agent Selection Dropdown */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-[#F1F1F3] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Select Agent to Revise:
+                </label>
+                <select
+                  value={selectedAgent}
+                  onChange={(e) => setSelectedAgent(e.target.value)}
+                  className="w-full bg-[#1b1b20] border border-[#2A2A38] rounded-lg px-4 py-3 text-[#F1F1F3] text-sm focus:outline-none focus:ring-2 focus:ring-[#c0c1ff]"
+                  style={{ fontFamily: 'Sora, sans-serif' }}
+                >
+                  <option value="research" disabled={revisionCounts.research >= 3}>Research Agent ({revisionCounts.research}/3){revisionCounts.research >= 3 ? ' - MAX' : ''}</option>
+                  <option value="strategy" disabled={revisionCounts.strategy >= 3}>Strategy Agent ({revisionCounts.strategy}/3){revisionCounts.strategy >= 3 ? ' - MAX' : ''}</option>
+                  <option value="copywriter" disabled={revisionCounts.copywriter >= 3}>Copywriter Agent ({revisionCounts.copywriter}/3){revisionCounts.copywriter >= 3 ? ' - MAX' : ''}</option>
+                  <option value="image_prompt" disabled={revisionCounts.image_prompt >= 3}>Image Prompt Agent ({revisionCounts.image_prompt}/3){revisionCounts.image_prompt >= 3 ? ' - MAX' : ''}</option>
+                </select>
+                
+                {/* Downstream Impact Warning */}
+                {selectedAgent && (
+                  <div className="mt-3 p-3 bg-[#111118] border border-[#c0c1ff]/20 rounded-lg">
+                    <p className="text-xs font-medium text-[#c0c1ff] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      ⚠️ Downstream Impact:
+                    </p>
+                    <p className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                      {selectedAgent === 'research' && 'Research → Strategy, Copywriter, Image Prompt, and Reviewer will all re-run with new data.'}
+                      {selectedAgent === 'strategy' && 'Strategy → Copywriter, Image Prompt, and Reviewer will re-run with updated strategy.'}
+                      {selectedAgent === 'copywriter' && 'Copywriter → Image Prompt and Reviewer will re-run with new copy.'}
+                      {selectedAgent === 'image_prompt' && 'Image Prompt → Only Reviewer will re-evaluate the new visuals.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Feedback Textarea */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-[#F1F1F3] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Feedback for Revision:
+                </label>
+                <textarea
+                  value={revisionFeedback}
+                  onChange={(e) => setRevisionFeedback(e.target.value)}
+                  placeholder="Explain what needs to change..."
+                  rows={4}
+                  className="w-full bg-[#1b1b20] border border-[#2A2A38] rounded-lg px-4 py-3 text-[#F1F1F3] text-sm focus:outline-none focus:ring-2 focus:ring-[#c0c1ff] resize-none"
+                  style={{ fontFamily: 'Sora, sans-serif' }}
+                />
+              </div>
+
+              <div className="mb-6">
                 <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reviewer Notes:</h3>
                 <ul className="space-y-3">
                   <li className="flex items-start text-[#8B8B9E] text-sm" style={{ fontFamily: 'Sora, sans-serif' }}>
@@ -628,7 +841,8 @@ const CampaignLivePage: React.FC = () => {
               <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                 <button
                   onClick={handleRequestRevision}
-                  className="flex-1 py-3 px-4 rounded-lg border border-[#F43F5E] text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-colors text-sm font-bold"
+                  disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
+                  className="flex-1 py-3 px-4 rounded-lg border border-[#F43F5E] text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ fontFamily: 'JetBrains Mono, monospace' }}
                 >
                   Request Revision

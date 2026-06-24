@@ -240,6 +240,38 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Validate action
+    if (action !== 'approve' && action !== 'reject') {
+      return res.status(400).json({ error: 'Invalid action. Must be "approve" or "reject"' });
+    }
+
+    // Validate rejection requirements
+    if (action === 'reject') {
+      if (!revisionTarget) {
+        return res.status(400).json({ error: 'revisionTarget required when rejecting' });
+      }
+      if (!['research', 'strategy', 'copywriter', 'image_prompt'].includes(revisionTarget)) {
+        return res.status(400).json({ error: 'Invalid revisionTarget' });
+      }
+
+      // Check if target agent has reached max revisions
+      const MAX_REVISIONS = 3;
+      const revisionCounts = {
+        research: campaign.researchRevisionCount || 0,
+        strategy: campaign.strategyRevisionCount || 0,
+        copywriter: campaign.copyRevisionCount || 0,
+        image_prompt: campaign.imageRevisionCount || 0,
+      };
+
+      const currentCount = revisionCounts[revisionTarget as keyof typeof revisionCounts];
+      if (currentCount >= MAX_REVISIONS) {
+        return res.status(400).json({
+          error: `${revisionTarget} has reached maximum revisions (${MAX_REVISIONS}). Please approve or select a different agent.`,
+          revisionCounts
+        });
+      }
+    }
+
     // Extract LLM config from request headers
     const llmConfigHeader = req.headers['x-llm-config'];
     let llmConfig: any = undefined;
@@ -251,11 +283,14 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Update campaign status in database to 'processing'
+    // Update campaign status and HITL fields in database
     const updatedCampaign = await prisma.campaign.update({
       where: { id },
       data: {
         status: 'processing',
+        humanApprovalStatus: action === 'approve' ? 'approved' : 'rejected',
+        humanFeedback: feedback || null,
+        humanRevisionTarget: action === 'reject' ? revisionTarget : null,
       },
     });
 
@@ -283,9 +318,14 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
         copy_output: aiOutputs.copy_output ? JSON.stringify(aiOutputs.copy_output) : null,
         image_output: aiOutputs.image_output ? JSON.stringify(aiOutputs.image_output) : null,
         review_output: aiOutputs.review_output ? JSON.stringify(aiOutputs.review_output) : null,
+        // HITL fields - Pass from database
         human_approval_status: action === 'approve' ? 'approved' : 'rejected',
         human_feedback: feedback || null,
         human_revision_target: revisionTarget || null,
+        research_revision_count: campaign.researchRevisionCount || 0,
+        strategy_revision_count: campaign.strategyRevisionCount || 0,
+        copy_revision_count: campaign.copyRevisionCount || 0,
+        image_revision_count: campaign.imageRevisionCount || 0,
       }, io);
     }
   } catch (error) {

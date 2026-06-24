@@ -112,6 +112,11 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         human_approval_status=payload.human_approval_status,
         human_feedback=payload.human_feedback,
         human_revision_target=payload.human_revision_target,
+        # HITL revision counts from DB
+        research_revision_count=payload.research_revision_count or 0,
+        strategy_revision_count=payload.strategy_revision_count or 0,
+        copy_revision_count=payload.copy_revision_count or 0,
+        image_revision_count=payload.image_revision_count or 0,
     )
 
     # Retrieve the pre-built workflow from app.state (set at startup via lifespan)
@@ -152,6 +157,11 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         "image_output": try_parse_json(final_state.image_output),
         "review_output": try_parse_json(final_state.review_output),
         "publisher_output": try_parse_json(final_state.publisher_output),
+        # Include revision counts for DB persistence
+        "research_revision_count": final_state.research_revision_count or 0,
+        "strategy_revision_count": final_state.strategy_revision_count or 0,
+        "copy_revision_count": final_state.copy_revision_count or 0,
+        "image_revision_count": final_state.image_revision_count or 0,
     }
 
     if final_state.awaiting_human_approval:

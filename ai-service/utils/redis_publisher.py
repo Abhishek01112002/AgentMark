@@ -39,6 +39,9 @@ def _get_pool() -> redis.ConnectionPool:
             db=REDIS_DB,
             max_connections=10,
             decode_responses=True,
+            socket_connect_timeout=5,  # 5s connection timeout
+            socket_timeout=5,           # 5s read/write timeout
+            retry_on_timeout=True,
         )
     return _pool
 

@@ -356,7 +356,6 @@ const NewCampaignContent: React.FC = () => {
                     {industry.label}
                   </option>
                 ))}
-                <option value="other">Other (Specify)</option>
               </select>
               {formData.industry === 'other' && (
                 <input
@@ -387,7 +386,6 @@ const NewCampaignContent: React.FC = () => {
                     {goal.label}
                   </option>
                 ))}
-                <option value="other">Other (Specify)</option>
               </select>
               {formData.goal === 'other' && (
                 <input

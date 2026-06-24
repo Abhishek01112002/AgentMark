@@ -107,6 +107,14 @@ def research_node(state: CampaignState) -> CampaignState:
         return state
     
     try:
+        # If targeted for revision, clear all downstream outputs first
+        if is_targeted_for_revision:
+            print("   🧹 Clearing all downstream outputs...")
+            state.strategy_output = None
+            state.copy_output = None
+            state.image_output = None
+            state.review_output = None
+        
         updated_state = research_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -144,8 +152,9 @@ def strategy_node(state: CampaignState) -> CampaignState:
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "strategy")
     
-    # Check if upstream agent was targeted (research)
-    upstream_was_targeted = (state.human_revision_target == "research")
+    # Check if upstream research output was cleared (means research just re-ran)
+    # We check if research_output exists - if it exists, research already ran
+    # We DON'T check human_revision_target because research clears it after completion
     
     # Skip logic
     if is_targeted_for_revision:
@@ -153,17 +162,23 @@ def strategy_node(state: CampaignState) -> CampaignState:
         if state.strategy_output:
             print("   🔄 Clearing previous strategy output for revision...")
             state.strategy_output = None
-    elif upstream_was_targeted:
-        # Upstream revised, strategy must re-run (downstream dependency)
-        if state.strategy_output:
-            print("   🔄 Clearing strategy output (upstream dependency re-run)...")
-            state.strategy_output = None
+    elif not state.strategy_output:
+        # No existing output means either first run or needs re-run
+        # (Research may have just re-run and cleared downstream outputs)
+        print("   🔄 Running strategy (no existing output)...")
     elif state.strategy_output:
         # Already has output and not in revision mode - skip
         print("⏭️  Skipping Strategy (already completed)")
         return state
     
     try:
+        # If targeted for revision, clear all downstream outputs first
+        if is_targeted_for_revision:
+            print("   🧹 Clearing downstream outputs (copy, image, review)...")
+            state.copy_output = None
+            state.image_output = None
+            state.review_output = None
+        
         updated_state = strategy_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -174,7 +189,7 @@ def strategy_node(state: CampaignState) -> CampaignState:
             # Clear target after completing targeted revision
             print("Clearing human_revision_target (strategy revision complete)")
             updated_state.human_revision_target = None
-        elif upstream_was_targeted:
+        else:
             # Don't increment for downstream re-runs
             print(f"\nStrategy revision count: {updated_state.strategy_revision_count or 0}/3 (no increment - downstream re-run)")
         
@@ -201,26 +216,27 @@ def copywriter_node(state: CampaignState) -> CampaignState:
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "copywriter")
     
-    # Check if upstream agents were targeted (research or strategy)
-    upstream_was_targeted = (state.human_revision_target in ["research", "strategy"])
-    
     # Skip logic
     if is_targeted_for_revision:
         # This agent is targeted - clear output and re-run
         if state.copy_output:
             print("   🔄 Clearing previous copywriter output for revision...")
             state.copy_output = None
-    elif upstream_was_targeted:
-        # Upstream revised, copywriter must re-run (downstream dependency)
-        if state.copy_output:
-            print("   🔄 Clearing copywriter output (upstream dependency re-run)...")
-            state.copy_output = None
+    elif not state.copy_output:
+        # No existing output means either first run or needs re-run
+        print("   🔄 Running copywriter (no existing output)...")
     elif state.copy_output:
         # Already has output and not in revision mode - skip
         print("⏭️  Skipping Copywriter (already completed)")
         return state
     
     try:
+        # If targeted for revision, clear all downstream outputs first
+        if is_targeted_for_revision:
+            print("   🧹 Clearing downstream outputs (image, review)...")
+            state.image_output = None
+            state.review_output = None
+        
         updated_state = copywriter_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -231,7 +247,7 @@ def copywriter_node(state: CampaignState) -> CampaignState:
             # Clear target after completing targeted revision
             print("Clearing human_revision_target (copywriter revision complete)")
             updated_state.human_revision_target = None
-        elif upstream_was_targeted:
+        else:
             # Don't increment for downstream re-runs
             print(f"\nCopywriter revision count: {updated_state.copy_revision_count or 0}/3 (no increment - downstream re-run)")
         
@@ -258,26 +274,26 @@ def image_prompt_node(state: CampaignState) -> CampaignState:
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "image_prompt")
     
-    # Check if upstream agents were targeted (research, strategy, or copywriter)
-    upstream_was_targeted = (state.human_revision_target in ["research", "strategy", "copywriter"])
-    
     # Skip logic
     if is_targeted_for_revision:
         # This agent is targeted - clear output and re-run
         if state.image_output:
             print("   🔄 Clearing previous image output for revision...")
             state.image_output = None
-    elif upstream_was_targeted:
-        # Upstream revised, image must re-run (downstream dependency)
-        if state.image_output:
-            print("   🔄 Clearing image output (upstream dependency re-run)...")
-            state.image_output = None
+    elif not state.image_output:
+        # No existing output means either first run or needs re-run
+        print("   🔄 Running image prompt (no existing output)...")
     elif state.image_output:
         # Already has output and not in revision mode - skip
         print("⏭️  Skipping Image Prompt (already completed)")
         return state
     
     try:
+        # If targeted for revision, clear downstream review output first
+        if is_targeted_for_revision:
+            print("   🧹 Clearing downstream output (review)...")
+            state.review_output = None
+        
         updated_state = image_prompt_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -288,7 +304,7 @@ def image_prompt_node(state: CampaignState) -> CampaignState:
             # Clear target after completing targeted revision
             print("Clearing human_revision_target (image_prompt revision complete)")
             updated_state.human_revision_target = None
-        elif upstream_was_targeted:
+        else:
             # Don't increment for downstream re-runs
             print(f"\nImage revision count: {updated_state.image_revision_count or 0}/3 (no increment - downstream re-run)")
         
