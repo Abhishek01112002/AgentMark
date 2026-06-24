@@ -117,7 +117,10 @@ const CampaignLivePage: React.FC = () => {
     copywriter: number | null;
     image_prompt: number | null;
   }>({ research: null, strategy: null, copywriter: null, image_prompt: null });
-  const [reviewerCompleted, setReviewerCompleted] = useState(false);
+
+  const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
+  const [campaignPreviewData, setCampaignPreviewData] = useState<any>(null);
+  const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
 
   const [typewriterText, setTypewriterText] = useState('');
   const [currentStringIndex, setCurrentStringIndex] = useState(0);
@@ -163,10 +166,21 @@ const CampaignLivePage: React.FC = () => {
                   copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
                   image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
                 });
+                // Extract reviewer notes for the drawer
+                const overallReview = reviewData.overall || {};
+                setReviewerNotes({
+                  feedback: overallReview.summary || reviewData.copy_review?.feedback || '',
+                  issues: [
+                    ...(reviewData.copy_review?.action_items || []),
+                    ...(reviewData.image_review?.action_items || []),
+                  ].slice(0, 4),
+                });
               } catch (e) {
                 console.error('Failed to parse reviewOutput for agent scores:', e);
               }
             }
+            // Store full campaign data for draft preview
+            setCampaignPreviewData(campaign);
             setAgents((prev) =>
               prev.map((a) => {
                 if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
@@ -230,10 +244,7 @@ const CampaignLivePage: React.FC = () => {
       const { agent: agentKey, status } = data;
       console.log('[Socket.io] agent_update | agent=', agentKey, '| status=', status);
 
-      // Track when reviewer completes to show quality score
-      if (agentKey === 'reviewer' && status === 'completed') {
-        setReviewerCompleted(true);
-      }
+
 
       if (status === 'completed' || status === 'running' || status === 'failed') {
         setAgents((prev) => {
@@ -307,10 +318,19 @@ const CampaignLivePage: React.FC = () => {
                 copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
                 image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
               });
+              const overallReview = reviewData.overall || {};
+              setReviewerNotes({
+                feedback: overallReview.summary || reviewData.copy_review?.feedback || '',
+                issues: [
+                  ...(reviewData.copy_review?.action_items || []),
+                  ...(reviewData.image_review?.action_items || []),
+                ].slice(0, 4),
+              });
             } catch (e) {
               console.error('Failed to parse reviewOutput for agent scores:', e);
             }
           }
+          setCampaignPreviewData(campaign);
         }
       } catch (error) {
         console.error('Failed to fetch revision counts:', error);
@@ -481,6 +501,50 @@ const CampaignLivePage: React.FC = () => {
           .campaign-live-main {
             margin-left: var(--sidebar-w, 240px);
           }
+        }
+        .inspector-drawer {
+          transform: translateX(100%);
+          transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .inspector-drawer.open {
+          transform: translateX(0);
+        }
+        .drawer-tab-btn {
+          position: relative;
+          padding: 10px 0;
+          font-size: 11px;
+          font-family: 'JetBrains Mono', monospace;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          color: #4A4A5E;
+          cursor: pointer;
+          border: none;
+          background: none;
+          flex: 1;
+          transition: color 200ms;
+        }
+        .drawer-tab-btn.active {
+          color: #c0c1ff;
+        }
+        .drawer-tab-btn.active::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: #c0c1ff;
+          border-radius: 2px 2px 0 0;
+        }
+        .score-ring {
+          transition: stroke-dashoffset 800ms cubic-bezier(0.4,0,0.2,1);
+        }
+        .draft-card {
+          transition: border-color 200ms, background-color 200ms;
+        }
+        .draft-card:hover {
+          border-color: rgba(192, 193, 255, 0.3);
+          background-color: #13131a;
         }
       `}</style>
 
@@ -693,172 +757,471 @@ const CampaignLivePage: React.FC = () => {
           </div>
         </main>
 
-        {/* Human Review Modal */}
+        {/* ── Human Review Inspector Drawer ─────────────────────────────────── */}
+        {/* Partial left-side dim overlay — does NOT block interaction with main content */}
         {showHumanReview && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <div className="bg-[#111118] border border-[#c0c1ff]/30 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-              <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-16 h-16 rounded-full bg-[#c0c1ff]/10 ring-4 ring-[#c0c1ff]/20 flex items-center justify-center mb-4">
-                  <span className="material-symbols-outlined text-[32px] text-[#c0c1ff]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
-                </div>
-                <h2 className="text-[20px] font-bold text-[#F1F1F3] mb-2" style={{ fontFamily: 'Sora, sans-serif' }}>Human Review Required</h2>
-                <p className="text-sm text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  The generated content has passed automated checks but requires final human approval before publishing.
-                </p>
-              </div>
+          <div
+            className="fixed inset-0 z-[90] pointer-events-none"
+            style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)' }}
+          />
+        )}
 
-              <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38] flex items-center justify-between">
-                <div className="text-sm font-medium text-[#F1F1F3]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Overall Quality</div>
-                <div className="text-[40px] leading-none text-[#4edea3]" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 700 }}>
-                  {qualityScore !== null ? (
-                    <>{qualityScore.toFixed(1)}<span className="text-lg text-[#4A4A5E]">/10</span></>
-                  ) : reviewerCompleted ? (
-                    <span className="text-2xl text-[#8B8B9E]">Calculating...</span>
-                  ) : (
-                    <span className="text-2xl text-[#8B8B9E]">Reviewing...</span>
-                  )}
-                </div>
-              </div>
+        {/* "Human Review Required" floating badge — always visible, click to open drawer */}
+        {showHumanReview && (
+          <div
+            className="fixed bottom-6 left-1/2 z-[95] -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-full border border-[#c0c1ff]/40 bg-[#111118]/95 shadow-2xl backdrop-blur-md cursor-default select-none"
+            style={{ boxShadow: '0 0 40px rgba(192,193,255,0.15)' }}
+          >
+            <span className="w-2 h-2 rounded-full bg-[#c0c1ff] animate-pulse" />
+            <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>
+              Human Review Required — Inspector panel is open →
+            </span>
+          </div>
+        )}
 
-              {/* Individual Agent Quality Scores */}
-              <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38]">
-                <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Agent Quality Scores:</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'research', label: 'Research' },
-                    { key: 'strategy', label: 'Strategy' },
-                    { key: 'copywriter', label: 'Copywriter' },
-                    { key: 'image_prompt', label: 'Image Prompt' },
-                  ].map(({ key, label }) => {
-                    const score = agentScores[key as keyof typeof agentScores];
-                    const getScoreColor = (s: number | null) => {
-                      if (s === null) return '#4A4A5E';
-                      if (s >= 8.5) return '#4edea3';
-                      if (s >= 7.5) return '#FFA500';
-                      return '#F43F5E';
-                    };
-                    const scoreColor = getScoreColor(score);
-                    return (
-                      <div key={key} className="flex items-center justify-between bg-[#111118] px-3 py-2 rounded border border-[#2A2A38]">
-                        <span className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>{label}</span>
-                        <span className="text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: scoreColor }}>
-                          {score !== null ? `${score.toFixed(1)}/10` : '—'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="text-xs text-[#4A4A5E] mt-3" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  💡 Tip: Revise agents with lower scores for maximum improvement
-                </p>
+        {/* Right-side Inspector Drawer */}
+        <div
+          className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col ${
+            showHumanReview ? 'open' : ''
+          }`}
+          style={{ width: '480px', background: '#0d0d14', borderLeft: '1px solid rgba(192,193,255,0.15)', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
+        >
+          {/* ── Drawer Header ───────────────────────────────────────────────── */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2b]" style={{ background: '#0d0d14' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(192,193,255,0.1)', border: '1px solid rgba(192,193,255,0.2)' }}>
+                <span className="material-symbols-outlined text-[18px] text-[#c0c1ff]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
               </div>
-
-              {/* Agent Revision Counters */}
-              <div className="bg-[#1b1b20] rounded-xl p-4 mb-6 border border-[#2A2A38]">
-                <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Agent Revisions:</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {Object.entries(revisionCounts).map(([key, count]) => {
-                    const MAX = 3;
-                    const isMax = count >= MAX;
-                    const isWarning = count === MAX - 1;
-                    const label = key === 'copywriter' ? 'Copywriter' : key === 'image_prompt' ? 'Image Prompt' : key.charAt(0).toUpperCase() + key.slice(1);
-                    return (
-                      <div key={key} className="flex items-center justify-between bg-[#111118] px-3 py-2 rounded border border-[#2A2A38]">
-                        <span className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>{label}</span>
-                        <span className={`text-xs font-bold ${
-                          isMax ? 'text-[#F43F5E]' : isWarning ? 'text-[#FFA500]' : 'text-[#4edea3]'
-                        }`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                          {count}/{MAX} {isMax ? '🚫' : isWarning ? '⚠️' : ''}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Human-in-the-Loop</p>
+                <h2 className="text-sm font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Inspector Panel</h2>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {qualityScore !== null && (
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(78,222,163,0.12)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.25)' }}>
+                  {qualityScore.toFixed(1)}/10
+                </span>
+              )}
+            </div>
+          </div>
 
-              {/* Agent Selection Dropdown */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#F1F1F3] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  Select Agent to Revise:
-                </label>
-                <select
-                  value={selectedAgent}
-                  onChange={(e) => setSelectedAgent(e.target.value)}
-                  className="w-full bg-[#1b1b20] border border-[#2A2A38] rounded-lg px-4 py-3 text-[#F1F1F3] text-sm focus:outline-none focus:ring-2 focus:ring-[#c0c1ff]"
-                  style={{ fontFamily: 'Sora, sans-serif' }}
+          {/* ── Drawer Tabs ─────────────────────────────────────────────────── */}
+          <div className="flex border-b border-[#1e1e2b] px-2">
+            <button className={`drawer-tab-btn ${drawerTab === 'scores' ? 'active' : ''}`} onClick={() => setDrawerTab('scores')}>Review Scores</button>
+            <button className={`drawer-tab-btn ${drawerTab === 'inspect' ? 'active' : ''}`} onClick={() => setDrawerTab('inspect')}>Inspect Drafts</button>
+            <button className={`drawer-tab-btn ${drawerTab === 'revise' ? 'active' : ''}`} onClick={() => setDrawerTab('revise')}>Request Revision</button>
+          </div>
+
+          {/* ── Tab Content ─────────────────────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2A38 transparent' }}>
+
+            {/* TAB 1 — Review Scores */}
+            {drawerTab === 'scores' && (
+              <div className="p-6 space-y-5">
+
+                {/* Overall Score Ring */}
+                <div className="flex items-center gap-6 p-5 rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                  <div className="relative flex-shrink-0 w-[88px] h-[88px]">
+                    <svg width="88" height="88" viewBox="0 0 88 88">
+                      <circle cx="44" cy="44" r="36" fill="none" stroke="#1e1e2b" strokeWidth="8" />
+                      <circle
+                        cx="44" cy="44" r="36" fill="none"
+                        stroke={qualityScore !== null && qualityScore >= 8.5 ? '#4edea3' : qualityScore !== null && qualityScore >= 7 ? '#FFA500' : '#F43F5E'}
+                        strokeWidth="8" strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 36}`}
+                        strokeDashoffset={`${2 * Math.PI * 36 * (1 - (qualityScore ?? 0) / 10)}`}
+                        transform="rotate(-90 44 44)"
+                        className="score-ring"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
+                        {qualityScore !== null ? qualityScore.toFixed(1) : '—'}
+                      </span>
+                      <span className="text-[9px]" style={{ color: '#4A4A5E' }}>/10</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Overall Quality</p>
+                    <p className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                      {qualityScore !== null && qualityScore >= 8.5
+                        ? 'Excellent — content meets all quality benchmarks.'
+                        : qualityScore !== null && qualityScore >= 7
+                        ? 'Good — minor improvements suggested below.'
+                        : qualityScore !== null
+                        ? 'Needs revision — review issues before publishing.'
+                        : 'Score calculating...'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Per-Agent Score Bars */}
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e1e2b' }}>
+                  <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b' }}>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Agent Quality Breakdown</p>
+                  </div>
+                  <div className="p-4 space-y-4" style={{ background: '#0d0d14' }}>
+                    {([
+                      { key: 'research', label: 'Research', icon: 'search' },
+                      { key: 'strategy', label: 'Strategy', icon: 'lightbulb' },
+                      { key: 'copywriter', label: 'Copywriter', icon: 'edit_note' },
+                      { key: 'image_prompt', label: 'Image Prompt', icon: 'image' },
+                    ] as const).map(({ key, label, icon }) => {
+                      const score = agentScores[key as keyof typeof agentScores];
+                      const pct = score !== null ? (score / 10) * 100 : 0;
+                      const color = score === null ? '#4A4A5E' : score >= 8.5 ? '#4edea3' : score >= 7 ? '#FFA500' : '#F43F5E';
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className="material-symbols-outlined text-[14px]" style={{ color }}>{icon}</span>
+                              <span className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{label}</span>
+                            </div>
+                            <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color }}>
+                              {score !== null ? `${score.toFixed(1)}/10` : '—'}
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full" style={{ background: '#1e1e2b' }}>
+                            <div
+                              className="h-full rounded-full transition-all duration-700"
+                              style={{ width: `${pct}%`, background: color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Reviewer Notes */}
+                {reviewerNotes && (
+                  <div className="rounded-xl" style={{ border: '1px solid #1e1e2b' }}>
+                    <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b', borderRadius: '12px 12px 0 0' }}>
+                      <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>AI Reviewer Summary</p>
+                    </div>
+                    <div className="p-4 space-y-3" style={{ background: '#0d0d14', borderRadius: '0 0 12px 12px' }}>
+                      {reviewerNotes.feedback && (
+                        <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{reviewerNotes.feedback}</p>
+                      )}
+                      {reviewerNotes.issues.length > 0 && (
+                        <ul className="space-y-2 mt-2">
+                          {reviewerNotes.issues.map((issue, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="material-symbols-outlined text-[14px] mt-0.5 flex-shrink-0" style={{ color: '#c0c1ff' }}>info</span>
+                              <span className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{issue}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {!reviewerNotes.feedback && reviewerNotes.issues.length === 0 && (
+                        <p className="text-xs" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>No specific notes from the reviewer.</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Revision counter pills */}
+                <div className="rounded-xl" style={{ border: '1px solid #1e1e2b' }}>
+                  <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b', borderRadius: '12px 12px 0 0' }}>
+                    <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Revision Budget Used</p>
+                  </div>
+                  <div className="p-4 grid grid-cols-2 gap-3" style={{ background: '#0d0d14', borderRadius: '0 0 12px 12px' }}>
+                    {Object.entries(revisionCounts).map(([key, count]) => {
+                      const MAX = 3;
+                      const label = key === 'copywriter' ? 'Copywriter' : key === 'image_prompt' ? 'Image Prompt' : key.charAt(0).toUpperCase() + key.slice(1);
+                      const isMax = count >= MAX;
+                      const isWarn = count === MAX - 1;
+                      const dotColor = isMax ? '#F43F5E' : isWarn ? '#FFA500' : '#4edea3';
+                      return (
+                        <div key={key} className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                          <span className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{label}</span>
+                          <span className="flex items-center gap-1.5">
+                            {[0,1,2].map(i => (
+                              <span key={i} className="w-2 h-2 rounded-full" style={{ background: i < count ? dotColor : '#1e1e2b' }} />
+                            ))}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setDrawerTab('inspect')}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                  style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(192,193,255,0.08)', color: '#c0c1ff', border: '1px solid rgba(192,193,255,0.15)' }}
                 >
-                  <option value="research" disabled={revisionCounts.research >= 3}>Research Agent ({revisionCounts.research}/3){revisionCounts.research >= 3 ? ' - MAX' : ''}</option>
-                  <option value="strategy" disabled={revisionCounts.strategy >= 3}>Strategy Agent ({revisionCounts.strategy}/3){revisionCounts.strategy >= 3 ? ' - MAX' : ''}</option>
-                  <option value="copywriter" disabled={revisionCounts.copywriter >= 3}>Copywriter Agent ({revisionCounts.copywriter}/3){revisionCounts.copywriter >= 3 ? ' - MAX' : ''}</option>
-                  <option value="image_prompt" disabled={revisionCounts.image_prompt >= 3}>Image Prompt Agent ({revisionCounts.image_prompt}/3){revisionCounts.image_prompt >= 3 ? ' - MAX' : ''}</option>
-                </select>
-                
-                {/* Downstream Impact Warning */}
-                {selectedAgent && (
-                  <div className="mt-3 p-3 bg-[#111118] border border-[#c0c1ff]/20 rounded-lg">
-                    <p className="text-xs font-medium text-[#c0c1ff] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                      ⚠️ Downstream Impact:
-                    </p>
-                    <p className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
-                      {selectedAgent === 'research' && 'Research → Strategy, Copywriter, Image Prompt, and Reviewer will all re-run with new data.'}
-                      {selectedAgent === 'strategy' && 'Strategy → Copywriter, Image Prompt, and Reviewer will re-run with updated strategy.'}
-                      {selectedAgent === 'copywriter' && 'Copywriter → Image Prompt and Reviewer will re-run with new copy.'}
-                      {selectedAgent === 'image_prompt' && 'Image Prompt → Only Reviewer will re-evaluate the new visuals.'}
-                    </p>
+                  <span className="material-symbols-outlined text-[16px]">article</span>
+                  Review Full Drafts →
+                </button>
+              </div>
+            )}
+
+            {/* TAB 2 — Inspect Drafts */}
+            {drawerTab === 'inspect' && (
+              <div className="p-6 space-y-4">
+                <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Generated Campaign Artifacts</p>
+
+                {campaignPreviewData ? (() => {
+                  let copyData: any = null;
+                  let strategyData: any = null;
+                  let imageData: any = null;
+
+                  try { copyData = campaignPreviewData.copyOutput ? JSON.parse(campaignPreviewData.copyOutput) : null; } catch { /* noop */ }
+                  try { strategyData = campaignPreviewData.strategyOutput ? JSON.parse(campaignPreviewData.strategyOutput) : null; } catch { /* noop */ }
+                  try { imageData = campaignPreviewData.imageOutput ? JSON.parse(campaignPreviewData.imageOutput) : null; } catch { /* noop */ }
+
+                  const sections: Array<{ label: string; icon: string; color: string; content: React.ReactNode }> = [];
+
+                  // Strategy preview
+                  if (strategyData) {
+                    sections.push({
+                      label: 'Strategy', icon: 'lightbulb', color: '#c0c1ff',
+                      content: (
+                        <div className="space-y-2">
+                          {strategyData.positioning && (
+                            <div>
+                              <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>Positioning</p>
+                              <p className="text-xs leading-relaxed" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{strategyData.positioning}</p>
+                            </div>
+                          )}
+                          {strategyData.key_messages && strategyData.key_messages.length > 0 && (
+                            <div>
+                              <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>Key Messages</p>
+                              <ul className="space-y-1">
+                                {strategyData.key_messages.slice(0, 3).map((msg: string, i: number) => (
+                                  <li key={i} className="text-xs flex items-start gap-2" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>
+                                    <span className="text-[#c0c1ff] flex-shrink-0 mt-0.5">→</span>{msg}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ),
+                    });
+                  }
+
+                  // Copy preview (show up to 3 channels)
+                  if (copyData) {
+                    const channelKeys = ['email', 'linkedin', 'instagram', 'facebook', 'twitter', 'tiktok', 'youtube', 'google_ads']
+                      .filter(k => copyData[k]);
+                    if (channelKeys.length > 0) {
+                      sections.push({
+                        label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
+                        content: (
+                          <div className="space-y-3">
+                            {channelKeys.slice(0, 3).map(ch => {
+                              const ch_data = copyData[ch];
+                              const headline = ch_data?.headline || ch_data?.subject || '';
+                              const body = ch_data?.body || ch_data?.caption || ch_data?.post || '';
+                              return (
+                                <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>{ch}</p>
+                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
+                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                                </div>
+                              );
+                            })}
+                            {channelKeys.length > 3 && (
+                              <p className="text-[10px] text-center" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>+ {channelKeys.length - 3} more channels</p>
+                            )}
+                          </div>
+                        ),
+                      });
+                    }
+                  }
+
+                  // Visuals preview
+                  if (imageData?.image_prompts) {
+                    sections.push({
+                      label: 'Image Prompts', icon: 'image', color: '#FFA500',
+                      content: (
+                        <div className="space-y-3">
+                          {imageData.image_prompts.slice(0, 3).map((p: any, i: number) => (
+                            <div key={i} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#FFA500', fontFamily: 'JetBrains Mono, monospace' }}>
+                                  {p.deliverable_name || `Prompt ${i + 1}`}
+                                </p>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,165,0,0.1)', color: '#FFA500', fontFamily: 'JetBrains Mono, monospace' }}>
+                                  {p.aspect_ratio || '1:1'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] leading-relaxed line-clamp-4" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{p.prompt}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ),
+                    });
+                  }
+
+                  if (sections.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <span className="material-symbols-outlined text-[40px] mb-3" style={{ color: '#2A2A38' }}>article</span>
+                        <p className="text-sm" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>Campaign drafts are not yet available.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {sections.map(({ label, icon, color, content }) => (
+                        <div key={label} className="draft-card rounded-xl" style={{ border: '1px solid #1e1e2b', background: '#0d0d14' }}>
+                          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #1e1e2b', background: '#111118', borderRadius: '12px 12px 0 0' }}>
+                            <span className="material-symbols-outlined text-[16px]" style={{ color }}>{icon}</span>
+                            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color }}>{label}</p>
+                          </div>
+                          <div className="p-4">{content}</div>
+                        </div>
+                      ))}
+
+                      <button
+                        onClick={() => navigate(`/campaign/${campaignId}/result`)}
+                        className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
+                        style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(192,193,255,0.08)', color: '#c0c1ff', border: '1px solid rgba(192,193,255,0.15)' }}
+                      >
+                        <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                        Open Full Results Page
+                      </button>
+                    </>
+                  );
+                })() : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <span className="material-symbols-outlined text-[40px] mb-3" style={{ color: '#2A2A38' }}>hourglass_empty</span>
+                    <p className="text-sm" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>Loading campaign data...</p>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Feedback Textarea */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#F1F1F3] mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  Feedback for Revision:
-                </label>
-                <textarea
-                  value={revisionFeedback}
-                  onChange={(e) => setRevisionFeedback(e.target.value)}
-                  placeholder="Explain what needs to change..."
-                  rows={4}
-                  className="w-full bg-[#1b1b20] border border-[#2A2A38] rounded-lg px-4 py-3 text-[#F1F1F3] text-sm focus:outline-none focus:ring-2 focus:ring-[#c0c1ff] resize-none"
-                  style={{ fontFamily: 'Sora, sans-serif' }}
-                />
-              </div>
+            {/* TAB 3 — Request Revision */}
+            {drawerTab === 'revise' && (
+              <div className="p-6 space-y-5">
 
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-[#F1F1F3] mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Reviewer Notes:</h3>
-                <ul className="space-y-3">
-                  <li className="flex items-start text-[#8B8B9E] text-sm" style={{ fontFamily: 'Sora, sans-serif' }}>
-                    <span className="material-symbols-outlined text-[18px] text-[#c0c1ff] mr-2 shrink-0 mt-0.5">info</span>
-                    <span>Content matches target audience intent and brand voice guidelines.</span>
-                  </li>
-                  <li className="flex items-start text-[#8B8B9E] text-sm" style={{ fontFamily: 'Sora, sans-serif' }}>
-                    <span className="material-symbols-outlined text-[18px] text-[#c0c1ff] mr-2 shrink-0 mt-0.5">info</span>
-                    <span>Character count optimized for all selected platforms.</span>
-                  </li>
-                </ul>
-              </div>
+                {/* Agent Selector */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Select Agent to Revise</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { key: 'research', label: 'Research', icon: 'search', downstream: 'Re-runs Strategy → Copy → Image → Reviewer' },
+                      { key: 'strategy', label: 'Strategy', icon: 'lightbulb', downstream: 'Re-runs Copy → Image → Reviewer' },
+                      { key: 'copywriter', label: 'Copywriter', icon: 'edit_note', downstream: 'Re-runs Image → Reviewer' },
+                      { key: 'image_prompt', label: 'Image Prompt', icon: 'image', downstream: 'Re-runs Reviewer only' },
+                    ] as const).map(({ key, label, icon, downstream }) => {
+                      const count = revisionCounts[key as keyof typeof revisionCounts];
+                      const isMax = count >= 3;
+                      const isSelected = selectedAgent === key;
+                      return (
+                        <button
+                          key={key}
+                          onClick={() => !isMax && setSelectedAgent(key)}
+                          disabled={isMax}
+                          title={downstream}
+                          className="relative flex flex-col items-start p-3 rounded-xl text-left transition-all"
+                          style={{
+                            background: isSelected ? 'rgba(192,193,255,0.1)' : '#111118',
+                            border: isSelected ? '1px solid rgba(192,193,255,0.4)' : '1px solid #1e1e2b',
+                            opacity: isMax ? 0.4 : 1,
+                            cursor: isMax ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          <span className="material-symbols-outlined text-[18px] mb-2" style={{ color: isSelected ? '#c0c1ff' : '#4A4A5E' }}>{icon}</span>
+                          <span className="text-xs font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: isSelected ? '#F1F1F3' : '#8B8B9E' }}>{label}</span>
+                          <div className="flex items-center gap-1 mt-1.5">
+                            {[0,1,2].map(i => (
+                              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i < count ? '#F43F5E' : '#1e1e2b' }} />
+                            ))}
+                            <span className="text-[9px] ml-1" style={{ color: isMax ? '#F43F5E' : '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>{count}/3{isMax ? ' MAX' : ''}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                {/* Downstream Impact */}
+                {selectedAgent && (
+                  <div className="p-3 rounded-xl" style={{ background: 'rgba(192,193,255,0.05)', border: '1px solid rgba(192,193,255,0.15)' }}>
+                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>⚡ Downstream Impact</p>
+                    <p className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                      {selectedAgent === 'research' && 'Revising Research will cascade to Strategy → Copywriter → Image Prompt → Reviewer. All downstream agents will re-run.'}
+                      {selectedAgent === 'strategy' && 'Revising Strategy will cascade to Copywriter → Image Prompt → Reviewer.'}
+                      {selectedAgent === 'copywriter' && 'Revising Copywriter will cascade to Image Prompt → Reviewer.'}
+                      {selectedAgent === 'image_prompt' && 'Only Image Prompt and the Reviewer will re-run.'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Feedback Textarea */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Revision Instructions</label>
+                  <textarea
+                    value={revisionFeedback}
+                    onChange={(e) => setRevisionFeedback(e.target.value)}
+                    placeholder="Be specific — what should be changed, improved, or rewritten?"
+                    rows={5}
+                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none focus:ring-2"
+                    style={{
+                      background: '#111118',
+                      border: '1px solid #2A2A38',
+                      color: '#F1F1F3',
+                      fontFamily: 'Sora, sans-serif',
+                      boxShadow: 'none',
+                    }}
+                    onFocus={(e) => { e.target.style.border = '1px solid rgba(192,193,255,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(192,193,255,0.1)'; }}
+                    onBlur={(e) => { e.target.style.border = '1px solid #2A2A38'; e.target.style.boxShadow = 'none'; }}
+                  />
+                  <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Sora, sans-serif', color: '#4A4A5E' }}>
+                    Tip: Be specific — mention what's wrong and what tone/direction you prefer.
+                  </p>
+                </div>
+
                 <button
                   onClick={handleRequestRevision}
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
-                  className="flex-1 py-3 px-4 rounded-lg border border-[#F43F5E] text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-colors text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                  style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    background: 'rgba(244,63,94,0.12)',
+                    border: '1px solid rgba(244,63,94,0.35)',
+                    color: '#F43F5E',
+                    opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.4 : 1,
+                    cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
+                  }}
                 >
+                  <span className="material-symbols-outlined text-[18px]">refresh</span>
                   Request Revision
                 </button>
-                <button
-                  onClick={handleApprove}
-                  className="flex-1 py-3 px-4 rounded-lg bg-[#c0c1ff] text-[#0e0e13] hover:bg-[#a8a9ff] transition-colors text-sm font-bold flex items-center justify-center space-x-2"
-                  style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                >
-                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  <span>Approve &amp; Publish</span>
-                </button>
               </div>
-            </div>
+            )}
           </div>
-        )}
+
+          {/* ── Sticky Footer — Approve & Publish ───────────────────────────── */}
+          <div className="px-6 py-4" style={{ borderTop: '1px solid #1e1e2b', background: '#0d0d14' }}>
+            <button
+              onClick={handleApprove}
+              className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                background: 'linear-gradient(135deg, #c0c1ff 0%, #a8a9ff 100%)',
+                color: '#0e0e13',
+                boxShadow: '0 4px 20px rgba(192,193,255,0.25)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
+            >
+              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              Approve &amp; Publish Campaign
+            </button>
+            <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#4A4A5E' }}>
+              This will trigger the Publisher Agent to finalize all deliverables.
+            </p>
+          </div>
+        </div>
+
       </div>
     </>
   );
