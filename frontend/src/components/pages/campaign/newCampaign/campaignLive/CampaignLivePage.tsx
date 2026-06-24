@@ -964,13 +964,29 @@ const CampaignLivePage: React.FC = () => {
                 <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Generated Campaign Artifacts</p>
 
                 {campaignPreviewData ? (() => {
-                  let copyData: any = null;
-                  let strategyData: any = null;
-                  let imageData: any = null;
+                  const getOutputField = (field: string) => {
+                    if (!campaignPreviewData) return null;
+                    const outputs = campaignPreviewData.aiOutputs || {};
+                    const val = outputs[field];
+                    if (val) {
+                      if (typeof val === 'string') {
+                        try { return JSON.parse(val); } catch { return val; }
+                      }
+                      return val;
+                    }
+                    const directVal = (campaignPreviewData as any)[field];
+                    if (directVal) {
+                      if (typeof directVal === 'string') {
+                        try { return JSON.parse(directVal); } catch { return directVal; }
+                      }
+                      return directVal;
+                    }
+                    return null;
+                  };
 
-                  try { copyData = campaignPreviewData.copyOutput ? JSON.parse(campaignPreviewData.copyOutput) : null; } catch { /* noop */ }
-                  try { strategyData = campaignPreviewData.strategyOutput ? JSON.parse(campaignPreviewData.strategyOutput) : null; } catch { /* noop */ }
-                  try { imageData = campaignPreviewData.imageOutput ? JSON.parse(campaignPreviewData.imageOutput) : null; } catch { /* noop */ }
+                  const copyData = getOutputField('copy_output') || getOutputField('copyOutput');
+                  const strategyData = getOutputField('strategy_output') || getOutputField('strategyOutput');
+                  const imageData = getOutputField('image_output') || getOutputField('imageOutput');
 
                   const sections: Array<{ label: string; icon: string; color: string; content: React.ReactNode }> = [];
 
