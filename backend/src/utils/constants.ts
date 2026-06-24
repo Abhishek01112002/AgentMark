@@ -4,7 +4,7 @@ export const constants = {
     { value: 'ecommerce', label: 'E-Commerce' },
     { value: 'finance', label: 'Finance & Fintech' },
     { value: 'healthcare', label: 'Healthcare' },
-    { value: 'other', label: 'Other' },
+    { value: 'other', label: 'Other (Specify)' },
   ],
   
   primaryGoals: [
@@ -12,6 +12,7 @@ export const constants = {
     { value: 'lead_gen', label: 'Lead Generation' },
     { value: 'sales', label: 'Direct Sales' },
     { value: 'retention', label: 'Customer Retention' },
+    { value: 'other', label: 'Other (Specify)' },
   ],
   
   brandVoices: [

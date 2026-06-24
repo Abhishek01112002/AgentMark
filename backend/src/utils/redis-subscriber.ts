@@ -33,10 +33,25 @@ const subscriber = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
   lazyConnect: true,
+  retryStrategy: (times) => {
+    const delay = Math.min(times * 1000, 10000); // Max 10s between retries
+    console.log(`[Redis Subscriber] Reconnecting in ${delay}ms (attempt ${times})`);
+    return delay;
+  },
+  connectTimeout: 10000, // 10s
+  maxRetriesPerRequest: 3,
 });
 
 subscriber.on('error', (err) => {
   console.error('[Redis Subscriber] Connection error:', err.message);
+});
+
+subscriber.on('reconnecting', () => {
+  console.log('[Redis Subscriber] Reconnecting to Redis...');
+});
+
+subscriber.on('ready', () => {
+  console.log('[Redis Subscriber] Connected to Redis successfully');
 });
 
 // ── Initialization ────────────────────────────────────────────────────────────
@@ -88,13 +103,52 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         console.log(`[Redis Subscriber] Campaign completed and saved to DB | id=${campaign_id}`);
 
       } else if (status === 'awaiting_human_approval') {
-        // campaignService has no specific method for this partial update — use prisma directly.
+        // Update campaign with HITL state including revision counts
+        const updateData: any = {
+          status: 'awaiting_human_approval',
+          aiOutputs: (outputs ?? {}) as any,
+        };
+        
+        // Extract and save revision counts if present in outputs
+        if (outputs) {
+          if (typeof outputs.research_revision_count === 'number') {
+            updateData.researchRevisionCount = outputs.research_revision_count;
+          }
+          if (typeof outputs.strategy_revision_count === 'number') {
+            updateData.strategyRevisionCount = outputs.strategy_revision_count;
+          }
+          if (typeof outputs.copy_revision_count === 'number') {
+            updateData.copyRevisionCount = outputs.copy_revision_count;
+          }
+          if (typeof outputs.image_revision_count === 'number') {
+            updateData.imageRevisionCount = outputs.image_revision_count;
+          }
+          
+          // Extract review score from review_output
+          if (outputs.review_output) {
+            const reviewOutput = typeof outputs.review_output === 'string' 
+              ? JSON.parse(outputs.review_output) 
+              : outputs.review_output;
+            
+            // Save full review output for agent scores
+            updateData.reviewOutput = JSON.stringify(reviewOutput);
+            
+            // Try both possible field names (overall_quality_score or quality_score)
+            const qualityScore = reviewOutput.overall_quality_score ?? reviewOutput.quality_score;
+            
+            if (typeof qualityScore === 'number') {
+              // Convert from 0-100 scale to 0-10 scale for frontend display
+              updateData.reviewScore = qualityScore / 10;
+              console.log(`[Redis Subscriber] Extracted review score: ${qualityScore}/100 (stored as ${qualityScore/10}/10)`);
+            } else {
+              console.log(`[Redis Subscriber] No quality score found in review_output`);
+            }
+          }
+        }
+        
         await prisma.campaign.update({
           where: { id: campaign_id },
-          data: {
-            status: 'awaiting_human_approval',
-            aiOutputs: (outputs ?? {}) as any,
-          },
+          data: updateData,
         });
         io.to(`campaign:${campaign_id}`).emit('human_approval_required', data);
         console.log(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);

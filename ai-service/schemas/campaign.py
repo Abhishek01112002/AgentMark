@@ -73,6 +73,11 @@ class CampaignCreateRequest(BaseModel):
     human_approval_status: Optional[str] = Field(default=None)
     human_feedback: Optional[str] = Field(default=None)
     human_revision_target: Optional[str] = Field(default=None)
+    # HITL revision counts
+    research_revision_count: Optional[int] = Field(default=0)
+    strategy_revision_count: Optional[int] = Field(default=0)
+    copy_revision_count: Optional[int] = Field(default=0)
+    image_revision_count: Optional[int] = Field(default=0)
 
     model_config = {"use_enum_values": True}
 

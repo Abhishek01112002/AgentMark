@@ -33,6 +33,10 @@ export interface AIServiceCampaignRequest {
   human_approval_status?: string | null;
   human_feedback?: string | null;
   human_revision_target?: string | null;
+  research_revision_count?: number;
+  strategy_revision_count?: number;
+  copy_revision_count?: number;
+  image_revision_count?: number;
 }
 
 interface AIServiceCampaignResponse {

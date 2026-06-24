@@ -53,11 +53,21 @@ model Campaign {
   
   status          String   @default("draft")
   reviewScore     Float?   // AI review agent score (0-10)
+  reviewOutput    String?  @db.Text // Full review output JSON with individual agent scores
   
   // AI Service Integration
   aiCampaignId    String?  // FastAPI campaign ID
   aiOutputs       Json?    // All 7 agent outputs (manager, research, strategy, copy, image, review, publisher)
   aiError         String?  @db.Text // Error message if AI workflow fails
+  
+  // HITL (Human-In-The-Loop) Fields
+  researchRevisionCount  Int?     @default(0)
+  strategyRevisionCount  Int?     @default(0)
+  copyRevisionCount      Int?     @default(0)
+  imageRevisionCount     Int?     @default(0)
+  humanApprovalStatus    String?  // 'pending', 'approved', 'rejected'
+  humanFeedback          String?  @db.Text
+  humanRevisionTarget    String?  // 'research', 'strategy', 'copywriter', 'image_prompt'
   
   projectId       String
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
