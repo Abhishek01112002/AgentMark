@@ -1,6 +1,6 @@
 export const SavingsSection = () => {
   return (
-    <section className="relative z-10 w-full overflow-hidden py-12 sm:py-16 md:py-20 lg:py-24">
+    <section id="pricing" className="relative z-10 w-full overflow-hidden py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="section-veil" />
       <div className="section-aurora aurora-indigo -left-28 top-12 hidden h-96 w-[34rem] lg:block opacity-80" />
       <div className="section-aurora aurora-cyan -right-28 bottom-4 hidden h-80 w-[32rem] lg:block opacity-70" />

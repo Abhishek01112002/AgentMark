@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Share2, Copy, Hash, FileText, Linkedin, Instagram, Facebook, Twitter, Music, Youtube, Mail, Target } from 'lucide-react';
+import { Share2, Copy, Check, Hash, FileText, Linkedin, Instagram, Facebook, Twitter, Music, Youtube, Mail, Target } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CopywriterContentProps {
   data?: any;
@@ -18,25 +19,84 @@ const platforms = [
 
 const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
   const hasRealData = data && Object.keys(data).length > 0;
-  
+  const [copied, setCopied] = useState(false);
+
   // Extract data from AI output
   const inferredGoal = data?.inferred_goal || '';
   const messagingFramework = data?.messaging_framework || {};
   const strategicAlignment = data?.strategic_alignment || {};
   const copyReadiness = data?.copy_readiness || {};
-  
+
   // Get available platforms from data
   const availablePlatforms = platforms.filter(p => data?.[p.id]);
-  
+
   const tabs = availablePlatforms.length > 0 ? availablePlatforms : platforms.slice(0, 4);
-  
+
   // Set default active tab to instagram if available, otherwise first available platform
   const defaultTab = availablePlatforms.find(p => p.id === 'instagram')?.id || tabs[0]?.id || 'instagram';
   const [activeTab, setActiveTab] = useState(defaultTab);
-  
+
   // Extract copy from AI output
   const activePlatformData = data?.[activeTab] || {};
   const ctas = activePlatformData?.ctas || {};
+
+  /** Build a readable text block for the active platform's copy */
+  const buildCopyText = (): string => {
+    const parts: string[] = [];
+    const platform = tabs.find(t => t.id === activeTab)?.label || activeTab;
+    parts.push(`=== ${platform.toUpperCase()} COPY ===`);
+    parts.push('');
+    if (activePlatformData.subject) {
+      parts.push(`Subject: ${activePlatformData.subject}`);
+      parts.push('');
+    }
+    if (activePlatformData.headline) {
+      parts.push(`Headline: ${activePlatformData.headline}`);
+      parts.push('');
+    }
+    if (activePlatformData.body) {
+      parts.push(activePlatformData.body);
+      parts.push('');
+    }
+    if (ctas.primary || ctas.secondary || ctas.tertiary) {
+      parts.push('CTAs:');
+      if (ctas.primary) parts.push(`  Primary:   ${ctas.primary}`);
+      if (ctas.secondary) parts.push(`  Secondary: ${ctas.secondary}`);
+      if (ctas.tertiary) parts.push(`  Tertiary:  ${ctas.tertiary}`);
+    }
+    return parts.join('\n');
+  };
+
+  const handleCopyToClipboard = async () => {
+    const text = buildCopyText();
+    if (!text.trim()) {
+      toast.error('No copy content to copy');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success('Copy pasted to clipboard!');
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Fallback for environments where clipboard API is not available
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopied(true);
+        toast.success('Copy pasted to clipboard!');
+        setTimeout(() => setCopied(false), 2500);
+      } catch {
+        toast.error('Unable to copy — please copy manually.');
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -93,8 +153,13 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
                 <Share2 size={20} className="text-[#6366F1]" />
                 <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{tabs.find(t => t.id === activeTab)?.label || 'Copy'}</h3>
               </div>
-              <button className="flex items-center gap-2 text-xs px-3 py-1.5 rounded bg-transparent border border-[#2A2A38] transition-colors hover:text-[#F1F1F3]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
-                <Copy size={14} />Copy to Clipboard
+              <button
+                onClick={handleCopyToClipboard}
+                className="flex items-center gap-2 text-xs px-3 py-1.5 rounded bg-transparent border border-[#2A2A38] transition-all hover:bg-[#1A1A24] hover:border-[#6366F1]/40"
+                style={{ fontFamily: 'JetBrains Mono, monospace', color: copied ? '#4edea3' : '#8B8B9E' }}
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? 'Copied!' : 'Copy to Clipboard'}
               </button>
             </div>
 

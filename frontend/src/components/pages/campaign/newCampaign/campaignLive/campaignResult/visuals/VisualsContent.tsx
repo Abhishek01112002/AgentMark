@@ -1,5 +1,6 @@
-import React from 'react';
-import { Copy, Plus, ArrowRight, Filter, Palette, Sparkles, MonitorUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Copy, Check, Plus, ArrowRight, Filter, Palette, Sparkles, MonitorUp } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface VisualsContentProps {
   data?: any;
@@ -9,6 +10,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const hasRealData = data && Object.keys(data).length > 0;
   const visualDirection = data?.visual_direction || {};
   const prompts = data?.image_prompts || [];
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const defaultPrompts = [
     { platform: 'LinkedIn', type: 'Banner', platformColor: '#0e76a8', platformBg: 'rgba(14, 118, 168, 0.1)', dimensions: '1584×396', title: 'Corporate Tech Abstract', description: 'Professional, networking-focused background with subtle tech elements.', prompt: 'A wide architectural abstraction of a modern corporate tech headquarters, vast empty space on the left for profile picture overlay, subtle glowing neon blue lines intersecting dark obsidian glass panels, deep depth of field, professional corporate atmosphere, minimalist, high contrast lighting, 8k resolution, photorealistic --ar 4:1 --style raw --v 6.0', models: ['MJ', 'DE'] },
@@ -17,6 +19,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   ];
 
   const displayPrompts = Array.isArray(prompts) && prompts.length > 0 ? prompts : defaultPrompts;
+
   const paletteToClass = (color: string) => {
     const normalized = color.toLowerCase();
     if (normalized.includes('#0a192f') || normalized.includes('deep navy')) return { accent: '#0A192F' };
@@ -24,6 +27,36 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
     if (normalized.includes('#e0e0e0') || normalized.includes('cool silver')) return { accent: '#E0E0E0' };
     if (normalized.includes('#ffffff') || normalized.includes('pure white')) return { accent: '#FFFFFF' };
     return { accent: '#8B8B9E' };
+  };
+
+  const handleCopyPrompt = async (promptText: string, idx: number) => {
+    if (!promptText || promptText === 'No prompt available') {
+      toast.error('No prompt text to copy');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(promptText);
+      setCopiedIdx(idx);
+      toast.success('Prompt copied to clipboard!');
+      setTimeout(() => setCopiedIdx(null), 2500);
+    } catch {
+      // Fallback
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = promptText;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        setCopiedIdx(idx);
+        toast.success('Prompt copied to clipboard!');
+        setTimeout(() => setCopiedIdx(null), 2500);
+      } catch {
+        toast.error('Unable to copy — please copy manually.');
+      }
+    }
   };
 
   return (
@@ -109,73 +142,83 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {displayPrompts.slice(0, 4).map((card: any, idx: number) => (
-          <article key={idx} className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col group relative overflow-hidden min-h-[340px]">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366F1] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2.5 py-0.5 rounded-full text-xs flex items-center border" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: card.platformBg || 'rgba(99,102,241,0.1)', color: card.platformColor || '#6366F1', borderColor: `${card.platformColor || '#6366F1'}33` }}>
-                  <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: card.platformColor || '#6366F1' }} />
-                  {card.platform || card.deliverable_name || card.channel || 'Platform'}
-                </span>
-                <span className="text-xs px-2 py-0.5 rounded-full border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{card.type || 'Image'}</span>
+        {displayPrompts.slice(0, 4).map((card: any, idx: number) => {
+          const isCopied = copiedIdx === idx;
+          return (
+            <article key={idx} className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col group relative overflow-hidden min-h-[340px]">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#6366F1] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs flex items-center border" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: card.platformBg || 'rgba(99,102,241,0.1)', color: card.platformColor || '#6366F1', borderColor: `${card.platformColor || '#6366F1'}33` }}>
+                    <span className="w-1.5 h-1.5 rounded-full mr-1.5" style={{ backgroundColor: card.platformColor || '#6366F1' }} />
+                    {card.platform || card.deliverable_name || card.channel || 'Platform'}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{card.type || 'Image'}</span>
+                </div>
+                <span className="text-xs px-2 py-1 rounded bg-[#1b1b20]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>Prompt {idx + 1}</span>
               </div>
-              <span className="text-xs px-2 py-1 rounded bg-[#1b1b20]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>Prompt {idx + 1}</span>
-            </div>
-            <h3 className="text-base md:text-lg font-semibold mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{card.deliverable_name || card.title || card.name || 'Image Prompt'}</h3>
-            {card.description && (
-              <p className="text-sm mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{card.description}</p>
-            )}
-            {card.rationale && (
-              <p className="text-sm mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{card.rationale}</p>
-            )}
-            
-            {/* Visual Elements */}
-            {card.visual_elements?.length > 0 && (
-              <div className="mb-3">
-                <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Visual Elements</span>
-                <div className="flex flex-wrap gap-2">
-                  {card.visual_elements.slice(0, 4).map((el: string, eidx: number) => (
-                    <span key={eidx} className="px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
-                      {el}
-                    </span>
+              <h3 className="text-base md:text-lg font-semibold mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{card.deliverable_name || card.title || card.name || 'Image Prompt'}</h3>
+              {card.description && (
+                <p className="text-sm mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{card.description}</p>
+              )}
+              {card.rationale && (
+                <p className="text-sm mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{card.rationale}</p>
+              )}
+
+              {/* Visual Elements */}
+              {card.visual_elements?.length > 0 && (
+                <div className="mb-3">
+                  <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Visual Elements</span>
+                  <div className="flex flex-wrap gap-2">
+                    {card.visual_elements.slice(0, 4).map((el: string, eidx: number) => (
+                      <span key={eidx} className="px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+                        {el}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Style Keywords */}
+              {card.style_keywords?.length > 0 && (
+                <div className="mb-3">
+                  <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Style Keywords</span>
+                  <div className="flex flex-wrap gap-2">
+                    {card.style_keywords.slice(0, 3).map((kw: string, kidx: number) => (
+                      <span key={kidx} className="px-2 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3 mb-4 flex-grow relative min-h-[180px]">
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    aria-label="Copy prompt"
+                    onClick={() => handleCopyPrompt(card.prompt || card.text || '', idx)}
+                    className={`transition-all p-1.5 rounded ${isCopied ? 'bg-[#4edea3]/10 text-[#4edea3]' : 'text-[#A0A0D2] hover:text-[#6366F1] bg-[#111118] hover:bg-[#1A1A24]'}`}
+                    title="Copy prompt to clipboard"
+                  >
+                    {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
+                </div>
+                <p className="text-xs leading-relaxed h-24 overflow-y-auto pr-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{card.prompt || card.text || 'No prompt available'}</p>
+              </div>
+              <div className="flex items-center justify-between mt-auto pt-2">
+                <div className="flex -space-x-2">
+                  {(card.models || ['AI']).map((model: string, midx: number) => (
+                    <div key={midx} className="w-6 h-6 rounded-full bg-[#35343a] border border-[#2A2A38] flex items-center justify-center text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{model}</div>
                   ))}
                 </div>
+                <button className="text-xs flex items-center gap-1 transition-colors hover:text-[#c0c1ff]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+                  Send to Studio<ArrowRight size={12} />
+                </button>
               </div>
-            )}
-            
-            {/* Style Keywords */}
-            {card.style_keywords?.length > 0 && (
-              <div className="mb-3">
-                <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Style Keywords</span>
-                <div className="flex flex-wrap gap-2">
-                  {card.style_keywords.slice(0, 3).map((kw: string, kidx: number) => (
-                    <span key={kidx} className="px-2 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3 mb-4 flex-grow relative min-h-[180px]">
-              <div className="absolute top-2 right-2 flex gap-1">
-                <button aria-label="Copy prompt" className="text-[#A0A0D2] hover:text-[#6366F1] transition-colors p-1 bg-[#111118] rounded"><Copy size={14} /></button>
-              </div>
-              <p className="text-xs leading-relaxed h-24 overflow-y-auto pr-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{card.prompt || card.text || 'No prompt available'}</p>
-            </div>
-            <div className="flex items-center justify-between mt-auto pt-2">
-              <div className="flex -space-x-2">
-                {(card.models || ['AI']).map((model: string, midx: number) => (
-                  <div key={midx} className="w-6 h-6 rounded-full bg-[#35343a] border border-[#2A2A38] flex items-center justify-center text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{model}</div>
-                ))}
-              </div>
-              <button className="text-xs flex items-center gap-1 transition-colors hover:text-[#c0c1ff]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-                Send to Studio<ArrowRight size={12} />
-              </button>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
         <article className="border border-dashed border-[#2A2A38] hover:border-[#464554] bg-transparent rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors group min-h-[320px]">
           <div className="w-12 h-12 rounded-full bg-[#1f1f25] flex items-center justify-center text-[#8B8B9E] group-hover:text-[#6366F1] group-hover:bg-[rgba(99,102,241,0.1)] transition-colors mb-4">
             <Plus size={24} />
