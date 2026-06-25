@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Lightbulb, Calendar, PlayCircle, FileDown, Briefcase, Target, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -8,6 +8,7 @@ interface StrategyContentProps {
 
 const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
   const printRef = useRef<HTMLDivElement>(null);
+  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const hasRealData = data && Object.keys(data).length > 0;
 
   // Extract data from AI output
@@ -793,7 +794,13 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
             <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
               <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout
             </h2>
-            <button className="text-sm hover:underline pdf-no-print" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>View Full Timeline</button>
+            <button 
+              onClick={() => setIsTimelineExpanded(!isTimelineExpanded)} 
+              className="text-sm hover:underline pdf-no-print" 
+              style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}
+            >
+              {isTimelineExpanded ? 'Collapse Timeline' : 'View Full Timeline'}
+            </button>
           </div>
           <div className="overflow-x-auto">
             <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 640 }}>
@@ -805,7 +812,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-[#2A2A38]/50">
-                {displayCalendar.slice(0, 10).map((row: any, idx: number) => {
+                {(isTimelineExpanded ? displayCalendar : displayCalendar.slice(0, 10)).map((row: any, idx: number) => {
                   const statusStyle = getStatusStyle(row.status || 'planned');
                   return (
                     <tr key={idx} className="hover:bg-[#111118] transition-colors">
