@@ -838,7 +838,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
         {displayCalendar.length === 0 && (
           <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
             <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-              No content calendar data yet. This will be populated after AI strategy agent completes work.
+              No content calendar data yet. This will be populated after the AI publisher agent completes the campaign publication plan.
             </p>
           </div>
         )}
