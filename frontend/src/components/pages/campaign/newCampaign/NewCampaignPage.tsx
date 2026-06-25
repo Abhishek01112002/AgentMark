@@ -51,6 +51,21 @@ const NewCampaignContent: React.FC = () => {
     brandVoice: 'professional',
   });
 
+  const customIndustryRef = useRef<HTMLInputElement>(null);
+  const customGoalRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (formData.industry === 'other') {
+      customIndustryRef.current?.focus();
+    }
+  }, [formData.industry]);
+
+  useEffect(() => {
+    if (formData.goal === 'other') {
+      customGoalRef.current?.focus();
+    }
+  }, [formData.goal]);
+
   useEffect(() => {
     const projectIdFromUrl = searchParams.get('projectId');
     if (projectIdFromUrl) {
@@ -359,6 +374,7 @@ const NewCampaignContent: React.FC = () => {
               </select>
               {formData.industry === 'other' && (
                 <input
+                  ref={customIndustryRef}
                   type="text"
                   required
                   value={formData.customIndustry}
@@ -389,6 +405,7 @@ const NewCampaignContent: React.FC = () => {
               </select>
               {formData.goal === 'other' && (
                 <input
+                  ref={customGoalRef}
                   type="text"
                   required
                   value={formData.customGoal}
