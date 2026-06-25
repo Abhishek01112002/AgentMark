@@ -94,13 +94,41 @@ const Profile: React.FC = () => {
     try {
       const uploadedUrl = await uploadToImageKit(file);
       setAvatarUrl(uploadedUrl);
-      toast.success('Photo uploaded');
+      
+      // Auto-save photo to database immediately
+      const response = await api.put('/auth/me', {
+        name: formData.fullName || user?.name || '',
+        avatarUrl: uploadedUrl,
+      });
+
+      updateUser(response.data.user);
+      toast.success('Photo uploaded and profile updated');
     } catch (error: any) {
       const message = error?.message || 'unable to reach ImageKit';
       toast.error(`Upload failed: ${message}`);
     } finally {
       setIsUploading(false);
       event.target.value = '';
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setIsUploading(true);
+    try {
+      // Auto-save photo removal to database immediately
+      const response = await api.put('/auth/me', {
+        name: formData.fullName || user?.name || '',
+        avatarUrl: null,
+      });
+      
+      setAvatarUrl(null);
+      updateUser(response.data.user);
+      toast.success('Photo removed');
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || 'Failed to remove photo';
+      toast.error(`Could not remove photo: ${message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -194,7 +222,7 @@ const Profile: React.FC = () => {
                 {avatarUrl && (
                   <button
                     type="button"
-                    onClick={() => setAvatarUrl(null)}
+                    onClick={handleRemovePhoto}
                     className="px-4 py-2 border border-border-base text-text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors"
                     disabled={isUploading}
                   >
