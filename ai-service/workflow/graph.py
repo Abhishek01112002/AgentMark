@@ -92,6 +92,10 @@ def research_node(state: CampaignState) -> CampaignState:
     print("🔍 LANGGRAPH: EXECUTING RESEARCH NODE")
     print("="*80)
     
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Research Node due to upstream error")
+        return state
+    
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "research")
     
@@ -148,6 +152,10 @@ def strategy_node(state: CampaignState) -> CampaignState:
     print("\n" + "="*80)
     print("📋 LANGGRAPH: EXECUTING STRATEGY NODE")
     print("="*80)
+    
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Strategy Node due to upstream error")
+        return state
     
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "strategy")
@@ -213,6 +221,10 @@ def copywriter_node(state: CampaignState) -> CampaignState:
     print("✍️  LANGGRAPH: EXECUTING COPYWRITER NODE")
     print("="*80)
     
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Copywriter Node due to upstream error")
+        return state
+    
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "copywriter")
     
@@ -270,6 +282,10 @@ def image_prompt_node(state: CampaignState) -> CampaignState:
     print("\n" + "="*80)
     print("🎨 LANGGRAPH: EXECUTING IMAGE PROMPT NODE")
     print("="*80)
+    
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Image Prompt Node due to upstream error")
+        return state
     
     # Check if this agent is targeted for revision
     is_targeted_for_revision = (state.human_revision_target == "image_prompt")
@@ -329,6 +345,10 @@ def reviewer_node(state: CampaignState) -> CampaignState:
     print("🔍 LANGGRAPH: EXECUTING REVIEWER NODE")
     print("="*80)
     
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Reviewer Node due to upstream error")
+        return state
+    
     # CRITICAL: Skip if human already approved
     # After human approval, workflow should go directly to publisher, not back through reviewer
     if state.human_approval_status == "approved":
@@ -337,6 +357,45 @@ def reviewer_node(state: CampaignState) -> CampaignState:
     
     try:
         updated_state = reviewer_agent(state)
+        
+        # Persist the targeted revision agent from the AI review status in human_revision_target
+        if updated_state.review_output:
+            import json
+            try:
+                review_data = json.loads(updated_state.review_output)
+                status = review_data.get("status", "approved")
+                if status == "revision_required":
+                    research_review = review_data.get("research_review", {})
+                    strategy_review = review_data.get("strategy_review", {})
+                    copy_review = review_data.get("copy_review", {})
+                    image_review = review_data.get("image_review", {})
+                    
+                    research_score = research_review.get("score", 100)
+                    strategy_score = strategy_review.get("score", 100)
+                    copy_score = copy_review.get("score", 100)
+                    image_score = image_review.get("score", 100)
+                    
+                    research_approved = research_review.get("approved", True)
+                    strategy_approved = strategy_review.get("approved", True)
+                    copy_approved = copy_review.get("approved", True)
+                    image_approved = image_review.get("approved", True)
+                    
+                    research_revisions = updated_state.research_revision_count or 0
+                    strategy_revisions = updated_state.strategy_revision_count or 0
+                    copy_revisions = updated_state.copy_revision_count or 0
+                    image_revisions = updated_state.image_revision_count or 0
+                    
+                    if (not research_approved or research_score < 75) and research_revisions < 3:
+                        updated_state.human_revision_target = "research"
+                    elif (not strategy_approved or strategy_score < 75) and strategy_revisions < 3:
+                        updated_state.human_revision_target = "strategy"
+                    elif (not copy_approved or copy_score < 75) and copy_revisions < 3:
+                        updated_state.human_revision_target = "copywriter"
+                    elif (not image_approved or image_score < 75) and image_revisions < 3:
+                        updated_state.human_revision_target = "image_prompt"
+            except Exception as parse_err:
+                print(f"Error parsing review output in reviewer_node: {parse_err}")
+                
         publish_agent_event(state.campaign_id, "reviewer", "completed")
         return updated_state
     except Exception as e:
@@ -358,6 +417,10 @@ def human_approval_wrapper(state: CampaignState) -> CampaignState:
     print("👤 LANGGRAPH: EXECUTING HUMAN APPROVAL NODE")
     print("="*80)
     
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Human Approval Node due to upstream error")
+        return state
+    
     try:
         updated_state = human_approval_node(state)
         return updated_state
@@ -378,6 +441,10 @@ def publisher_node(state: CampaignState) -> CampaignState:
     print("\n" + "="*80)
     print("📢 LANGGRAPH: EXECUTING PUBLISHER NODE")
     print("="*80)
+    
+    if state.error or state.status == "error":
+        print("⏭️ Skipping Publisher Node due to upstream error")
+        return state
     
     # Check if we're actually waiting for human approval
     if state.awaiting_human_approval:

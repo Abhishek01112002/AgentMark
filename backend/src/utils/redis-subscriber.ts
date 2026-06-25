@@ -87,6 +87,37 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
     // preventing a noisy agent_update with agent="system" from reaching the live panel.
     if (data.agent !== 'system') {
       io.to(`campaign:${campaign_id}`).emit('agent_update', data);
+
+      // Persist intermediate progress state in the database campaign record
+      try {
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaign_id },
+          select: { aiOutputs: true },
+        });
+        if (campaign) {
+          const currentOutputs = campaign.aiOutputs 
+            ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
+            : {};
+          
+          if (!currentOutputs.completed_agents) {
+            currentOutputs.completed_agents = [];
+          }
+          
+          if (status === 'completed' && !currentOutputs.completed_agents.includes(data.agent)) {
+            currentOutputs.completed_agents.push(data.agent);
+          }
+          currentOutputs.active_agent = status === 'running' ? data.agent : null;
+
+          await prisma.campaign.update({
+            where: { id: campaign_id },
+            data: {
+              aiOutputs: currentOutputs as any,
+            },
+          });
+        }
+      } catch (dbErr: any) {
+        console.error(`[Redis Subscriber] Failed to persist intermediate progress | campaign=${campaign_id} | error=${dbErr.message}`);
+      }
     }
 
     // Handle terminal events — update the PostgreSQL record via Prisma.
@@ -154,11 +185,24 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         console.log(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);
 
       } else if (status === 'failed') {
+        let finalOutputs = outputs;
+        if (!finalOutputs) {
+          try {
+            const existing = await prisma.campaign.findUnique({
+              where: { id: campaign_id },
+              select: { aiOutputs: true }
+            });
+            finalOutputs = existing?.aiOutputs ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs) : {};
+          } catch {
+            finalOutputs = {};
+          }
+        }
+
         // Use campaignService so the "Campaign failed" notification is sent.
         await campaignService.updateWithAIOutputs(
           campaign_id,
           '',
-          {} as any,
+          (finalOutputs ?? {}) as any,
           'failed',
           data.error ?? 'Unknown error'
         );

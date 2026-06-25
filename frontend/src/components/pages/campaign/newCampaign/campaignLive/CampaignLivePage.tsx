@@ -155,6 +155,7 @@ const CampaignLivePage: React.FC = () => {
           } else if (campaign.status === 'failed') {
             setCampaignFailed(true);
             setFailedError(campaign.aiError || 'Campaign failed during processing.');
+            setShowHumanReview(false);
           } else if (campaign.status === 'awaiting_human_approval') {
             setShowHumanReview(true);
             setRevisionCounts({
@@ -410,6 +411,7 @@ const CampaignLivePage: React.FC = () => {
       console.error('[Socket.io] Campaign failed | error=', data.error);
       setCampaignFailed(true);
       setFailedError(data.error ?? 'An unexpected error occurred.');
+      setShowHumanReview(false);
     });
 
     return () => {
