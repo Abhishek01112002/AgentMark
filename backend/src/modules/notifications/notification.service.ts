@@ -40,21 +40,24 @@ export const notificationService = {
     return rows[0];
   },
 
-  async list(userId: string, limit?: number) {
+  async list(userId: string, limit?: number, unreadOnly?: boolean) {
+    const isReadFilter = unreadOnly ? 'AND "isRead" = FALSE' : '';
     const query = limit
-      ? prisma.$queryRaw<NotificationRow[]>`
-          SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-          FROM notifications
-          WHERE "userId" = ${userId}
-          ORDER BY "createdAt" DESC
-          LIMIT ${limit}
-        `
-      : prisma.$queryRaw<NotificationRow[]>`
-          SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-          FROM notifications
-          WHERE "userId" = ${userId}
-          ORDER BY "createdAt" DESC
-        `;
+      ? prisma.$queryRawUnsafe<NotificationRow[]>(
+          `SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
+           FROM notifications
+           WHERE "userId" = $1 ${isReadFilter}
+           ORDER BY "createdAt" DESC
+           LIMIT $2`,
+          userId, limit
+        )
+      : prisma.$queryRawUnsafe<NotificationRow[]>(
+          `SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
+           FROM notifications
+           WHERE "userId" = $1 ${isReadFilter}
+           ORDER BY "createdAt" DESC`,
+          userId
+        );
 
     return query;
   },

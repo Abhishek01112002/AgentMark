@@ -25,7 +25,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
     try {
       const unread = await notificationsService.list({ unreadOnly: true, limit: 3 });
       setNotifications(unread);
-      onChangeUnreadCount?.(unread.length);
+      const count = await notificationsService.unreadCount();
+      onChangeUnreadCount?.(count);
     } finally {
       setLoading(false);
     }

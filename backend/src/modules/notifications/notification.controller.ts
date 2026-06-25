@@ -10,9 +10,8 @@ const markReadSchema = z.object({
 export const getNotifications = async (req: AuthRequest, res: Response) => {
   const unreadOnly = req.query.unreadOnly === 'true';
   const limit = req.query.limit ? Number(req.query.limit) : undefined;
-  const notifications = await notificationService.list(req.userId!, limit);
-  const filtered = unreadOnly ? notifications.filter((n) => !n.isRead) : notifications;
-  res.json({ notifications: filtered });
+  const notifications = await notificationService.list(req.userId!, limit, unreadOnly);
+  res.json({ notifications });
 };
 
 export const getUnreadCount = async (req: AuthRequest, res: Response) => {
