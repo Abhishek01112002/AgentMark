@@ -168,22 +168,26 @@ Field 2 — email (12.5 pts):
   - subject: Under 60 chars, compelling, personalized. Deduct 3 if missing or too long.
   - headline: Must anchor on positioning or key message. Deduct 3 if missing.
   - body: Must be 100+ chars, address primary pain point, mention {brand_name}. Deduct 4 if too short or generic.
-  - ctas: Must have hero_cta, secondary_cta, footer_cta. Deduct 2.5 if fewer than 2.
+  - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 2.5 if fewer than 2.
 
 Field 3 — linkedin (12.5 pts):
   - headline: Under 100 chars, thought-leadership hook. Deduct 4 if missing.
   - body: 100+ chars, professional, references market data. Deduct 4 if too short.
-  - ctas: Must have post_cta, article_cta, ad_cta. Deduct 4.5 if missing.
+  - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
 
-Field 4 — social (12.5 pts):
-  - headline: Under 140 chars, punchy, scroll-stopping. Deduct 4 if missing or too long.
-  - body: Concise, visual language, mentions {brand_name}. Deduct 4 if missing.
-  - ctas: Must have platform-specific CTAs. Deduct 4.5 if missing.
+Field 4 — social channels (instagram, facebook, twitter, tiktok, youtube) (12.5 pts):
+  - If any of these social channels are active in "{channels}", check their fields:
+    - headline: Under 140 chars. Deduct 4 if missing or too long.
+    - body: Concise, visual language, mentions {brand_name}. Deduct 4 if missing.
+    - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
+  - If no social channels are in "{channels}", this field should be graded as 12.5 (no deduction).
 
-Field 5 — ads (12.5 pts):
-  - headline: Under 60 chars, benefit-first. Deduct 4 if missing or too long.
-  - body: 100+ chars, problem-agitate-solution. Deduct 4 if too short.
-  - ctas: Must have primary_cta, urgency_cta, secondary_cta. Deduct 4.5 if fewer than 2.
+Field 5 — ads channels (google_ads) (12.5 pts):
+  - If google_ads is active in "{channels}", check:
+    - headline: Under 60 chars, benefit-first. Deduct 4 if missing or too long.
+    - body: 100+ chars, benefit-first or problem-solution. Deduct 4 if too short.
+    - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
+  - If google_ads is NOT in "{channels}", this field should be graded as 12.5 (no deduction).
 
 Field 6 — messaging_framework (12.5 pts):
   - brand_promise: Must contain {brand_name} and positioning. Deduct 3 if missing.

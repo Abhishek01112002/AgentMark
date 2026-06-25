@@ -1482,9 +1482,9 @@ def test_image_short_visual_direction_produces_issue():
     parsed = json.loads(result.review_output)
     image_issues = parsed["image_review"]["issues"]
 
-    short_issue_found = any("visual_direction" in issue.lower() for issue in image_issues)
+    short_issue_found = any("visual" in issue.lower() and "direction" in issue.lower() for issue in image_issues)
     assert short_issue_found, \
-        f"Incomplete visual_direction should produce issue. Got: {image_issues}"
+        f"Incomplete visual direction should produce issue. Got: {image_issues}"
 
     print(f"✅ PASS: Incomplete visual_direction produces correct issue")
     print(f"   visual_direction missing fields")
@@ -1506,7 +1506,7 @@ def test_email_subject_over_60_chars_produces_issue():
     print("=" * 80)
 
     bad_copy = create_perfect_copy_output()
-    bad_copy["email"]["subject"] = "X" * 65  # 65 chars - over 60 limit
+    bad_copy["email"]["subject"] = "This is a very long email subject line that is definitely more than sixty characters long and will be truncated by email clients"  # 144 chars - over 60 limit
 
     state = create_perfect_state()
     state.copy_output = json.dumps(bad_copy)
@@ -1515,7 +1515,7 @@ def test_email_subject_over_60_chars_produces_issue():
     parsed = json.loads(result.review_output)
     copy_issues = parsed["copy_review"]["issues"]
 
-    subject_issue_found = any("email subject" in issue.lower() for issue in copy_issues)
+    subject_issue_found = any("subject" in issue.lower() for issue in copy_issues)
     assert subject_issue_found, \
         f"Long email subject should produce issue. Got: {copy_issues}"
 

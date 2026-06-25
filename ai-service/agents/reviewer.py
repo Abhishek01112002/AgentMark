@@ -487,7 +487,33 @@ def _add_explicit_validation_checks(
             if not copy_review.action_items:
                 copy_review.action_items = []
             copy_review.action_items.append(f"Change copy inferred_goal to '{strategy_goal}' to match strategy")
-    
+            
+    # Check 1b: Strategy inferred_goal must be valid
+    valid_goals = {"awareness", "lead_gen", "sales", "retention"}
+    if strategy_goal and strategy_goal not in valid_goals:
+        issue = f"Strategy inferred_goal '{strategy_goal}' is invalid. Must be one of: {', '.join(valid_goals)}"
+        if issue not in strategy_review.issues:
+            strategy_review.issues.append(issue)
+            if not strategy_review.action_items:
+                strategy_review.action_items = []
+            strategy_review.action_items.append("Change strategy inferred_goal to one of awareness, lead_gen, sales, retention")
+            # Force score below threshold if invalid
+            strategy_review.score = min(strategy_review.score, 60)
+            
+    # Check 1c: Email subject must not exceed 60 characters
+    email_data = copy_data.get("email", {})
+    if email_data and isinstance(email_data, dict):
+        subject = email_data.get("subject", "")
+        if subject and len(subject) > 60:
+            issue = f"Email subject too long. Must be under 60 characters."
+            if issue not in copy_review.issues:
+                copy_review.issues.append(issue)
+                if not copy_review.action_items:
+                    copy_review.action_items = []
+                copy_review.action_items.append("Shorten email subject to be under 60 characters")
+                # Force score below threshold if subject is too long
+                copy_review.score = min(copy_review.score, 65)
+
     # Check 2: Image prompts array must not be empty
     image_prompts = image_data.get("image_prompts", [])
     if not image_prompts or len(image_prompts) == 0:
