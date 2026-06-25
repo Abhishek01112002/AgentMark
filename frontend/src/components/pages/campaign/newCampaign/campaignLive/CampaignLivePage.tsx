@@ -253,8 +253,8 @@ const CampaignLivePage: React.FC = () => {
   useEffect(() => {
     if (!campaignId) return;
 
-    // Port must match backend PORT in .env (5003).
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
+    // Port must match backend PORT in .env (5001).
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
 
     // Pass JWT so the server can verify ownership before joining the room.
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
