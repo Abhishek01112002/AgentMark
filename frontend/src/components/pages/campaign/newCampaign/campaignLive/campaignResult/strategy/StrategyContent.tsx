@@ -795,13 +795,15 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
               <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout
             </h2>
-            <button 
-              onClick={() => setIsTimelineExpanded(!isTimelineExpanded)} 
-              className="text-sm hover:underline pdf-no-print" 
-              style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}
-            >
-              {isTimelineExpanded ? 'Collapse Timeline' : 'View Full Timeline'}
-            </button>
+            {displayCalendar.length > 10 && (
+              <button 
+                onClick={() => setIsTimelineExpanded(!isTimelineExpanded)} 
+                className="text-sm hover:underline pdf-no-print" 
+                style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}
+              >
+                {isTimelineExpanded ? 'Collapse Timeline' : 'View Full Timeline'}
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 640 }}>
