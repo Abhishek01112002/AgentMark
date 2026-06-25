@@ -97,6 +97,15 @@ const CampaignLivePage: React.FC = () => {
 
   const [agents, setAgents] = useState<Agent[]>(INITIAL_AGENTS);
   const [showHumanReview, setShowHumanReview] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  // Automatically expand the drawer when human review is requested or toggled
+  useEffect(() => {
+    if (showHumanReview) {
+      setIsMinimized(false);
+    }
+  }, [showHumanReview]);
+
   const [campaignFailed, setCampaignFailed] = useState(false);
   const [failedError, setFailedError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
@@ -186,6 +195,44 @@ const CampaignLivePage: React.FC = () => {
                 if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
                 if (a.key === 'publisher') return { ...a, status: 'pending', description: 'Awaiting human approval' };
                 return { ...a, status: 'completed' };
+              })
+            );
+          } else if (campaign.status === 'processing') {
+            // Restore pipeline progress status from campaign.aiOutputs completed_agents/active_agent
+            const outputs = campaign.aiOutputs || {};
+            const completedAgents = outputs.completed_agents || [];
+            const activeAgentKey = outputs.active_agent || null;
+
+            setAgents((prev) =>
+              prev.map((a) => {
+                if (completedAgents.includes(a.key)) {
+                  return {
+                    ...a,
+                    status: 'completed',
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
+                if (a.key === activeAgentKey) {
+                  return {
+                    ...a,
+                    status: 'running',
+                    description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
+                  };
+                }
+                
+                // If the agent is pending but is upstream of the active agent, mark as completed
+                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+                const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
+                const currentIdx = pipelineKeys.indexOf(a.key);
+                if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
+                  return {
+                    ...a,
+                    status: 'completed',
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
+
+                return a;
               })
             );
           }
@@ -759,22 +806,36 @@ const CampaignLivePage: React.FC = () => {
 
         {/* ── Human Review Inspector Drawer ─────────────────────────────────── */}
         {/* Partial left-side dim overlay — does NOT block interaction with main content */}
-        {showHumanReview && (
+        {showHumanReview && !isMinimized && (
           <div
-            className="fixed inset-0 z-[90] pointer-events-none"
+            onClick={() => setIsMinimized(true)}
+            className="fixed inset-0 z-[90] cursor-pointer"
             style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)' }}
           />
         )}
 
-        {/* "Human Review Required" floating badge — always visible, click to open drawer */}
+        {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
         {showHumanReview && (
           <div
-            className="fixed bottom-6 left-1/2 z-[95] -translate-x-1/2 flex items-center gap-3 px-5 py-3 rounded-full border border-[#c0c1ff]/40 bg-[#111118]/95 shadow-2xl backdrop-blur-md cursor-default select-none"
-            style={{ boxShadow: '0 0 40px rgba(192,193,255,0.15)' }}
+            onClick={() => {
+              if (isMinimized) {
+                setIsMinimized(false);
+              }
+            }}
+            className={`fixed bottom-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full border shadow-2xl backdrop-blur-md select-none transition-all duration-300 ${
+              isMinimized 
+                ? 'right-6 border-[#4edea3]/40 bg-[#111118]/95 cursor-pointer hover:border-[#4edea3]/70 hover:scale-105' 
+                : 'left-1/2 -translate-x-1/2 border-[#c0c1ff]/40 bg-[#111118]/95 cursor-default'
+            }`}
+            style={{ 
+              boxShadow: isMinimized ? '0 0 30px rgba(78,222,163,0.15)' : '0 0 40px rgba(192,193,255,0.15)',
+            }}
           >
-            <span className="w-2 h-2 rounded-full bg-[#c0c1ff] animate-pulse" />
-            <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>
-              Human Review Required — Inspector panel is open →
+            <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#4edea3] animate-ping' : 'bg-[#c0c1ff] animate-pulse'}`} />
+            <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: isMinimized ? '#4edea3' : '#c0c1ff' }}>
+              {isMinimized 
+                ? 'Review Pending (Click to Expand Panel) ↗' 
+                : 'Human Review Required — Click outside to minimize & inspect page'}
             </span>
           </div>
         )}
@@ -782,15 +843,15 @@ const CampaignLivePage: React.FC = () => {
         {/* Right-side Inspector Drawer */}
         <div
           className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col ${
-            showHumanReview ? 'open' : ''
+            showHumanReview && !isMinimized ? 'open' : ''
           }`}
-          style={{ width: '480px', background: '#0d0d14', borderLeft: '1px solid rgba(192,193,255,0.15)', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
+          style={{ width: '100%', maxWidth: '480px', background: '#0d0d14', borderLeft: '1px solid rgba(192,193,255,0.15)', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
         >
           {/* ── Drawer Header ───────────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2b]" style={{ background: '#0d0d14' }}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(192,193,255,0.1)', border: '1px solid rgba(192,193,255,0.2)' }}>
-                <span className="material-symbols-outlined text-[18px] text-[#c0c1ff]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+                <span className="material-symbols-outlined text-[18px] text-[#4edea3]" style={{ fontVariationSettings: "'FILL' 1" }}>fact_check</span>
               </div>
               <div>
                 <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Human-in-the-Loop</p>
@@ -799,10 +860,18 @@ const CampaignLivePage: React.FC = () => {
             </div>
             <div className="flex items-center gap-2">
               {qualityScore !== null && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(78,222,163,0.12)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.25)' }}>
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold mr-1" style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(78,222,163,0.12)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.25)' }}>
                   {qualityScore.toFixed(1)}/10
                 </span>
               )}
+              {/* Minimize/Collapse Button */}
+              <button 
+                onClick={() => setIsMinimized(true)} 
+                className="p-1 rounded hover:bg-[#1e1e2b] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+                title="Minimize Inspector Panel"
+              >
+                <span className="material-symbols-outlined text-[20px] block">keyboard_double_arrow_right</span>
+              </button>
             </div>
           </div>
 
@@ -987,6 +1056,7 @@ const CampaignLivePage: React.FC = () => {
                   const copyData = getOutputField('copy_output') || getOutputField('copyOutput');
                   const strategyData = getOutputField('strategy_output') || getOutputField('strategyOutput');
                   const imageData = getOutputField('image_output') || getOutputField('imageOutput');
+                  const managerData = getOutputField('manager_output') || getOutputField('managerOutput');
 
                   const sections: Array<{ label: string; icon: string; color: string; content: React.ReactNode }> = [];
 
@@ -1019,43 +1089,65 @@ const CampaignLivePage: React.FC = () => {
                     });
                   }
 
-                  // Copy preview (show up to 3 channels)
-                  if (copyData) {
-                    const channelKeys = ['email', 'linkedin', 'instagram', 'facebook', 'twitter', 'tiktok', 'youtube', 'google_ads']
-                      .filter(k => copyData[k]);
-                    if (channelKeys.length > 0) {
-                      sections.push({
-                        label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
-                        content: (
-                          <div className="space-y-3">
-                            {channelKeys.slice(0, 3).map(ch => {
-                              const ch_data = copyData[ch];
-                              const headline = ch_data?.headline || ch_data?.subject || '';
-                              const body = ch_data?.body || ch_data?.caption || ch_data?.post || '';
+                  // Resolve channels to display in preview (ensures warning alert empty states are visible)
+                  const normalizeChannelName = (ch: string): string => {
+                    const normalized = ch.toLowerCase().trim();
+                    if (normalized === 'google ads' || normalized === 'google_ads' || normalized === 'googleads') return 'google_ads';
+                    return normalized;
+                  };
+                  const selectedChannels = (managerData?.channels || []).map(normalizeChannelName);
+                  const copyChannels = copyData
+                    ? Object.keys(copyData).filter(k => !['inferred_goal', 'messaging_framework', 'strategic_alignment', 'copy_readiness'].includes(k))
+                    : [];
+                  const activeChannels = selectedChannels.length > 0 ? selectedChannels : copyChannels;
+
+                  // Copy preview (shows all active channels with explicit missing alerts)
+                  if (copyData && activeChannels.length > 0) {
+                    sections.push({
+                      label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
+                      content: (
+                        <div className="space-y-3">
+                          {activeChannels.map((ch: string) => {
+                            const ch_data = copyData[ch];
+                            const hasCopy = !!ch_data;
+                            const headline = ch_data?.headline || ch_data?.subject || '';
+                            const body = ch_data?.body || ch_data?.caption || ch_data?.post || '';
+                            
+                            if (!hasCopy) {
                               return (
-                                <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
-                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>{ch}</p>
-                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
-                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                                <div key={ch} className="p-3 rounded-lg border border-[#F43F5E]/20 bg-[#F43F5E]/5">
+                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#F43F5E', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    {ch.replace('_', ' ')}
+                                  </p>
+                                  <p className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                                    ⚠️ Copywriter agent did not generate content for this channel.
+                                  </p>
                                 </div>
                               );
-                            })}
-                            {channelKeys.length > 3 && (
-                              <p className="text-[10px] text-center" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>+ {channelKeys.length - 3} more channels</p>
-                            )}
-                          </div>
-                        ),
-                      });
-                    }
+                            }
+                            
+                            return (
+                              <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                                <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>
+                                  {ch.replace('_', ' ')}
+                                </p>
+                                {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
+                                {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ),
+                    });
                   }
 
-                  // Visuals preview
+                  // Visuals preview (shows all generated visual prompts)
                   if (imageData?.image_prompts) {
                     sections.push({
                       label: 'Image Prompts', icon: 'image', color: '#FFA500',
                       content: (
                         <div className="space-y-3">
-                          {imageData.image_prompts.slice(0, 3).map((p: any, i: number) => (
+                          {imageData.image_prompts.map((p: any, i: number) => (
                             <div key={i} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
                               <div className="flex items-center justify-between mb-1.5">
                                 <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#FFA500', fontFamily: 'JetBrains Mono, monospace' }}>
