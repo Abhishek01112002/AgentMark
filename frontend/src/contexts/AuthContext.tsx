@@ -45,8 +45,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token && storedUser) {
         try {
           setUser(JSON.parse(storedUser));
-          // Verify token is still valid
-          await api.get('/auth/me');
+          // Verify token is still valid and fetch fresh user details
+          const response = await api.get('/auth/me');
+          if (response.data?.user) {
+            setUser(response.data.user);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+          }
         } catch (error) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');

@@ -26,8 +26,9 @@ export const authService = {
     });
 
     const token = generateToken({ userId: user.id, email: user.email });
+    const cleanUser = await this.getUserById(user.id);
     
-    return { user: { ...user, avatarUrl: null }, token };
+    return { user: cleanUser!, token };
   },
 
   async login(email: string, password: string) {
@@ -44,9 +45,10 @@ export const authService = {
     }
 
     const token = generateToken({ userId: user.id, email: user.email });
+    const cleanUser = await this.getUserById(user.id);
     
     return {
-      user,
+      user: cleanUser!,
       token,
     };
   },
