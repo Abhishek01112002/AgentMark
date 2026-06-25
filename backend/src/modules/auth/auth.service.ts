@@ -12,7 +12,8 @@ type UserRow = {
 
 export const authService = {
   async signup(email: string, password: string, name?: string) {
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     
     if (existingUser) {
       throw new Error('User already exists');
@@ -21,7 +22,7 @@ export const authService = {
     const hashedPassword = await hashPassword(password);
     
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name: name || '' },
+      data: { email: normalizedEmail, password: hashedPassword, name: name || '' },
       select: { id: true, email: true, name: true, createdAt: true },
     });
 
@@ -32,7 +33,8 @@ export const authService = {
   },
 
   async login(email: string, password: string) {
-    const user = await prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     
     if (!user) {
       throw new Error('Invalid credentials');
