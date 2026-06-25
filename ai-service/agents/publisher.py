@@ -360,9 +360,6 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     
     print(f"   Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
 
-    # Initialize LLM client
-    llm = get_llm_client()
-
     # Load publisher prompt and format with all campaign data
     prompt = load_prompt(
         "publisher",

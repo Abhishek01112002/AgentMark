@@ -1,6 +1,13 @@
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET environment variable must be defined in production!');
+  }
+  console.warn('⚠️ WARNING: JWT_SECRET environment variable is missing. Using insecure development fallback.');
+}
+const JWT_SECRET_OR_FALLBACK = JWT_SECRET || 'fallback-secret-key';
 
 export interface JWTPayload {
   userId: string;
@@ -8,9 +15,9 @@ export interface JWTPayload {
 }
 
 export const generateToken = (payload: JWTPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_SECRET_OR_FALLBACK, { expiresIn: '7d' });
 };
 
 export const verifyToken = (token: string): JWTPayload => {
-  return jwt.verify(token, JWT_SECRET) as JWTPayload;
+  return jwt.verify(token, JWT_SECRET_OR_FALLBACK) as JWTPayload;
 };

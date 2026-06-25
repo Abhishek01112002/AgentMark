@@ -33,6 +33,7 @@ interface Campaign {
   brandVoice: string;
   projectId: string;
   aiOutputs?: any;
+  aiError?: string | null;
   reviewScore?: number | null;
   reviewOutput?: any;
   researchRevisionCount?: number;
@@ -214,7 +215,7 @@ const CampaignResultPage: React.FC = () => {
       case 'review':
         return <ReviewContent data={aiOutputs.review_output} reviewScore={campaign.reviewScore} />;
       case 'published':
-        return <PublisherContent data={aiOutputs.publisher_output || aiOutputs.publishing_output} campaignName={campaign.name} />;
+        return <PublisherContent data={aiOutputs.publisher_output} campaignName={campaign.name} />;
     }
   };
 
@@ -234,6 +235,52 @@ const CampaignResultPage: React.FC = () => {
           <p className="text-sm" style={{ color: '#8B8B9E' }}>The campaign you're looking for doesn't exist.</p>
         </div>
       </div>
+    );
+  }
+
+  if (campaign.status === 'failed') {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen bg-[#0A0A0F] text-[#F1F1F3] flex">
+          <Sidebar />
+          <div className="flex-1 flex flex-col min-h-screen">
+            <TopNav title="Campaign Results" />
+            <main className="flex-1 pt-24 px-6 flex items-center justify-center">
+              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center space-y-6 shadow-2xl max-w-xl w-full">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 mx-auto">
+                  <span className="material-symbols-outlined text-3xl">error</span>
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-2xl font-semibold text-red-400" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    Campaign Generation Failed
+                  </h1>
+                  <p className="text-sm text-gray-400 max-w-md mx-auto">
+                    An error occurred while running the AI agents pipeline for "{campaign.name}".
+                  </p>
+                </div>
+                {campaign.aiError && (
+                  <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 text-left max-w-lg mx-auto">
+                    <span className="text-[10px] uppercase font-semibold text-gray-500 block mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                      Error Details
+                    </span>
+                    <p className="text-sm text-red-300 font-mono break-words whitespace-pre-wrap">
+                      {campaign.aiError}
+                    </p>
+                  </div>
+                )}
+                <div className="pt-4">
+                  <button
+                    onClick={() => navigate(`/project/${campaign.projectId}`)}
+                    className="px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-sm font-medium hover:bg-surface hover:border-[#6366F1]/50 transition-all cursor-pointer"
+                  >
+                    Return to Project
+                  </button>
+                </div>
+              </div>
+            </main>
+          </div>
+        </div>
+      </SidebarProvider>
     );
   }
 

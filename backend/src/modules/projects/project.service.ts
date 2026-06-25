@@ -36,10 +36,12 @@ export const projectService = {
         }
 
         // Update project status in database if it changed
-        await prisma.project.update({
-          where: { id: project.id },
-          data: { status: newStatus },
-        });
+        if (project.status !== newStatus) {
+          await prisma.project.update({
+            where: { id: project.id },
+            data: { status: newStatus },
+          });
+        }
 
         return {
           id: project.id,

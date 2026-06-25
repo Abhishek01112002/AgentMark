@@ -97,6 +97,8 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
   
   let completedCampaigns = 0;
   let runningCampaigns = 0;
+  let failedCampaigns = 0;
+  let awaitingApprovalCampaigns = 0;
   let totalReviewScore = 0;
   let reviewedCampaigns = 0;
   let totalCampaignsCount = 0;
@@ -106,9 +108,12 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
       totalCampaignsCount++;
       if (campaign.status === 'completed') {
         completedCampaigns++;
-      }
-      if (campaign.status === 'processing') {
+      } else if (campaign.status === 'processing') {
         runningCampaigns++;
+      } else if (campaign.status === 'failed') {
+        failedCampaigns++;
+      } else if (campaign.status === 'awaiting_human_approval') {
+        awaitingApprovalCampaigns++;
       }
       
       let reviewScore = campaign.reviewScore;
@@ -153,9 +158,9 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     ? parseFloat((totalReviewScore / reviewedCampaigns).toFixed(1))
     : 0;
 
-  const totalCampaigns = completedCampaigns + runningCampaigns;
-  const completionRate = totalCampaigns > 0
-    ? Math.round((completedCampaigns / totalCampaigns) * 100)
+  const totalAttemptedCampaigns = completedCampaigns + runningCampaigns + failedCampaigns + awaitingApprovalCampaigns;
+  const completionRate = totalAttemptedCampaigns > 0
+    ? Math.round((completedCampaigns / totalAttemptedCampaigns) * 100)
     : 0;
 
   res.json({
