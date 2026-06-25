@@ -29,8 +29,13 @@ class GeminiClient(BaseLLMClient):
             raise ValueError("GEMINI_API_KEY not found")
         
         self.model_name = model
-        genai.configure(api_key=self.api_key)
+        from google.generativeai.client import _ClientManager
+        client_manager = _ClientManager()
+        client_manager.configure(api_key=self.api_key)
+        
         self.model = genai.GenerativeModel(model)
+        self.model._client = client_manager.get_default_client("generative")
+        self.model._async_client = client_manager.get_default_client("generative_async")
     
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """Generate text using Gemini API with retry logic for rate limits"""
