@@ -16,13 +16,13 @@ T = TypeVar('T', bound=BaseModel)
 class GeminiClient(BaseLLMClient):
     """Google Gemini API client implementation"""
     
-    def __init__(self, api_key: str = None, model: str = "gemini-3.1-flash-lite"):
+    def __init__(self, api_key: str = None, model: str = "gemini-1.5-flash"):
         """
         Initialize Gemini client
         
         Args:
             api_key: Gemini API key (defaults to env var)
-            model: Model name to use (gemini-3.1-flash-lite, gemini-1.5-flash, gemini-1.5-pro)
+            model: Model name to use (gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash)
         """
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
