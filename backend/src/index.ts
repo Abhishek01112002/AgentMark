@@ -22,8 +22,8 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(cors());
-// 50 KB limit — prevents oversized JSON payloads from OOM-ing the server.
-app.use(express.json({ limit: '50kb' }));
+// 1 MB limit — prevents oversized JSON payloads from OOM-ing the server.
+app.use(express.json({ limit: '1mb' }));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'AgentMark API is running' });
