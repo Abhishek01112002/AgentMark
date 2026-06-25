@@ -25,6 +25,20 @@ const createCampaignSchema = z.object({
   brandVoice: z.string().min(1),
 });
 
+const approveCampaignSchema = z.object({
+  action: z.enum(['approve', 'reject']),
+  feedback: z.string().optional(),
+  revisionTarget: z.enum(['research', 'strategy', 'copywriter', 'image_prompt']).optional(),
+}).refine((data) => {
+  if (data.action === 'reject' && !data.revisionTarget) {
+    return false;
+  }
+  return true;
+}, {
+  message: 'revisionTarget required when rejecting',
+  path: ['revisionTarget'],
+});
+
 const formatFriendlyError = (message: string) => {
   if (!message) return 'Something went wrong while generating your campaign. Please try again.';
   if (message.toLowerCase().includes('validation')) {
@@ -221,7 +235,7 @@ export const deleteCampaign = async (req: AuthRequest, res: Response) => {
 export const approveCampaign = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { action, feedback, revisionTarget } = req.body;
+    const { action, feedback, revisionTarget } = approveCampaignSchema.parse(req.body);
 
     const campaign = await prisma.campaign.findUnique({
       where: { id },
@@ -240,20 +254,8 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Validate action
-    if (action !== 'approve' && action !== 'reject') {
-      return res.status(400).json({ error: 'Invalid action. Must be "approve" or "reject"' });
-    }
-
-    // Validate rejection requirements
+    // Validate rejection requirements and revision counts
     if (action === 'reject') {
-      if (!revisionTarget) {
-        return res.status(400).json({ error: 'revisionTarget required when rejecting' });
-      }
-      if (!['research', 'strategy', 'copywriter', 'image_prompt'].includes(revisionTarget)) {
-        return res.status(400).json({ error: 'Invalid revisionTarget' });
-      }
-
       // Check if target agent has reached max revisions
       const MAX_REVISIONS = 3;
       const revisionCounts = {
@@ -283,6 +285,23 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const currentOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    if (action === 'reject' && revisionTarget) {
+      const agentsPriority = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+      const targetIdx = agentsPriority.indexOf(revisionTarget);
+      if (targetIdx !== -1) {
+        const completedAgents = currentOutputs.completed_agents || [];
+        currentOutputs.completed_agents = completedAgents.filter((a: string) => {
+          const idx = agentsPriority.indexOf(a);
+          return idx !== -1 && idx < targetIdx;
+        });
+      }
+      currentOutputs.active_agent = revisionTarget;
+    }
+
     // Update campaign status and HITL fields in database
     const updatedCampaign = await prisma.campaign.update({
       where: { id },
@@ -291,6 +310,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
         humanApprovalStatus: action === 'approve' ? 'approved' : 'rejected',
         humanFeedback: feedback || null,
         humanRevisionTarget: action === 'reject' ? revisionTarget : null,
+        aiOutputs: currentOutputs as any,
       },
     });
 
@@ -329,6 +349,9 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       }, io);
     }
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
     console.error('Campaign approval error:', error);
     res.status(500).json({ error: 'Failed to submit campaign approval' });
   }
