@@ -4,9 +4,10 @@ import toast from 'react-hot-toast';
 
 interface StrategyContentProps {
   data?: any;
+  campaign?: any;
 }
 
-const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
+const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => {
   const printRef = useRef<HTMLDivElement>(null);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const hasRealData = data && Object.keys(data).length > 0;
@@ -21,11 +22,11 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data }) => {
   const successMetrics = data?.success_metrics || {};
   const competitiveDiff = data?.competitive_differentiation || {};
   const budgetAllocation = data?.execution?.budget_allocation || {};
-  const inferredGoal = data?.inferred_goal || '';
+  const inferredGoal = data?.inferred_goal || campaign?.primaryGoal || '';
 
-  const coreMessage = data?.core_message || data?.messaging_framework || data?.message || '';
-  const valueProposition = data?.value_proposition || data?.value_prop || '';
-  const targetAudience = data?.target_audience || data?.audience || '';
+  const coreMessage = data?.core_message || data?.messaging_framework || data?.message || positioning || '';
+  const valueProposition = data?.value_proposition || data?.value_prop || competitiveDiff.unique_value_proposition || competitiveDiff.primary_differentiation || '';
+  const targetAudience = campaign?.targetAudience || data?.target_audience || data?.audience || '';
   const channels = data?.channels || data?.marketing_channels || [];
   const contentCalendar = data?.content_calendar || data?.content_plan || [];
 

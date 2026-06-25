@@ -270,7 +270,7 @@ const CampaignResultPage: React.FC = () => {
                 )}
                 <div className="pt-4">
                   <button
-                    onClick={() => navigate(`/project/${campaign.projectId}`)}
+                    onClick={() => navigate(`/projects/${campaign.projectId}`)}
                     className="px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-sm font-medium hover:bg-surface hover:border-[#6366F1]/50 transition-all cursor-pointer"
                   >
                     Return to Project

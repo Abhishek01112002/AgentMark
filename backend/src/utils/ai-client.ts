@@ -2,7 +2,7 @@
  * AI Service Client
  * 
  * Simple HTTP client for communicating with FastAPI AI Service.
- * Handles synchronous campaign creation (blocks for 2-3 minutes while agents run).
+ * Handles campaign creation and health check.
  */
 
 export interface AIServiceCampaignRequest {
@@ -18,10 +18,6 @@ export interface AIServiceCampaignRequest {
     groq_api_key?: string | null;
     openai_api_key?: string | null;
   };
-  /**
-   * PostgreSQL campaign UUID — passed so FastAPI publishes Redis Pub/Sub events
-   * to the correct channel (campaign:{campaign_id}) instead of a random UUID.
-   */
   campaign_id?: string;
   manager_output?: string | null;
   research_output?: string | null;
@@ -94,7 +90,7 @@ class AIServiceClient {
   private timeout: number;
 
   constructor() {
-    this.baseUrl = process.env.AI_SERVICE_URL || 'http://localhost:5002';
+    this.baseUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
     this.timeout = 600000; // 10 minutes timeout
   }
 
@@ -134,7 +130,7 @@ class AIServiceClient {
       clearTimeout(timeoutId);
       
       if (error.name === 'AbortError') {
-        throw new Error('AI Service request timeout (exceeded 3 minutes)');
+        throw new Error('AI Service request timeout (exceeded 10 minutes)');
       }
       
       throw new Error(error.message || 'AI Service request failed');

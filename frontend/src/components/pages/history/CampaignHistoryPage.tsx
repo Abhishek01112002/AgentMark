@@ -88,6 +88,10 @@ const CampaignHistoryContent: React.FC = () => {
             console.error(`Failed to fetch campaigns for project ${project.id}:`, error);
           }
         }
+        // Sort campaigns globally by creation date (latest campaigns first)
+        allCampaigns.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
         setCampaigns(allCampaigns);
       } catch (error: any) {
         console.error('Failed to fetch campaigns:', error);

@@ -6,7 +6,20 @@ Multi-Agent Marketing Campaign Orchestration with LangGraph
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
+
+# Reconfigure stdout/stderr to UTF-8 to prevent UnicodeEncodeError on Windows terminals
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 from dotenv import load_dotenv
 from fastapi import FastAPI

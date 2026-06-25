@@ -3,6 +3,7 @@ GEMINI LLM Client Implementation
 """
 
 import os
+import sys
 import time
 import json
 from typing import Type, TypeVar
@@ -10,20 +11,43 @@ from pydantic import BaseModel
 import google.generativeai as genai
 from .base import BaseLLMClient
 
+# Reconfigure stdout/stderr to UTF-8 to prevent UnicodeEncodeError on Windows terminals
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if hasattr(sys.stderr, 'reconfigure'):
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 T = TypeVar('T', bound=BaseModel)
+
+
+def _ensure_event_loop():
+    """Ensure there is a running event loop in the current thread to avoid AnyIO/asyncio errors."""
+    import asyncio
+    try:
+        asyncio.get_event_loop_policy().get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
 
 class GeminiClient(BaseLLMClient):
     """Google Gemini API client implementation"""
     
-    def __init__(self, api_key: str = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str = None, model: str = "gemini-3.1-flash-lite"):
         """
         Initialize Gemini client
         
         Args:
             api_key: Gemini API key (defaults to env var)
-            model: Model name to use (gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash)
+            model: Model name to use (gemini-3.1-flash-lite, gemini-3.1-pro, gemini-3.5-flash)
         """
+        _ensure_event_loop()
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found")
@@ -38,7 +62,7 @@ class GeminiClient(BaseLLMClient):
     
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """Generate text using Gemini API with retry logic for rate limits"""
-        
+        _ensure_event_loop()
         max_retries = 5
         base_delay = 5
         
@@ -84,6 +108,7 @@ class GeminiClient(BaseLLMClient):
         Raises:
             Exception: After all retries exhausted or critical error
         """
+        _ensure_event_loop()
         max_retries = 3
         rate_limit_retries = 5
         base_delay = 5
