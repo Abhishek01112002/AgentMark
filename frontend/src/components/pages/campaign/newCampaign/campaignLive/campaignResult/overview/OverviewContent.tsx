@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Target, Users, Fingerprint, Network, Package, AlertTriangle, Globe } from 'lucide-react';
+import { Compass, Milestone, Users, Fingerprint, Network, Package, AlertTriangle, Globe } from 'lucide-react';
 
 interface OverviewContentProps {
   data?: any;
@@ -116,7 +116,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
         <div className="bg-gradient-to-br from-[#4edea3]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-            <Target size={20} className="text-[#4edea3]" />
+            <Milestone size={20} className="text-[#4edea3]" />
             Campaign Objectives
           </h3>
           <div className="space-y-4">
