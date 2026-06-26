@@ -9,18 +9,28 @@ export interface PlatformConfig {
 
 export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
   instagram: { accent: '#E1306C', label: 'Instagram', bgAccent: 'rgba(225, 48, 108, 0.1)', borderColor: 'rgba(225, 48, 108, 0.2)' },
-  linkedin:  { accent: '#0077B5', label: 'LinkedIn', bgAccent: 'rgba(0, 119, 181, 0.1)', borderColor: 'rgba(0, 119, 181, 0.2)' },
-  youtube:   { accent: '#FF0000', label: 'YouTube', bgAccent: 'rgba(255, 0, 0, 0.1)', borderColor: 'rgba(255, 0, 0, 0.2)' },
-  email:     { accent: '#10B981', label: 'Email', bgAccent: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.2)' },
-  general:   { accent: '#6366F1', label: 'General', bgAccent: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' },
+  linkedin:  { accent: '#0077B5', label: 'LinkedIn',  bgAccent: 'rgba(0, 119, 181, 0.1)',   borderColor: 'rgba(0, 119, 181, 0.2)' },
+  youtube:   { accent: '#FF0000', label: 'YouTube',   bgAccent: 'rgba(255, 0, 0, 0.1)',      borderColor: 'rgba(255, 0, 0, 0.2)'   },
+  email:     { accent: '#10B981', label: 'Email',     bgAccent: 'rgba(16, 185, 129, 0.1)',   borderColor: 'rgba(16, 185, 129, 0.2)' },
+  twitter:   { accent: '#1DA1F2', label: 'Twitter/X', bgAccent: 'rgba(29, 161, 242, 0.1)',   borderColor: 'rgba(29, 161, 242, 0.2)' },
+  facebook:  { accent: '#1877F2', label: 'Facebook',  bgAccent: 'rgba(24, 119, 242, 0.1)',   borderColor: 'rgba(24, 119, 242, 0.2)' },
+  pinterest: { accent: '#E60023', label: 'Pinterest', bgAccent: 'rgba(230, 0, 35, 0.1)',     borderColor: 'rgba(230, 0, 35, 0.2)'   },
+  tiktok:    { accent: '#69C9D0', label: 'TikTok',    bgAccent: 'rgba(105, 201, 208, 0.1)',  borderColor: 'rgba(105, 201, 208, 0.2)' },
+  banner:    { accent: '#F59E0B', label: 'Banner Ad', bgAccent: 'rgba(245, 158, 11, 0.1)',   borderColor: 'rgba(245, 158, 11, 0.2)' },
+  general:   { accent: '#6366F1', label: 'General',   bgAccent: 'rgba(99, 102, 241, 0.1)',   borderColor: 'rgba(99, 102, 241, 0.2)' },
 };
 
 export const detectPlatform = (deliverableName: string): string => {
   const name = (deliverableName || '').toLowerCase();
-  if (name.includes('instagram')) return 'instagram';
-  if (name.includes('linkedin')) return 'linkedin';
-  if (name.includes('youtube')) return 'youtube';
-  if (name.includes('email')) return 'email';
+  if (name.includes('instagram') || name.includes('reel') || name.includes('story') || name.includes('ig')) return 'instagram';
+  if (name.includes('linkedin'))  return 'linkedin';
+  if (name.includes('youtube') || name.includes('yt thumbnail') || name.includes('yt ad')) return 'youtube';
+  if (name.includes('email') || name.includes('newsletter') || name.includes('edm')) return 'email';
+  if (name.includes('twitter') || name.includes('tweet') || name.includes(' x ') || name.endsWith(' x')) return 'twitter';
+  if (name.includes('facebook') || name.includes(' fb ')) return 'facebook';
+  if (name.includes('pinterest') || name.includes('pin')) return 'pinterest';
+  if (name.includes('tiktok') || name.includes('tik tok')) return 'tiktok';
+  if (name.includes('banner') || name.includes('display ad') || name.includes('leaderboard')) return 'banner';
   return 'general';
 };
 
@@ -61,55 +71,112 @@ export interface CheckItem {
 
 export const scorePrompt = (prompt: string): { score: number; checks: CheckItem[] } => {
   const p = (prompt || '').toLowerCase();
+  const wordCount = p.trim().split(/\s+/).filter(Boolean).length;
+
   const checks: CheckItem[] = [
+    // ── SUBJECT & CLARITY (critical) ────────────────────────────
     {
-      label: 'Strong lighting',
-      checkKey: 'lighting',
-      passed: /\b(light|lighting|rim|shadow|glow)\b/i.test(p),
-      points: 15
-    },
-    {
-      label: 'Subject defined',
+      label: 'Subject clearly defined',
       checkKey: 'subject',
-      passed: /\b(person|model|product|subject)\b/i.test(p),
-      points: 20
+      passed: /\b(person|model|woman|man|product|object|character|figure|brand|logo|item|subject|shot of|photo of|image of)\b/i.test(p),
+      points: 12,
     },
     {
-      label: 'Background detail',
-      checkKey: 'background',
-      passed: /\b(background|backdrop|setting|scene)\b/i.test(p),
-      points: 15
+      label: 'Action or pose described',
+      checkKey: 'action',
+      passed: /\b(holding|wearing|standing|sitting|looking|running|smiling|walking|posing|facing|carrying|surrounded by)\b/i.test(p),
+      points: 7,
     },
+    // ── TECHNICAL QUALITY ────────────────────────────────────────
     {
-      label: 'Camera specification',
+      label: 'Camera / lens specified',
       checkKey: 'camera',
-      passed: /\b(mm|lens|shot on|35mm|85mm)\b/i.test(p),
-      points: 15
+      passed: /\b(\d+mm|shot on|dslr|mirrorless|f\/\d|bokeh|depth of field|telephoto|wide angle|macro lens)\b/i.test(p),
+      points: 8,
     },
     {
-      label: 'Style direction',
-      checkKey: 'mood',
-      passed: /\b(editorial|cinematic|luxury|bold)\b/i.test(p),
-      points: 15
+      label: 'Resolution / detail quality',
+      checkKey: 'resolution',
+      passed: /\b(8k|4k|ultra-detailed|ultra detailed|hyper-realistic|photorealistic|high resolution|sharp focus|super detailed)\b/i.test(p),
+      points: 6,
     },
     {
-      label: 'Negative prompt phrases',
+      label: 'Render engine / style tag',
+      checkKey: 'render',
+      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration)\b/i.test(p),
+      points: 5,
+    },
+    // ── LIGHTING ─────────────────────────────────────────────────
+    {
+      label: 'Lighting direction / type',
+      checkKey: 'lighting',
+      passed: /\b(rim light|backlit|golden hour|soft box|natural light|studio light|neon|ambient|harsh shadow|diffused|candlelight|overcast|hard light|fill light)\b/i.test(p),
+      points: 10,
+    },
+    // ── COMPOSITION & FRAMING ─────────────────────────────────────
+    {
+      label: 'Composition or framing',
+      checkKey: 'composition',
+      passed: /\b(close.?up|wide shot|overhead|top.?down|bird.?s.?eye|macro|portrait|full body|half body|low angle|high angle|dutch angle|rule of thirds|centered|side profile)\b/i.test(p),
+      points: 8,
+    },
+    {
+      label: 'Background / setting defined',
+      checkKey: 'background',
+      passed: /\b(background|backdrop|setting|environment|scene|interior|exterior|studio|outdoor|urban|forest|minimal|seamless)\b/i.test(p),
+      points: 7,
+    },
+    // ── STYLE & MOOD ─────────────────────────────────────────────
+    {
+      label: 'Visual style direction',
+      checkKey: 'style',
+      passed: /\b(editorial|cinematic|luxury|bold|minimalist|vintage|retro|futuristic|dark|moody|vibrant|clean|elegant|gritty|high.?fashion|commercial|lifestyle|documentary)\b/i.test(p),
+      points: 9,
+    },
+    {
+      label: 'Color palette / tone',
+      checkKey: 'color',
+      passed: /\b(color palette|warm tones|cool tones|monochrome|pastel|neon|earth tones|desaturated|vivid|muted|navy|gold|black and white|duotone|gradient)\b/i.test(p),
+      points: 7,
+    },
+    {
+      label: 'Emotional tone or mood',
+      checkKey: 'emotion',
+      passed: /\b(luxurious|aspirational|energetic|serene|dramatic|empowering|playful|sophisticated|nostalgic|authentic|confident|inspiring|joyful|mysterious|calm|tense)\b/i.test(p),
+      points: 6,
+    },
+    // ── BRAND & SAFETY ───────────────────────────────────────────
+    {
+      label: 'Negative / exclusion prompt',
       checkKey: 'negative',
-      passed: /no text|no words|no logo/i.test(p),
-      points: 10
+      passed: /no text|no words|no logo|no watermark|avoid|without text|without logo/i.test(p),
+      points: 7,
     },
     {
-      label: 'Prompt length > 50 words',
+      label: 'Brand or product mentioned',
+      checkKey: 'brand',
+      passed: /\b(brand|logo|product|packaging|label|bottle|box|container|tag|branded)\b/i.test(p),
+      points: 5,
+    },
+    // ── DEPTH & LENGTH ───────────────────────────────────────────
+    {
+      label: 'Prompt length ≥ 40 words',
       checkKey: 'length',
-      passed: p.trim().split(/\s+/).filter(Boolean).length > 50,
-      points: 10
-    }
+      passed: wordCount >= 40,
+      points: 5,
+    },
+    {
+      label: 'Highly detailed (≥ 70 words)',
+      checkKey: 'depth',
+      passed: wordCount >= 70,
+      points: 8,
+    },
   ];
 
-  let score = 0;
-  checks.forEach(c => {
-    if (c.passed) score += c.points;
-  });
+  const totalPossible = checks.reduce((sum, c) => sum + c.points, 0);
+  let rawScore = 0;
+  checks.forEach(c => { if (c.passed) rawScore += c.points; });
+  const score = Math.round((rawScore / totalPossible) * 100);
 
   return { score, checks };
 };
