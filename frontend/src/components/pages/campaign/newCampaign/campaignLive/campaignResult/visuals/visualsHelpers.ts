@@ -78,84 +78,84 @@ export const scorePrompt = (prompt: string): { score: number; checks: CheckItem[
     {
       label: 'Subject clearly defined',
       checkKey: 'subject',
-      passed: /\b(person|model|woman|man|product|object|character|figure|brand|logo|item|subject|shot of|photo of|image of)\b/i.test(p),
+      passed: /\b(person|model|woman|man|girl|boy|guy|lady|gentleman|animal|dog|cat|vehicle|car|building|landscape|product|object|character|figure|brand|logo|item|subject|shot of|photo of|image of|portraying|showcasing|displaying|featuring)\b/i.test(p),
       points: 12,
     },
     {
       label: 'Action or pose described',
       checkKey: 'action',
-      passed: /\b(holding|wearing|standing|sitting|looking|running|smiling|walking|posing|facing|carrying|surrounded by)\b/i.test(p),
+      passed: /\b(holding|wearing|standing|sitting|looking|running|smiling|walking|posing|facing|carrying|surrounded by|jumping|dancing|interacting|pointing|talking|speaking|reaching|laying|lying down|leaning|relaxing|working|playing|eating|drinking)\b/i.test(p),
       points: 7,
     },
     // ── TECHNICAL QUALITY ────────────────────────────────────────
     {
       label: 'Camera / lens specified',
       checkKey: 'camera',
-      passed: /\b(\d+mm|shot on|dslr|mirrorless|f\/\d|bokeh|depth of field|telephoto|wide angle|macro lens)\b/i.test(p),
+      passed: /\b(\d+mm|shot on|dslr|mirrorless|f\/\d|bokeh|depth of field|telephoto|wide angle|macro lens|drone|gopro|polaroid|film camera|35mm|medium format|fisheye|zoom|close-up|aperture|iso|shutter speed)\b/i.test(p),
       points: 8,
     },
     {
       label: 'Resolution / detail quality',
       checkKey: 'resolution',
-      passed: /\b(8k|4k|ultra-detailed|ultra detailed|hyper-realistic|photorealistic|high resolution|sharp focus|super detailed)\b/i.test(p),
+      passed: /\b(8k|4k|hd|uhd|1080p|masterpiece|best quality|ultra-detailed|ultra detailed|highly detailed|intricate details|hyper-realistic|photorealistic|high resolution|sharp focus|super detailed|crisp|clear|realistic|lifelike)\b/i.test(p),
       points: 6,
     },
     {
       label: 'Render engine / style tag',
       checkKey: 'render',
-      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration)\b/i.test(p),
+      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration|painting|drawing|sketch|watercolor|oil painting|anime|cartoon|vector|flat design|3d|maya|zbrush|cinema 4d|concept art|matte painting)\b/i.test(p),
       points: 5,
     },
     // ── LIGHTING ─────────────────────────────────────────────────
     {
       label: 'Lighting direction / type',
       checkKey: 'lighting',
-      passed: /\b(light|lighting|lightning|backlit|golden hour|soft box|neon|ambient|shadow|diffused|candlelight|overcast|illuminated|bright|glow)\b/i.test(p),
+      passed: /\b(light|lighting|lightning|sunlight|sunburst|flare|lens flare|bouncing light|volumetric|god rays|darkness|dim|moody lighting|studio lighting|natural lighting|backlit|golden hour|soft box|neon|ambient|shadow|diffused|candlelight|overcast|illuminated|bright|glow)\b/i.test(p),
       points: 10,
     },
     // ── COMPOSITION & FRAMING ─────────────────────────────────────
     {
       label: 'Composition or framing',
       checkKey: 'composition',
-      passed: /\b(close.?up|wide shot|overhead|top.?down|bird.?s.?eye|macro|portrait|full body|half body|low angle|high angle|dutch angle|rule of thirds|centered|side profile)\b/i.test(p),
+      passed: /\b(close.?up|medium shot|long shot|extreme close-up|point of view|pov|symmetrical|asymmetrical|foreground|background focus|depth|panoramic|landscape format|portrait format|wide shot|overhead|top.?down|bird.?s.?eye|macro|portrait|full body|half body|low angle|high angle|dutch angle|rule of thirds|centered|side profile)\b/i.test(p),
       points: 8,
     },
     {
       label: 'Background / setting defined',
       checkKey: 'background',
-      passed: /\b(background|backdrop|setting|environment|scene|interior|exterior|studio|outdoor|urban|forest|minimal|seamless)\b/i.test(p),
+      passed: /\b(background|backdrop|setting|environment|scene|interior|exterior|studio|outdoor|urban|forest|minimal|seamless|street|city|nature|beach|mountains|room|office|cafe|sky|space|water|isolated|white background|black background|transparent|solid color|pattern|texture)\b/i.test(p),
       points: 7,
     },
     // ── STYLE & MOOD ─────────────────────────────────────────────
     {
       label: 'Visual style direction',
       checkKey: 'style',
-      passed: /\b(editorial|cinematic|luxury|bold|minimalist|vintage|retro|futuristic|dark|moody|vibrant|clean|elegant|gritty|high.?fashion|commercial|lifestyle|documentary)\b/i.test(p),
+      passed: /\b(editorial|cinematic|luxury|bold|minimalist|vintage|retro|futuristic|dark|moody|vibrant|clean|elegant|gritty|high.?fashion|commercial|lifestyle|documentary|cyberpunk|steampunk|gothic|bohemian|rustic|modern|abstract|surreal|pop art|classic|traditional|minimalistic|aesthetic|dreamy|ethereal|grunge)\b/i.test(p),
       points: 9,
     },
     {
       label: 'Color palette / tone',
       checkKey: 'color',
-      passed: /\b(color palette|warm tones|cool tones|monochrome|pastel|neon|earth tones|desaturated|vivid|muted|navy|gold|black and white|duotone|gradient)\b/i.test(p),
+      passed: /\b(color palette|warm tones|cool tones|monochrome|pastel|neon|earth tones|desaturated|vivid|muted|navy|gold|black and white|duotone|gradient|colorful|b&w|grayscale|sepia|vibrant colors|primary colors|complementary colors|analogous|high contrast|low contrast|bright colors|dark colors|silver|bronze|copper|metallic)\b/i.test(p),
       points: 7,
     },
     {
       label: 'Emotional tone or mood',
       checkKey: 'emotion',
-      passed: /\b(luxurious|aspirational|energetic|serene|dramatic|empowering|playful|sophisticated|nostalgic|authentic|confident|inspiring|joyful|mysterious|calm|tense)\b/i.test(p),
+      passed: /\b(luxurious|aspirational|energetic|serene|dramatic|empowering|playful|sophisticated|nostalgic|authentic|confident|inspiring|joyful|mysterious|calm|tense|happy|sad|angry|excited|peaceful|romantic|scary|creepy|funny|humorous|serious|professional|casual|inviting|welcoming|intimidating)\b/i.test(p),
       points: 6,
     },
     // ── BRAND & SAFETY ───────────────────────────────────────────
     {
       label: 'Negative / exclusion prompt',
       checkKey: 'negative',
-      passed: /no text|no words|no logo|no watermark|avoid|without text|without logo/i.test(p),
+      passed: /(?:no text|no words|no logo|no watermark|avoid|without text|without logo|do not include|exclude|minus|free from|bare|empty|--no)/i.test(p),
       points: 7,
     },
     {
       label: 'Brand or product mentioned',
       checkKey: 'brand',
-      passed: /\b(brand|logo|product|packaging|label|bottle|box|container|tag|branded)\b/i.test(p),
+      passed: /\b(brand|logo|product|packaging|label|bottle|box|container|tag|branded|merchandise|swag|apparel|shirt|mug|device|phone|laptop|screen|display|billboard|poster|flyer|brochure)\b/i.test(p),
       points: 5,
     },
     // ── DEPTH & LENGTH ───────────────────────────────────────────
