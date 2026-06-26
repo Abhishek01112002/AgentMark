@@ -32,7 +32,7 @@ def load_campaign_input():
     return data
 
 
-def test_complete_campaign_flow():
+def run_complete_campaign_flow():
     print("="*80)
     print("COMPLETE CAMPAIGN FLOW TEST WITH HITL")
     print("="*80)
@@ -384,7 +384,7 @@ if __name__ == "__main__":
     input("\nPress Enter to start...")
     
     try:
-        success = test_complete_campaign_flow()
+        success = run_complete_campaign_flow()
         
         print("\n" + "="*80)
         if success:
