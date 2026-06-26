@@ -12,9 +12,11 @@ Redis Integration:
     so Express can update the PostgreSQL record without a direct HTTP callback.
 """
 
+import os
 import json
 import logging
 import uuid
+import asyncio
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -33,6 +35,17 @@ from typing import Optional
 
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
+
+# ── Concurrency Semaphore ──────────────────────────────────────────────────────
+
+_campaign_semaphore: Optional[asyncio.Semaphore] = None
+
+def get_campaign_semaphore() -> asyncio.Semaphore:
+    global _campaign_semaphore
+    if _campaign_semaphore is None:
+        limit = int(os.getenv("MAX_CONCURRENT_CAMPAIGNS", "4"))
+        _campaign_semaphore = asyncio.Semaphore(limit)
+    return _campaign_semaphore
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -121,6 +134,18 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
     # Retrieve the pre-built workflow from app.state (set at startup via lifespan)
     workflow = request.app.state.workflow
 
+    semaphore = get_campaign_semaphore()
+
+    try:
+        # Wait up to 15 seconds to acquire a concurrency slot
+        await asyncio.wait_for(semaphore.acquire(), timeout=15.0)
+    except asyncio.TimeoutError:
+        logger.warning("Campaign creation request timed out waiting for semaphore slot | id=%s", campaign_id)
+        raise HTTPException(
+            status_code=503,
+            detail="Server is busy generating other campaigns. Please try again in a few minutes."
+        )
+
     try:
         set_llm_config(payload.llm_config)
         # Run blocking LangGraph call in a thread pool — never block the event loop
@@ -135,6 +160,8 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
             error=str(exc),
         )
         raise HTTPException(status_code=500, detail=f"Workflow execution failed: {exc}") from exc
+    finally:
+        semaphore.release()
 
     logger.info(
         "Campaign run finished | id=%s | status=%s | finished=%s",
