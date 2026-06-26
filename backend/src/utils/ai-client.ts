@@ -18,7 +18,7 @@ export interface AIServiceCampaignRequest {
     groq_api_key?: string | null;
     openai_api_key?: string | null;
   };
-  campaign_id?: string;
+  campaign_id: string;
   manager_output?: string | null;
   research_output?: string | null;
   strategy_output?: string | null;

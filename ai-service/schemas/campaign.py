@@ -59,9 +59,9 @@ class CampaignCreateRequest(BaseModel):
         default=None,
         description="Provider API keys sent from the frontend",
     )
-    campaign_id: Optional[str] = Field(
-        default=None,
-        description="PostgreSQL campaign UUID passed from Express. Used as the Redis channel ID for real-time status updates. If omitted, a new UUID is generated.",
+    campaign_id: str = Field(
+        ...,
+        description="PostgreSQL campaign UUID passed from Express. Used as the Redis channel ID for real-time status updates.",
     )
     manager_output: Optional[str] = Field(default=None)
     research_output: Optional[str] = Field(default=None)

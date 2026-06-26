@@ -80,11 +80,8 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
       - Express passes that UUID as `campaign_id` in this request.
       - We store it in CampaignState so every graph node can publish to the
         correct Redis channel without needing to know the channel name.
-      - If campaign_id is not provided (e.g. direct Swagger calls), we generate
-        a local UUID so the response is still valid.
     """
-    # Use the Express-provided DB campaign_id if available, otherwise generate.
-    campaign_id = payload.campaign_id or str(uuid.uuid4())
+    campaign_id = payload.campaign_id
 
     logger.info(
         "Campaign run started | id=%s | brand=%s | goal=%s | industry=%s",
