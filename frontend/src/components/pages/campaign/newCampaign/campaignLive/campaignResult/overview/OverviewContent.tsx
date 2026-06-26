@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Users, Megaphone, Package, Briefcase, AlertTriangle, Globe } from 'lucide-react';
+import { Compass, Target, Users, Fingerprint, Network, Package, AlertTriangle, Globe } from 'lucide-react';
 
 interface OverviewContentProps {
   data?: any;
@@ -64,7 +64,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
-                <Target size={24} />
+                <Compass size={24} />
               </div>
               <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
                 Campaign Overview
@@ -95,7 +95,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-            <Megaphone size={20} className="text-[#6366F1]" />
+            <Fingerprint size={20} className="text-[#6366F1]" />
             Campaign Identity
           </h3>
           <div className="space-y-4">
@@ -151,7 +151,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       {channelCards.length > 0 && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-            <Briefcase size={20} className="text-[#6366F1]" />
+            <Network size={20} className="text-[#6366F1]" />
             Recommended Distribution Channels
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

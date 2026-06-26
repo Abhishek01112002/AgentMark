@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Users, Target, AlertTriangle } from 'lucide-react';
+import { Search, TrendingUp, ArrowUpRight, Compass, Users, Sparkles, Rocket, Workflow, AlertTriangle } from 'lucide-react';
 
 interface ResearchContentProps {
   data?: any;
@@ -29,7 +29,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
-              <Target size={24} />
+              <Search size={24} />
             </div>
             <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
               Research - AgentMark
@@ -83,7 +83,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               { title: 'Hyper-Personalization', desc: 'Dynamic content generation based on real-time user behavior.' },
             ]).slice(0, 5).map((trend: any, idx: number) => (
               <li key={idx} className="flex items-start gap-3">
-                <TrendingUp size={18} className="text-[#6366F1] mt-0.5 flex-shrink-0" />
+                <ArrowUpRight size={18} className="text-[#6366F1] mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                   <h4 className="text-sm font-medium mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
                     {trend.title || trend.name || trend}
@@ -102,7 +102,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         {/* Competitor Analysis */}
         <div className="rounded-xl p-5 md:p-6 fade-in transition-all" style={{ animationDelay: '0.2s', background: '#111118', border: '1px solid #2A2A38' }}>
           <h3 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-            <Target size={20} className="text-[#6366F1]" />
+            <Compass size={20} className="text-[#6366F1]" />
             Competitor Analysis
           </h3>
           <div className="space-y-4">
@@ -121,7 +121,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             {differentiationOpp && (
               <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
                 <h4 className="text-sm font-medium mb-2 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-                  <Target size={16} className="text-[#4edea3]" />
+                  <Sparkles size={16} className="text-[#4edea3]" />
                   Differentiation Opportunity
                 </h4>
                 <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
@@ -199,7 +199,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         {marketOpportunities.length > 0 && (
           <div className="rounded-xl p-5 md:p-6 lg:col-span-2 fade-in transition-all" style={{ animationDelay: '0.4s', background: '#111118', border: '1px solid #2A2A38' }}>
             <h3 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-              <TrendingUp size={20} className="text-[#6366F1]" />
+              <Rocket size={20} className="text-[#6366F1]" />
               Market Opportunities
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -217,7 +217,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         {recommendedApproach && (
           <div className="rounded-xl p-5 md:p-6 lg:col-span-2 fade-in transition-all" style={{ animationDelay: '0.5s', background: '#111118', border: '1px solid #2A2A38' }}>
             <h3 className="text-lg md:text-xl mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-              <Target size={20} className="text-[#6366F1]" />
+              <Workflow size={20} className="text-[#6366F1]" />
               Recommended Strategic Approach
             </h3>
             <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">

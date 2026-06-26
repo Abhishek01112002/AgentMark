@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Share2, Copy, Check, Hash, FileText, Linkedin, Instagram, Facebook, Twitter, Music, Youtube, Mail, Target } from 'lucide-react';
+import { PenTool, Link, BookOpen, Copy, Check, Linkedin, Instagram, Facebook, Twitter, Music, Youtube, Mail, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface CopywriterContentProps {
@@ -150,7 +150,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#6366F1] to-transparent opacity-50" />
             <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
               <div className="flex items-center gap-3">
-                <Share2 size={20} className="text-[#6366F1]" />
+                <PenTool size={20} className="text-[#6366F1]" />
                 <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{tabs.find(t => t.id === activeTab)?.label || 'Copy'}</h3>
               </div>
               <button
@@ -211,7 +211,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           {strategicAlignment.positioning_used && (
             <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
               <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                <Hash size={20} className="text-[#6366F1]" />
+                <Link size={20} className="text-[#6366F1]" />
                 Strategic Alignment
               </h4>
               <div className="space-y-3">
@@ -246,7 +246,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           {messagingFramework.brand_promise && (
             <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
               <h4 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                <FileText size={20} className="text-[#6366F1]" />
+                <BookOpen size={20} className="text-[#6366F1]" />
                 Messaging Framework
               </h4>
               <div className="space-y-4">

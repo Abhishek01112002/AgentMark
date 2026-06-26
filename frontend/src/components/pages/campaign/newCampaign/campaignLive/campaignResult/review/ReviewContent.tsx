@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, TrendingUp, AlertCircle, RotateCw, Send, Target, Shield, BarChart3, Sparkles } from 'lucide-react';
+import { CheckCircle, AlertCircle, RotateCw, Send, Shield, Sparkles, ListTodo, Award, Activity } from 'lucide-react';
 
 interface ReviewContentProps {
   data?: any;
@@ -122,7 +122,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                   <ul className="space-y-1">
                     {strategyReview.action_items.slice(0, 2).map((item: string, idx: number) => (
                       <li key={idx} className="text-xs flex items-start gap-1" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>
-                        <Target size={12} className="mt-0.5 flex-shrink-0" />
+                        <ListTodo size={12} className="mt-0.5 flex-shrink-0" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -184,7 +184,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
 
         <div className="col-span-1 md:col-span-8 bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6 relative">
           <h3 className="text-lg md:text-xl font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-            <BarChart3 size={20} className="text-[#6366F1]" />Overall Summary
+            <Activity size={20} className="text-[#6366F1]" />Overall Summary
           </h3>
           {overall.summary && (
             <p className="text-sm mb-6 pb-6 border-b border-[#2A2A38]" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
@@ -207,7 +207,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
         <div className="col-span-1 md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
             <div className="flex items-center gap-2 mb-6 border-b border-[#2A2A38] pb-4">
-              <span className="w-8 h-8 rounded-md bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3]"><TrendingUp size={18} /></span>
+              <span className="w-8 h-8 rounded-md bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3]"><Award size={18} /></span>
               <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Core Strengths</h3>
             </div>
             <ul className="space-y-4">

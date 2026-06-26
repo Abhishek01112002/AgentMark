@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Lightbulb, Calendar, PlayCircle, FileDown, Briefcase, Target, AlertTriangle } from 'lucide-react';
+import { Compass, Briefcase, Columns, Calendar, MessageSquare, KeyRound, Users, BarChart3, Award, DollarSign, Share2, PlayCircle, FileDown, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface StrategyContentProps {
@@ -527,7 +527,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         {positioning && (
           <div className="pdf-positioning bg-gradient-to-r from-[#6366F1]/10 to-transparent border-l-4 border-[#6366F1] rounded-xl p-6 mb-6">
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-              <Target size={16} />Positioning Statement
+              <Compass size={16} />Positioning Statement
             </h3>
             <p className="text-lg leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
               {positioning}
@@ -549,7 +549,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             <div className="pdf-section rounded-xl p-5 md:p-6 relative overflow-hidden group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6366F1] to-transparent opacity-50 pdf-no-print" />
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                <Lightbulb size={20} className="text-[#6366F1] pdf-no-print" />Core Messaging Framework
+                <MessageSquare size={20} className="text-[#6366F1] pdf-no-print" />Core Messaging Framework
               </h2>
               <div className="pl-6 border-l-2 border-[#6366F1] py-2 mb-6 relative">
                 <span className="absolute -left-3 top-0 w-6 h-6 bg-[#111118] rounded-full flex items-center justify-center text-[#6366F1] pdf-no-print">"</span>
@@ -572,7 +572,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             {contentPillars.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                  <Target size={20} className="text-[#6366F1] pdf-no-print" />Content Pillars
+                  <Columns size={20} className="text-[#6366F1] pdf-no-print" />Content Pillars
                 </h2>
                 <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {contentPillars.map((pillar: string, idx: number) => (
@@ -587,7 +587,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             {keyMessages.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                  <Lightbulb size={20} className="text-[#6366F1] pdf-no-print" />Key Messages
+                  <KeyRound size={20} className="text-[#6366F1] pdf-no-print" />Key Messages
                 </h2>
                 <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {keyMessages.map((msg: string, idx: number) => (
@@ -607,7 +607,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             {audienceSegments.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                  <Target size={20} className="text-[#6366F1] pdf-no-print" />Audience Segments
+                  <Users size={20} className="text-[#6366F1] pdf-no-print" />Audience Segments
                 </h2>
                 <div className="space-y-4">
                 {audienceSegments.map((segment: any, idx: number) => (
@@ -668,7 +668,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           {successMetrics.kpis && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                <Target size={20} className="text-[#6366F1] pdf-no-print" />Success Metrics & KPIs
+                <BarChart3 size={20} className="text-[#6366F1] pdf-no-print" />Success Metrics & KPIs
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {successMetrics.kpis.map((kpi: string, idx: number) => (
@@ -686,7 +686,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           {competitiveDiff.unique_value_proposition && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                <Target size={20} className="text-[#6366F1] pdf-no-print" />Competitive Differentiation
+                <Award size={20} className="text-[#6366F1] pdf-no-print" />Competitive Differentiation
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
@@ -720,7 +720,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           {Object.keys(budgetAllocation).length > 0 && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                <Briefcase size={20} className="text-[#6366F1] pdf-no-print" />Budget Allocation
+                <DollarSign size={20} className="text-[#6366F1] pdf-no-print" />Budget Allocation
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(budgetAllocation).map(([key, value]: [string, any], idx: number) => (
@@ -736,7 +736,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           {Object.keys(channelStrategy).length > 0 && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-                <Target size={20} className="text-[#6366F1] pdf-no-print" />Channel Strategy
+                <Share2 size={20} className="text-[#6366F1] pdf-no-print" />Channel Strategy
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {Object.entries(channelStrategy).map(([channel, plan]: [string, any], idx: number) => (

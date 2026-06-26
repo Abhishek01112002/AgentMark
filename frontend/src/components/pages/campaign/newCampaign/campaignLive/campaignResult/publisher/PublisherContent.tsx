@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Calendar, Copy, Check, Code, Package, ShieldCheck, FileDown } from 'lucide-react';
+import { Download, Calendar, Copy, Check, Code, Package, ShieldCheck, FileDown, ThumbsUp, FileText, LineChart, Map, CalendarDays, ListTodo, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface PublisherContentProps {
@@ -514,7 +514,8 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Publishing Decision */}
       {publishingDecision && (
         <div className={`rounded-xl p-6 border ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : publishingDecision === 'HOLD' ? 'bg-[#F43F5E]/10 border-[#F43F5E]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
-          <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: publishingDecision === 'APPROVED_FOR_PUBLISHING' ? '#4edea3' : publishingDecision === 'HOLD' ? '#F43F5E' : '#F59E0B' }}>
+          <h3 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: publishingDecision === 'APPROVED_FOR_PUBLISHING' ? '#4edea3' : publishingDecision === 'HOLD' ? '#F43F5E' : '#F59E0B' }}>
+            <ThumbsUp size={20} />
             {publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'Approved for Publishing' : publishingDecision === 'HOLD' ? 'Hold' : 'Revisions Needed'}
           </h3>
           {decisionRationale && (
@@ -526,7 +527,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Executive Summary */}
       {executiveSummary && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Executive Summary</h3>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <FileText size={20} className="text-[#6366F1]" />
+            Executive Summary
+          </h3>
           <p className="text-base leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{executiveSummary}</p>
         </div>
       )}
@@ -534,7 +538,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Projected Metrics */}
       {projectedMetrics.total_reach && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-6" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Projected Metrics</h3>
+          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <LineChart size={20} className="text-[#6366F1]" />
+            Projected Metrics
+          </h3>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {projectedMetrics.total_reach && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Total Reach</span><p className="text-2xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>{projectedMetrics.total_reach}</p></div>)}
             {projectedMetrics.lead_target && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Lead Target</span><p className="text-2xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#4edea3' }}>{projectedMetrics.lead_target}</p></div>)}
@@ -553,7 +560,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Publishing Plan */}
       {publishingPlan.length > 0 && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-6" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Publishing Plan</h3>
+          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <Map size={20} className="text-[#6366F1]" />
+            Publishing Plan
+          </h3>
           <div className="space-y-4">
             {publishingPlan.map((plan: any, idx: number) => (
               <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
@@ -593,7 +603,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {contentCalendar.weeks && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Content Calendar</h3>
+            <h3 className="text-lg font-semibold flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              <CalendarDays size={20} className="text-[#6366F1]" />
+              Content Calendar
+            </h3>
             <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{contentCalendar.total_weeks} Weeks | {contentCalendar.start_date} - {contentCalendar.end_date || 'Ongoing'}</span>
           </div>
           <div className="space-y-4">
@@ -623,7 +636,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Asset Checklist */}
       {(assetChecklist.copy_assets || assetChecklist.visual_assets) && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-6" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Asset Checklist</h3>
+          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <ListTodo size={20} className="text-[#6366F1]" />
+            Asset Checklist
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {assetChecklist.copy_assets && (
               <div>
@@ -691,7 +707,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       {/* Generated Placements Grid */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Generated Placements</h2>
+          <h2 className="text-lg md:text-xl font-semibold flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <LayoutGrid size={20} className="text-[#6366F1]" />
+            Generated Placements
+          </h2>
           <span className="bg-[#111118] border border-[#2A2A38] px-3 py-1 rounded-full text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{displayAssets.length} Assets</span>
         </div>
         {displayAssets.length === 0 ? (
