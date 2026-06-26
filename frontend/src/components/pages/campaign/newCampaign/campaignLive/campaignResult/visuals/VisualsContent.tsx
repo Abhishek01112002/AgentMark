@@ -250,7 +250,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             const headlineText = card.text_overlay?.headline || '';
             const promptText =
               enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : card.prompt || '';
-            const { score } = scorePrompt(promptText);
+            const { score, checks } = scorePrompt(promptText);
             const readiness = checkPlatformReadiness(promptText);
             const originalScore = scorePrompt(card.prompt || '').score;
             const scoreDiff = score - originalScore;
@@ -370,7 +370,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   {/* RIGHT – Prompt + tools */}
                   <div className="flex flex-col gap-6">
 
-                    {/* Quality score — compact inline */}
+                    {/* Quality score — compact inline with hover tooltip */}
                     <div className="flex items-center gap-3 bg-[#0A0A0F] border border-[#2A2A38] rounded-xl px-4 py-3">
                       <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider shrink-0">
                         Quality
@@ -384,12 +384,35 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                           }}
                         />
                       </div>
-                      <span
-                        className="text-sm font-bold font-mono shrink-0"
-                        style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
-                      >
-                        {score}<span className="text-[10px] text-[#8B8B9E] font-normal">/100</span>
-                      </span>
+                      {/* Score number with checklist tooltip on hover */}
+                      <div className="relative group/score shrink-0">
+                        <span
+                          className="text-sm font-bold font-mono cursor-default underline decoration-dotted decoration-[#8B8B9E]/40 underline-offset-2"
+                          style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
+                        >
+                          {score}<span className="text-[10px] text-[#8B8B9E] font-normal">/100</span>
+                        </span>
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full right-0 mb-2.5 w-56 bg-[#111118] border border-[#2A2A38] rounded-xl shadow-2xl shadow-black/60 z-40 hidden group-hover/score:block">
+                          <div className="px-4 py-3 border-b border-[#2A2A38]/60">
+                            <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E]">Prompt Checks</p>
+                          </div>
+                          <ul className="px-4 py-3 space-y-2">
+                            {checks.map((item: { label: string; passed: boolean }, i: number) => (
+                              <li key={i} className="flex items-center gap-2.5">
+                                {item.passed ? (
+                                  <CheckCircle2 size={12} className="text-[#10B981] shrink-0" />
+                                ) : (
+                                  <AlertCircle size={12} className="text-[#F59E0B] shrink-0" />
+                                )}
+                                <span className={`text-xs ${item.passed ? 'text-[#10B981]' : 'text-[#F59E0B]'}`}>
+                                  {item.label}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
                     </div>
 
                     {/* AI Readiness pills */}
