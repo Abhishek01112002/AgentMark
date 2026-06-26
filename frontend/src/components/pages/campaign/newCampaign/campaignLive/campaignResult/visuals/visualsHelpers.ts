@@ -110,7 +110,7 @@ export const scorePrompt = (prompt: string): { score: number; checks: CheckItem[
     {
       label: 'Lighting direction / type',
       checkKey: 'lighting',
-      passed: /\b(rim light|backlit|golden hour|soft box|natural light|studio light|neon|ambient|harsh shadow|diffused|candlelight|overcast|hard light|fill light)\b/i.test(p),
+      passed: /\b(light|lighting|lightning|backlit|golden hour|soft box|neon|ambient|shadow|diffused|candlelight|overcast|illuminated|bright|glow)\b/i.test(p),
       points: 10,
     },
     // ── COMPOSITION & FRAMING ─────────────────────────────────────
