@@ -49,6 +49,27 @@ class PromiseQueue {
 
 const dbWriteQueue = new PromiseQueue();
 
+// ── Sliding Window Event Deduplication Cache ──────────────────────────────────
+
+const processedEvents = new Set<string>();
+const MAX_PROCESSED_EVENTS = 1000;
+
+function isDuplicateEvent(campaignId: string, agent: string, status: string, timestamp: string): boolean {
+  if (!timestamp) return false; // Fail-safe: if no timestamp, process it anyway
+  const key = `${campaignId}:${agent}:${status}:${timestamp}`;
+  if (processedEvents.has(key)) {
+    return true;
+  }
+  processedEvents.add(key);
+  if (processedEvents.size > MAX_PROCESSED_EVENTS) {
+    const firstKey = processedEvents.values().next().value;
+    if (firstKey) {
+      processedEvents.delete(firstKey);
+    }
+  }
+  return false;
+}
+
 // ── Redis subscriber client ───────────────────────────────────────────────────
 
 const subscriber = new Redis({
@@ -107,9 +128,14 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         return;
       }
 
-      const { campaign_id, status, outputs } = data;
+      const { campaign_id, status, outputs, timestamp, agent } = data;
       if (!campaign_id) {
         console.error('[Redis Subscriber] Missing campaign_id in message:', message);
+        return;
+      }
+
+      if (isDuplicateEvent(campaign_id, agent, status, timestamp)) {
+        console.log(`[Redis Subscriber] Discarding duplicate event: ${campaign_id}:${agent}:${status}:${timestamp}`);
         return;
       }
 
