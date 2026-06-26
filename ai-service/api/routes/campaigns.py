@@ -39,7 +39,7 @@ router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
 def _run_workflow(workflow, state: CampaignState) -> CampaignState:
     """Invoke LangGraph workflow synchronously (called via threadpool)."""
-    result = workflow.invoke(state, config={"recursion_limit": 30})
+    result = workflow.invoke(state, config={"recursion_limit": 60})
     if isinstance(result, dict):
         return CampaignState(**result)
     return result

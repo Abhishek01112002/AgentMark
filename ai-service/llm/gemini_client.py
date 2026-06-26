@@ -59,6 +59,7 @@ class GeminiClient(BaseLLMClient):
         
         self.model = genai.GenerativeModel(model)
         self.model._client = client_manager.get_default_client("generative")
+        self.model._async_client = client_manager.get_default_client("generative_async")
     
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         """Generate text using Gemini API with retry logic for rate limits"""
