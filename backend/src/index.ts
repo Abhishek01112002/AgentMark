@@ -169,3 +169,15 @@ const gracefulShutdown = async (signal: string) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// ── Global Process Safety Nets ────────────────────────────────────────────────
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason?.stack || reason);
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('💥 Uncaught Exception:', error.stack || error.message);
+  // In case of uncaught exception, try to exit gracefully
+  void gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
