@@ -12,6 +12,7 @@ CAMPAIGN METADATA:
 - Industry: {industry}
 - Target Audience: {target_audience}
 - Campaign Brief: {brief}
+{human_feedback_section}
 
 STRATEGIC FOUNDATION:
 - Positioning Statement: {positioning}

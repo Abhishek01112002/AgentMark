@@ -120,6 +120,18 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
     
+    # Format human revision feedback if research is targeted for revision
+    human_feedback_section = ""
+    if state.human_feedback and state.human_revision_target == "research":
+        human_feedback_section = (
+            "\n" + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK:\n"
+            "The user has requested a revision of your research with the following feedback and instructions.\n"
+            "You MUST strictly adjust your research analysis to address this feedback:\n"
+            f"\"{state.human_feedback}\"\n"
+            + "="*80 + "\n"
+        )
+
     # Load research prompt and format with campaign data
     prompt = load_prompt(
         "research",
@@ -131,7 +143,8 @@ def research_agent(state: CampaignState) -> CampaignState:
         brand_voice=brand_voice,
         brief=brief,
         channels=', '.join(channels),
-        deliverables=', '.join(deliverables)
+        deliverables=', '.join(deliverables),
+        human_feedback_section=human_feedback_section
     )
     
     print("   Querying LLM with structured output...")

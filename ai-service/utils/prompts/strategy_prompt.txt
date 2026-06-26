@@ -13,6 +13,7 @@ CAMPAIGN CONTEXT:
 MANAGER'S EXECUTION PLAN:
 - Channels: {channels}
 - Deliverables: {deliverables}
+{human_feedback_section}
 
 ⚠️ STRICT CHANNEL CONSTRAINT:
 You MUST only plan strategy for the channels listed above. Do NOT add, suggest, or default to any other channels (e.g., do NOT include LinkedIn just because it's a common B2B channel unless it is in the list above). All channel_strategy entries must use ONLY the channels from the Manager's list. If LinkedIn is not in {channels}, do not include it. This constraint is absolute and non-negotiable.

@@ -187,6 +187,18 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     }
     voice_keywords = voice_keywords_map.get(brand_voice, "clear, compelling, direct")
 
+    # Format human revision feedback if copywriter is targeted for revision
+    human_feedback_section = ""
+    if state.human_feedback and state.human_revision_target == "copywriter":
+        human_feedback_section = (
+            "\n" + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK:\n"
+            "The user has requested a revision of your copy with the following feedback and instructions.\n"
+            "You MUST strictly modify and adjust your copywriting to address this feedback:\n"
+            f"\"{state.human_feedback}\"\n"
+            + "="*80 + "\n"
+        )
+
     # Load copywriter prompt and format with all campaign data
     prompt = load_prompt(
         "copywriter",
@@ -195,6 +207,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         brand_name=brand_name,
         brand_voice=brand_voice,
         brief=brief,
+        human_feedback_section=human_feedback_section,
         # Strategy fields
         positioning=positioning,
         inferred_goal=inferred_goal,

@@ -331,6 +331,18 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         if overlay_lines:
             copy_overlay_context = "\n".join(overlay_lines)
 
+    # Format human revision feedback if image_prompt is targeted for revision
+    human_feedback_section = ""
+    if state.human_feedback and state.human_revision_target == "image_prompt":
+        human_feedback_section = (
+            "\n" + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK:\n"
+            "The user has requested a revision of your visual prompts with the following feedback and instructions.\n"
+            "You MUST strictly modify your visual style and DALL-E prompts to address this feedback:\n"
+            f"\"{state.human_feedback}\"\n"
+            + "="*80 + "\n"
+        )
+
     # Load image prompt template and format with all campaign data
     prompt = load_prompt(
         "image",
@@ -341,6 +353,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         industry=industry,
         target_audience=target_audience,
         brief=brief,
+        human_feedback_section=human_feedback_section,
         # Strategy fields
         positioning=positioning,
         inferred_goal=inferred_goal,

@@ -10,6 +10,7 @@ CAMPAIGN METADATA:
 - Brand Name: {brand_name}
 - Brand Voice: {brand_voice}
 - Campaign Brief: {brief}
+{human_feedback_section}
 
 STRATEGIC FOUNDATION:
 - Positioning Statement: {positioning}

@@ -114,7 +114,6 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         # Priority 1: Research needs revision (affects everything downstream)
         if not research_approved or research_score < MIN_AGENT_SCORE:
             if research_revisions < MAX_REVISIONS:
-                state.human_revision_target = "research"  # Set target so agent knows to clear output
                 print(f"\n🔄 Routing to RESEARCH for revision (will be attempt {research_revisions + 1}/{MAX_REVISIONS})")
                 print(f"   Score: {research_score}/100")
                 print(f"   Issues: {research_review.get('issues', [])}")
@@ -126,7 +125,6 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         # Priority 2: Strategy needs revision (affects copy and image)
         if not strategy_approved or strategy_score < MIN_AGENT_SCORE:
             if strategy_revisions < MAX_REVISIONS:
-                state.human_revision_target = "strategy"  # Set target so agent knows to clear output
                 print(f"\n🔄 Routing to STRATEGY for revision (will be attempt {strategy_revisions + 1}/{MAX_REVISIONS})")
                 print(f"   Score: {strategy_score}/100")
                 print(f"   Issues: {strategy_review.get('issues', [])}")
@@ -138,7 +136,6 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         # Priority 3: Copy needs revision
         if not copy_approved or copy_score < MIN_AGENT_SCORE:
             if copy_revisions < MAX_REVISIONS:
-                state.human_revision_target = "copywriter"  # Set target so agent knows to clear output
                 print(f"\n🔄 Routing to COPYWRITER for revision (will be attempt {copy_revisions + 1}/{MAX_REVISIONS})")
                 print(f"   Score: {copy_score}/100")
                 print(f"   Issues: {copy_review.get('issues', [])}")
@@ -150,7 +147,6 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         # Priority 4: Image needs revision
         if not image_approved or image_score < MIN_AGENT_SCORE:
             if image_revisions < MAX_REVISIONS:
-                state.human_revision_target = "image_prompt"  # Set target so agent knows to clear output
                 print(f"\n🔄 Routing to IMAGE PROMPT for revision (will be attempt {image_revisions + 1}/{MAX_REVISIONS})")
                 print(f"   Score: {image_score}/100")
                 print(f"   Issues: {image_review.get('issues', [])}")
@@ -190,7 +186,7 @@ def route_after_human_approval(state: CampaignState) -> str:
     if state.awaiting_human_approval:
         print("⏸️  Awaiting human approval - workflow will END here")
         print("   After human approves, call workflow.invoke(state) again")
-        return "publish"
+        return "end"
     
     # Check human decision
     human_status = state.human_approval_status

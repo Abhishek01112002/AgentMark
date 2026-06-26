@@ -64,15 +64,14 @@ def human_approval_node(state: CampaignState) -> CampaignState:
         print(f"✓ Campaign already approved by human")
         return state
     
-    # RESET revision counts when entering human approval (first time or after human rejection)
-    # This ensures AI auto-revisions don't block human revisions
-    # Humans get fresh 0/3 for each HITL cycle
-    if state.human_approval_status != "approved" or state.human_revision_target:
+    # RESET revision counts when entering human approval for the FIRST time (after AI auto-revisions)
+    # This ensures AI auto-revisions don't block human revisions, while preserving human revision counts.
+    if state.human_approval_status is None:
         state.research_revision_count = 0
         state.strategy_revision_count = 0
         state.copy_revision_count = 0
         state.image_revision_count = 0
-        print("🔄 Reset revision counts for human approval cycle (0/3 each)")
+        print("🔄 Reset AI auto-revision counts for first human review (0/3 each)")
         state.human_revision_target = None  # Clear any previous target
         state.human_approval_status = "pending"
     

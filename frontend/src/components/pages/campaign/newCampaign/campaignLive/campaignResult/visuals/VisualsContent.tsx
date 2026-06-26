@@ -65,6 +65,11 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const getCardId = (card: any, idx: number) =>
     `${card.deliverable_name || card.deliverable || 'asset'}_${idx}`;
 
+  const getPromptPlatformKey = (p: any): string => {
+    const key = detectPlatform(p.deliverable_name || p.deliverable || '');
+    return PLATFORM_CONFIG[key] ? key : 'general';
+  };
+
   const handleToggleUsed = (id: string) => setUsedPrompts(toggleUsedPrompt(id));
 
   const handleCopyPrompt = async (promptText: string, idKey: string) => {
@@ -132,8 +137,8 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       .map((card, idx) => {
         const cardId = getCardId(card, idx);
         const text = enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : (card.prompt || '');
-        const platformKey = detectPlatform(card.deliverable_name || card.deliverable || '');
-        const platformLabel = PLATFORM_CONFIG[platformKey]?.label || 'General';
+        const platformKey = getPromptPlatformKey(card);
+        const platformLabel = PLATFORM_CONFIG[platformKey].label;
         return `=== ${platformLabel} ===\n${text}`;
       })
       .join('\n\n');
@@ -146,18 +151,27 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   };
 
   const detectedPlatforms = Array.from(
-    new Set(promptsList.map((p: any) => detectPlatform(p.deliverable_name || p.deliverable || '')))
+    new Set(promptsList.map((p: any) => getPromptPlatformKey(p)))
   ).filter(Boolean) as string[];
 
   const uniquePlatformsCount = detectedPlatforms.length;
   const activeTabs = ['all', ...detectedPlatforms];
 
-  const displayPrompts =
+  const displayPrompts = (
     activeTab === 'all'
-      ? promptsList
-      : promptsList.filter(
-          (p: any) => detectPlatform(p.deliverable_name || p.deliverable || '') === activeTab
-        );
+      ? promptsList.map((card, idx) => ({ card, originalIdx: idx }))
+      : promptsList
+          .map((card, idx) => ({ card, originalIdx: idx }))
+          .filter(({ card }) => getPromptPlatformKey(card) === activeTab)
+  )
+    .map(item => {
+      const cardId = getCardId(item.card, item.originalIdx);
+      const promptText =
+        enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : item.card.prompt || '';
+      const { score } = scorePrompt(promptText);
+      return { ...item, score };
+    })
+    .sort((a, b) => b.score - a.score);
 
   return (
     <div className="space-y-8" style={inter}>
@@ -206,9 +220,11 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
               tab === 'all'
                 ? promptsList.length
                 : promptsList.filter(
-                    (p: any) => detectPlatform(p.deliverable_name || p.deliverable || '') === tab
+                    (p: any) => getPromptPlatformKey(p) === tab
                   ).length;
-            const config = PLATFORM_CONFIG[tab] || PLATFORM_CONFIG.general;
+            const config = tab === 'all'
+              ? { accent: '#6366F1', label: 'All Platforms', bgAccent: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }
+              : PLATFORM_CONFIG[tab];
             const isActive = activeTab === tab;
             return (
               <button
@@ -235,17 +251,16 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       {/* ── PROMPT CARDS ──────────────────────────────────────────────────── */}
       {promptsList.length > 0 ? (
         <div className="space-y-8">
-          {displayPrompts.map((card: any, idx: number) => {
-            const cardId = getCardId(card, idx);
+          {displayPrompts.map(({ card, originalIdx }) => {
+            const cardId = getCardId(card, originalIdx);
             const isUsed = usedPrompts.includes(cardId);
             const isCopied = copiedCardId === cardId;
             const isAccordionOpen = expandedRationale.includes(cardId);
             const isEnhancerOpen = enhancerOpen.includes(cardId);
 
-            const platformName = card.deliverable_name || card.deliverable || '';
-            const platformKey = detectPlatform(platformName);
+            const platformKey = getPromptPlatformKey(card);
             const { accent: brandAccent, bgAccent, borderColor, label } =
-              PLATFORM_CONFIG[platformKey] || PLATFORM_CONFIG.general;
+              PLATFORM_CONFIG[platformKey];
 
             const ratio = card.aspect_ratio || '1:1';
             const headlineText = card.text_overlay?.headline || '';
@@ -371,7 +386,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   {/* RIGHT – Prompt + tools */}
                   <div className="flex flex-col gap-6">
 
-                    {/* Quality score — compact bar + click-to-expand checks panel */}
+                    {/* Prompt Strength score — compact bar + click-to-expand checks panel */}
                     <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl overflow-hidden">
                       {/* Top row: label + bar + score + toggle */}
                       <button
@@ -380,11 +395,16 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                             prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
                           )
                         }
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#111118] transition-colors"
+                        className="w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-[#111118] transition-colors"
                       >
-                        <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider shrink-0">
-                          Quality
-                        </span>
+                        <div className="flex flex-col shrink-0">
+                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
+                            Prompt Strength
+                          </span>
+                          <span className="text-[9px] text-[#4A4A5E]">
+                            Technical keywords check
+                          </span>
+                        </div>
                         <div className="flex-1 h-1.5 rounded-full bg-[#1A1A24] overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-700"
@@ -407,27 +427,54 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
 
                       {/* Expanded checks panel */}
                       {scoreOpen.includes(cardId) && (
-                        <div className="border-t border-[#2A2A38]/60 px-4 pt-4 pb-5">
-                          <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-3">
-                            Prompt Analysis — {checks.filter((c: { passed: boolean }) => c.passed).length}/{checks.length} passed
+                        <div className="border-t border-[#2A2A38]/60 px-4 pt-4 pb-5 bg-[#0e0e13]/50">
+                          <p className="text-[10px] text-[#8B8B9E] leading-relaxed mb-3">
+                            ℹ️ This score checks the presence of optimal prompt engineering parameters (like lighting details, lens specifications, exclusion keywords, and composition frames) necessary for high-fidelity rendering on AI models.
+                          </p>
+                          <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-3 border-t border-[#2A2A38]/40 pt-3">
+                            Parameters Breakdown — {checks.filter((c: { passed: boolean }) => c.passed).length}/{checks.length} passed
                           </p>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
-                            {checks.map((item: { label: string; passed: boolean }, i: number) => (
-                              <div key={i} className="flex items-center gap-2.5">
-                                {item.passed ? (
-                                  <CheckCircle2 size={13} className="text-[#10B981] shrink-0" />
-                                ) : (
-                                  <AlertCircle size={13} className="text-[#F59E0B] shrink-0" />
-                                )}
-                                <span
-                                  className={`text-xs font-medium ${
-                                    item.passed ? 'text-[#A7F3D0]' : 'text-[#FCD34D]'
-                                  }`}
-                                >
-                                  {item.label}
-                                </span>
-                              </div>
-                            ))}
+                            {checks.map((item: any, i: number) => {
+                              const categoryMap: Record<string, string> = {
+                                subject: 'Subject',
+                                action: 'Subject',
+                                camera: 'Camera',
+                                resolution: 'Camera',
+                                render: 'Engine',
+                                lighting: 'Lighting',
+                                composition: 'Framing',
+                                background: 'Setting',
+                                style: 'Style',
+                                color: 'Palette',
+                                emotion: 'Mood',
+                                negative: 'Negative',
+                                brand: 'Brand',
+                                length: 'Depth',
+                                depth: 'Depth',
+                              };
+                              const category = categoryMap[item.checkKey] || 'General';
+
+                              return (
+                                <div key={i} className="flex items-center gap-2.5">
+                                  {item.passed ? (
+                                    <CheckCircle2 size={13} className="text-[#10B981] shrink-0" />
+                                  ) : (
+                                    <AlertCircle size={13} className="text-[#F59E0B] shrink-0" />
+                                  )}
+                                  <span
+                                    className={`text-xs font-medium ${
+                                      item.passed ? 'text-[#A7F3D0]' : 'text-[#FCD34D]'
+                                    }`}
+                                  >
+                                    <span className="opacity-45 text-[9px] uppercase font-mono mr-1.5 border border-current px-1 rounded-sm">
+                                      {category}
+                                    </span>
+                                    {item.label}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

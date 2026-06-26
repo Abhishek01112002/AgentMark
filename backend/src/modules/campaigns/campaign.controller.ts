@@ -300,6 +300,8 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
         });
       }
       currentOutputs.active_agent = revisionTarget;
+    } else if (action === 'approve') {
+      currentOutputs.active_agent = 'publisher';
     }
 
     // Update campaign status and HITL fields in database

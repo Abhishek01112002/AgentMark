@@ -34,6 +34,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
 
   useEffect(() => {
     void loadNotifications();
+
+    const handleUpdate = () => {
+      void loadNotifications();
+    };
+
+    window.addEventListener('notifications-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('notifications-updated', handleUpdate);
+    };
   }, []);
 
   const handleNotificationClick = async (id: string) => {

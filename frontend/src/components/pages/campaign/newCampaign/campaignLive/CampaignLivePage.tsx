@@ -53,6 +53,10 @@ interface AgentUpdatePayload {
   status: string;
   error?: string | null;
   timestamp: string;
+  research_revision_count?: number;
+  strategy_revision_count?: number;
+  copy_revision_count?: number;
+  image_revision_count?: number;
 }
 
 // ── Initial agent pipeline definition ─────────────────────────────────────────
@@ -236,6 +240,21 @@ const CampaignLivePage: React.FC = () => {
 
             setAgents((prev) =>
               prev.map((a) => {
+                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+                const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
+                const currentIdx = pipelineKeys.indexOf(a.key);
+
+                // If downstream of the active agent, it must be pending
+                if (activeIdx !== -1 && currentIdx !== -1 && currentIdx > activeIdx) {
+                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
+                  return {
+                    ...a,
+                    status: 'pending' as AgentStatus,
+                    description: initialAgent?.description ?? 'Pending...',
+                    duration: undefined,
+                  };
+                }
+
                 if (completedAgents.includes(a.key)) {
                   return {
                     ...a,
@@ -243,6 +262,7 @@ const CampaignLivePage: React.FC = () => {
                     description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
                   };
                 }
+
                 if (a.key === activeAgentKey) {
                   return {
                     ...a,
@@ -252,9 +272,6 @@ const CampaignLivePage: React.FC = () => {
                 }
                 
                 // If the agent is pending but is upstream of the active agent, mark as completed
-                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
-                const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
-                const currentIdx = pipelineKeys.indexOf(a.key);
                 if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
                   return {
                     ...a,
@@ -322,32 +339,67 @@ const CampaignLivePage: React.FC = () => {
       const { agent: agentKey, status } = data;
       console.log('[Socket.io] agent_update | agent=', agentKey, '| status=', status);
 
+      // Extract and update revision counts from socket message
+      if (data && typeof data === 'object') {
+        const research = data.research_revision_count;
+        const strategy = data.strategy_revision_count;
+        const copywriter = data.copy_revision_count;
+        const image_prompt = data.image_revision_count;
+
+        setRevisionCounts((prev) => ({
+          research: typeof research === 'number' ? research : prev.research,
+          strategy: typeof strategy === 'number' ? strategy : prev.strategy,
+          copywriter: typeof copywriter === 'number' ? copywriter : prev.copywriter,
+          image_prompt: typeof image_prompt === 'number' ? image_prompt : prev.image_prompt,
+        }));
+      }
+
 
 
       if (status === 'completed' || status === 'running' || status === 'failed') {
         setAgents((prev) => {
+          const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+          const runningIdx = pipelineKeys.indexOf(agentKey);
+
           const updated = prev.map((a) => {
-            if (a.key !== agentKey) return a;
-            if (status === 'completed') {
+            const currentIdx = pipelineKeys.indexOf(a.key);
+
+            // If this is the agent being updated
+            if (a.key === agentKey) {
+              if (status === 'completed') {
+                return {
+                  ...a,
+                  status: 'completed' as AgentStatus,
+                  description: DONE_DESCRIPTIONS[agentKey] ?? 'Completed',
+                  duration: formatDuration(pageStartTimeRef.current),
+                };
+              }
+              if (status === 'failed') {
+                return {
+                  ...a,
+                  status: 'failed' as AgentStatus,
+                  description: data.error ?? 'Agent failed',
+                };
+              }
               return {
                 ...a,
-                status: 'completed' as AgentStatus,
-                description: DONE_DESCRIPTIONS[agentKey] ?? 'Completed',
-                duration: formatDuration(pageStartTimeRef.current),
+                status: 'running' as AgentStatus,
+                description: RUNNING_DESCRIPTIONS[agentKey] ?? 'Processing...',
               };
             }
-            if (status === 'failed') {
+
+            // If another agent transitions to running, reset any agent downstream of it to pending
+            if (status === 'running' && runningIdx !== -1 && currentIdx > runningIdx) {
+              const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
               return {
                 ...a,
-                status: 'failed' as AgentStatus,
-                description: data.error ?? 'Agent failed',
+                status: 'pending' as AgentStatus,
+                description: initialAgent?.description ?? 'Pending...',
+                duration: undefined,
               };
             }
-            return {
-              ...a,
-              status: 'running' as AgentStatus,
-              description: RUNNING_DESCRIPTIONS[agentKey] ?? 'Processing...',
-            };
+
+            return a;
           });
 
           // When an agent completes, mark the next pending agent as running.

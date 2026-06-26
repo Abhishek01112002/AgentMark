@@ -140,6 +140,18 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
     
+    # Format human revision feedback if strategy is targeted for revision
+    human_feedback_section = ""
+    if state.human_feedback and state.human_revision_target == "strategy":
+        human_feedback_section = (
+            "\n" + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK:\n"
+            "The user has requested a revision of your strategy with the following feedback and instructions.\n"
+            "You MUST strictly adjust your strategy to address this feedback:\n"
+            f"\"{state.human_feedback}\"\n"
+            + "="*80 + "\n"
+        )
+
     # Load strategy prompt and format with data
     prompt = load_prompt(
         "strategy",
@@ -152,7 +164,8 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         competitor_analysis=json.dumps(competitor_analysis, indent=2),
         audience_insights=json.dumps(audience_insights, indent=2),
         market_opportunities=json.dumps(market_opportunities, indent=2),
-        recommended_approach=recommended_approach
+        recommended_approach=recommended_approach,
+        human_feedback_section=human_feedback_section
     )
     
     print("   Querying LLM with structured output...")

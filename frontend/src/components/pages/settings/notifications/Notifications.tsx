@@ -15,6 +15,12 @@ const Notifications: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const loadNotifications = async () => {
     setLoading(true);
@@ -31,6 +37,15 @@ const Notifications: React.FC = () => {
 
   useEffect(() => {
     void loadNotifications();
+
+    const handleUpdate = () => {
+      void loadNotifications();
+    };
+
+    window.addEventListener('notifications-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('notifications-updated', handleUpdate);
+    };
   }, []);
 
   const totalPages = Math.max(1, Math.ceil(notifications.length / itemsPerPage));
@@ -66,17 +81,33 @@ const Notifications: React.FC = () => {
     }
   };
 
-  const deleteOne = async (id: string) => {
-    await notificationsService.delete(id);
-    setSelectedIds(prev => prev.filter(item => item !== id));
-    await loadNotifications();
+  const deleteOne = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Notification',
+      message: 'Are you sure you want to delete this notification? This action cannot be undone.',
+      onConfirm: async () => {
+        await notificationsService.delete(id);
+        setSelectedIds(prev => prev.filter(item => item !== id));
+        await loadNotifications();
+        setConfirmModal(null);
+      }
+    });
   };
 
-  const deleteSelected = async () => {
+  const deleteSelected = () => {
     if (selectedIds.length === 0) return;
-    await notificationsService.deleteBatch(selectedIds);
-    setSelectedIds([]);
-    await loadNotifications();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Selected Notifications',
+      message: `Are you sure you want to delete the ${selectedIds.length} selected notifications? This action cannot be undone.`,
+      onConfirm: async () => {
+        await notificationsService.deleteBatch(selectedIds);
+        setSelectedIds([]);
+        await loadNotifications();
+        setConfirmModal(null);
+      }
+    });
   };
 
   const markAllRead = async () => {
@@ -236,10 +267,47 @@ const Notifications: React.FC = () => {
             <option value={5}>5 per page</option>
             <option value={10}>10 per page</option>
             <option value={25}>25 per page</option>
-            <option value={50}>50 per page</option>
           </select>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal && confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div 
+            className="w-full max-w-md bg-surface border border-border-base rounded-2xl p-6 shadow-2xl"
+            style={{
+              backgroundColor: '#16161F',
+              borderColor: '#2A2A38',
+              fontFamily: 'Sora, sans-serif'
+            }}
+          >
+            <h3 className="text-lg font-bold text-text-primary mb-2">
+              {confirmModal.title}
+            </h3>
+            <p className="text-sm text-text-secondary mb-6 leading-relaxed">
+              {confirmModal.message}
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 text-sm font-semibold rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                }}
+                className="px-4 py-2 text-sm font-semibold rounded-lg text-white hover:opacity-90 transition-all"
+                style={{ backgroundColor: '#EF4444' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

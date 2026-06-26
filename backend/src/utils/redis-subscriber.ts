@@ -14,6 +14,7 @@ import Redis from 'ioredis';
 import type { Server } from 'socket.io';
 import { campaignService } from '../modules/campaigns/campaign.service';
 import prisma from '../db';
+import { notificationService } from '../modules/notifications/notification.service';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,11 +109,26 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
           }
           currentOutputs.active_agent = status === 'running' ? data.agent : null;
 
+          const updateData: any = {
+            aiOutputs: currentOutputs as any,
+          };
+
+          if (typeof (data as any).research_revision_count === 'number') {
+            updateData.researchRevisionCount = (data as any).research_revision_count;
+          }
+          if (typeof (data as any).strategy_revision_count === 'number') {
+            updateData.strategyRevisionCount = (data as any).strategy_revision_count;
+          }
+          if (typeof (data as any).copy_revision_count === 'number') {
+            updateData.copyRevisionCount = (data as any).copy_revision_count;
+          }
+          if (typeof (data as any).image_revision_count === 'number') {
+            updateData.imageRevisionCount = (data as any).image_revision_count;
+          }
+
           await prisma.campaign.update({
             where: { id: campaign_id },
-            data: {
-              aiOutputs: currentOutputs as any,
-            },
+            data: updateData,
           });
         }
       } catch (dbErr: any) {
@@ -134,10 +150,23 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         console.log(`[Redis Subscriber] Campaign completed and saved to DB | id=${campaign_id}`);
 
       } else if (status === 'awaiting_human_approval') {
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaign_id },
+          select: { aiOutputs: true, name: true, projectId: true },
+        });
+        const currentOutputs = campaign?.aiOutputs 
+          ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
+          : {};
+
+        const mergedOutputs = {
+          ...currentOutputs,
+          ...(outputs ?? {}),
+        };
+
         // Update campaign with HITL state including revision counts
         const updateData: any = {
           status: 'awaiting_human_approval',
-          aiOutputs: (outputs ?? {}) as any,
+          aiOutputs: mergedOutputs as any,
         };
         
         // Extract and save revision counts if present in outputs
@@ -181,6 +210,18 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
           where: { id: campaign_id },
           data: updateData,
         });
+
+        if (campaign) {
+          const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
+          if (project) {
+            await notificationService.create(project.userId, {
+              type: 'info',
+              title: 'Review Required',
+              message: `Campaign "${campaign.name}" requires your review.`,
+            });
+          }
+        }
+
         io.to(`campaign:${campaign_id}`).emit('human_approval_required', data);
         console.log(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);
 

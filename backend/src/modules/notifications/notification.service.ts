@@ -25,7 +25,8 @@ export const notificationService = {
         message TEXT NOT NULL,
         "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW()
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
+        FOREIGN KEY ("userId") REFERENCES "users"(id) ON DELETE CASCADE
       )
     `);
   },
@@ -100,17 +101,11 @@ export const notificationService = {
 
   async deleteBatch(ids: string[], userId: string) {
     if (ids.length === 0) return 0;
-    let deletedCount = 0;
-    for (const id of ids) {
-      const result = await prisma.$executeRaw`
-        DELETE FROM notifications
-        WHERE id = ${id} AND "userId" = ${userId}
-      `;
-      if (result > 0) {
-        deletedCount++;
-      }
-    }
-    return deletedCount;
+    const result = await prisma.$executeRaw`
+      DELETE FROM notifications
+      WHERE id = ANY(${ids}) AND "userId" = ${userId}
+    `;
+    return result;
   },
 };
 

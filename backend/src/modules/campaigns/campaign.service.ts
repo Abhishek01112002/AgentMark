@@ -75,12 +75,25 @@ export const campaignService = {
       }
     }
 
+    const existing = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { aiOutputs: true },
+    });
+    const currentOutputs = existing?.aiOutputs
+      ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs) as Record<string, any>
+      : {};
+
+    const mergedOutputs = {
+      ...currentOutputs,
+      ...aiOutputs,
+    };
+
     const campaign = await prisma.campaign.update({
       where: { id: campaignId },
       data: {
         status,
         aiCampaignId,
-        aiOutputs: aiOutputs as any,
+        aiOutputs: mergedOutputs as any,
         aiError,
         reviewScore,
       },

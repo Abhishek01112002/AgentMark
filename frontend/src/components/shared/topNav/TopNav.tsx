@@ -49,6 +49,12 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
     void loadUnreadCount();
 
+    const handleUpdate = () => {
+      void loadUnreadCount();
+    };
+
+    window.addEventListener('notifications-updated', handleUpdate);
+
     const handleClickOutside = (event: MouseEvent) => {
       if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
@@ -57,6 +63,7 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
+      window.removeEventListener('notifications-updated', handleUpdate);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);

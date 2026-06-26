@@ -12,6 +12,12 @@ export interface Notification {
   updatedAt: string;
 }
 
+const triggerUpdate = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('notifications-updated'));
+  }
+};
+
 export const notificationsService = {
   async list(params?: { unreadOnly?: boolean; limit?: number }) {
     const response = await api.get<{ notifications: Notification[] }>('/notifications', {
@@ -27,19 +33,23 @@ export const notificationsService = {
 
   async markRead(id: string) {
     const response = await api.put<{ notification: Notification }>('/notifications/read', { id });
+    triggerUpdate();
     return response.data.notification;
   },
 
   async markAllRead() {
     await api.put('/notifications/read-all');
+    triggerUpdate();
   },
 
   async delete(id: string) {
     await api.delete(`/notifications/${id}`);
+    triggerUpdate();
   },
 
   async deleteBatch(ids: string[]) {
     await api.post('/notifications/delete-batch', { ids });
+    triggerUpdate();
   },
 };
 
