@@ -57,8 +57,8 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
               </span>
               <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>AI Quality Assessment</span>
             </div>
-            <h2 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Campaign Quality Assessment</h2>
-            <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>AI analysis of copy, visual coherence, and strategic alignment against brand guidelines.</p>
+            <h2 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Quality Assessment</h2>
+            <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>AI analysis of copy, visual coherence, and strategic alignment against brand guidelines.</p>
           </div>
           <div className="flex gap-3 flex-wrap">
             <button className="px-4 py-2 rounded-lg border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1A1A24] flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
@@ -73,7 +73,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
 
       {!hasRealData && !reviewScore && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4">
-          <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+          <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
             No review data available yet. This will be populated after AI review agent completes analysis.
           </p>
         </div>
@@ -87,16 +87,16 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Research Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${researchReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: researchReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: researchReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
                 {researchReview.score}
               </div>
-              <p className="text-xs mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{researchReview.feedback}</p>
+              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{researchReview.feedback}</p>
               {researchReview.issues?.length > 0 && (
                 <div>
                   <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Issues</span>
                   <ul className="space-y-1">
                     {researchReview.issues.slice(0, 2).map((issue: string, idx: number) => (
-                      <li key={idx} className="text-xs flex items-start gap-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F43F5E' }}>
+                      <li key={idx} className="text-xs flex items-start gap-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F43F5E' }}>
                         <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
                         <span>{issue}</span>
                       </li>
@@ -112,16 +112,16 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Strategy Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${strategyReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: strategyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: strategyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
                 {strategyReview.score}
               </div>
-              <p className="text-xs mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{strategyReview.feedback}</p>
+              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{strategyReview.feedback}</p>
               {strategyReview.action_items?.length > 0 && (
                 <div>
                   <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Action Items</span>
                   <ul className="space-y-1">
                     {strategyReview.action_items.slice(0, 2).map((item: string, idx: number) => (
-                      <li key={idx} className="text-xs flex items-start gap-1" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>
+                      <li key={idx} className="text-xs flex items-start gap-1" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>
                         <ListTodo size={12} className="mt-0.5 flex-shrink-0" />
                         <span>{item}</span>
                       </li>
@@ -137,10 +137,10 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Copy Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${copyReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: copyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: copyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
                 {copyReview.score}
               </div>
-              <p className="text-xs mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{copyReview.feedback}</p>
+              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{copyReview.feedback}</p>
             </div>
           )}
           {imageReview.score && (
@@ -149,10 +149,10 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Image Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${imageReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: imageReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: imageReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
                 {imageReview.score}
               </div>
-              <p className="text-xs mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{imageReview.feedback}</p>
+              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{imageReview.feedback}</p>
             </div>
           )}
         </div>
@@ -172,7 +172,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
           <h3 className="text-xs uppercase tracking-wider absolute top-6 left-6" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>Overall Score</h3>
           <div className="mt-8 mb-4 relative">
             <div className="absolute inset-0 bg-[#4edea3]/10 blur-[40px] rounded-full" />
-            <div className="relative z-10 leading-none" style={{ fontFamily: 'Sora, sans-serif', fontSize: '64px', fontWeight: 700, color: confidenceScore >= 7 ? '#4edea3' : confidenceScore >= 5 ? '#F59E0B' : '#F43F5E', textShadow: `0 0 12px ${confidenceScore >= 7 ? 'rgba(78,222,163,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
+            <div className="relative z-10 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '64px', fontWeight: 700, color: confidenceScore >= 7 ? '#4edea3' : confidenceScore >= 5 ? '#F59E0B' : '#F43F5E', textShadow: `0 0 12px ${confidenceScore >= 7 ? 'rgba(78,222,163,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
               {displayScore}<span className="text-2xl opacity-50">{displayScale}</span>
             </div>
           </div>
@@ -183,11 +183,11 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
         </div>
 
         <div className="col-span-1 md:col-span-8 bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6 relative">
-          <h3 className="text-lg md:text-xl font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg md:text-xl font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Activity size={20} className="text-[#6366F1]" />Overall Summary
           </h3>
           {overall.summary && (
-            <p className="text-sm mb-6 pb-6 border-b border-[#2A2A38]" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <p className="text-sm mb-6 pb-6 border-b border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
               {overall.summary}
             </p>
           )}
@@ -197,7 +197,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 <CheckCircle size={18} className="text-[#4edea3] mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                   <h4 className="text-sm font-medium mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{item.title || item.check || item.name}</h4>
-                  <p className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{item.desc || item.description || item.details}</p>
+                  <p className="text-xs" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{item.desc || item.description || item.details}</p>
                 </div>
               </div>
             ))}
@@ -208,13 +208,13 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
           <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
             <div className="flex items-center gap-2 mb-6 border-b border-[#2A2A38] pb-4">
               <span className="w-8 h-8 rounded-md bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3]"><Award size={18} /></span>
-              <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Core Strengths</h3>
+              <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Core Strengths</h3>
             </div>
             <ul className="space-y-4">
               {(Array.isArray(strengths) && strengths.length > 0 ? strengths : defaultStrengths).slice(0, 5).map((strength: any, idx: number) => (
                 <li key={idx} className="flex items-start gap-3">
                   <span className="text-[#4edea3] mt-0.5 flex-shrink-0">+</span>
-                  <span className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#c7c4d7' }}>{typeof strength === 'string' ? strength : strength.text || strength.description}</span>
+                  <span className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#c7c4d7' }}>{typeof strength === 'string' ? strength : strength.text || strength.description}</span>
                 </li>
               ))}
             </ul>
@@ -224,14 +224,14 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 blur-[40px] rounded-full pointer-events-none" />
             <div className="flex items-center gap-2 mb-6 border-b border-[#2A2A38] pb-4 relative z-10">
               <span className="w-8 h-8 rounded-md bg-[#F59E0B]/10 flex items-center justify-center text-[#F59E0B]"><AlertCircle size={18} /></span>
-              <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Areas for Refinement</h3>
+              <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Areas for Refinement</h3>
             </div>
             <ul className="space-y-4 relative z-10">
               {(Array.isArray(improvements) && improvements.length > 0 ? improvements : defaultImprovements).slice(0, 5).map((item: any, idx: number) => (
                 <li key={idx} className="flex items-start gap-3 group">
                   <span className="text-[#F59E0B] mt-0.5 flex-shrink-0">-</span>
                   <div className="min-w-0">
-                    <span className="text-sm leading-relaxed block" style={{ fontFamily: 'Sora, sans-serif', color: '#c7c4d7' }}>{typeof item === 'string' ? item : item.text || item.description}</span>
+                    <span className="text-sm leading-relaxed block" style={{ fontFamily: 'Inter, sans-serif', color: '#c7c4d7' }}>{typeof item === 'string' ? item : item.text || item.description}</span>
                     {item.action && (
                       <button className="text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{item.action}</button>
                     )}

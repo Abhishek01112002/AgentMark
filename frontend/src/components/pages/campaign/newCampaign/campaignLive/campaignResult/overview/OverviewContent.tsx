@@ -66,11 +66,11 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
               <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
                 <Compass size={24} />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                 Campaign Overview
               </h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#B8B8D1' }}>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#B8B8D1' }}>
               Strategic campaign foundation and execution plan
             </p>
           </div>
@@ -84,7 +84,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {!hasRealData && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 mb-6">
-          <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+          <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
             <AlertTriangle size={16} className="inline-block mr-2 text-[#F59E0B]" />
             No manager data available yet. This will be populated after AI manager agent completes analysis.
           </p>
@@ -94,40 +94,40 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       {/* Campaign Identity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Fingerprint size={20} className="text-[#6366F1]" />
             Campaign Identity
           </h3>
           <div className="space-y-4">
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Campaign Name</span>
-              <p className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>{campaignName || 'Untitled Campaign'}</p>
+              <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{campaignName || 'Untitled Campaign'}</p>
             </div>
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Brand Name</span>
-              <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{brandName || 'Not specified'}</p>
+              <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{brandName || 'Not specified'}</p>
             </div>
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Industry</span>
-              <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{formatIndustryLabel(industry)}</p>
+              <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{formatIndustryLabel(industry)}</p>
             </div>
           </div>
         </div>
 
         <div className="bg-gradient-to-br from-[#4edea3]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Milestone size={20} className="text-[#4edea3]" />
             Campaign Objectives
           </h3>
           <div className="space-y-4">
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Primary Goal</span>
-              <p className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#4edea3' }}>{displayGoal}</p>
+              <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{displayGoal}</p>
             </div>
             {brandVoice && (
               <div>
                 <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Brand Voice</span>
-              <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{formatBrandVoice(brandVoice)}</p>
+              <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{formatBrandVoice(brandVoice)}</p>
             </div>
           )}
         </div>
@@ -137,11 +137,11 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       {/* Target Audience */}
       {targetAudience && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Users size={20} className="text-[#6366F1]" />
             Target Audience
           </h3>
-          <p className="text-base leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+          <p className="text-base leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
             {targetAudience}
           </p>
         </div>
@@ -150,7 +150,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       {/* Recommended Channels */}
       {channelCards.length > 0 && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Network size={20} className="text-[#6366F1]" />
             Recommended Distribution Channels
           </h3>
@@ -170,7 +170,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       {/* Deliverables */}
       {deliverables.length > 0 && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Package size={20} className="text-[#6366F1]" />
             Campaign Deliverables
           </h3>
@@ -180,7 +180,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
                 <span className="w-6 h-6 rounded-full bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3] flex-shrink-0 text-sm font-bold">
                   {idx + 1}
                 </span>
-                <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                   {deliverable}
                 </p>
               </div>
@@ -191,31 +191,31 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Campaign Summary Card */}
       <div className="bg-gradient-to-r from-[#6366F1]/5 via-[#4edea3]/5 to-transparent border border-[#2A2A38] rounded-xl p-6">
-        <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+        <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
           Campaign Summary
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Channels</span>
-            <p className="text-2xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>
+            <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>
               {channels.length || 0}
             </p>
           </div>
           <div>
             <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Deliverables</span>
-            <p className="text-2xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#4edea3' }}>
+            <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>
               {deliverables.length || 0}
             </p>
           </div>
           <div>
             <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Industry</span>
-            <p className="text-base font-medium mt-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <p className="text-base font-medium mt-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
               {formatIndustryLabel(industry)}
             </p>
           </div>
           <div>
             <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Goal Type</span>
-            <p className="text-base font-medium mt-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <p className="text-base font-medium mt-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
               {displayGoal}
             </p>
           </div>

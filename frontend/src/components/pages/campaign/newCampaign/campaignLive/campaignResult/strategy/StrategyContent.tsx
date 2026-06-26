@@ -496,8 +496,8 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                   AI Strategy Active
                 </span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Campaign Strategy</h1>
-              <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated strategic framework' : 'Q3 Product Launch Blueprint'}</p>
+              <h1 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Strategy</h1>
+              <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated strategic framework' : 'Q3 Product Launch Blueprint'}</p>
             </div>
             <div className="flex gap-3 flex-wrap">
               <button
@@ -516,7 +516,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
         {!hasRealData && (
           <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 pdf-no-print">
-            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
               <AlertTriangle size={16} className="text-[#F59E0B] flex-shrink-0" />
               No strategy data available yet. This will be populated after AI agents complete analysis.
             </p>
@@ -529,7 +529,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
               <Compass size={16} />Positioning Statement
             </h3>
-            <p className="text-lg leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+            <p className="text-lg leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
               {positioning}
             </p>
           </div>
@@ -548,36 +548,36 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           <div className="xl:col-span-7 space-y-6">
             <div className="pdf-section rounded-xl p-5 md:p-6 relative overflow-hidden group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6366F1] to-transparent opacity-50 pdf-no-print" />
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <MessageSquare size={20} className="text-[#6366F1] pdf-no-print" />Core Messaging Framework
               </h2>
               <div className="pl-6 border-l-2 border-[#6366F1] py-2 mb-6 relative">
                 <span className="absolute -left-3 top-0 w-6 h-6 bg-[#111118] rounded-full flex items-center justify-center text-[#6366F1] pdf-no-print">"</span>
-                <p className="text-base md:text-lg italic leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                <p className="text-base md:text-lg italic leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                   {coreMessage || '"Empowering elite marketing teams with surgical precision and autonomous intelligence to scale campaigns faster than ever."'}
                 </p>
               </div>
               <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-[#1A1A24] p-4 rounded-lg border border-[#2A2A38]/50">
                   <h3 className="text-sm font-medium mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Value Proposition</h3>
-                  <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{valueProposition || 'Reduce campaign setup time by 80% while increasing creative output quality.'}</p>
+                  <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{valueProposition || 'Reduce campaign setup time by 80% while increasing creative output quality.'}</p>
                 </div>
                 <div className="bg-[#1A1A24] p-4 rounded-lg border border-[#2A2A38]/50">
                   <h3 className="text-sm font-medium mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Target Audience</h3>
-                  <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{targetAudience || 'Enterprise CMOs and Growth Leads managing $1M+ quarterly budgets.'}</p>
+                  <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{targetAudience || 'Enterprise CMOs and Growth Leads managing $1M+ quarterly budgets.'}</p>
                 </div>
               </div>
             </div>
 
             {contentPillars.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-                <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+                <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <Columns size={20} className="text-[#6366F1] pdf-no-print" />Content Pillars
                 </h2>
                 <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-3">
                   {contentPillars.map((pillar: string, idx: number) => (
                     <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg px-4 py-3">
-                      <p className="text-sm font-medium leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{pillar}</p>
+                      <p className="text-sm font-medium leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{pillar}</p>
                     </div>
                   ))}
                 </div>
@@ -586,7 +586,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
             {keyMessages.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-                <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+                <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <KeyRound size={20} className="text-[#6366F1] pdf-no-print" />Key Messages
                 </h2>
                 <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -594,7 +594,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                     <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4 min-h-[96px]">
                       <div className="flex items-start gap-3">
                         <span className="w-6 h-6 rounded-full bg-[#6366F1]/10 flex items-center justify-center text-[#6366F1] flex-shrink-0 text-sm font-bold">{idx + 1}</span>
-                        <p className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{msg}</p>
+                        <p className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{msg}</p>
                       </div>
                     </div>
                   ))}
@@ -606,25 +606,25 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           <div className="xl:col-span-5 space-y-6">
             {audienceSegments.length > 0 && (
               <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-                <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+                <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <Users size={20} className="text-[#6366F1] pdf-no-print" />Audience Segments
                 </h2>
                 <div className="space-y-4">
                 {audienceSegments.map((segment: any, idx: number) => (
                     <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
-                    <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{segment.segment_name}</h3>
+                    <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{segment.segment_name}</h3>
                     <div className="space-y-3">
                       <div>
                         <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Demographics</span>
-                        <p className="text-sm mt-1" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{segment.demographics}</p>
+                        <p className="text-sm mt-1" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{segment.demographics}</p>
                       </div>
                       <div>
                         <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Psychographics</span>
-                        <p className="text-sm mt-1" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{segment.psychographics}</p>
+                        <p className="text-sm mt-1" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{segment.psychographics}</p>
                       </div>
                       <div>
                         <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Key Message</span>
-                        <p className="text-sm mt-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{segment.key_message}</p>
+                        <p className="text-sm mt-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{segment.key_message}</p>
                       </div>
                     </div>
                   </div>
@@ -636,14 +636,14 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {Object.keys(timeline).length > 0 && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Calendar size={20} className="text-[#6366F1] pdf-no-print" />Campaign Timeline
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {Object.entries(timeline).map(([, phase]: [string, any], idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5 min-h-[180px]">
                     <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
-                      <h3 className="text-base font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{phase.phase_name}</h3>
+                      <h3 className="text-base font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{phase.phase_name}</h3>
                       <div className="flex items-center gap-2">
                         <span className="text-xs px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{phase.duration}</span>
                         {phase.start_date && phase.end_date && (
@@ -653,7 +653,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                     </div>
                     <ul className="space-y-2">
                       {phase.activities?.map((activity: string, aidx: number) => (
-                        <li key={aidx} className="flex items-start gap-2 text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                        <li key={aidx} className="flex items-start gap-2 text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
                           <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] mt-1.5 flex-shrink-0" />
                           {activity}
                         </li>
@@ -667,15 +667,15 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {successMetrics.kpis && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <BarChart3 size={20} className="text-[#6366F1] pdf-no-print" />Success Metrics & KPIs
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {successMetrics.kpis.map((kpi: string, idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{kpi}</p>
+                    <p className="text-sm font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{kpi}</p>
                     {successMetrics.targets?.[kpi] && (
-                      <p className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#4edea3' }}>{successMetrics.targets[kpi]}</p>
+                      <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{successMetrics.targets[kpi]}</p>
                     )}
                   </div>
                 ))}
@@ -685,22 +685,22 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {competitiveDiff.unique_value_proposition && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Award size={20} className="text-[#6366F1] pdf-no-print" />Competitive Differentiation
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                   <h3 className="text-sm font-medium mb-3" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Unique Value Proposition</h3>
-                  <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.unique_value_proposition}</p>
+                  <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.unique_value_proposition}</p>
                 </div>
                 <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                   <h3 className="text-sm font-medium mb-3" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Competitive Advantage</h3>
-                  <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.competitive_advantage}</p>
+                  <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.competitive_advantage}</p>
                 </div>
                 {competitiveDiff.primary_differentiation && (
                   <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                     <h3 className="text-sm font-medium mb-3" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Primary Differentiation</h3>
-                    <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.primary_differentiation}</p>
+                    <p className="text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{competitiveDiff.primary_differentiation}</p>
                   </div>
                 )}
                 {competitiveDiff.competitors && (
@@ -719,14 +719,14 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {Object.keys(budgetAllocation).length > 0 && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <DollarSign size={20} className="text-[#6366F1] pdf-no-print" />Budget Allocation
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(budgetAllocation).map(([key, value]: [string, any], idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
                     <h3 className="text-xs uppercase mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{key.replace(/_/g, ' ')}</h3>
-                    <p className="text-lg font-bold" style={{ fontFamily: 'Sora, sans-serif', color: '#6366F1' }}>{value}</p>
+                    <p className="text-lg font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{value}</p>
                   </div>
                 ))}
               </div>
@@ -735,23 +735,23 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {Object.keys(channelStrategy).length > 0 && (
             <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+              <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Share2 size={20} className="text-[#6366F1] pdf-no-print" />Channel Strategy
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {Object.entries(channelStrategy).map(([channel, plan]: [string, any], idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{channel}</h3>
+                      <h3 className="text-base font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{channel}</h3>
                       <span className="text-xs px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{plan.priority} Priority</span>
                     </div>
-                    <p className="text-sm mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{plan.rationale}</p>
+                    <p className="text-sm mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{plan.rationale}</p>
                     {plan.tactics && (
                       <div>
                         <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Tactics</span>
                         <ul className="space-y-1">
                           {plan.tactics.map((tactic: string, tidx: number) => (
-                            <li key={tidx} className="flex items-start gap-2 text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                            <li key={tidx} className="flex items-start gap-2 text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
                               <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1] mt-1.5 flex-shrink-0" />
                               {tactic}
                             </li>
@@ -781,7 +781,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                     </div>
                     <span className="text-xs px-2 py-0.5 rounded-full pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: `${channel.badgeColor || '#A0A0D2'}1A`, color: channel.badgeColor || '#A0A0D2' }}>{channel.badge || 'Active'}</span>
                   </div>
-                  <p className="text-xs mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{channel.desc || channel.description || 'Channel strategy details'}</p>
+                  <p className="text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{channel.desc || channel.description || 'Channel strategy details'}</p>
                 </div>
               );
             })}
@@ -792,7 +792,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         {/* Content Rollout Table */}
         <div className="pdf-section rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
           <div className="p-5 md:p-6 border-b border-[#2A2A38] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+            <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
               <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout
             </h2>
             {displayCalendar.length > 10 && (
@@ -819,12 +819,12 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                   const statusStyle = getStatusStyle(row.status || 'planned');
                   return (
                     <tr key={idx} className="hover:bg-[#111118] transition-colors">
-                      <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
-                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{row.channel || row.platform || 'N/A'}</td>
+                      <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
+                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.channel || row.platform || 'N/A'}</td>
                       <td className="py-4 px-4 md:px-6">
-                        <span className="px-2 py-1 bg-[#1A1A24] rounded text-xs border border-[#2A2A38]" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{row.type || row.content_type || 'Content'}</span>
+                        <span className="px-2 py-1 bg-[#1A1A24] rounded text-xs border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.type || row.content_type || 'Content'}</span>
                       </td>
-                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
+                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
                       <td className="py-4 px-4 md:px-6 text-right">
                         <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: statusStyle.bg, color: statusStyle.text, fontWeight: 500 }}>
                           <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${row.status === 'review' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
@@ -840,7 +840,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         </div>
         {displayCalendar.length === 0 && (
           <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
               No content calendar data yet. This will be populated after the AI publisher agent completes the campaign publication plan.
             </p>
           </div>

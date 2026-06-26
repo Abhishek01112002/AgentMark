@@ -102,8 +102,8 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
     <div className="space-y-6 md:space-y-8">
       <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
-          <p className="text-sm md:text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for "Q4 Product Launch".'}</p>
+          <h2 className="text-2xl md:text-3xl font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
+          <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for "Q4 Product Launch".'}</p>
         </div>
         <div className="flex items-center gap-2 bg-[#111118] p-1 rounded-lg border border-[#2A2A38]">
           <div className="w-2 h-2 rounded-full bg-[#6366F1] ml-2" style={{ animation: 'pulse 2s infinite' }} />
@@ -113,7 +113,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
 
       {!hasRealData && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 mb-6">
-          <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+          <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
             No copy data available yet. This will be populated after AI copywriter agent completes work.
           </p>
         </div>
@@ -151,7 +151,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
             <div className="flex justify-between items-start mb-6 flex-wrap gap-3">
               <div className="flex items-center gap-3">
                 <PenTool size={20} className="text-[#6366F1]" />
-                <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{tabs.find(t => t.id === activeTab)?.label || 'Copy'}</h3>
+                <h3 className="text-lg md:text-xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{tabs.find(t => t.id === activeTab)?.label || 'Copy'}</h3>
               </div>
               <button
                 onClick={handleCopyToClipboard}
@@ -167,21 +167,21 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
               {activePlatformData.headline && (
                 <div className="bg-[#0e0e13] border border-[#2A2A38] rounded-lg p-4 focus-within:border-[#6366F1] transition-colors relative">
                   <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Headline</label>
-                  <p className="text-sm md:text-base outline-none" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{activePlatformData.headline}</p>
+                  <p className="text-sm md:text-base outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{activePlatformData.headline}</p>
                 </div>
               )}
 
               {activePlatformData.subject && (
                 <div className="bg-[#0e0e13] border border-[#2A2A38] rounded-lg p-4 focus-within:border-[#6366F1] transition-colors relative">
                   <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Subject</label>
-                  <p className="text-sm md:text-base outline-none" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{activePlatformData.subject}</p>
+                  <p className="text-sm md:text-base outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{activePlatformData.subject}</p>
                 </div>
               )}
 
               {activePlatformData.body && (
                 <div className="bg-[#0e0e13] border border-[#2A2A38] rounded-lg p-4 focus-within:border-[#6366F1] transition-colors relative">
                   <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Body</label>
-                  <div className="text-sm md:text-base outline-none min-h-[120px] whitespace-pre-wrap" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                  <div className="text-sm md:text-base outline-none min-h-[120px] whitespace-pre-wrap" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
                     {activePlatformData.body}
                   </div>
                 </div>
@@ -210,14 +210,14 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           {/* Strategic Alignment Below Copy */}
           {strategicAlignment.positioning_used && (
             <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                 <Link size={20} className="text-[#6366F1]" />
                 Strategic Alignment
               </h4>
               <div className="space-y-3">
                 <div>
                   <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Positioning Used</span>
-                  <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{strategicAlignment.positioning_used}</p>
+                  <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{strategicAlignment.positioning_used}</p>
                 </div>
                 {strategicAlignment.key_messages_count && (
                   <div className="flex items-center gap-3">
@@ -245,19 +245,19 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           {/* Messaging Framework */}
           {messagingFramework.brand_promise && (
             <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              <h4 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                 <BookOpen size={20} className="text-[#6366F1]" />
                 Messaging Framework
               </h4>
               <div className="space-y-4">
                 <div>
                   <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Brand Promise</span>
-                  <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{messagingFramework.brand_promise}</p>
+                  <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{messagingFramework.brand_promise}</p>
                 </div>
                 {messagingFramework.value_proposition && (
                   <div>
                     <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Value Proposition</span>
-                    <p className="text-sm" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{messagingFramework.value_proposition}</p>
+                    <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{messagingFramework.value_proposition}</p>
                   </div>
                 )}
               </div>
@@ -267,12 +267,12 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           {/* Segment Messaging */}
           {messagingFramework.segment_messaging?.length > 0 && (
             <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Segment Messaging</h4>
+              <h4 className="text-base font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Segment Messaging</h4>
               <div className="space-y-3">
                 {messagingFramework.segment_messaging.map((seg: any, idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3">
                     <h5 className="text-xs font-medium mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{seg.segment_name}</h5>
-                    <p className="text-xs mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{seg.message}</p>
+                    <p className="text-xs mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{seg.message}</p>
                     <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Tone: {seg.tone}</span>
                   </div>
                 ))}
@@ -285,7 +285,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
       {/* Copy Readiness Overview */}
       {Object.keys(copyReadiness).length > 0 && (
         <div className="mt-8 bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
+          <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
             {Object.entries(copyReadiness).map(([channel, ready]: [string, any]) => (
               <div key={channel} className="flex items-center gap-2">
