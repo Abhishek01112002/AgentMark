@@ -257,3 +257,21 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
     }
   });
 }
+
+/**
+ * Gracefully shut down the Redis subscriber.
+ * Unsubscribes from the pattern and closes the connection.
+ */
+export async function shutdownRedisSubscriber(): Promise<void> {
+  try {
+    console.log('[Redis Subscriber] Shutting down...');
+    if (subscriber.status === 'ready') {
+      await subscriber.punsubscribe('campaign:*');
+      console.log('[Redis Subscriber] Unsubscribed from pattern: campaign:*');
+    }
+    await subscriber.quit();
+    console.log('[Redis Subscriber] Disconnected from Redis successfully');
+  } catch (err: any) {
+    console.error('[Redis Subscriber] Error during shutdown:', err.message);
+  }
+}

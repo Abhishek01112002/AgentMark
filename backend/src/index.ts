@@ -14,7 +14,7 @@ import notificationRoutes from './modules/notifications/notification.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import prisma from './db';
 import { notificationService } from './modules/notifications/notification.service';
-import { initRedisSubscriber } from './utils/redis-subscriber';
+import { initRedisSubscriber, shutdownRedisSubscriber } from './utils/redis-subscriber';
 import { verifyToken } from './utils/jwt';
 import { setSocketIO } from './modules/campaigns/campaign.controller';
 
@@ -140,3 +140,32 @@ const startServer = async () => {
 };
 
 void startServer();
+
+// ── Graceful Shutdown ─────────────────────────────────────────────────────────
+
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n[${signal}] Received. Starting graceful shutdown...`);
+  
+  // Close HTTP server first (stops accepting new connections)
+  httpServer.close(async () => {
+    console.log('[Server] HTTP server closed.');
+    
+    // Shut down Redis Subscriber
+    await shutdownRedisSubscriber();
+    
+    // Disconnect Prisma
+    await prisma.$disconnect();
+    console.log('[Server] Prisma disconnected.');
+    
+    process.exit(0);
+  });
+  
+  // Force exit after 10s if graceful shutdown hangs
+  setTimeout(() => {
+    console.error('[Server] Graceful shutdown timed out. Forcing exit.');
+    process.exit(1);
+  }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
