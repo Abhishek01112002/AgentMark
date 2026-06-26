@@ -12,6 +12,7 @@ const signupSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 const updateProfileSchema = z.object({
@@ -34,8 +35,8 @@ export const signup = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
-    const result = await authService.login(email, password);
+    const { email, password, rememberMe } = loginSchema.parse(req.body);
+    const result = await authService.login(email, password, rememberMe);
     res.json({ message: 'Login successful', ...result });
   } catch (error) {
     if (error instanceof z.ZodError) {

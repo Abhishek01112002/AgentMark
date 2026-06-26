@@ -4,8 +4,8 @@ import {
   Mail, Lock, Eye, EyeOff, User, Search, FileText, Image, Play,
   UserPlus, Quote, Zap, BarChart2, Users, ArrowLeft, Shield, Sparkles
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { useAuth } from '../../../contexts/AuthContext';
+import PrivacyTermsModal from '../../shared/PrivacyTermsModal';
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -15,6 +15,15 @@ const SignUp = () => {
   const [flipped, setFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const openModal = (type: 'privacy' | 'terms') => {
+    setModalType(type);
+    setModalOpen(true);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -177,18 +186,40 @@ const SignUp = () => {
                   )}
                 </div>
 
-                <button type="submit" disabled={isLoading} className="w-full mt-2 flex items-center justify-center gap-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 lg:py-3.5 rounded-xl text-sm transition-all duration-200 shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_6px_28px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 active:translate-y-0 group disabled:opacity-50 disabled:cursor-not-allowed">
+                {/* Terms and Privacy Checkbox */}
+                <div className="flex items-start gap-3 mb-4 mt-2 px-1 select-none">
+                  <label className="relative flex items-center gap-2.5 cursor-pointer text-[10px] lg:text-xs text-gray-500 hover:text-gray-400 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-4 h-4 rounded border border-[#2A2A38] bg-[#0A0A0F] flex items-center justify-center transition-all duration-200 peer-checked:border-indigo-500 peer-checked:bg-indigo-600 peer-focus-visible:ring-2 peer-focus-visible:ring-indigo-500/30">
+                      <svg
+                        className={`w-2.5 h-2.5 text-white transition-opacity duration-200 ${agreedToTerms ? 'opacity-100' : 'opacity-0'}`}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span>
+                      I agree to the{' '}
+                      <button type="button" onClick={() => openModal('terms')} className="text-indigo-400 hover:underline">Terms of Service</button>
+                      {' '}and{' '}
+                      <button type="button" onClick={() => openModal('privacy')} className="text-indigo-400 hover:underline">Privacy Policy</button>
+                    </span>
+                  </label>
+                </div>
+
+                <button type="submit" disabled={isLoading || !agreedToTerms} className="w-full mt-2 flex items-center justify-center gap-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 lg:py-3.5 rounded-xl text-sm transition-all duration-200 shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_6px_28px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 active:translate-y-0 group disabled:opacity-50 disabled:cursor-not-allowed">
                   {!isLoading && <UserPlus size={15} className="group-hover:scale-110 transition-transform" />}
                   <span>{isLoading ? 'Creating Account...' : 'Create Account'}</span>
                 </button>
               </form>
-
-              <p className="text-center mt-3 lg:mt-4 text-[9px] lg:text-[10px] text-gray-600 leading-relaxed px-2">
-                By signing up you agree to our{' '}
-                <button onClick={() => toast.error('Coming soon!')} className="text-indigo-400 hover:underline">Terms</button>
-                {' '}and{' '}
-                <button onClick={() => toast.error('Coming soon!')} className="text-indigo-400 hover:underline">Privacy Policy</button>.
-              </p>
 
               <div className="relative my-4 lg:my-5">
                 <div className="absolute inset-0 flex items-center">
@@ -287,6 +318,12 @@ const SignUp = () => {
           </div>
         </div>
       </div>
+
+      <PrivacyTermsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+      />
     </>
   );
 };

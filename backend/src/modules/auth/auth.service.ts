@@ -32,7 +32,7 @@ export const authService = {
     return { user: cleanUser!, token };
   },
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string, rememberMe: boolean = false) {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     
@@ -46,7 +46,8 @@ export const authService = {
       throw new Error('Invalid credentials');
     }
 
-    const token = generateToken({ userId: user.id, email: user.email });
+    const expiresIn = rememberMe ? '30d' : '1d';
+    const token = generateToken({ userId: user.id, email: user.email }, expiresIn);
     const cleanUser = await this.getUserById(user.id);
     
     return {

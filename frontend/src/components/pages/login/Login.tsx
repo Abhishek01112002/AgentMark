@@ -15,6 +15,7 @@ const Login = () => {
   const [flipped, setFlipped] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -28,7 +29,7 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      await login(formData.email, formData.password);
+      await login(formData.email, formData.password, rememberMe);
       navigate('/dashboard');
     } catch (error) {
       // Error handling is done in AuthContext
@@ -220,8 +221,13 @@ const Login = () => {
 
                 <div className="flex items-center justify-between text-[10px] lg:text-xs text-gray-500 pt-0.5">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input type="checkbox" className="w-3.5 h-3.5 rounded bg-[#111118] border border-[#2A2A38] accent-indigo-500 cursor-pointer" />
-                    <span>Remember me</span>
+                    <input 
+                      type="checkbox" 
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded bg-[#111118] border border-[#2A2A38] accent-indigo-500 cursor-pointer" 
+                    />
+                    <span>Keep me signed in for 30 days</span>
                   </label>
                   <button type="button" onClick={() => toast.error('Coming soon!')} className="hover:text-white transition-colors">Forgot password?</button>
                 </div>

@@ -357,3 +357,32 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const enhancePromptSchema = z.object({
+  prompt: z.string().min(1),
+  userInput: z.string().optional(),
+});
+
+export const enhancePrompt = async (req: AuthRequest, res: Response) => {
+  try {
+    const { prompt, userInput } = enhancePromptSchema.parse(req.body);
+    const llmConfigHeader = req.headers['x-llm-config'];
+    let llmConfig: any = undefined;
+    if (typeof llmConfigHeader === 'string') {
+      try {
+        llmConfig = JSON.parse(llmConfigHeader);
+      } catch {
+        // ignore
+      }
+    }
+
+    const enhancedPrompt = await aiServiceClient.enhancePrompt(prompt, userInput, llmConfig);
+    return res.status(200).json({ enhancedPrompt });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Prompt enhancement error:', error);
+    res.status(500).json({ error: error.message || 'Failed to enhance prompt' });
+  }
+};
+

@@ -131,6 +131,36 @@ const CampaignLivePage: React.FC = () => {
   const [campaignPreviewData, setCampaignPreviewData] = useState<any>(null);
   const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
 
+  // Memoize parsed campaign outputs to avoid redundant JSON.parse calls in render path
+  const parsedPreviewOutputs = React.useMemo(() => {
+    if (!campaignPreviewData) return null;
+    const getOutputField = (field: string) => {
+      const outputs = campaignPreviewData.aiOutputs || {};
+      const val = outputs[field];
+      if (val) {
+        if (typeof val === 'string') {
+          try { return JSON.parse(val); } catch { return val; }
+        }
+        return val;
+      }
+      const directVal = (campaignPreviewData as any)[field];
+      if (directVal) {
+        if (typeof directVal === 'string') {
+          try { return JSON.parse(directVal); } catch { return directVal; }
+        }
+        return directVal;
+      }
+      return null;
+    };
+
+    return {
+      copyData: getOutputField('copy_output') || getOutputField('copyOutput'),
+      strategyData: getOutputField('strategy_output') || getOutputField('strategyOutput'),
+      imageData: getOutputField('image_output') || getOutputField('imageOutput'),
+      managerData: getOutputField('manager_output') || getOutputField('managerOutput'),
+    };
+  }, [campaignPreviewData]);
+
   const [typewriterText, setTypewriterText] = useState('');
   const [currentStringIndex, setCurrentStringIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -343,6 +373,17 @@ const CampaignLivePage: React.FC = () => {
     // ── Human approval required ──────────────────────────────────────────────
     socket.on('human_approval_required', async () => {
       setShowHumanReview(true);
+      
+      // Mark reviewer as completed and publisher as pending (awaiting approval) immediately
+      // to update the pipeline view and stop the typewriter animation instantly.
+      setAgents((prev) =>
+        prev.map((a) => {
+          if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
+          if (a.key === 'publisher') return { ...a, status: 'pending', description: 'Awaiting human approval' };
+          return { ...a, status: 'completed' };
+        })
+      );
+
       // Fetch latest campaign data to get revision counts
       try {
         const response = await api.get(`/campaigns/${campaignId}`);
@@ -383,14 +424,6 @@ const CampaignLivePage: React.FC = () => {
       } catch (error) {
         console.error('Failed to fetch revision counts:', error);
       }
-      // Mark reviewer as completed and publisher as pending (awaiting approval).
-      setAgents((prev) =>
-        prev.map((a) => {
-          if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
-          if (a.key === 'publisher') return { ...a, status: 'pending', description: 'Awaiting human approval' };
-          return a;
-        })
-      );
     });
 
     // ── Campaign complete ────────────────────────────────────────────────────
@@ -495,6 +528,12 @@ const CampaignLivePage: React.FC = () => {
   // ── Typewriter effect ────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!activeAgent) {
+      if (typewriterText !== '') {
+        setTypewriterText('');
+      }
+      return;
+    }
     const currentString = TYPEWRITER_STRINGS[currentStringIndex];
     let timeout: number;
 
@@ -518,7 +557,7 @@ const CampaignLivePage: React.FC = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [typewriterText, isDeleting, currentStringIndex]);
+  }, [typewriterText, isDeleting, currentStringIndex, activeAgent]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -552,11 +591,12 @@ const CampaignLivePage: React.FC = () => {
           }
         }
         .inspector-drawer {
-          transform: translateX(100%);
-          transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translate3d(100%, 0, 0);
+          will-change: transform;
+          transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
         }
         .inspector-drawer.open {
-          transform: translateX(0);
+          transform: translate3d(0, 0, 0);
         }
         .drawer-tab-btn {
           position: relative;
@@ -1034,32 +1074,8 @@ const CampaignLivePage: React.FC = () => {
               <div className="p-6 space-y-4">
                 <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Generated Campaign Artifacts</p>
 
-                {campaignPreviewData ? (() => {
-                  const getOutputField = (field: string) => {
-                    if (!campaignPreviewData) return null;
-                    const outputs = campaignPreviewData.aiOutputs || {};
-                    const val = outputs[field];
-                    if (val) {
-                      if (typeof val === 'string') {
-                        try { return JSON.parse(val); } catch { return val; }
-                      }
-                      return val;
-                    }
-                    const directVal = (campaignPreviewData as any)[field];
-                    if (directVal) {
-                      if (typeof directVal === 'string') {
-                        try { return JSON.parse(directVal); } catch { return directVal; }
-                      }
-                      return directVal;
-                    }
-                    return null;
-                  };
-
-                  const copyData = getOutputField('copy_output') || getOutputField('copyOutput');
-                  const strategyData = getOutputField('strategy_output') || getOutputField('strategyOutput');
-                  const imageData = getOutputField('image_output') || getOutputField('imageOutput');
-                  const managerData = getOutputField('manager_output') || getOutputField('managerOutput');
-
+                {parsedPreviewOutputs ? (() => {
+                  const { copyData, strategyData, imageData, managerData } = parsedPreviewOutputs;
                   const sections: Array<{ label: string; icon: string; color: string; content: React.ReactNode }> = [];
 
                   // Strategy preview

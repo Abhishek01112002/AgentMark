@@ -155,6 +155,35 @@ class AIServiceClient {
       throw new Error('AI Service is unavailable');
     }
   }
+
+  /**
+   * Enhance a prompt using the AI Service
+   */
+  async enhancePrompt(prompt: string, userInput?: string, llmConfig?: any): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}/campaigns/enhance-prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          user_input: userInput || null,
+          llm_config: llmConfig || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
+        throw new Error(formatAiServiceError(errorData.detail, response.statusText));
+      }
+
+      const result = await response.json() as { enhanced_prompt: string };
+      return result.enhanced_prompt;
+    } catch (error: any) {
+      throw new Error(error.message || 'AI Service prompt enhancement failed');
+    }
+  }
 }
 
 export const aiServiceClient = new AIServiceClient();

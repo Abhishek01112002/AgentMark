@@ -82,6 +82,36 @@ const CampaignResultPage: React.FC = () => {
   const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
   const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
 
+  // Memoize parsed campaign outputs to avoid redundant JSON.parse calls in render path
+  const parsedCampaignOutputs = React.useMemo(() => {
+    if (!campaign) return null;
+    const getOutputField = (field: string) => {
+      const outputs = campaign.aiOutputs || {};
+      const val = outputs[field];
+      if (val) {
+        if (typeof val === 'string') {
+          try { return JSON.parse(val); } catch { return val; }
+        }
+        return val;
+      }
+      const directVal = (campaign as any)[field];
+      if (directVal) {
+        if (typeof directVal === 'string') {
+          try { return JSON.parse(directVal); } catch { return directVal; }
+        }
+        return directVal;
+      }
+      return null;
+    };
+
+    return {
+      copyData: getOutputField('copy_output') || getOutputField('copyOutput'),
+      strategyData: getOutputField('strategy_output') || getOutputField('strategyOutput'),
+      imageData: getOutputField('image_output') || getOutputField('imageOutput'),
+      managerData: getOutputField('manager_output') || getOutputField('managerOutput'),
+    };
+  }, [campaign]);
+
   useEffect(() => {
     const fetchCampaign = async () => {
       if (!campaignId) return;
@@ -211,7 +241,7 @@ const CampaignResultPage: React.FC = () => {
       case 'copy':
         return <CopywriterContent data={aiOutputs.copy_output} />;
       case 'images':
-        return <VisualsContent data={aiOutputs.image_output} />;
+        return <VisualsContent data={aiOutputs.image_output} campaignId={campaignId} />;
       case 'review':
         return <ReviewContent data={aiOutputs.review_output} reviewScore={campaign.reviewScore} />;
       case 'published':
@@ -349,11 +379,12 @@ const CampaignResultPage: React.FC = () => {
             #0A0A0F;
         }
         .inspector-drawer {
-          transform: translateX(100%);
-          transition: transform 320ms cubic-bezier(0.4, 0, 0.2, 1);
+          transform: translate3d(100%, 0, 0);
+          will-change: transform;
+          transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
         }
         .inspector-drawer.open {
-          transform: translateX(0);
+          transform: translate3d(0, 0, 0);
         }
         .drawer-tab-btn {
           position: relative;
@@ -704,32 +735,8 @@ const CampaignResultPage: React.FC = () => {
               <div className="p-6 space-y-4">
                 <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Generated Campaign Artifacts</p>
 
-                {campaign ? (() => {
-                  const getOutputField = (field: string) => {
-                    if (!campaign) return null;
-                    const outputs = campaign.aiOutputs || {};
-                    const val = outputs[field];
-                    if (val) {
-                      if (typeof val === 'string') {
-                        try { return JSON.parse(val); } catch { return val; }
-                      }
-                      return val;
-                    }
-                    const directVal = (campaign as any)[field];
-                    if (directVal) {
-                      if (typeof directVal === 'string') {
-                        try { return JSON.parse(directVal); } catch { return directVal; }
-                      }
-                      return directVal;
-                    }
-                    return null;
-                  };
-
-                  const copyData = getOutputField('copy_output') || getOutputField('copyOutput');
-                  const strategyData = getOutputField('strategy_output') || getOutputField('strategyOutput');
-                  const imageData = getOutputField('image_output') || getOutputField('imageOutput');
-                  const managerData = getOutputField('manager_output') || getOutputField('managerOutput');
-
+                {parsedCampaignOutputs ? (() => {
+                  const { copyData, strategyData, imageData, managerData } = parsedCampaignOutputs;
                   const sections: Array<{ label: string; icon: string; color: string; content: React.ReactNode }> = [];
 
                   // Strategy preview
@@ -773,7 +780,7 @@ const CampaignResultPage: React.FC = () => {
                     : [];
                   const activeChannels = selectedChannels.length > 0 ? selectedChannels : copyChannels;
 
-                  // Copy preview
+                  // Copy preview (shows all active channels with explicit missing alerts)
                   if (copyData && activeChannels.length > 0) {
                     sections.push({
                       label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
@@ -813,7 +820,7 @@ const CampaignResultPage: React.FC = () => {
                     });
                   }
 
-                  // Visuals preview
+                  // Visuals preview (shows all generated visual prompts)
                   if (imageData?.image_prompts) {
                     sections.push({
                       label: 'Image Prompts', icon: 'image', color: '#FFA500',

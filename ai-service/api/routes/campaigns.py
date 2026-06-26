@@ -26,8 +26,10 @@ from schemas.campaign import (
     AgentOutputs,
     try_parse_json,
 )
-from llm.factory import set_llm_config
+from llm.factory import set_llm_config, get_llm_client
 from utils.redis_publisher import publish_agent_event
+from pydantic import BaseModel
+from typing import Optional
 
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
@@ -197,3 +199,55 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
             publisher_output=try_parse_json(final_state.publisher_output),
         ),
     )
+
+
+class EnhancePromptRequest(BaseModel):
+    prompt: str
+    user_input: Optional[str] = None
+    llm_config: Optional[dict] = None
+
+
+class EnhancePromptResponse(BaseModel):
+    enhanced_prompt: str
+
+
+@router.post("/enhance-prompt", response_model=EnhancePromptResponse)
+async def enhance_prompt_route(payload: EnhancePromptRequest):
+    """
+    Enhance a prompt using the configured LLM and optional user instructions.
+    """
+    set_llm_config(payload.llm_config)
+    try:
+        client = get_llm_client()
+    except Exception as e:
+        logger.error("Failed to initialize LLM for prompt enhancement: %s", e)
+        raise HTTPException(status_code=400, detail=f"No LLM configured or API key invalid: {str(e)}")
+
+    system_prompt = (
+        "You are an expert AI image prompt engineer "
+        "specializing in DALL-E 3 and Midjourney prompts.\n\n"
+        "You will receive:\n"
+        "1. An existing image generation prompt\n"
+        "2. Optional user instructions\n\n"
+        "Your job:\n"
+        "- Enhance the prompt professionally\n"
+        "- Add missing technical specs (lighting, lens, "
+        "composition, negative prompts)\n"
+        "- If user gave instructions, incorporate them naturally\n"
+        "- Keep the original intent and subject intact\n"
+        "- Return ONLY the enhanced prompt text, nothing else\n"
+        "- No explanations, no preamble, just the prompt"
+    )
+
+    user_message = (
+        f"Original prompt: {payload.prompt}\n"
+        f"User instructions: {payload.user_input or 'None — enhance automatically'}"
+    )
+
+    full_prompt = f"{system_prompt}\n\n{user_message}"
+
+    try:
+        result = await run_in_threadpool(client.generate, full_prompt)
+        return EnhancePromptResponse(enhanced_prompt=result.strip())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prompt enhancement failed: {str(e)}")
