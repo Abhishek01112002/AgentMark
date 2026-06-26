@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Palette,
-  Plus,
   Check,
   Copy,
   X,
@@ -57,7 +56,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const [enhanceLoading, setEnhanceLoading] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
   const [enhancedCopiedIdx, setEnhancedCopiedIdx] = useState<string | null>(null);
-  const [moodboardOpen, setMoodboardOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setUsedPrompts(getUsedPrompts());
@@ -252,7 +250,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             const headlineText = card.text_overlay?.headline || '';
             const promptText =
               enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : card.prompt || '';
-            const { score, checks } = scorePrompt(promptText);
+            const { score } = scorePrompt(promptText);
             const readiness = checkPlatformReadiness(promptText);
             const originalScore = scorePrompt(card.prompt || '').score;
             const scoreDiff = score - originalScore;
@@ -301,7 +299,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   {/* LEFT – Visual mockup + specs */}
                   <div className="flex flex-col gap-5">
                     {/* Mockup canvas */}
-                    <div className="group bg-[#0A0A0F] border border-[#2A2A38] rounded-xl flex items-center justify-center p-5 min-h-[200px] relative overflow-hidden hover:border-[#6366F1]/20 transition-colors">
+                    <div className="group bg-[#0A0A0F] border border-[#2A2A38] rounded-xl flex items-center justify-center p-5 relative overflow-hidden hover:border-[#6366F1]/20 transition-colors">
                       {/* thirds grid overlay */}
                       <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-0 group-hover:opacity-15 transition-opacity duration-300">
                         {Array.from({ length: 9 }).map((_, i) => (
@@ -372,21 +370,12 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   {/* RIGHT – Prompt + tools */}
                   <div className="flex flex-col gap-6">
 
-                    {/* Quality score */}
-                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
-                          Quality Score
-                        </span>
-                        <span
-                          className="text-lg font-bold font-mono"
-                          style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
-                        >
-                          {score}<span className="text-xs text-[#8B8B9E] font-normal">/100</span>
-                        </span>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="w-full h-2 rounded-full bg-[#1A1A24] border border-[#2A2A38]/50 overflow-hidden mb-4">
+                    {/* Quality score — compact inline */}
+                    <div className="flex items-center gap-3 bg-[#0A0A0F] border border-[#2A2A38] rounded-xl px-4 py-3">
+                      <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider shrink-0">
+                        Quality
+                      </span>
+                      <div className="flex-1 h-1.5 rounded-full bg-[#1A1A24] overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{
@@ -395,21 +384,12 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                           }}
                         />
                       </div>
-                      {/* Checklist */}
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-                        {checks.map((item, cidx) => (
-                          <div key={cidx} className="flex items-center gap-2 text-xs">
-                            {item.passed ? (
-                              <CheckCircle2 size={13} className="text-[#10B981] flex-shrink-0" />
-                            ) : (
-                              <AlertCircle size={13} className="text-[#F59E0B] flex-shrink-0" />
-                            )}
-                            <span className={item.passed ? 'text-[#10B981]' : 'text-[#F59E0B]'}>
-                              {item.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      <span
+                        className="text-sm font-bold font-mono shrink-0"
+                        style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
+                      >
+                        {score}<span className="text-[10px] text-[#8B8B9E] font-normal">/100</span>
+                      </span>
                     </div>
 
                     {/* AI Readiness pills */}
@@ -475,7 +455,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                         </button>
                       </div>
                       <div
-                        className={`bg-[#0A0A0F] border rounded-xl p-4 text-sm leading-relaxed text-[#D1D1E0] min-h-[80px] max-h-[140px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
+                        className={`bg-[#0A0A0F] border rounded-xl p-4 text-sm leading-relaxed text-[#D1D1E0] min-h-[130px] max-h-[240px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
                           isEnhancing
                             ? 'border-[#6366F1]/50 animate-pulse'
                             : 'border-[#2A2A38]'
@@ -647,21 +627,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             );
           })}
 
-          {/* Add custom prompt CTA */}
-          <div
-            onClick={() => toast.success('Custom visual prompt request workflow placeholder')}
-            className="border-2 border-dashed border-[#2A2A38] hover:border-[#6366F1]/40 rounded-2xl p-10 flex flex-col items-center justify-center text-center cursor-pointer group transition-all"
-          >
-            <div className="w-12 h-12 rounded-full bg-[#1A1A24] border border-[#2A2A38] flex items-center justify-center text-[#8B8B9E] group-hover:text-[#6366F1] group-hover:bg-[#6366F1]/10 group-hover:border-[#6366F1]/30 transition-all mb-4">
-              <Plus size={20} />
-            </div>
-            <p className="text-sm font-semibold text-[#F1F1F3] group-hover:text-white transition-colors">
-              Request a Custom Visual
-            </p>
-            <p className="text-xs text-[#8B8B9E] mt-1.5 max-w-sm">
-              Request custom parameters for new campaign visual prompts.
-            </p>
-          </div>
+
         </div>
       ) : (
         /* Empty state */
@@ -676,46 +642,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
         </div>
       )}
 
-      {/* ── VISUAL INSPIRATION BOARD ────────────────────────────────────── */}
-      <div className="border border-[#2A2A38] rounded-2xl bg-[#111118] overflow-hidden">
-        <button
-          onClick={() => setMoodboardOpen(!moodboardOpen)}
-          className="w-full flex items-center justify-between px-6 py-4 hover:bg-[#2A2A38]/10 transition-colors"
-        >
-          <span className="flex items-center gap-2.5 text-sm font-semibold text-[#8B8B9E] uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
-            Visual Inspiration Board
-          </span>
-          <span className="text-xs text-[#8B8B9E] font-medium">
-            {moodboardOpen ? 'Collapse' : 'Expand'}
-          </span>
-        </button>
 
-        {moodboardOpen && (
-          <div className="p-6 border-t border-[#2A2A38]/50 space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {['Lighting', 'Color', 'Composition'].map(label => (
-                <div
-                  key={label}
-                  className="aspect-[4/3] rounded-xl bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] border border-[#2A2A38] flex flex-col items-center justify-center gap-1 relative overflow-hidden group hover:border-[#6366F1]/30 hover:scale-[1.02] transition-all"
-                >
-                  <div className="absolute inset-0 bg-[#6366F1]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <span className="text-sm font-semibold text-white z-10">{label}</span>
-                  <span className="text-[10px] font-mono text-[#8B8B9E] z-10">Ref Preview</span>
-                </div>
-              ))}
-              <div className="aspect-[4/3] rounded-xl border border-dashed border-[#2A2A38] hover:border-[#6366F1]/40 flex flex-col items-center justify-center gap-1 cursor-pointer group hover:scale-[1.02] transition-all">
-                <Plus size={18} className="text-[#8B8B9E] group-hover:text-[#6366F1] transition-colors" />
-                <span className="text-xs font-semibold text-[#8B8B9E] group-hover:text-white transition-colors">Add Ref</span>
-              </div>
-            </div>
-            <p className="text-xs text-center text-[#8B8B9E]">
-              Upload reference images to guide your visual direction —{' '}
-              <span className="italic font-medium">Coming Soon</span>
-            </p>
-          </div>
-        )}
-      </div>
 
       {/* ── EXPORT DRAWER ───────────────────────────────────────────────── */}
       {exportDrawerOpen && (
