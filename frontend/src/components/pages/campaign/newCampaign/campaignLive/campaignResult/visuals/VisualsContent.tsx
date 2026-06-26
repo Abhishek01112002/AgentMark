@@ -49,6 +49,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const [exportDrawerOpen, setExportDrawerOpen] = useState<boolean>(false);
   const [usedPrompts, setUsedPrompts] = useState<string[]>([]);
   const [expandedRationale, setExpandedRationale] = useState<string[]>([]);
+  const [scoreOpen, setScoreOpen] = useState<string[]>([]);
   const [enhancerOpen, setEnhancerOpen] = useState<string[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [userEnhanceInput, setUserEnhanceInput] = useState<Record<string, string>>({});
@@ -370,49 +371,66 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   {/* RIGHT – Prompt + tools */}
                   <div className="flex flex-col gap-6">
 
-                    {/* Quality score — compact inline with hover tooltip */}
-                    <div className="flex items-center gap-3 bg-[#0A0A0F] border border-[#2A2A38] rounded-xl px-4 py-3">
-                      <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider shrink-0">
-                        Quality
-                      </span>
-                      <div className="flex-1 h-1.5 rounded-full bg-[#1A1A24] overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-700"
-                          style={{
-                            width: `${score}%`,
-                            backgroundColor: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444',
-                          }}
-                        />
-                      </div>
-                      {/* Score number with checklist tooltip on hover */}
-                      <div className="relative group/score shrink-0">
+                    {/* Quality score — compact bar + click-to-expand checks panel */}
+                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl overflow-hidden">
+                      {/* Top row: label + bar + score + toggle */}
+                      <button
+                        onClick={() =>
+                          setScoreOpen(prev =>
+                            prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
+                          )
+                        }
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#111118] transition-colors"
+                      >
+                        <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider shrink-0">
+                          Quality
+                        </span>
+                        <div className="flex-1 h-1.5 rounded-full bg-[#1A1A24] overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${score}%`,
+                              backgroundColor: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444',
+                            }}
+                          />
+                        </div>
                         <span
-                          className="text-sm font-bold font-mono cursor-default underline decoration-dotted decoration-[#8B8B9E]/40 underline-offset-2"
+                          className="text-sm font-bold font-mono shrink-0"
                           style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
                         >
                           {score}<span className="text-[10px] text-[#8B8B9E] font-normal">/100</span>
                         </span>
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full right-0 mb-2.5 w-56 bg-[#111118] border border-[#2A2A38] rounded-xl shadow-2xl shadow-black/60 z-40 hidden group-hover/score:block">
-                          <div className="px-4 py-3 border-b border-[#2A2A38]/60">
-                            <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E]">Prompt Checks</p>
-                          </div>
-                          <ul className="px-4 py-3 space-y-2">
+                        <span className="text-[#8B8B9E] shrink-0">
+                          {scoreOpen.includes(cardId) ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </span>
+                      </button>
+
+                      {/* Expanded checks panel */}
+                      {scoreOpen.includes(cardId) && (
+                        <div className="border-t border-[#2A2A38]/60 px-4 pt-4 pb-5">
+                          <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-3">
+                            Prompt Analysis — {checks.filter((c: { passed: boolean }) => c.passed).length}/{checks.length} passed
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
                             {checks.map((item: { label: string; passed: boolean }, i: number) => (
-                              <li key={i} className="flex items-center gap-2.5">
+                              <div key={i} className="flex items-center gap-2.5">
                                 {item.passed ? (
-                                  <CheckCircle2 size={12} className="text-[#10B981] shrink-0" />
+                                  <CheckCircle2 size={13} className="text-[#10B981] shrink-0" />
                                 ) : (
-                                  <AlertCircle size={12} className="text-[#F59E0B] shrink-0" />
+                                  <AlertCircle size={13} className="text-[#F59E0B] shrink-0" />
                                 )}
-                                <span className={`text-xs ${item.passed ? 'text-[#10B981]' : 'text-[#F59E0B]'}`}>
+                                <span
+                                  className={`text-xs font-medium ${
+                                    item.passed ? 'text-[#A7F3D0]' : 'text-[#FCD34D]'
+                                  }`}
+                                >
                                   {item.label}
                                 </span>
-                              </li>
+                              </div>
                             ))}
-                          </ul>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* AI Readiness pills */}
