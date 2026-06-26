@@ -71,6 +71,7 @@ io.on('connection', (socket) => {
       const token = socket.handshake.auth?.token as string | undefined;
       if (!token) {
         socket.emit('auth_error', { message: 'Unauthorized: no token' });
+        socket.disconnect(true);
         return;
       }
       const decoded = verifyToken(token);
@@ -83,6 +84,7 @@ io.on('connection', (socket) => {
 
       if (!campaign || campaign.project.userId !== decoded.userId) {
         socket.emit('auth_error', { message: 'Unauthorized: campaign not found' });
+        socket.disconnect(true);
         return;
       }
 
@@ -93,6 +95,7 @@ io.on('connection', (socket) => {
     } catch (err: any) {
       // Invalid/expired token
       socket.emit('auth_error', { message: 'Unauthorized: invalid token' });
+      socket.disconnect(true);
     }
   });
 
