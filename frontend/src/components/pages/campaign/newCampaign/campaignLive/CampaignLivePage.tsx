@@ -112,6 +112,7 @@ const CampaignLivePage: React.FC = () => {
 
   const [campaignFailed, setCampaignFailed] = useState(false);
   const [failedError, setFailedError] = useState<string>('');
+  const [socketAuthError, setSocketAuthError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   
   // HITL Modal State
@@ -318,6 +319,7 @@ const CampaignLivePage: React.FC = () => {
 
     socket.on('connect', () => {
       setIsConnected(true);
+      setSocketAuthError('');
       socket.emit('join_campaign', campaignId);
       console.log('[Socket.io] Connected | campaign=', campaignId);
     });
@@ -328,10 +330,13 @@ const CampaignLivePage: React.FC = () => {
     });
 
     // Server-side auth rejection (invalid token / wrong user)
-    socket.on('error', (err: { message: string }) => {
-      console.warn('[Socket.io] Server error:', err.message);
-      setCampaignFailed(true);
-      setFailedError(err.message || 'Connection refused by server.');
+    socket.on('auth_error', (err: { message: string }) => {
+      console.warn('[Socket.io] Auth error:', err.message);
+      setSocketAuthError(err.message || 'Unauthorized connection.');
+    });
+
+    socket.on('error', (err: any) => {
+      console.warn('[Socket.io] Socket error:', err?.message || err);
     });
 
     // ── Agent progress tick ──────────────────────────────────────────────────
@@ -744,6 +749,15 @@ const CampaignLivePage: React.FC = () => {
                 <div className="mb-6 p-4 rounded-lg border border-[#F43F5E]/30 bg-[#F43F5E]/10">
                   <p className="text-sm text-[#F43F5E]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                     Campaign failed: {failedError}
+                  </p>
+                </div>
+              )}
+
+              {/* Socket Auth Error Banner */}
+              {socketAuthError && (
+                <div className="mb-6 p-4 rounded-lg border border-[#F59E0B]/30 bg-[#F59E0B]/10">
+                  <p className="text-sm text-[#F59E0B]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    Real-time updates auth error: {socketAuthError} (Check your connection or refresh the page)
                   </p>
                 </div>
               )}

@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
       // 1. Verify JWT
       const token = socket.handshake.auth?.token as string | undefined;
       if (!token) {
-        socket.emit('error', { message: 'Unauthorized: no token' });
+        socket.emit('auth_error', { message: 'Unauthorized: no token' });
         return;
       }
       const decoded = verifyToken(token);
@@ -82,7 +82,7 @@ io.on('connection', (socket) => {
       });
 
       if (!campaign || campaign.project.userId !== decoded.userId) {
-        socket.emit('error', { message: 'Unauthorized: campaign not found' });
+        socket.emit('auth_error', { message: 'Unauthorized: campaign not found' });
         return;
       }
 
@@ -92,7 +92,7 @@ io.on('connection', (socket) => {
       console.log(`[Socket.io] ${socket.id} joined room: ${room} | user=${decoded.userId}`);
     } catch (err: any) {
       // Invalid/expired token
-      socket.emit('error', { message: 'Unauthorized: invalid token' });
+      socket.emit('auth_error', { message: 'Unauthorized: invalid token' });
     }
   });
 
