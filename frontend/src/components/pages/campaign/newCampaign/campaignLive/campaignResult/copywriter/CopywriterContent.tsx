@@ -279,6 +279,28 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
               </div>
             </div>
           )}
+
+          {/* Channel Messaging */}
+          {messagingFramework.channel_messaging?.length > 0 && (
+            <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+              <h4 className="text-base font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Channel Messaging</h4>
+              <div className="space-y-3">
+                {messagingFramework.channel_messaging.map((ch: any, idx: number) => (
+                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3">
+                    <h5 className="text-xs font-medium mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{ch.channel_name}</h5>
+                    <p className="text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{ch.approach}</p>
+                    {ch.key_points?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ch.key_points.map((point: string, pidx: number) => (
+                          <span key={pidx} className="px-2 py-0.5 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{point}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -212,6 +212,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
         </div>
       </div>
 
+
       {/* ── PLATFORM TABS ─────────────────────────────────────────────────── */}
       {promptsList.length > 0 && (
         <div className="flex gap-8 border-b border-[#2A2A38] overflow-x-auto scrollbar-none">

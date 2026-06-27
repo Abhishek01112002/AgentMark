@@ -76,7 +76,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
-from schemas import PublisherOutput
+from schemas import PublisherOutput, normalize_channel_list
 
 
 # ==================== PUBLISHER AGENT FUNCTION ====================
@@ -116,7 +116,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     except (json.JSONDecodeError, TypeError) as e:
         raise ValueError(f"Failed to parse manager_output: {e}")
 
-    channels = manager_data.get("channels", [])
+    channels = normalize_channel_list(manager_data.get("channels", []))
     deliverables = manager_data.get("deliverables", [])
 
     print(f"✓ Channels:     {channels}")
@@ -144,7 +144,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
 
     # Override channels/deliverables from strategy execution if available
     execution = strategy_data.get("execution", {})
-    strategy_channels = execution.get("channels", [])
+    strategy_channels = normalize_channel_list(execution.get("channels", []))
     strategy_deliverables = execution.get("deliverables", [])
     if strategy_channels:
         channels = strategy_channels

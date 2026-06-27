@@ -46,6 +46,10 @@ from .agent_outputs import (
     ContentCalendar,
     AssetChecklist,
     ProjectedMetrics,
+    
+    # Channel normalization utilities
+    normalize_channel_name,
+    normalize_channel_list,
 )
 
 __all__ = [
@@ -60,4 +64,6 @@ __all__ = [
     "TextOverlay",
     "ReviewerOutput",
     "PublisherOutput",
+    "normalize_channel_name",
+    "normalize_channel_list",
 ]

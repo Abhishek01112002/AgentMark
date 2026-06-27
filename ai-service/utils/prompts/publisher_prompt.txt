@@ -317,11 +317,11 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
     ]
   }},
   "projected_metrics": {{
-    "total_reach": "500K+ impressions across all channels",
+    "total_reach": "Compute from {industry} benchmarks and {channels_count} channels",
     "lead_target": "Specific target based on inferred_goal",
-    "estimated_ctr": "3.5%",
-    "estimated_cost": "$15K-$25K",
-    "roi_projection": "3.2x estimated ROI",
+    "estimated_ctr": "Compute from {industry} benchmarks",
+    "estimated_cost": "Compute from channel count and campaign scope",
+    "roi_projection": "Projected ROI based on conversion targets and cost",
     "projection_note": "Brief explanation of projection methodology",
     "channel_breakdown": {{
       "channel_name": "Contribution percentage and expected outcome"

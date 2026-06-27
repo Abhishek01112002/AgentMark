@@ -63,7 +63,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
-from schemas import CopywriterOutput
+from schemas import CopywriterOutput, normalize_channel_list
 
 
 # ==================== COPYWRITER AGENT FUNCTION ====================
@@ -114,7 +114,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     research_foundation = strategy.get("research_foundation", {})
     execution = strategy.get("execution", {})
     deliverables = execution.get("deliverables", [])
-    channels = execution.get("channels", [])
+    channels = normalize_channel_list(execution.get("channels", []))
 
     print(f"✓ Positioning: {positioning[:60]}...")
     print(f"✓ Key Messages: {len(key_messages)} found")

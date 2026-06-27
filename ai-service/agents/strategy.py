@@ -58,7 +58,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
-from schemas import StrategyOutput
+from schemas import StrategyOutput, normalize_channel_list
 
 
 # ==================== STRATEGY AGENT FUNCTION ====================
@@ -122,10 +122,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     
     campaign_name = manager.get("campaign_name", "Unknown Campaign")
     brand_name = manager.get("brand_name", "Unknown Brand")
-    channels = manager.get("channels", [])
+    channels = normalize_channel_list(manager.get("channels", []))
     deliverables = manager.get("deliverables", [])
     brief = state.brief or "No brief provided"
-    
+
     print(f"✓ Campaign: {campaign_name}")
     print(f"✓ Brand: {brand_name}")
     print(f"✓ Channels: {', '.join(channels)}")

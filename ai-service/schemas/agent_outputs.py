@@ -1,5 +1,139 @@
-from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Literal
+from enum import Enum
+from pydantic import BaseModel, Field, computed_field
+from typing import List, Dict, Optional, Literal, Union
+
+
+# ==================== CHANNEL ENUM ====================
+
+class Channel(str, Enum):
+    """Validated campaign channels. Used as keys in copy_output.copies."""
+    INSTAGRAM = "instagram"
+    FACEBOOK = "facebook"
+    LINKEDIN = "linkedin"
+    TWITTER = "twitter"
+    TIKTOK = "tiktok"
+    YOUTUBE = "youtube"
+    EMAIL = "email"
+    GOOGLE_ADS = "google_ads"
+
+
+# Display names for frontend rendering
+CHANNEL_DISPLAY_NAMES: Dict[Channel, str] = {
+    Channel.INSTAGRAM: "Instagram",
+    Channel.FACEBOOK: "Facebook",
+    Channel.LINKEDIN: "LinkedIn",
+    Channel.TWITTER: "Twitter",
+    Channel.TIKTOK: "TikTok",
+    Channel.YOUTUBE: "YouTube",
+    Channel.EMAIL: "Email",
+    Channel.GOOGLE_ADS: "Google Ads",
+}
+
+# Set of valid channel name strings for fast lookup
+_VALID_CHANNEL_NAMES: set[str] = {c.value for c in Channel}
+
+# Known aliases that don't map via simple normalization
+_CHANNEL_ALIASES: Dict[str, str] = {
+    "x": "twitter",
+    "tw": "twitter",
+    "yt": "youtube",
+    "ytb": "youtube",
+    "adwords": "google_ads",
+    "gmail": "email",
+    "newsletter": "email",
+    "e-mail": "email",
+    "mail": "email",
+}
+
+# Suffixes that may follow a channel name (e.g. "LinkedIn Posts" → "linkedin")
+_CHANNEL_SUFFIXES: list[str] = [
+    "posts", "ads", "feed", "marketing", "videos", "stories",
+    "page", "group", "account", "profile", "business", "handle",
+    "channel", "community", "network", "content", "blog",
+    "post", "ad", "story", "video", "carousel", "reel",
+    "campaign", "promotion", "update", "newsletter",
+]
+
+
+def normalize_channel_name(raw: str) -> Optional[str]:
+    """
+    Robustly normalize an arbitrary channel string to a valid schema field name.
+
+    Matching strategy (in order):
+    1. Exact case-insensitive match
+    2. Known alias lookup
+    3. Underscore-normalized match (spaces/dashes → underscores)
+    4. Progressive suffix stripping (right-to-left by word)
+    5. Substring search against all valid channel names
+
+    Returns the canonical channel name string (e.g. "linkedin", "google_ads")
+    or *None* if no match is possible. Never raises.
+    """
+    if not raw or not isinstance(raw, str):
+        return None
+
+    cleaned = raw.lower().strip()
+
+    # 1. Direct exact match
+    if cleaned in _VALID_CHANNEL_NAMES:
+        return cleaned
+
+    # 2. Alias lookup (exact)
+    if cleaned in _CHANNEL_ALIASES:
+        return _CHANNEL_ALIASES[cleaned]
+
+    # 3. Normalize separators and retry
+    normalized = cleaned.replace(" ", "_").replace("-", "_").replace("/", "_")
+    while "__" in normalized:
+        normalized = normalized.replace("__", "_")
+    normalized = normalized.strip("_")
+
+    if normalized in _VALID_CHANNEL_NAMES:
+        return normalized
+    if normalized in _CHANNEL_ALIASES:
+        return _CHANNEL_ALIASES[normalized]
+
+    # 4. Progressive suffix stripping: try shorter prefixes
+    words = normalized.split("_")
+    for end in range(len(words), 0, -1):
+        candidate = "_".join(words[:end])
+        if candidate in _VALID_CHANNEL_NAMES:
+            return candidate
+        if candidate in _CHANNEL_ALIASES:
+            return _CHANNEL_ALIASES[candidate]
+
+    # 5. Also try stripping common suffixes from the original word list
+    for end in range(len(words), 0, -1):
+        suffix_part = "_".join(words[end - 1:end])
+        if suffix_part in _CHANNEL_SUFFIXES:
+            candidate = "_".join(words[:end - 1])
+            if candidate in _VALID_CHANNEL_NAMES:
+                return candidate
+            if candidate in _CHANNEL_ALIASES:
+                return _CHANNEL_ALIASES[candidate]
+
+    # 6. Substring fallback: any valid channel name found inside the string
+    for name in sorted(_VALID_CHANNEL_NAMES, key=len, reverse=True):
+        if name in cleaned:
+            return name
+
+    return None
+
+
+def normalize_channel_list(channels: list) -> list:
+    """
+    Normalize every channel name in a list.  Non-matching entries are dropped
+    and a warning is printed so the developer can add missing aliases.
+    """
+    result: list[str] = []
+    for ch in channels:
+        normalized = normalize_channel_name(ch)
+        if normalized:
+            result.append(normalized)
+        else:
+            print(f"   ⚠️  Dropped unrecognized channel '{ch}' — "
+                  f"add an alias in _CHANNEL_ALIASES if this is a valid platform")
+    return result
 
 
 # ==================== MANAGER OUTPUT SCHEMA ====================

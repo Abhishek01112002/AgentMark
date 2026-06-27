@@ -59,7 +59,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
-from schemas import ImagePromptOutput
+from schemas import ImagePromptOutput, normalize_channel_list
 
 
 # ==================== UTILITY FUNCTIONS ====================
@@ -241,7 +241,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     # Extract deliverables and channels from execution plan
     execution = strategy_data.get("execution", {})
     deliverables = execution.get("deliverables", [])
-    channels = execution.get("channels", [])
+    channels = normalize_channel_list(execution.get("channels", []))
 
     # Fallback to manager_output if deliverables are missing
     if not deliverables and state.manager_output:
@@ -249,7 +249,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             manager_data = json.loads(state.manager_output)
             deliverables = manager_data.get("deliverables", [])
             if not channels:
-                channels = manager_data.get("channels", [])
+                channels = normalize_channel_list(manager_data.get("channels", []))
             print("   ℹ️  Deliverables loaded from manager_output (fallback)")
         except Exception:
             pass

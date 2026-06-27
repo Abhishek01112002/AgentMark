@@ -167,12 +167,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             channels_list = manager_data.get("channels", [])
         except Exception:
             pass
-    if not channels_list and state.strategy_output:
-        try:
-            strategy_data = json.loads(state.strategy_output)
-            channels_list = strategy_data.get("execution", {}).get("channels", [])
-        except Exception:
-            pass
+    if not channels_list:
+        channels_list = strategy_data.get("execution", {}).get("channels", [])
     if not channels_list:
         channels_list = getattr(state, "channels", []) or []
     channels = ', '.join(channels_list) if isinstance(channels_list, list) else str(channels_list)
@@ -342,53 +338,39 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     print("-" * 80)
 
     all_approved = research_approved and strategy_approved and copy_approved and image_approved
-    agents_meet_threshold = all([
-        research_score >= MIN_AGENT_SCORE,
-        strategy_score >= MIN_AGENT_SCORE,
-        copy_score >= MIN_AGENT_SCORE,
-        image_score >= MIN_AGENT_SCORE
-    ])
     meets_overall_threshold = overall_score >= MIN_QUALITY_SCORE
 
     # ========== STEP 9: BUILD REVIEW OUTPUT ==========
-    # Override LLM's approved field with threshold-based logic for consistency
-    research_review_dict = research_review.model_dump()
-    research_review_dict["approved"] = research_approved
-    
-    strategy_review_dict = strategy_review.model_dump()
-    strategy_review_dict["approved"] = strategy_approved
-    
-    copy_review_dict = copy_review.model_dump()
-    copy_review_dict["approved"] = copy_approved
-    
-    image_review_dict = image_review.model_dump()
-    image_review_dict["approved"] = image_approved
-    
-    review_output = {
-        "status": "approved" if (all_approved and agents_meet_threshold and meets_overall_threshold) else "revision_required",
-        "research_review": research_review_dict,
-        "strategy_review": strategy_review_dict,
-        "copy_review": copy_review_dict,
-        "image_review": image_review_dict,
-        "overall_quality_score": overall_score,
-        "individual_threshold_met": agents_meet_threshold,
-        "overall_threshold_met": meets_overall_threshold,
-        "reviewed_at": datetime.now().isoformat(),
-        "reviewer": "Reviewer Agent (LLM-Powered)"
-    }
+    # Start from the LLM output to preserve the full nested structure (overall, etc.)
+    review_output = review_analysis.model_dump()
+    # Override approved fields with threshold-based logic for consistency
+    review_output["research_review"]["approved"] = research_approved
+    review_output["strategy_review"]["approved"] = strategy_approved
+    review_output["copy_review"]["approved"] = copy_approved
+    review_output["image_review"]["approved"] = image_approved
+    review_output["status"] = "approved" if (all_approved and meets_overall_threshold) else "revision_required"
+    # Backward-compatible flat fields (backend consumers use these)
+    review_output["overall_quality_score"] = overall_score
+    review_output["individual_threshold_met"] = all_approved
+    review_output["overall_threshold_met"] = meets_overall_threshold
+    review_output["reviewed_at"] = datetime.now().isoformat()
+    review_output["reviewer"] = "Reviewer Agent (LLM-Powered)"
 
-    # ========== STEP 11: UPDATE STATE ==========
-    print("\n[STEP 9] Updating state with review decision...")
+    review_output_json = json.dumps(review_output, indent=2)
+
+    # ========== STEP 10: UPDATE STATE ==========
+    print("\n[STEP 10] Updating state with review decision...")
     print("-" * 80)
 
-    if all_approved and agents_meet_threshold and meets_overall_threshold:
+    state.review_output = review_output_json
+
+    if all_approved and meets_overall_threshold:
         # ✅ ALL APPROVED
         print(f"✅ ALL OUTPUTS APPROVED - Ready for Publication")
         print(f"   All agents meet individual threshold (≥{MIN_AGENT_SCORE})")
         print(f"   Overall quality: {overall_score}/100 (≥{MIN_QUALITY_SCORE})")
 
         state.status = "review_complete"
-        state.review_output = json.dumps(review_output, indent=2)
         state.next_step = "proceed_to_publisher"
         state.review_feedback = None
 
@@ -398,7 +380,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         revision_target = _determine_revision_target(
             research_review, strategy_review, copy_review, image_review,
             research_score, strategy_score, copy_score, image_score,
-            all_approved, agents_meet_threshold, meets_overall_threshold
+            all_approved
         )
 
         agent_key = revision_target["agent_key"]  # e.g., "research", "strategy"
@@ -413,7 +395,6 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             print(f"   Proceeding to publisher despite quality issues")
 
             state.status = "review_complete"
-            state.review_output = json.dumps(review_output, indent=2)
             state.next_step = "proceed_to_publisher"
             state.review_feedback = None
 
@@ -443,7 +424,6 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             }
 
             state.status = revision_target["status"]
-            state.review_output = json.dumps(review_output, indent=2)
             state.review_feedback = json.dumps(review_feedback, indent=2)
             state.next_step = revision_target["next_step"]
 
@@ -497,8 +477,7 @@ def _add_explicit_validation_checks(
             if not strategy_review.action_items:
                 strategy_review.action_items = []
             strategy_review.action_items.append("Change strategy inferred_goal to one of awareness, lead_gen, sales, retention")
-            # Force score below threshold if invalid
-            strategy_review.score = min(strategy_review.score, 60)
+            strategy_review.score = min(strategy_review.score, MIN_AGENT_SCORE - 1)
             
     # Check 1c: Email subject must not exceed 60 characters
     email_data = copy_data.get("email", {})
@@ -511,8 +490,7 @@ def _add_explicit_validation_checks(
                 if not copy_review.action_items:
                     copy_review.action_items = []
                 copy_review.action_items.append("Shorten email subject to be under 60 characters")
-                # Force score below threshold if subject is too long
-                copy_review.score = min(copy_review.score, 65)
+                copy_review.score = min(copy_review.score, MIN_AGENT_SCORE - 1)
 
     # Check 2: Image prompts array must not be empty
     image_prompts = image_data.get("image_prompts", [])
@@ -534,16 +512,16 @@ def _determine_revision_target(
     strategy_score: int,
     copy_score: int,
     image_score: int,
-    all_approved: bool,
-    agents_meet_threshold: bool,
-    meets_overall_threshold: bool
+    all_approved: bool
 ) -> dict:
     """
     Determine which agent needs revision.
     Priority order: Research → Strategy → Copy → Image
 
-    If explicit failures exist → use priority order.
-    If only threshold failures → target the lowest scoring agent.
+    Uses the LLM's approved flag as the primary signal (LLM catches
+    content-level issues like channel drift, missing fields, etc.).
+    Falls back to the lowest scoring agent if the LLM approved everyone
+    but quality thresholds aren't met.
     """
 
     agent_map = {
@@ -577,7 +555,7 @@ def _determine_revision_target(
         }
     }
 
-    # Check for explicit failures in priority order
+    # Check for explicit failures in priority order (primary: LLM's judgment)
     if not all_approved:
         for agent_key in REVISION_PRIORITY:
             agent_info = agent_map[agent_key]
@@ -592,7 +570,7 @@ def _determine_revision_target(
                     "action_items": agent_info["review"].action_items
                 }
 
-    # No explicit failures but thresholds not met → target lowest scorer
+    # No explicit failures but thresholds not met → target lowest scorer (backup)
     scores = [(agent_map[k]["score"], k) for k in REVISION_PRIORITY]
     scores.sort(key=lambda x: x[0])
     lowest_score, lowest_key = scores[0]
