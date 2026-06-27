@@ -141,15 +141,30 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     llm = get_llm_client()
     
     # Format human revision feedback if strategy is targeted for revision
+    is_human_revision = bool(state.human_feedback and state.human_revision_target == "strategy")
     human_feedback_section = ""
-    if state.human_feedback and state.human_revision_target == "strategy":
+    if is_human_revision:
+        existing_strategy_section = ""
+        if state.strategy_output:
+            existing_strategy_section = (
+                "\n\nEXISTING STRATEGY (your previous output — preserve ALL unchanged fields exactly):\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"{state.strategy_output}\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
         human_feedback_section = (
             "\n" + "="*80 + "\n"
-            "⚠️ HUMAN REVISION FEEDBACK:\n"
-            "The user has requested a revision of your strategy with the following feedback and instructions.\n"
-            "You MUST strictly adjust your strategy to address this feedback:\n"
-            f"\"{state.human_feedback}\"\n"
-            + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
+            "You are in REVISION mode. The user has requested a specific change below.\n"
+            "CRITICAL REVISION RULES — MUST FOLLOW:\n"
+            "  1. READ the user feedback carefully and identify ONLY which field(s) need changing.\n"
+            "  2. ONLY modify the specific field(s) the user mentioned. Nothing else.\n"
+            "  3. ALL other strategy fields MUST be copied exactly from EXISTING STRATEGY above.\n"
+            "  4. Do NOT regenerate, rewrite, or improve unchanged fields.\n"
+            "  5. Channels list must remain exactly the same as in EXISTING STRATEGY.\n"
+            f"User Feedback: \"{state.human_feedback}\"\n"
+            + "="*80
+            + existing_strategy_section
         )
 
     # Load strategy prompt and format with data
@@ -169,12 +184,20 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     )
     
     print("   Querying LLM with structured output...")
-    
+
+    # Revision runs: lower temperature prevents unnecessary field changes;
+    # extra token budget handles the existing-strategy context
+    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_max_tokens = 5000 if is_human_revision else 3000
+
+    if is_human_revision:
+        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+
     # Get structured LLM response with error handling
     strategy_plan, state = safe_llm_call(
         state,
         "Strategy",
-        lambda: llm.generate_structured(prompt, StrategyOutput, temperature=0.7, max_tokens=3000)
+        lambda: llm.generate_structured(prompt, StrategyOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
     )
     
     if strategy_plan is None:

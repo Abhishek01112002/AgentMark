@@ -121,15 +121,29 @@ def research_agent(state: CampaignState) -> CampaignState:
     llm = get_llm_client()
     
     # Format human revision feedback if research is targeted for revision
+    is_human_revision = bool(state.human_feedback and state.human_revision_target == "research")
     human_feedback_section = ""
-    if state.human_feedback and state.human_revision_target == "research":
+    if is_human_revision:
+        existing_research_section = ""
+        if state.research_output:
+            existing_research_section = (
+                "\n\nEXISTING RESEARCH (your previous output — preserve ALL unchanged fields exactly):\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"{state.research_output}\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
         human_feedback_section = (
             "\n" + "="*80 + "\n"
-            "⚠️ HUMAN REVISION FEEDBACK:\n"
-            "The user has requested a revision of your research with the following feedback and instructions.\n"
-            "You MUST strictly adjust your research analysis to address this feedback:\n"
-            f"\"{state.human_feedback}\"\n"
-            + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
+            "You are in REVISION mode. The user has requested a specific change below.\n"
+            "CRITICAL REVISION RULES — MUST FOLLOW:\n"
+            "  1. READ the user feedback carefully and identify ONLY which field(s) need changing.\n"
+            "  2. ONLY modify what the user explicitly asked for. Nothing else.\n"
+            "  3. ALL other fields MUST be copied exactly from EXISTING RESEARCH above.\n"
+            "  4. Do NOT regenerate, expand, or improve unchanged fields.\n"
+            f"User Feedback: \"{state.human_feedback}\"\n"
+            + "="*80
+            + existing_research_section
         )
 
     # Load research prompt and format with campaign data
@@ -148,12 +162,20 @@ def research_agent(state: CampaignState) -> CampaignState:
     )
     
     print("   Querying LLM with structured output...")
-    
+
+    # Revision runs: lower temperature avoids regenerating unchanged fields;
+    # higher token budget compensates for the extra existing-output context
+    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_max_tokens = 2500 if is_human_revision else 1500
+
+    if is_human_revision:
+        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+
     # Get structured LLM response with error handling
     research_data, state = safe_llm_call(
         state,
         "Research",
-        lambda: llm.generate_structured(prompt, ResearchOutput, temperature=0.7, max_tokens=1500)
+        lambda: llm.generate_structured(prompt, ResearchOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
     )
     
     if research_data is None:

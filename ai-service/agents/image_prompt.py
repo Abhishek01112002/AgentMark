@@ -332,15 +332,30 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             copy_overlay_context = "\n".join(overlay_lines)
 
     # Format human revision feedback if image_prompt is targeted for revision
+    is_human_revision = bool(state.human_feedback and state.human_revision_target == "image_prompt")
     human_feedback_section = ""
-    if state.human_feedback and state.human_revision_target == "image_prompt":
+    if is_human_revision:
+        existing_image_section = ""
+        if state.image_output:
+            existing_image_section = (
+                "\n\nEXISTING IMAGE PROMPTS (your previous output — preserve ALL unchanged visuals exactly):\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"{state.image_output}\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
         human_feedback_section = (
             "\n" + "="*80 + "\n"
-            "⚠️ HUMAN REVISION FEEDBACK:\n"
-            "The user has requested a revision of your visual prompts with the following feedback and instructions.\n"
-            "You MUST strictly modify your visual style and DALL-E prompts to address this feedback:\n"
-            f"\"{state.human_feedback}\"\n"
-            + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
+            "You are in REVISION mode. The user has requested a specific change below.\n"
+            "CRITICAL REVISION RULES — MUST FOLLOW:\n"
+            "  1. READ the user feedback carefully and identify ONLY which image(s)/field(s) need changing.\n"
+            "  2. ONLY modify the specific image prompt(s) or visual direction the user mentioned.\n"
+            "  3. ALL other image prompts MUST be copied exactly from EXISTING IMAGE PROMPTS above.\n"
+            "  4. Do NOT regenerate, restyle, or rewrite unchanged prompts.\n"
+            "  5. Keep exactly the same number of image prompts as in EXISTING IMAGE PROMPTS.\n"
+            f"User Feedback: \"{state.human_feedback}\"\n"
+            + "="*80
+            + existing_image_section
         )
 
     # Load image prompt template and format with all campaign data
@@ -377,11 +392,19 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
 
     print("   Querying LLM with structured output...")
 
+    # Revision runs: lower temperature reduces visual drift on unchanged prompts;
+    # extra token budget covers the existing-output context in the prompt
+    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_max_tokens = 5000 if is_human_revision else 3000
+
+    if is_human_revision:
+        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+
     # Get structured LLM response with error handling
     image_output, state = safe_llm_call(
         state,
         "ImagePrompt",
-        lambda: llm.generate_structured(prompt, ImagePromptOutput, temperature=0.7, max_tokens=3000)
+        lambda: llm.generate_structured(prompt, ImagePromptOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
     )
     
     if image_output is None:

@@ -188,15 +188,30 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     voice_keywords = voice_keywords_map.get(brand_voice, "clear, compelling, direct")
 
     # Format human revision feedback if copywriter is targeted for revision
+    is_human_revision = bool(state.human_feedback and state.human_revision_target == "copywriter")
     human_feedback_section = ""
-    if state.human_feedback and state.human_revision_target == "copywriter":
+    if is_human_revision:
+        existing_copy_section = ""
+        if state.copy_output:
+            existing_copy_section = (
+                "\n\nEXISTING COPY (your previous output — preserve ALL unchanged channels exactly):\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"{state.copy_output}\n"
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            )
         human_feedback_section = (
             "\n" + "="*80 + "\n"
-            "⚠️ HUMAN REVISION FEEDBACK:\n"
-            "The user has requested a revision of your copy with the following feedback and instructions.\n"
-            "You MUST strictly modify and adjust your copywriting to address this feedback:\n"
-            f"\"{state.human_feedback}\"\n"
-            + "="*80 + "\n"
+            "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
+            "You are in REVISION mode. The user has requested a specific change below.\n"
+            "CRITICAL REVISION RULES — MUST FOLLOW:\n"
+            "  1. READ the user feedback carefully and identify ONLY which field(s)/channel(s) need changing.\n"
+            "  2. ONLY modify the specific field(s) the user mentioned. Nothing else.\n"
+            "  3. ALL other channels and fields MUST be copied character-for-character from EXISTING COPY above.\n"
+            "  4. Do NOT regenerate, rewrite, or improve unchanged channels — copy them exactly.\n"
+            "  5. Do NOT add or remove any channels — keep the same set as EXISTING COPY.\n"
+            f"User Feedback: \"{state.human_feedback}\"\n"
+            + "="*80
+            + existing_copy_section
         )
 
     # Load copywriter prompt and format with all campaign data
@@ -236,16 +251,46 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     )
 
     print("   Querying LLM with structured output...")
+    # Revision runs use lower temperature (less drift) and higher token budget
+    # (feedback section adds extra tokens, need headroom for full output)
+    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_max_tokens = 6000 if is_human_revision else 4000
+
+    if is_human_revision:
+        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
     # Get structured LLM response with error handling
     copy_output, state = safe_llm_call(
         state,
         "Copywriter",
-        lambda: llm.generate_structured(prompt, CopywriterOutput, temperature=0.7, max_tokens=4000)
+        lambda: llm.generate_structured(prompt, CopywriterOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
     )
     
     if copy_output is None:
         return state  # Error already logged in state
+
+    # ========== POST-REVISION MERGE SAFETY NET ==========
+    # Even with surgical mode instructions, LLMs can occasionally drop a channel.
+    # This layer detects dropped channels and restores them from the previous copy.
+    if is_human_revision and state.copy_output:
+        print("\n[MERGE] Running post-revision safety check...")
+        try:
+            previous = CopywriterOutput.model_validate_json(state.copy_output)
+            channel_fields = ["instagram", "facebook", "linkedin", "twitter", "tiktok", "youtube", "email", "google_ads"]
+            restored = []
+            for field in channel_fields:
+                new_val = getattr(copy_output, field, None)
+                prev_val = getattr(previous, field, None)
+                if prev_val is not None and new_val is None:
+                    setattr(copy_output, field, prev_val)
+                    restored.append(field)
+                    print(f"   ⚠️  RESTORED '{field}' — LLM dropped it during revision, restoring from previous copy")
+            if not restored:
+                print("   ✅ All channels intact — no restoration needed")
+            else:
+                print(f"   ✅ Restored {len(restored)} channel(s): {', '.join(restored)}")
+        except Exception as merge_err:
+            print(f"   ⚠️  Merge check failed (non-critical): {merge_err}")
 
     # ========== STEP 5: DISPLAY COPY SUMMARY ==========
     print("\n[STEP 5] Copy generated!")
