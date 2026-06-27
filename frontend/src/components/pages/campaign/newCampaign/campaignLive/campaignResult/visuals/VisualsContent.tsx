@@ -10,8 +10,14 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  RotateCw
+  RotateCw,
+  Download,
+  FileText,
+  Wand2,
+  Share2,
+  Lock
 } from 'lucide-react';
+import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
 import {
   PLATFORM_CONFIG,
@@ -40,6 +46,8 @@ const PRESET_MODIFIERS = [
 
 const inter = { fontFamily: 'Inter, sans-serif' };
 const mono = { fontFamily: 'JetBrains Mono, monospace' };
+
+// Modifiers and styles setup
 
 const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const prompts = data?.image_prompts || [];
@@ -177,7 +185,8 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
     <div className="space-y-8" style={inter}>
 
       {/* ── PAGE HEADER ───────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[#2A2A38]">
+      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-11 h-11 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#6366F1]">
             <Palette size={22} />
@@ -211,6 +220,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
           </button>
         </div>
       </div>
+      </div>
 
 
       {/* ── PLATFORM TABS ─────────────────────────────────────────────────── */}
@@ -235,6 +245,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                   isActive ? 'text-white' : 'text-[#8B8B9E] hover:text-[#D1D1E0]'
                 }`}
               >
+                {tab !== 'all' && <ChannelIcon channel={tab} size={14} className="inline-block mr-1.5" />}
                 {config.label}
                 <span className="ml-1.5 text-xs opacity-40 font-mono">({count})</span>
                 {isActive && (
@@ -277,7 +288,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             return (
               <article
                 key={cardId}
-                className={`bg-[#111118] border border-[#2A2A38] rounded-2xl overflow-hidden transition-all duration-300 hover:border-[#6366F1]/30 hover:shadow-xl hover:shadow-black/30 ${
+                className={`card-elevate bg-[#111118] border border-[#2A2A38] rounded-2xl overflow-hidden transition-all duration-300 hover:border-[#6366F1]/30 hover:shadow-xl hover:shadow-black/30 ${
                   isUsed ? 'opacity-55' : ''
                 }`}
               >
@@ -287,9 +298,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                     {/* Platform accent stripe + badge */}
                     <div className="w-1 h-6 rounded-full" style={{ backgroundColor: brandAccent }} />
                     <span
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border"
+                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border inline-flex items-center gap-1.5"
                       style={{ backgroundColor: bgAccent, color: brandAccent, borderColor }}
                     >
+                      <ChannelIcon channel={platformKey} size={12} />
                       {label}
                     </span>
                     {card.style && (
@@ -720,7 +732,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
         </div>
       ) : (
         /* Empty state */
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-16 flex flex-col items-center justify-center text-center">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-2xl p-16 flex flex-col items-center justify-center text-center">
           <div className="w-14 h-14 rounded-full bg-[#1A1A24] border border-[#2A2A38] flex items-center justify-center text-[#6366F1] mb-5">
             <Palette size={24} />
           </div>
@@ -737,42 +749,67 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       {exportDrawerOpen && (
         <div
           onClick={() => setExportDrawerOpen(false)}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] animate-fadeIn"
+          className="fixed inset-0 z-[90]"
         />
       )}
       <div
-        className={`fixed right-0 top-0 bottom-0 w-[340px] bg-[#111118] border-l border-[#2A2A38] p-7 z-[100] shadow-2xl shadow-black/50 transition-transform duration-300 ${
+        className={`fixed right-0 top-0 w-[380px] bg-[#111118] border-l border-[#2A2A38] z-[100] shadow-2xl shadow-black/50 transition-transform duration-300 ${
           exportDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        onClick={e => e.stopPropagation()}
         style={inter}
       >
-        <div className="flex items-center justify-between mb-7">
-          <h3 className="text-base font-semibold text-white">Export Assets</h3>
-          <button
-            onClick={() => setExportDrawerOpen(false)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#8B8B9E] hover:text-white hover:bg-[#2A2A38] transition-all"
-          >
-            <X size={18} />
-          </button>
+        {/* ── HEADER ── */}
+        <div className="relative px-6 pt-8 pb-5">
+          <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-[#6366F1]/60 to-transparent" />
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6366F1]/20 to-[#6366F1]/5 border border-[#6366F1]/20 flex items-center justify-center">
+                <Download size={18} className="text-[#6366F1]" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-white tracking-tight">Export</h3>
+                <p className="text-xs text-[#8B8B9E] mt-0.5">
+                  {promptsList.length} {promptsList.length === 1 ? 'prompt' : 'prompts'} · {uniquePlatformsCount} {uniquePlatformsCount === 1 ? 'platform' : 'platforms'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExportDrawerOpen(false)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6A6A7E] hover:text-white hover:bg-[#2A2A38] transition-all active:scale-90"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        {/* ── DIVIDER ── */}
+        <div className="mx-6 h-[1px] bg-gradient-to-r from-transparent via-[#2A2A38] to-transparent" />
+
+        {/* ── BODY ── */}
+        <div className="px-6 pt-5 pb-6 space-y-3">
           {[
             {
+              id: 'copy',
+              icon: Copy,
               title: 'Copy All Prompts',
-              desc: 'Copies all prompts (including enhancements) as formatted text.',
+              desc: 'All prompts with enhancements as formatted text.',
               action: handleCopyAllPrompts,
               cta: 'Copy All',
               active: true,
             },
             {
+              id: 'pdf',
+              icon: FileText,
               title: 'Download PDF Brief',
-              desc: 'Generate print-ready visual brief documents.',
+              desc: 'Print-ready visual brief for offline review.',
               action: undefined,
               cta: 'Coming Soon',
               active: false,
             },
             {
+              id: 'design',
+              icon: Wand2,
               title: 'Send to Design Tool',
               desc: 'Push prompts directly to DALL-E or Midjourney.',
               action: undefined,
@@ -780,6 +817,8 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
               active: false,
             },
             {
+              id: 'share',
+              icon: Share2,
               title: 'Share Campaign Brief',
               desc: 'Generate a secure viewing link for team review.',
               action: undefined,
@@ -788,28 +827,60 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             },
           ].map(item => (
             <div
-              key={item.title}
-              className={`p-4 rounded-xl border space-y-2 ${
+              key={item.id}
+              className={`group relative rounded-xl border transition-all duration-200 ${
                 item.active
-                  ? 'bg-[#0A0A0F] border-[#2A2A38]'
+                  ? 'bg-[#0A0A0F] border-[#2A2A38] hover:border-[#6366F1]/30'
                   : 'bg-[#0A0A0F]/40 border-[#2A2A38]/50 opacity-55'
               }`}
             >
-              <h4 className={`text-sm font-semibold ${item.active ? 'text-white' : 'text-[#8B8B9E]'}`}>
-                {item.title}
-              </h4>
-              <p className="text-xs text-[#8B8B9E] leading-relaxed">{item.desc}</p>
-              <button
-                onClick={item.action}
-                disabled={!item.active}
-                className={`w-full mt-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  item.active
-                    ? 'bg-[#6366F1] hover:bg-[#5254d8] text-white shadow-md shadow-[#6366F1]/10'
-                    : 'bg-[#1A1A24] text-[#8B8B9E] cursor-not-allowed border border-[#2A2A38]/50'
-                }`}
-              >
-                {item.cta}
-              </button>
+              {item.active && (
+                <div className="absolute left-0 top-2.5 bottom-2.5 w-[2px] rounded-full bg-[#6366F1]" />
+              )}
+              <div className={item.active ? 'pl-[14px] pr-4 py-3.5 space-y-2.5' : 'px-4 py-3.5 space-y-2.5'}>
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                      item.active
+                        ? 'bg-[#6366F1]/10 text-[#6366F1]'
+                        : 'bg-[#1A1A24] text-[#4A4A5E]'
+                    }`}
+                  >
+                    <item.icon size={15} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h4
+                        className={`text-sm font-semibold ${
+                          item.active ? 'text-white' : 'text-[#8B8B9E]'
+                        }`}
+                      >
+                        {item.title}
+                      </h4>
+                      {!item.active && <Lock size={9} className="text-[#4A4A5E] shrink-0" />}
+                    </div>
+                    <p
+                      className={`text-xs leading-relaxed mt-0.5 ${
+                        item.active ? 'text-[#8B8B9E]' : 'text-[#6A6A7E]'
+                      }`}
+                    >
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={item.action}
+                  disabled={!item.active}
+                  className={`w-full py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
+                    item.active
+                      ? 'bg-[#6366F1] hover:bg-[#5254d8] text-white active:scale-[0.98]'
+                      : 'bg-[#1A1A24] text-[#8B8B9E] cursor-not-allowed border border-[#2A2A38]/50'
+                  }`}
+                >
+                  {item.cta}
+                </button>
+              </div>
             </div>
           ))}
         </div>

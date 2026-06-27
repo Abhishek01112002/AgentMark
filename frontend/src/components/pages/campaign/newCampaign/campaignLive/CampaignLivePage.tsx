@@ -20,6 +20,7 @@ import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../shared/topNav/TopNav';
 import api from '../../../../../services/api';
 import toast from 'react-hot-toast';
+import { ChannelIcon } from '../../../../shared/ChannelIcon';
 
 // ── Module-level constants (stable across renders) ────────────────────────────
 
@@ -1200,8 +1201,9 @@ const CampaignLivePage: React.FC = () => {
                             if (!hasCopy) {
                               return (
                                 <div key={ch} className="p-3 rounded-lg border border-[#F43F5E]/20 bg-[#F43F5E]/5">
-                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#F43F5E', fontFamily: 'JetBrains Mono, monospace' }}>
-                                    {ch.replace('_', ' ')}
+                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold flex items-center gap-1.5" style={{ color: '#F43F5E', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    <ChannelIcon channel={ch} size={10} />
+                                    <span>{ch.replace('_', ' ')}</span>
                                   </p>
                                   <p className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
                                     ⚠️ Copywriter agent did not generate content for this channel.
@@ -1211,13 +1213,14 @@ const CampaignLivePage: React.FC = () => {
                             }
                             
                             return (
-                              <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
-                                <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>
-                                  {ch.replace('_', ' ')}
-                                </p>
-                                {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
-                                {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
-                              </div>
+                                <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold flex items-center gap-1.5" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    <ChannelIcon channel={ch} size={10} />
+                                    <span>{ch.replace('_', ' ')}</span>
+                                  </p>
+                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
+                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                                </div>
                             );
                           })}
                         </div>
@@ -1374,14 +1377,24 @@ const CampaignLivePage: React.FC = () => {
                 <button
                   onClick={handleRequestRevision}
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
-                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]"
                   style={{
                     fontFamily: 'JetBrains Mono, monospace',
-                    background: 'rgba(244,63,94,0.12)',
-                    border: '1px solid rgba(244,63,94,0.35)',
-                    color: '#F43F5E',
+                    background: 'linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)',
+                    boxShadow: '0 4px 15px rgba(244, 63, 94, 0.3)',
+                    color: '#FFFFFF',
                     opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.4 : 1,
                     cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 22px rgba(244, 63, 94, 0.45)';
+                      (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 15px rgba(244, 63, 94, 0.3)';
+                    (e.currentTarget as HTMLButtonElement).style.filter = 'none';
                   }}
                 >
                   <span className="material-symbols-outlined text-[18px]">refresh</span>

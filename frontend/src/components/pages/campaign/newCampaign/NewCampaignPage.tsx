@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus, Loader2 } from 'lucide-react';
+import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus, Loader2, AlertTriangle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../../services/api';
@@ -39,6 +39,8 @@ const NewCampaignContent: React.FC = () => {
   const [loadingConstants, setLoadingConstants] = useState(true);
   const didFetchProjectsRef = useRef(false);
   const didFetchConstantsRef = useRef(false);
+  const [projectCampaigns, setProjectCampaigns] = useState<any[]>([]);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [formData, setFormData] = useState({
     projectId: searchParams.get('projectId') || '',
     campaignName: '',
@@ -109,6 +111,20 @@ const NewCampaignContent: React.FC = () => {
     fetchConstants();
   }, []);
 
+  useEffect(() => {
+    if (!formData.projectId) return;
+    
+    const fetchCampaigns = async () => {
+      try {
+        const response = await api.get('/campaigns', { params: { projectId: formData.projectId } });
+        setProjectCampaigns(response.data.campaigns || []);
+      } catch (error) {
+        console.error('Failed to fetch project campaigns:', error);
+      }
+    };
+    fetchCampaigns();
+  }, [formData.projectId]);
+
   const handleCreateProject = async (name: string, description: string) => {
     try {
       const response = await api.post('/projects', { name, description });
@@ -120,6 +136,38 @@ const NewCampaignContent: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to create project:', error);
       toast.error(error.response?.data?.error || 'Failed to create project');
+    }
+  };
+
+  const executeSubmission = async (isDuplicate: boolean = false) => {
+    setIsCreating(true);
+
+    try {
+      const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
+      const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
+
+      const response = await api.post('/campaigns', {
+        projectId: formData.projectId,
+        name: formData.campaignName,
+        brandName: formData.brandName,
+        industry: finalIndustry,
+        primaryGoal: finalGoal,
+        targetAudience: formData.targetAudience,
+        brandVoice: formData.brandVoice,
+      });
+
+      const { campaign } = response.data;
+
+      if (isDuplicate) {
+        toast.success('Relaunching duplicate campaign! Agents are running...');
+      } else {
+        toast.success('Campaign launched! Agents are running...');
+      }
+      navigate(`/campaign/${campaign.id}/live`);
+    } catch (error: any) {
+      console.error('Failed to create campaign:', error);
+      toast.error(error.response?.data?.error || 'Failed to create campaign');
+      setIsCreating(false);
     }
   };
 
@@ -141,7 +189,6 @@ const NewCampaignContent: React.FC = () => {
       return;
     }
 
-    // Warning check for custom API keys
     const keys = llmSettingsService.get();
     const hasKeys = !!(keys.gemini.key.trim() || keys.groq.key.trim() || keys.openai.key.trim());
     if (!hasKeys) {
@@ -153,45 +200,24 @@ const NewCampaignContent: React.FC = () => {
       }
     }
 
-    setIsCreating(true);
+    const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
+    const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
 
-    try {
-      const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
-      const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
+    const hasDuplicate = projectCampaigns.some((c: any) => 
+      c.name === formData.campaignName &&
+      c.brandName === formData.brandName &&
+      c.industry === finalIndustry &&
+      c.primaryGoal === finalGoal &&
+      c.targetAudience === formData.targetAudience &&
+      c.brandVoice === formData.brandVoice
+    );
 
-      // Read API keys saved by the user in Settings → API Keys.
-      // These are passed to FastAPI as llm_config so the correct provider is used.
-      const response = await api.post('/campaigns', {
-        projectId: formData.projectId,
-        name: formData.campaignName,
-        brandName: formData.brandName,
-        industry: finalIndustry,
-        primaryGoal: finalGoal,
-        targetAudience: formData.targetAudience,
-        brandVoice: formData.brandVoice,
-        // Note: API keys are attached automatically as x-llm-config header by
-        // the axios interceptor in api.ts — no need to include them in the body.
-      });
-
-      const { campaign } = response.data;
-
-      // API returns instantly (status: "processing") — navigate to live page immediately.
-      // The live page uses socket.io to receive real-time agent progress updates.
-      toast.success('Campaign launched! Agents are running...');
-      navigate(`/campaign/${campaign.id}/live`);
-
-    } catch (error: any) {
-      console.error('Campaign creation failed:', error);
-
-      const errorMessage =
-        error.response?.data?.details ||
-        error.response?.data?.error ||
-        'We could not generate the campaign right now. Please try again.';
-
-      toast.error(errorMessage, { duration: 5000 });
-    } finally {
-      setIsCreating(false);
+    if (hasDuplicate) {
+      setShowDuplicateModal(true);
+      return;
     }
+
+    await executeSubmission();
   };
 
   if (loadingConstants) {
@@ -501,6 +527,52 @@ const NewCampaignContent: React.FC = () => {
           onClose={() => setShowCreateProjectModal(false)}
           onCreate={handleCreateProject}
         />
+      )}
+
+      {showDuplicateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowDuplicateModal(false)}
+          />
+          <div
+            className="relative bg-[#111116] border border-[#2B2B36] p-8 rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95"
+            style={{
+              background: 'linear-gradient(180deg, #16161D 0%, #111116 100%)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05)'
+            }}
+          >
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="h-16 w-16 bg-[#FFB020]/10 rounded-full flex items-center justify-center mb-4 ring-8 ring-[#FFB020]/5">
+                <AlertTriangle className="text-[#FFB020]" size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">Duplicate Detected</h3>
+              <p className="text-[#A1A1AA] text-sm leading-relaxed">
+                You have already generated a campaign with these exact details. Do you want to relaunch a new campaign anyway?
+              </p>
+            </div>
+            
+            <div className="flex space-x-3 w-full mt-8">
+              <button
+                type="button"
+                onClick={() => setShowDuplicateModal(false)}
+                className="flex-1 px-4 py-3 bg-[#1C1C24] hover:bg-[#252530] text-[#E4E4E7] font-medium rounded-xl transition-all duration-200 border border-[#2B2B36] hover:border-[#3F3F4E]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowDuplicateModal(false);
+                  await executeSubmission(true);
+                }}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5355D1] hover:to-[#7A4DD6] text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-[#6366F1]/20 flex items-center justify-center"
+              >
+                Yes, Relaunch
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

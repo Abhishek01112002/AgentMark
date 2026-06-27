@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Compass, Briefcase, Columns, Calendar, MessageSquare, KeyRound, Users, BarChart3, Award, DollarSign, Share2, PlayCircle, FileDown, AlertTriangle } from 'lucide-react';
+import { Compass, Columns, Calendar, MessageSquare, KeyRound, Users, BarChart3, Award, DollarSign, Share2, PlayCircle, FileDown, AlertTriangle } from 'lucide-react';
+import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
 
 interface StrategyContentProps {
@@ -7,10 +8,27 @@ interface StrategyContentProps {
   campaign?: any;
 }
 
+const getChannelDisplayName = (ch: any): string => {
+  if (!ch) return '';
+  const rawName = typeof ch === 'object' ? (ch.name || ch.channel || '') : String(ch);
+  const name = rawName.toLowerCase().trim();
+  if (name.includes('linkedin')) return 'LinkedIn';
+  if (name.includes('facebook')) return 'Facebook';
+  if (name.includes('youtube')) return 'YouTube';
+  if (name.includes('twitter') || name === 'x') return 'Twitter / X';
+  if (name.includes('tiktok')) return 'TikTok';
+  if (name.includes('instagram')) return 'Instagram';
+  if (name.includes('google') || name.includes('adwords')) return 'Google Ads';
+  if (name.includes('email') || name.includes('newsletter') || name.includes('mail')) return 'Email';
+  if (name.includes('pinterest')) return 'Pinterest';
+  return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+};
+
 const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => {
   const printRef = useRef<HTMLDivElement>(null);
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const hasRealData = data && Object.keys(data).length > 0;
+
 
   // Extract data from AI output
   const positioning = data?.positioning || '';
@@ -168,13 +186,18 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
     if (displayChannels.length > 0) {
       sections += sectionWrap('Active Channels', grid2(
-        displayChannels.slice(0, 4).map((ch: any) => card(`
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div class="card-title" style="margin:0">${esc(ch.name || ch.channel || '')}</div>
-            ${ch.badge ? tag(ch.badge, ch.badgeColor || '#6366F1') : ''}
-          </div>
-          <div class="card-body">${esc(ch.desc || ch.description || '')}</div>
-        `))
+        displayChannels.slice(0, 4).map((ch: any) => {
+          const chDesc = typeof ch === 'object' ? (ch.desc || ch.description || '') : 'Channel strategy details';
+          const chBadge = typeof ch === 'object' ? (ch.badge || 'Active') : 'Active';
+          const chBadgeColor = typeof ch === 'object' ? (ch.badgeColor || '#6366F1') : '#6366F1';
+          return card(`
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div class="card-title" style="margin:0">${esc(getChannelDisplayName(ch))}</div>
+              ${chBadge ? tag(chBadge, chBadgeColor) : ''}
+            </div>
+            <div class="card-body">${esc(chDesc)}</div>
+          `);
+        })
       ));
     }
 
@@ -487,19 +510,27 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* ─── Screen header (hidden in print) ─── */}
-        <div className="pdf-no-print rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+        <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] pulse-dot" />
-                  AI Strategy Active
-                </span>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
+                  <Compass size={22} />
+                </div>
+                <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                  Campaign Strategy
+                </h2>
               </div>
-              <h1 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Strategy</h1>
-              <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated strategic framework' : 'Q3 Product Launch Blueprint'}</p>
+              <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                {hasRealData ? 'AI-generated strategic framework' : 'Strategic campaign framework'}
+              </p>
             </div>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-3 flex-wrap items-center">
+              {inferredGoal && (
+                <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+                  Goal: {inferredGoal.replace('_', ' ').toUpperCase()}
+                </span>
+              )}
               <button
                 onClick={handleExportPDF}
                 className="px-4 py-2 rounded-lg border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1A1A24] flex items-center gap-2"
@@ -515,7 +546,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         </div>
 
         {!hasRealData && (
-          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 pdf-no-print">
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4">
             <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
               <AlertTriangle size={16} className="text-[#F59E0B] flex-shrink-0" />
               No strategy data available yet. This will be populated after AI agents complete analysis.
@@ -525,28 +556,22 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
         {/* Positioning Statement */}
         {positioning && (
-          <div className="pdf-positioning bg-gradient-to-r from-[#6366F1]/10 to-transparent border-l-4 border-[#6366F1] rounded-xl p-6 mb-6">
-            <h3 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-              <Compass size={16} />Positioning Statement
+          <div className="card-elevate relative bg-gradient-to-br from-[#6366F1]/15 via-[#111118] to-[#0A0A0F] border-l-4 border-[#6366F1] rounded-xl p-6 shadow-[0_0_40px_rgba(99,102,241,0.1)] overflow-hidden group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#6366F1]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <h3 className="text-sm font-medium mb-3 flex items-center gap-2 relative" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              <div className="w-8 h-8 rounded-lg bg-[#6366F1]/15 flex items-center justify-center"><Compass size={16} className="text-[#6366F1]" /></div>
+              Positioning Statement
             </h3>
-            <p className="text-lg leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-              {positioning}
+            <p className="text-lg md:text-xl leading-relaxed relative" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3', fontWeight: 500 }}>
+              "{positioning}"
             </p>
+            <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-[#6366F1]/30 to-transparent" />
           </div>
         )}
 
-        {/* Inferred Goal */}
-        {inferredGoal && (
-          <div className="mb-6">
-            <span className="px-3 py-1.5 rounded-full bg-[#4edea3]/10 border border-[#4edea3]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-              Campaign Goal: {inferredGoal.replace('_', ' ').toUpperCase()}
-            </span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mt-6">
           <div className="xl:col-span-7 space-y-6">
-            <div className="pdf-section rounded-xl p-5 md:p-6 relative overflow-hidden group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate pdf-section rounded-xl p-5 md:p-6 relative overflow-hidden group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#6366F1] to-transparent opacity-50 pdf-no-print" />
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <MessageSquare size={20} className="text-[#6366F1] pdf-no-print" />Core Messaging Framework
@@ -558,7 +583,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                 </p>
               </div>
               <div className="pdf-grid-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-[#1A1A24] p-4 rounded-lg border border-[#2A2A38]/50">
+                <div className="card-elevate bg-[#1A1A24] p-4 rounded-lg border border-[#2A2A38]/50">
                   <h3 className="text-sm font-medium mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Value Proposition</h3>
                   <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{valueProposition || 'Reduce campaign setup time by 80% while increasing creative output quality.'}</p>
                 </div>
@@ -570,7 +595,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             </div>
 
             {contentPillars.length > 0 && (
-              <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+              <div className="card-elevate pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <Columns size={20} className="text-[#6366F1] pdf-no-print" />Content Pillars
                 </h2>
@@ -585,7 +610,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             )}
 
             {keyMessages.length > 0 && (
-              <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+              <div className="card-elevate pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <KeyRound size={20} className="text-[#6366F1] pdf-no-print" />Key Messages
                 </h2>
@@ -605,7 +630,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           <div className="xl:col-span-5 space-y-6">
             {audienceSegments.length > 0 && (
-              <div className="pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+              <div className="card-elevate pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                 <h2 className="text-lg md:text-xl mb-5 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                   <Users size={20} className="text-[#6366F1] pdf-no-print" />Audience Segments
                 </h2>
@@ -635,7 +660,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           </div>
 
           {Object.keys(timeline).length > 0 && (
-            <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Calendar size={20} className="text-[#6366F1] pdf-no-print" />Campaign Timeline
               </h2>
@@ -666,13 +691,13 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           )}
 
           {successMetrics.kpis && (
-            <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate-green xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <BarChart3 size={20} className="text-[#6366F1] pdf-no-print" />Success Metrics & KPIs
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {successMetrics.kpis.map((kpi: string, idx: number) => (
-                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
+                  <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
                     <p className="text-sm font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{kpi}</p>
                     {successMetrics.targets?.[kpi] && (
                       <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{successMetrics.targets[kpi]}</p>
@@ -684,7 +709,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           )}
 
           {competitiveDiff.unique_value_proposition && (
-            <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Award size={20} className="text-[#6366F1] pdf-no-print" />Competitive Differentiation
               </h2>
@@ -718,7 +743,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           )}
 
           {Object.keys(budgetAllocation).length > 0 && (
-            <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <DollarSign size={20} className="text-[#6366F1] pdf-no-print" />Budget Allocation
               </h2>
@@ -734,15 +759,18 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           )}
 
           {Object.keys(channelStrategy).length > 0 && (
-            <div className="xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="card-elevate xl:col-span-12 pdf-section rounded-xl p-5 md:p-6" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <Share2 size={20} className="text-[#6366F1] pdf-no-print" />Channel Strategy
               </h2>
               <div className="pdf-grid-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {Object.entries(channelStrategy).map(([channel, plan]: [string, any], idx: number) => (
-                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
+                  <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{channel}</h3>
+                      <h3 className="text-base font-semibold flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                        <ChannelIcon channel={channel} size={16} className="text-[#6366F1] shrink-0" />
+                        {channel}
+                      </h3>
                       <span className="text-xs px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{plan.priority} Priority</span>
                     </div>
                     <p className="text-sm mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{plan.rationale}</p>
@@ -767,21 +795,33 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           {displayChannels.length > 0 && (
           <div className="xl:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {displayChannels.slice(0, 3).map((channel: any, idx: number) => {
-              const channelIcon = channel.icon || Briefcase;
-              const ChannelIcon = typeof channelIcon === 'function' ? channelIcon : Briefcase;
+            {displayChannels.slice(0, 3).map((ch: any, idx: number) => {
+              const chName = typeof ch === 'object' ? (ch.name || ch.channel || '') : String(ch);
+              const chDesc = typeof ch === 'object' ? (ch.desc || ch.description || 'Channel strategy details') : 'Channel strategy details';
+              const chBadge = typeof ch === 'object' ? (ch.badge || 'Active') : 'Active';
+              const chBadgeColor = typeof ch === 'object' ? (ch.badgeColor || '#6366F1') : '#6366F1';
+
               return (
-                <div key={idx} className="rounded-xl p-5 cursor-pointer group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+                <div key={idx} className="card-elevate rounded-xl p-5 cursor-pointer group transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center pdf-no-print" style={{ backgroundColor: channel.bg || '#1A1A24', color: channel.color || '#F1F1F3' }}>
-                        <ChannelIcon size={18} />
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center pdf-no-print" style={{ backgroundColor: (typeof ch === 'object' && ch.bg) || 'rgba(99, 102, 241, 0.1)', color: (typeof ch === 'object' && ch.color) || '#6366F1' }}>
+                        {typeof ch === 'object' && typeof ch.icon === 'function' ? (
+                          (() => {
+                            const Icon = ch.icon;
+                            return <Icon size={18} />;
+                          })()
+                        ) : (
+                          <ChannelIcon channel={chName} size={18} />
+                        )}
                       </div>
-                      <h3 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{channel.name || channel.channel}</h3>
+                      <h3 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
+                        {getChannelDisplayName(ch)}
+                      </h3>
                     </div>
-                    <span className="text-xs px-2 py-0.5 rounded-full pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: `${channel.badgeColor || '#A0A0D2'}1A`, color: channel.badgeColor || '#A0A0D2' }}>{channel.badge || 'Active'}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: `${chBadgeColor}1A`, color: chBadgeColor }}>{chBadge}</span>
                   </div>
-                  <p className="text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{channel.desc || channel.description || 'Channel strategy details'}</p>
+                  <p className="text-xs mt-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{chDesc}</p>
                 </div>
               );
             })}
@@ -790,7 +830,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Content Rollout Table */}
-        <div className="pdf-section rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+        <div className="card-elevate pdf-section rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
           <div className="p-5 md:p-6 border-b border-[#2A2A38] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
               <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout

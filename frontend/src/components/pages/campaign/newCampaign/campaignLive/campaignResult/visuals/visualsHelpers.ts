@@ -5,19 +5,24 @@ export interface PlatformConfig {
   label: string;
   bgAccent: string;
   borderColor: string;
+  icon: string;
 }
 
 export const PLATFORM_CONFIG: Record<string, PlatformConfig> = {
-  instagram: { accent: '#E1306C', label: 'Instagram', bgAccent: 'rgba(225, 48, 108, 0.1)', borderColor: 'rgba(225, 48, 108, 0.2)' },
-  linkedin:  { accent: '#0077B5', label: 'LinkedIn',  bgAccent: 'rgba(0, 119, 181, 0.1)',   borderColor: 'rgba(0, 119, 181, 0.2)' },
-  youtube:   { accent: '#FF0000', label: 'YouTube',   bgAccent: 'rgba(255, 0, 0, 0.1)',      borderColor: 'rgba(255, 0, 0, 0.2)'   },
-  email:     { accent: '#10B981', label: 'Email',     bgAccent: 'rgba(16, 185, 129, 0.1)',   borderColor: 'rgba(16, 185, 129, 0.2)' },
-  twitter:   { accent: '#1DA1F2', label: 'Twitter/X', bgAccent: 'rgba(29, 161, 242, 0.1)',   borderColor: 'rgba(29, 161, 242, 0.2)' },
-  facebook:  { accent: '#1877F2', label: 'Facebook',  bgAccent: 'rgba(24, 119, 242, 0.1)',   borderColor: 'rgba(24, 119, 242, 0.2)' },
-  pinterest: { accent: '#E60023', label: 'Pinterest', bgAccent: 'rgba(230, 0, 35, 0.1)',     borderColor: 'rgba(230, 0, 35, 0.2)'   },
-  tiktok:    { accent: '#69C9D0', label: 'TikTok',    bgAccent: 'rgba(105, 201, 208, 0.1)',  borderColor: 'rgba(105, 201, 208, 0.2)' },
-  banner:    { accent: '#F59E0B', label: 'Banner Ad', bgAccent: 'rgba(245, 158, 11, 0.1)',   borderColor: 'rgba(245, 158, 11, 0.2)' },
-  general:   { accent: '#6366F1', label: 'General',   bgAccent: 'rgba(99, 102, 241, 0.1)',   borderColor: 'rgba(99, 102, 241, 0.2)' },
+  instagram: { accent: '#E1306C', label: 'Instagram', bgAccent: 'rgba(225, 48, 108, 0.1)', borderColor: 'rgba(225, 48, 108, 0.2)', icon: 'Camera' },
+  linkedin:  { accent: '#0077B5', label: 'LinkedIn',  bgAccent: 'rgba(0, 119, 181, 0.1)',   borderColor: 'rgba(0, 119, 181, 0.2)', icon: 'Briefcase' },
+  youtube:   { accent: '#FF0000', label: 'YouTube',   bgAccent: 'rgba(255, 0, 0, 0.1)',      borderColor: 'rgba(255, 0, 0, 0.2)',   icon: 'Video' },
+  email:     { accent: '#10B981', label: 'Email',     bgAccent: 'rgba(16, 185, 129, 0.1)',   borderColor: 'rgba(16, 185, 129, 0.2)', icon: 'Mail' },
+  twitter:   { accent: '#1DA1F2', label: 'Twitter/X', bgAccent: 'rgba(29, 161, 242, 0.1)',   borderColor: 'rgba(29, 161, 242, 0.2)', icon: 'MessageCircle' },
+  facebook:  { accent: '#1877F2', label: 'Facebook',  bgAccent: 'rgba(24, 119, 242, 0.1)',   borderColor: 'rgba(24, 119, 242, 0.2)', icon: 'Users' },
+  pinterest: { accent: '#E60023', label: 'Pinterest', bgAccent: 'rgba(230, 0, 35, 0.1)',     borderColor: 'rgba(230, 0, 35, 0.2)',   icon: 'Image' },
+  tiktok:    { accent: '#69C9D0', label: 'TikTok',    bgAccent: 'rgba(105, 201, 208, 0.1)',  borderColor: 'rgba(105, 201, 208, 0.2)', icon: 'Music' },
+  banner:    { accent: '#F59E0B', label: 'Banner Ad', bgAccent: 'rgba(245, 158, 11, 0.1)',   borderColor: 'rgba(245, 158, 11, 0.2)', icon: 'PanelTop' },
+  general:   { accent: '#6366F1', label: 'General',   bgAccent: 'rgba(99, 102, 241, 0.1)',   borderColor: 'rgba(99, 102, 241, 0.2)', icon: 'Globe' },
+};
+
+export const getPlatformIcon = (platformKey: string): string => {
+  return PLATFORM_CONFIG[platformKey]?.icon || 'Globe';
 };
 
 export const detectPlatform = (deliverableName: string): string => {

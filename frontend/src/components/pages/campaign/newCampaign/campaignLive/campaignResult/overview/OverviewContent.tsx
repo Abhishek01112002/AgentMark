@@ -1,5 +1,6 @@
 import React from 'react';
-import { Compass, Milestone, Users, Fingerprint, Network, Package, AlertTriangle, Globe } from 'lucide-react';
+import { Compass, Milestone, Users, Fingerprint, Network, Package, AlertTriangle } from 'lucide-react';
+import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface OverviewContentProps {
   data?: any;
@@ -59,7 +60,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <div className="rounded-2xl border border-[#2A2A38] bg-[#111118] p-5 md:p-6">
+      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -93,7 +94,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Campaign Identity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Fingerprint size={20} className="text-[#6366F1]" />
             Campaign Identity
@@ -114,7 +115,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-[#4edea3]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate-green bg-gradient-to-br from-[#4edea3]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Milestone size={20} className="text-[#4edea3]" />
             Campaign Objectives
@@ -136,7 +137,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Target Audience */}
       {targetAudience && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Users size={20} className="text-[#6366F1]" />
             Target Audience
@@ -149,7 +150,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Recommended Channels */}
       {channelCards.length > 0 && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Network size={20} className="text-[#6366F1]" />
             Recommended Distribution Channels
@@ -157,7 +158,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {channelCards.map((channel: string, idx: number) => (
               <div key={idx} className="px-4 py-3 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center gap-2 min-h-[56px]">
-                <Globe size={16} className="text-[#6366F1] flex-shrink-0" />
+                <ChannelIcon channel={channel} size={16} className="text-[#6366F1] flex-shrink-0" />
                 <span className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
                   {channel}
                 </span>
@@ -169,7 +170,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Deliverables */}
       {deliverables.length > 0 && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Package size={20} className="text-[#6366F1]" />
             Campaign Deliverables
@@ -190,7 +191,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
       )}
 
       {/* Campaign Summary Card */}
-      <div className="bg-gradient-to-r from-[#6366F1]/5 via-[#4edea3]/5 to-transparent border border-[#2A2A38] rounded-xl p-6">
+      <div className="card-elevate bg-gradient-to-r from-[#6366F1]/5 via-[#4edea3]/5 to-transparent border border-[#2A2A38] rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
           Campaign Summary
         </h3>

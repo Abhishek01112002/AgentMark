@@ -83,7 +83,8 @@ Field 5 — recommended_approach (10 points):
   - Must be 50+ characters, campaign-goal-specific, and actionable. Deduct 10 if under 50 chars or too generic.
 
 Scoring Guidance for Research:
-  - 90-100: All fields complete, specific, and strategically valuable
+  - 95-100: Exceptional — demonstrates specific customer insight and strategic nuance beyond the spec
+  - 90-94:  Solid — all fields complete and valid, minor improvements possible
   - 75-89:  Minor gaps but overall solid research foundation
   - 60-74:  Several fields missing specificity or completeness — revision needed
   - Below 60: Major gaps, generic content, or missing critical fields
@@ -149,7 +150,8 @@ Field 13 — execution (7.7 pts):
   - Deduct half for missing channels, half for missing deliverables.
 
 Scoring Guidance for Strategy:
-  - 90-100: All 13 fields present, research-grounded, and strategically coherent
+  - 95-100: Exceptional — creative strategic insight or standout differentiation beyond the spec
+  - 90-94:  Solid — all 13 fields present, research-grounded, strategically coherent
   - 75-89:  Most fields solid, minor gaps in 1-2 areas
   - 60-74:  Multiple fields weak or missing — revision needed
   - Below 60: Critical strategic gaps — significant revision required
@@ -209,7 +211,8 @@ Copy Quality Standards (apply across all fields):
   - Are CTAs goal-aligned with {primary_goal}?
 
 Scoring Guidance for Copy:
-  - 90-100: All 8 fields complete, voice-consistent, platform-native, pain-point-specific
+  - 95-100: Exceptional — standout creative, voice mastery, or memorable hooks beyond the spec
+  - 90-94:  Solid — all 8 fields complete, voice-consistent, platform-native, pain-point-specific
   - 75-89:  Minor gaps in 1-2 channels or framework sections
   - 60-74:  Multiple channels weak or CTAs misaligned — revision needed
   - Below 60: Missing channels, generic copy, or major voice inconsistency
@@ -233,7 +236,8 @@ Field 2 — image_prompts (50 points, distributed across all prompts):
   - style_keywords: Must be a list with 4+ specific style keywords. Deduct proportionally if fewer than 4.
 
 Scoring Guidance for Image:
-  - 90-100: visual_direction comprehensive, all prompts production-ready with all 5 sub-fields
+  - 95-100: Exceptional — inventive visual metaphors or cinematic quality beyond the spec
+  - 90-94:  Solid — visual_direction comprehensive, all prompts production-ready with all 5 sub-fields
   - 75-89:  Minor gaps in 1-2 prompts or slight direction weakness
   - 60-74:  Multiple prompts missing sub-fields or prompts too short — revision needed
   - Below 60: Missing critical fields, prompts not DALL-E ready, or no visual direction

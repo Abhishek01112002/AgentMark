@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Calendar, Copy, Check, Code, Package, ShieldCheck, FileDown, ThumbsUp, FileText, LineChart, Map, CalendarDays, ListTodo, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface PublisherContentProps {
   data?: any;
@@ -468,7 +469,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
   return (
     <div className="space-y-6 md:space-y-8">
       {/* ── Header ── */}
-      <div className="rounded-2xl border border-[#2A2A38] bg-[#111118] p-5 md:p-6">
+      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-full px-3 py-1">
@@ -482,7 +483,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             {qualityScore > 0 && (
-              <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 flex flex-col items-end shadow-lg">
+              <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-4 flex flex-col items-end shadow-lg">
                 <span className="text-xs uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Quality Score</span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-4xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{qualityScore.toFixed(1)}</span>
@@ -513,7 +514,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Publishing Decision */}
       {publishingDecision && (
-        <div className={`rounded-xl p-6 border ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : publishingDecision === 'HOLD' ? 'bg-[#F43F5E]/10 border-[#F43F5E]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
+        <div className={`card-elevate rounded-xl p-6 border ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : publishingDecision === 'HOLD' ? 'bg-[#F43F5E]/10 border-[#F43F5E]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: publishingDecision === 'APPROVED_FOR_PUBLISHING' ? '#4edea3' : publishingDecision === 'HOLD' ? '#F43F5E' : '#F59E0B' }}>
             <ThumbsUp size={20} />
             {publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'Approved for Publishing' : publishingDecision === 'HOLD' ? 'Hold' : 'Revisions Needed'}
@@ -526,7 +527,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Executive Summary */}
       {executiveSummary && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <FileText size={20} className="text-[#6366F1]" />
             Executive Summary
@@ -537,7 +538,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Projected Metrics */}
       {projectedMetrics.total_reach && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate-green bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <LineChart size={20} className="text-[#6366F1]" />
             Projected Metrics
@@ -559,17 +560,20 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Publishing Plan */}
       {publishingPlan.length > 0 && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Map size={20} className="text-[#6366F1]" />
             Publishing Plan
           </h3>
           <div className="space-y-4">
             {publishingPlan.map((plan: any, idx: number) => (
-              <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
+              <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-5">
                 <div className="flex items-start justify-between mb-4 flex-wrap gap-2">
                   <div>
-                    <h4 className="text-base font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{plan.channel}</h4>
+                    <h4 className="text-base font-semibold mb-1 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                      <ChannelIcon channel={plan.channel} size={16} className="text-[#6366F1] shrink-0" />
+                      {plan.channel}
+                    </h4>
                     <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{plan.content_type} • {plan.publish_frequency}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -601,7 +605,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Content Calendar */}
       {contentCalendar.weeks && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
               <CalendarDays size={20} className="text-[#6366F1]" />
@@ -611,7 +615,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           </div>
           <div className="space-y-4">
             {contentCalendar.weeks.slice(0, 8).map((week: any, idx: number) => (
-              <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
+              <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{week.week_label}</h4>
                   <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{week.week_start_date}</span>
@@ -622,7 +626,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
                     {week.activities.map((activity: any, aidx: number) => (
                       <div key={aidx} className="flex items-start gap-2 text-xs">
                         <span className="px-2 py-0.5 rounded bg-[#1A1A24] border border-[#2A2A38] min-w-[60px] text-center" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{activity.day}</span>
-                        <span style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{activity.channel}: {activity.description}</span>
+                        <span style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                          <ChannelIcon channel={activity.channel} size={12} className="inline mr-1 text-[#6366F1]" />
+                          {activity.channel}: {activity.description}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -635,7 +642,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 
       {/* Asset Checklist */}
       {(assetChecklist.copy_assets || assetChecklist.visual_assets) && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
           <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <ListTodo size={20} className="text-[#6366F1]" />
             Asset Checklist
@@ -725,12 +732,11 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           </div>
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayAssets.slice(0, 9).map((asset: any, idx: number) => {
-            const isCopied = copiedIdx === idx;
-            return (
-              <div key={idx} className="bg-[#111118] border border-[#2A2A38] rounded-xl overflow-hidden group hover:border-[#464554] transition-colors flex flex-col">
+              {displayAssets.slice(0, 9).map((asset: any, idx: number) => {
+                return (
+                  <div key={idx} className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl overflow-hidden group hover:border-[#464554] transition-colors flex flex-col">
                 <div className="p-4 border-b border-[#2A2A38] bg-[#1f1f25] flex items-center gap-3">
-                  {typeof asset.icon === 'function' ? <asset.icon size={22} className="text-[#6366F1]" /> : <Code size={18} className="text-[#6366F1]" />}
+                  {typeof asset.icon === 'function' ? <asset.icon size={22} className="text-[#6366F1]" /> : <ChannelIcon channel={asset.platform || asset.channel} size={18} className="text-[#6366F1]" />}
                   <span className="text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{asset.platform || asset.channel} {asset.type || 'Asset'}</span>
                 </div>
                 <div className="p-5 flex-1 space-y-4">
@@ -750,10 +756,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
                   <button
                     onClick={() => handleCopyAsset(asset, idx)}
                     className="w-full bg-transparent border border-[#2A2A38] px-4 py-2 rounded-lg transition-all flex justify-center items-center gap-2 text-sm hover:bg-[#1A1A24]"
-                    style={{ fontFamily: 'JetBrains Mono, monospace', color: isCopied ? '#4edea3' : '#F1F1F3', borderColor: isCopied ? '#4edea3' : undefined }}
+                    style={{ fontFamily: 'JetBrains Mono, monospace', color: copiedIdx === idx ? '#4edea3' : '#F1F1F3', borderColor: copiedIdx === idx ? '#4edea3' : undefined }}
                   >
-                    {isCopied ? <Check size={16} /> : (asset.action === 'View HTML' ? <Code size={16} /> : <Copy size={16} />)}
-                    {isCopied ? 'Copied!' : (asset.action || 'Copy')}
+                    {copiedIdx === idx ? <Check size={16} /> : (asset.action === 'View HTML' ? <Code size={16} /> : <Copy size={16} />)}
+                    {copiedIdx === idx ? 'Copied!' : (asset.action || 'Copy')}
                   </button>
                 </div>
               </div>
