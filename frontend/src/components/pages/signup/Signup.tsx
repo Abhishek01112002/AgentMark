@@ -261,7 +261,7 @@ const SignUp = () => {
                   "We replaced our ₹1.8L/month marketing team with AgentMark. The AI pipeline generates copy, strategy, and visuals flawlessly."
                 </p>
                 <div className="flex items-center gap-3">
-                  <img src="/DeepakYadav.png" alt="Deepak Yadav" className="w-10 h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 rounded-full object-cover border border-[#2A2A38] bg-gray-800 flex-shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop"; }} />
+                  <img src="/DeepakYadav2.png" alt="Deepak Yadav" className="w-10 h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14 rounded-full object-cover border border-[#2A2A38] bg-gray-800 flex-shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop"; }} />
                   <div>
                     <h4 className="text-xs lg:text-sm xl:text-base font-semibold text-white">Deepak Yadav</h4>
                     <p className="text-[10px] lg:text-xs xl:text-sm text-gray-500">Co-Founder, NovaTeches</p>
