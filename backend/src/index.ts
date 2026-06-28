@@ -17,12 +17,16 @@ import { notificationService } from './modules/notifications/notification.servic
 import { initRedisSubscriber, shutdownRedisSubscriber } from './utils/redis-subscriber';
 import { verifyToken } from './utils/jwt';
 import { setSocketIO } from './modules/campaigns/campaign.controller';
+import { globalRateLimiter, authRateLimiter, campaignRateLimiter } from './middlewares/rate-limit.middleware';
 
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(cors());
+// Apply global rate limiting to all requests
+app.use(globalRateLimiter);
+
 // 1 MB limit — prevents oversized JSON payloads from OOM-ing the server.
 app.use(express.json({ limit: '1mb' }));
 
@@ -30,9 +34,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'AgentMark API is running' });
 });
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/campaigns', campaignRoutes);
+app.use('/api/campaigns', campaignRateLimiter, campaignRoutes);
 app.use('/api/constants', constantsRoutes);
 app.use('/api/imagekit', imagekitRoutes);
 app.use('/api/notifications', notificationRoutes);
