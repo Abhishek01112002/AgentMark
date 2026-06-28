@@ -58,6 +58,8 @@ from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
 from schemas import ResearchOutput
+from services.search_service import search_web
+import datetime
 
 
 # ==================== RESEARCH AGENT FUNCTION ====================
@@ -163,6 +165,38 @@ def research_agent(state: CampaignState) -> CampaignState:
         deliverables=', '.join(deliverables),
         human_feedback_section=human_feedback_section
     )
+    
+    # LiteRAG Real-Time Web Search
+    logger.info("   Executing LiteRAG real-time web search...")
+    current_year = datetime.date.today().year
+    product_name = getattr(state, 'product_name', brand_name) or brand_name
+    query_1 = f"{product_name} industry trends {target_audience} {current_year}"
+    query_2 = f"{product_name} top competitors market analysis"
+
+    # Pass None as redis_client to let search_web automatically use the shared pool
+    result_1 = search_web(query_1, redis_client=None)
+    result_2 = search_web(query_2, redis_client=None)
+
+    total_snippets = len(result_1.snippets) + len(result_2.snippets)
+    logger.info(f"   LiteRAG retrieved {total_snippets} total snippets for campaign")
+
+    # Build context — ONLY inject if snippets actually exist
+    context_parts = []
+
+    if result_1.success and result_1.snippets:
+        context_parts.append(
+            "REAL-TIME MARKET CONTEXT:\n" +
+            "\n".join(f"- {s}" for s in result_1.snippets)
+        )
+
+    if result_2.success and result_2.snippets:
+        context_parts.append(
+            "REAL-TIME COMPETITOR CONTEXT:\n" +
+            "\n".join(f"- {s}" for s in result_2.snippets)
+        )
+
+    if context_parts:
+        prompt += "\n\n" + "\n\n".join(context_parts)
     
     logger.info("   Querying LLM with structured output...")
 
