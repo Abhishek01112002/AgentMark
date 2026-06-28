@@ -20,7 +20,7 @@ import { setSocketIO } from './modules/campaigns/campaign.controller';
 import { globalRateLimiter, authRateLimiter, campaignRateLimiter } from './middlewares/rate-limit.middleware';
 
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(cors());
@@ -143,7 +143,9 @@ const startServer = async () => {
   });
 };
 
-void startServer();
+if (process.env.NODE_ENV !== 'test') {
+  void startServer();
+}
 
 // ── Graceful Shutdown ─────────────────────────────────────────────────────────
 

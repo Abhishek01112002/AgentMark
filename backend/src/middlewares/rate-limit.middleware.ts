@@ -37,17 +37,15 @@ redisClient.on('close', () => {
   console.warn('[RateLimiter] Redis connection closed');
 });
 
-// A custom sendCommand wrapper that falls back gracefully if Redis is disconnected
+// A custom sendCommand wrapper that forwards commands to ioredis
 const sendCommand = async (...args: string[]): Promise<any> => {
-  if (!isRedisConnected) {
-    throw new Error('Redis is not connected');
-  }
   return redisClient.call(args[0], ...args.slice(1));
 };
 
-// Initialize the Redis store
-const redisStore = new RedisStore({
+// Helper to create a unique RedisStore instance with a custom prefix to prevent key collision
+const createRedisStore = (name: string) => new RedisStore({
   sendCommand,
+  prefix: `rl:${name}:`,
 });
 
 /**
@@ -59,7 +57,7 @@ export const globalRateLimiter = rateLimit({
   limit: 200,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: createRedisStore('global'),
   passOnStoreError: true, // If Redis fails, let requests pass instead of throwing 500
   message: {
     error: 'Too many requests from this IP, please try again after 15 minutes.',
@@ -75,7 +73,7 @@ export const authRateLimiter = rateLimit({
   limit: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: createRedisStore('auth'),
   passOnStoreError: true,
   message: {
     error: 'Too many authentication attempts. Please try again after 15 minutes.',
@@ -91,7 +89,7 @@ export const campaignRateLimiter = rateLimit({
   limit: 15,
   standardHeaders: true,
   legacyHeaders: false,
-  store: redisStore,
+  store: createRedisStore('campaign'),
   passOnStoreError: true,
   message: {
     error: 'Campaign generation rate limit exceeded. Please try again after 15 minutes.',
