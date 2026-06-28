@@ -113,18 +113,19 @@ Build a realistic week-by-week content calendar based on the strategy timeline:
   * Week 7+ (Phase 4): Optimization, scaling, retargeting
 
 For each week entry:
-  - week_number: Sequential week number
   - week_label: Descriptive label matching the phase (e.g., "Week 1: Campaign Foundation")
   - week_start_date: Approximate date (start from next Monday from today)
   - theme: The weekly content theme tied to content_pillars or key_messages
-  - activities: List of daily activities, each with:
-    * channel: Which channel
-    * day: Day of the week
-    * content_type: What to publish
-    * description: Specific description referencing actual campaign content (not generic)
+  - activities: List of daily activities (3-7 per week), each with:
+    * day: Day of week + date, e.g. "Monday 2026-06-29"
+    * channel: One of: instagram, facebook, linkedin, twitter, tiktok, youtube, email, google_ads
+    * content_type: Format e.g. Reel, Story, Post, Ad, Email, Video
+    * description: Specific task referencing actual campaign content (not generic)
+    * caption_hook: Opening line the audience reads first
+    * effort: Exactly "low", "medium", or "high"
+    * quick_win: Boolean — true if ships same day with no dependencies
 
-Total weeks: Calculate as (number_of_timeline_phases × 2) with a minimum of 4 weeks.
-For example: 4 phases = 8 weeks, 3 phases = 6 weeks, 2 phases = 4 weeks.
+Total weeks: 4 weeks. Always exactly 4 weeks regardless of timeline phases.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 4. ASSET CHECKLIST
@@ -275,20 +276,22 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
     }}
   ],
   "content_calendar": {{
-    "total_weeks": 6,
-    "start_date": "YYYY-MM-DD",
+    "total_weeks": 4,
+    "campaign_start_date": "YYYY-MM-DD",
     "weeks": [
       {{
-        "week_number": 1,
         "week_label": "Week 1: Campaign Foundation",
         "week_start_date": "YYYY-MM-DD",
         "theme": "Weekly content theme tied to key messages",
         "activities": [
           {{
-            "channel": "channel_name",
-            "day": "Tuesday",
-            "content_type": "Content type",
-            "description": "Specific description referencing actual campaign content"
+            "day": "Monday 2026-06-29",
+            "channel": "instagram",
+            "content_type": "Reel",
+            "description": "Specific description referencing actual campaign content",
+            "caption_hook": "Opening line the audience reads first.",
+            "effort": "medium",
+            "quick_win": false
           }}
         ]
       }}
@@ -338,8 +341,8 @@ QUALITY CHECKLIST (ensure all are true before responding):
 - decision_rationale references the actual quality score ({quality_score}/100)
 - publishing_plan has exactly {channels_count} entries (one per campaign channel)
 - Each channel plan has all 9 fields: channel, priority, content_type, publish_frequency, optimal_timing, copy_asset_used, visual_asset_used, kpi_targets, launch_date, status
-- content_calendar has weeks = (timeline_phases × 2) with minimum 4 weeks
-- Each week has week_number, week_label, week_start_date, theme, and activities
+- content_calendar has exactly 4 weeks (total_weeks: 4)
+- Each week has week_label, week_start_date, theme, and activities (3-7 per week)
 - Activities reference actual campaign content (not generic placeholders)
 - asset_checklist covers ALL copy assets from copy_summary AND all visual assets from image_summary
 - missing_assets lists only truly missing assets (not already covered)

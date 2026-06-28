@@ -167,7 +167,7 @@ def run_langgraph_campaign():
             # Content calendar
             calendar = publisher_data.get('content_calendar', {})
             print(f"   Calendar: {calendar.get('total_weeks', 'N/A')} weeks")
-            print(f"   Start Date: {calendar.get('start_date', 'N/A')}")
+            print(f"   Start Date: {calendar.get('campaign_start_date', 'N/A')}")
             
             # Channels
             publishing_plan = publisher_data.get('publishing_plan', [])

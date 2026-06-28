@@ -63,7 +63,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
-from schemas import CopywriterOutput, normalize_channel_list
+from schemas import CopywriterOutput, normalize_channel_list, normalize_channel_name, Channel
 
 
 # ==================== COPYWRITER AGENT FUNCTION ====================
@@ -276,15 +276,12 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         print("\n[MERGE] Running post-revision safety check...")
         try:
             previous = CopywriterOutput.model_validate_json(state.copy_output)
-            channel_fields = ["instagram", "facebook", "linkedin", "twitter", "tiktok", "youtube", "email", "google_ads"]
             restored = []
-            for field in channel_fields:
-                new_val = getattr(copy_output, field, None)
-                prev_val = getattr(previous, field, None)
-                if prev_val is not None and new_val is None:
-                    setattr(copy_output, field, prev_val)
-                    restored.append(field)
-                    print(f"   ⚠️  RESTORED '{field}' — LLM dropped it during revision, restoring from previous copy")
+            for chan_enum in list(Channel):
+                if chan_enum in previous.copies and chan_enum not in copy_output.copies:
+                    copy_output.copies[chan_enum] = previous.copies[chan_enum]
+                    restored.append(chan_enum.value)
+                    print(f"   ⚠️  RESTORED '{chan_enum.value}' — LLM dropped it during revision, restoring from previous copy")
             if not restored:
                 print("   ✅ All channels intact — no restoration needed")
             else:
@@ -299,8 +296,12 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
 
     # Display copy for each channel in the campaign
     for channel in channels:
-        channel_key = channel.lower().replace(" ", "_")
-        channel_copy = getattr(copy_output, channel_key, None)
+        normalized = normalize_channel_name(channel)
+        if normalized is None:
+            print(f"   ⚠️  Unknown channel '{channel}' — skipping")
+            continue
+        channel_enum = Channel(normalized)
+        channel_copy = copy_output.copies.get(channel_enum)
         if channel_copy:
             print(f"\n📝 {channel.title()} Copy:")
             if hasattr(channel_copy, 'subject'):
@@ -324,6 +325,19 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     for channel, ready in copy_output.copy_readiness.items():
         status_icon = "✅" if ready else "❌"
         print(f"   {status_icon} {channel}: {ready}")
+
+    # Validate all requested channels have copy
+    print("\n🔍 Validating channel coverage...")
+    generated = set(copy_output.copies.keys())
+    requested = set()
+    for c in channels:
+        n = normalize_channel_name(c)
+        if n:
+            requested.add(Channel(n))
+    missing = requested - generated
+    if missing:
+        missing_names = [m.value for m in missing]
+        raise ValueError(f"Copywriter failed to generate copy for: {missing_names}")
 
     # ========== STEP 6: WRITE TO STATE ==========
     print("\n[STEP 6] Writing to state...")

@@ -75,6 +75,16 @@ Based on the research insights above, develop a comprehensive strategy covering:
    - Phase 4: Optimize & Scale (Week 7+)
    - For each phase: phase_name, duration, activities list, start_date (null), end_date (null)
 
+10. CONTENT CALENDAR
+   Generate a 4-week nested content calendar. Each week must have 3-7 activities.
+   Each activity must have:
+   - day: Day of week + date, e.g. "Monday 2026-06-29"
+   - channel: One of: instagram, facebook, linkedin, twitter, tiktok, youtube, email, google_ads
+   - description: Specific action-oriented task (1-2 sentences)
+   - caption_hook: Opening line the audience reads first
+   - effort: Exactly "low", "medium", or "high"
+   - quick_win: Boolean — true if it ships same day with no dependencies
+
 7. SUCCESS METRICS
    - Infer the goal from recommended_approach (awareness/lead_gen/sales/retention)
    - Define KPIs (3-5 KPIs aligned with the goal)
@@ -105,6 +115,7 @@ Required top-level fields:
 - inferred_goal: string (awareness/lead_gen/sales/retention)
 - research_foundation: ResearchFoundation object
 - execution: Execution object
+- content_calendar: ContentCalendar object (nested — see exact structure below)
 
 EXACT JSON STRUCTURE:
 {{
@@ -187,6 +198,27 @@ EXACT JSON STRUCTURE:
       "content_creation": "20%",
       "community_management": "10%"
     }}
+  }},
+  "content_calendar": {{
+    "total_weeks": 4,
+    "campaign_start_date": "2026-06-29",
+    "weeks": [
+      {{
+        "week_label": "Week 1: Foundation & Setup",
+        "week_start_date": "2026-06-29",
+        "theme": "One sentence strategic focus for this week",
+        "activities": [
+          {{
+            "day": "Monday 2026-06-29",
+            "channel": "google_ads",
+            "description": "Specific action-oriented task description.",
+            "caption_hook": "Opening line the audience reads first.",
+            "effort": "medium",
+            "quick_win": false
+          }}
+        ]
+      }}
+    ]
   }}
 }}
 

@@ -335,12 +335,16 @@ def publisher_agent(state: CampaignState) -> CampaignState:
 
         except (json.JSONDecodeError, TypeError) as e:
             print(f"⚠️  Could not parse review_output: {e}")
-            review_summary = {"note": "Review output unavailable — defaulting to approved"}
-            quality_score = 100  # Safe default
+            raise ValueError(
+                "Reviewer output is corrupted — publish blocked. "
+                "quality_score will NOT be defaulted to 100."
+            )
     else:
-        print("⚠️  No review output — defaulting to approved for publishing")
-        review_summary = {"note": "No reviewer output — proceeding with default approval"}
-        quality_score = 100
+        print("❌ No review output — reviewer did not run")
+        raise ValueError(
+            "Reviewer returned None — publish blocked. "
+            "quality_score will NOT be defaulted to 100."
+        )
 
     # ========== STEP 7: GENERATE PUBLISHING PLAN WITH LLM ==========
     print("\n[STEP 7] Generating comprehensive publishing plan with LLM...")
@@ -350,15 +354,31 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
 
-    # Pre-calculate publishing decision based on quality score (enforce strict rules)
-    if quality_score >= 80:
+    # Gate on explicit can_publish flag, not score
+    can_publish = review_data.get("can_publish", False)
+    if not can_publish:
+        raise ValueError(
+            f"Publish blocked. Status: {review_data.get('status', 'unknown')}. "
+            f"Reason: {review_data.get('overall', {}).get('summary', 'No summary provided')}"
+        )
+
+    # Also validate quality score if present
+    quality_score = review_data.get("overall_quality_score", 0) or review_data.get("overall", {}).get("quality_score")
+    if quality_score is not None and quality_score < 60:
+        raise ValueError(
+            f"Quality score {quality_score} below threshold 60. "
+            f"Status: {review_data.get('status', 'unknown')}"
+        )
+
+    # Pre-calculate publishing decision based on quality score
+    if quality_score is not None and quality_score >= 80:
         expected_decision = "APPROVED_FOR_PUBLISHING"
-    elif quality_score >= 60:
+    elif quality_score is not None and quality_score >= 60:
         expected_decision = "REVISIONS_NEEDED"
     else:
-        expected_decision = "HOLD"
-    
-    print(f"   Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
+        expected_decision = "APPROVED_FOR_PUBLISHING"  # Default when can_publish is true but score is absent
+
+    print(f"   can_publish: {can_publish} | Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
 
     # Load publisher prompt and format with all campaign data
     prompt = load_prompt(

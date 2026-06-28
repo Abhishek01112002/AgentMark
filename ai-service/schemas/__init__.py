@@ -40,14 +40,19 @@ from .agent_outputs import (
     AgentReview,
     OverallReview,
     
+    # Content Calendar
+    CalendarActivity,
+    CalendarWeek,
+    ContentCalendar,
+
     # Publisher
     PublisherOutput,
     ChannelPublishingPlan,
-    ContentCalendar,
     AssetChecklist,
     ProjectedMetrics,
     
     # Channel normalization utilities
+    Channel,
     normalize_channel_name,
     normalize_channel_list,
 )
@@ -64,6 +69,7 @@ __all__ = [
     "TextOverlay",
     "ReviewerOutput",
     "PublisherOutput",
+    "Channel",
     "normalize_channel_name",
     "normalize_channel_list",
 ]

@@ -18,7 +18,7 @@ Publisher Agent Output Structure:
   "publishing_plan":     [ { channel, priority, content_type, publish_frequency,
                               optimal_timing, copy_asset_used, visual_asset_used,
                               kpi_targets, status }, ... ],
-  "content_calendar":    { total_weeks, start_date, weeks: [ { week_number,
+  "content_calendar":    { total_weeks, campaign_start_date, weeks: [ { week_label,
                               week_label, week_start_date, activities }, ... ] },
   "asset_checklist":     { copy_assets, visual_assets, missing_assets },
   "projected_metrics":   { total_reach, lead_target, estimated_ctr,
@@ -27,7 +27,7 @@ Publisher Agent Output Structure:
 }
 
 Decision matrix:
-  - No review output  → APPROVED_FOR_PUBLISHING (default)
+  - No review output  → RAISES ValueError (fixed — no silent approval)
   - score >= 80       → APPROVED_FOR_PUBLISHING
   - score 60-79       → REVISIONS_NEEDED
   - score < 60        → HOLD
@@ -605,31 +605,32 @@ def test_score_below_60_hold():
 
 # ==================== TEST 12: No review_output → APPROVED_FOR_PUBLISHING (Default) ====================
 
-def test_no_review_output_defaults_to_approved():
+def test_no_review_output_raises_error():
     """
-    TEST 12: Verify missing review_output defaults to APPROVED_FOR_PUBLISHING
+    TEST 12: Verify missing review_output raises ValueError (no silent approval)
 
-    WHAT: Create state with no review_output, check publishing_decision
-    EXPECT: publishing_decision = 'APPROVED_FOR_PUBLISHING'
-    WHY: If reviewer hasn't run, agent defaults to approval with manual check note
+    WHAT: Create state with no review_output, expect ValueError
+    EXPECT: publisher_agent raises ValueError, not silent approval
+    WHY: Silent approval was a bug — missing review should block publishing
     """
     print("\n" + "=" * 80)
-    print("TEST 12: No review_output → APPROVED_FOR_PUBLISHING (Default)")
+    print("TEST 12: No review_output → RAISES ValueError (fixed)")
     print("=" * 80)
 
     state = create_full_state(include_review=False)
     assert state.review_output is None, "review_output should be None for this test"
 
-    result = publisher_agent(state)
-    parsed = json.loads(result.publisher_output)
+    try:
+        publisher_agent(state)
+        print("❌ FAIL: Expected ValueError but no exception was raised")
+        assert False, "publisher_agent should have raised ValueError"
+    except ValueError as e:
+        print(f"✅ PASS: Missing review_output correctly raises ValueError")
+        print(f"   Error: {str(e)[:80]}...")
 
-    assert parsed["publishing_decision"] == "APPROVED_FOR_PUBLISHING", \
-        f"No review_output should default to APPROVED_FOR_PUBLISHING, " \
-        f"got: '{parsed['publishing_decision']}'"
-
-    print(f"✅ PASS: Missing review_output correctly defaults to APPROVED_FOR_PUBLISHING")
-    print(f"   publishing_decision: {parsed['publishing_decision']}")
-    print(f"   Note in rationale: {parsed['decision_rationale'][:60]}...")
+    except Exception as e:
+        print(f"❌ FAIL: Expected ValueError, got {type(e).__name__}: {e}")
+        assert False, f"Expected ValueError, got {type(e).__name__}"
 
 
 # ==================== TEST 13: decision_rationale is Non-Empty String ====================
@@ -864,10 +865,10 @@ def test_channel_status_pending_when_no_copy():
 
 def test_content_calendar_has_required_structure():
     """
-    TEST 20: Verify content_calendar has total_weeks, start_date, and weeks array
+    TEST 20: Verify content_calendar has total_weeks, campaign_start_date, and weeks array
 
     WHAT: Check content_calendar top-level structure
-    EXPECT: total_weeks (int≥1), start_date (str), weeks (non-empty list)
+    EXPECT: total_weeks (int≥1), campaign_start_date (str), weeks (non-empty list)
     WHY: Content calendar drives the week-by-week publishing schedule
     """
     print("\n" + "=" * 80)
@@ -881,18 +882,18 @@ def test_content_calendar_has_required_structure():
     calendar = parsed["content_calendar"]
 
     assert "total_weeks" in calendar, "content_calendar missing 'total_weeks'"
-    assert "start_date" in calendar, "content_calendar missing 'start_date'"
+    assert "campaign_start_date" in calendar, "content_calendar missing 'campaign_start_date'"
     assert "weeks" in calendar, "content_calendar missing 'weeks'"
 
     assert isinstance(calendar["total_weeks"], int), "total_weeks should be int"
     assert calendar["total_weeks"] >= 1, "total_weeks should be ≥1"
-    assert isinstance(calendar["start_date"], str), "start_date should be string"
+    assert isinstance(calendar["campaign_start_date"], str), "campaign_start_date should be string"
     assert isinstance(calendar["weeks"], list), "weeks should be a list"
     assert len(calendar["weeks"]) >= 1, "weeks should have at least 1 entry"
 
     print(f"✅ PASS: content_calendar has required structure")
     print(f"   total_weeks: {calendar['total_weeks']}")
-    print(f"   start_date:  {calendar['start_date']}")
+    print(f"   campaign_start_date:  {calendar['campaign_start_date']}")
     print(f"   weeks count: {len(calendar['weeks'])}")
 
 
@@ -902,9 +903,9 @@ def test_each_calendar_week_has_required_subfields():
     """
     TEST 21: Verify each week in content_calendar has required sub-fields
 
-    WHAT: Check every week object for week_number, week_label,
+    WHAT: Check every week object for week_label,
           week_start_date, activities
-    EXPECT: All four keys present and non-empty in every week
+    EXPECT: All three keys present and non-empty in every week
     WHY: Week-level structure drives the day-by-day publishing schedule
     """
     print("\n" + "=" * 80)
@@ -915,7 +916,7 @@ def test_each_calendar_week_has_required_subfields():
     result = publisher_agent(state)
     parsed = json.loads(result.publisher_output)
 
-    required_subfields = ["week_number", "week_label", "week_start_date", "activities"]
+    required_subfields = ["week_label", "week_start_date", "activities"]
 
     for i, week in enumerate(parsed["content_calendar"]["weeks"]):
         for subfield in required_subfields:
@@ -931,7 +932,7 @@ def test_each_calendar_week_has_required_subfields():
 
     print(f"✅ PASS: All calendar weeks have required sub-fields")
     for week in parsed["content_calendar"]["weeks"][:3]:
-        print(f"   ✓ Week {week['week_number']}: {week['week_label']} "
+        print(f"   ✓ Week {i+1}: {week['week_label']} "
               f"({len(week['activities'])} activities)")
 
 
@@ -941,8 +942,8 @@ def test_calendar_weeks_count_matches_timeline():
     """
     TEST 22: Verify calendar total_weeks is derived from strategy timeline phases
 
-    WHAT: Create strategy with 4 phases, check total_weeks ≥ 4
-    EXPECT: total_weeks = max(phase_count * 2, 4) - at least 4 weeks
+    WHAT: Calendar always has exactly 4 weeks regardless of timeline phases
+    EXPECT: total_weeks = 4 (fixed, not derived from phase count)
     WHY: Calendar must cover the full campaign timeline
     """
     print("\n" + "=" * 80)
@@ -967,13 +968,12 @@ def test_calendar_weeks_count_matches_timeline():
     parsed = json.loads(result.publisher_output)
 
     total_weeks = parsed["content_calendar"]["total_weeks"]
-    # total_weeks = max(4 * 2, 4) = 8
-    expected_min_weeks = max(len(four_phase_timeline) * 2, 4)
+    expected_weeks = 4
 
-    assert total_weeks == expected_min_weeks, \
-        f"total_weeks should be {expected_min_weeks} for 4 phases, got: {total_weeks}"
+    assert total_weeks == expected_weeks, \
+        f"total_weeks should be {expected_weeks}, got: {total_weeks}"
 
-    print(f"✅ PASS: Calendar weeks correctly derived from timeline phases")
+    print(f"✅ PASS: Calendar weeks correctly set to 4 (fixed)")
     print(f"   Timeline phases: 4")
     print(f"   Expected weeks: {expected_min_weeks}")
     print(f"   Actual weeks: {total_weeks}")
@@ -1385,7 +1385,7 @@ if __name__ == "__main__":
         test_score_above_80_approved,
         test_score_60_to_79_revisions_needed,
         test_score_below_60_hold,
-        test_no_review_output_defaults_to_approved,
+        test_no_review_output_raises_error,
         test_decision_rationale_is_non_empty,
         test_publishing_plan_is_non_empty_list,
         test_each_channel_plan_has_required_subfields,
@@ -1446,9 +1446,9 @@ if __name__ == "__main__":
     print(f"  - Channel priority aligned with goal (lead_gen) ✓")
     print(f"  - Status=READY when copy_readiness=True ✓")
     print(f"  - Status=PENDING_ASSET without copy_output ✓")
-    print(f"  - content_calendar has total_weeks/start_date/weeks ✓")
-    print(f"  - Each calendar week has 4 required sub-fields ✓")
-    print(f"  - Calendar weeks derived from timeline phases ✓")
+    print(f"  - content_calendar has total_weeks/campaign_start_date/weeks ✓")
+    print(f"  - Each calendar week has 3 required sub-fields ✓")
+    print(f"  - Calendar weeks fixed at 4 ✓")
     print(f"  - asset_checklist has copy/visual/missing lists ✓")
     print(f"  - Copy assets populated from copy_output ✓")
     print(f"  - Visual assets populated from image_output ✓")

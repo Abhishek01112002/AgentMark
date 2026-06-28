@@ -12,6 +12,7 @@ interface ApiKeyConfig {
   docs: string;
   required: boolean;
   usage: string;
+  multiKey?: boolean;
 }
 
 const ApiKeys: React.FC = () => {
@@ -27,12 +28,13 @@ const ApiKeys: React.FC = () => {
     {
       id: 'gemini',
       name: 'Gemini API Key',
-      description: 'Primary provider for all agents.',
-      placeholder: 'AIza...',
+      description: 'Primary provider for all agents. Supports multiple keys for rate limit bypass.',
+      placeholder: 'AIza... (paste multiple keys separated by commas to multiply your RPM)',
       format: 'AIza...',
       docs: 'https://aistudio.google.com/app/apikey',
       required: true,
-      usage: 'Used first for all AI calls. If unavailable, Groq is used next, then OpenAI.',
+      usage: 'Used first for all AI calls. Add multiple keys (key1,key2,key3) to bypass the 15 RPM free-tier limit.',
+      multiKey: true,
     },
     {
       id: 'groq',
@@ -43,6 +45,7 @@ const ApiKeys: React.FC = () => {
       docs: 'https://console.groq.com',
       required: false,
       usage: 'Used when Gemini is missing.',
+      multiKey: false,
     },
     {
       id: 'openai',
@@ -53,6 +56,7 @@ const ApiKeys: React.FC = () => {
       docs: 'https://platform.openai.com',
       required: false,
       usage: 'Used when Gemini and Groq are unavailable.',
+      multiKey: false,
     },
   ];
 
@@ -137,36 +141,50 @@ const ApiKeys: React.FC = () => {
                 <div className="space-y-3">
                   <div className="flex gap-2">
                     <div className="flex-1 relative">
-                      <input
-                        type={showKeys[config.id] ? 'text' : 'password'}
-                        placeholder={config.placeholder}
-                        value={provider.key}
-                        onChange={(e) => updateProvider(config.id, { key: e.target.value })}
-                        className="w-full bg-surface-container-lowest border border-border-base rounded-lg px-4 py-3 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                      />
-                      <button
-                        onClick={() => setShowKeys((prev) => ({ ...prev, [config.id]: !prev[config.id] }))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                        aria-label={showKeys[config.id] ? 'Hide key' : 'Show key'}
-                      >
-                        {showKeys[config.id] ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
+                      {config.multiKey ? (
+                        <textarea
+                          rows={3}
+                          placeholder={config.placeholder}
+                          value={provider.key}
+                          onChange={(e) => updateProvider(config.id, { key: e.target.value })}
+                          className="w-full bg-surface-container-lowest border border-border-base rounded-lg px-4 py-3 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none resize-none font-mono text-sm"
+                        />
+                      ) : (
+                        <input
+                          type={showKeys[config.id] ? 'text' : 'password'}
+                          placeholder={config.placeholder}
+                          value={provider.key}
+                          onChange={(e) => updateProvider(config.id, { key: e.target.value })}
+                          className="w-full bg-surface-container-lowest border border-border-base rounded-lg px-4 py-3 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
+                        />
+                      )}
+                      {!config.multiKey && (
+                        <button
+                          onClick={() => setShowKeys((prev) => ({ ...prev, [config.id]: !prev[config.id] }))}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                          aria-label={showKeys[config.id] ? 'Hide key' : 'Show key'}
+                        >
+                          {showKeys[config.id] ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      )}
                     </div>
-                    <button
-                      onClick={() => void handleSave()}
-                      disabled={!provider.key || isSaving}
-                      className="px-4 py-3 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                    >
-                      {isSaving ? 'Saving...' : 'Save'}
-                    </button>
-                    {provider.key && (
+                    <div className="flex flex-col gap-2">
                       <button
-                        onClick={() => handleDelete(config.id)}
-                        className="px-4 py-3 border border-error text-error hover:bg-error/10 rounded-lg font-label-md text-label-md transition-all active:scale-95"
+                        onClick={() => void handleSave()}
+                        disabled={!provider.key || isSaving}
+                        className="px-4 py-3 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                       >
-                        Delete
+                        {isSaving ? 'Saving...' : 'Save'}
                       </button>
-                    )}
+                      {provider.key && (
+                        <button
+                          onClick={() => handleDelete(config.id)}
+                          className="px-4 py-3 border border-error text-error hover:bg-error/10 rounded-lg font-label-md text-label-md transition-all active:scale-95"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="p-3 bg-surface-container-low rounded-lg border border-border-base">
@@ -211,8 +229,8 @@ const ApiKeys: React.FC = () => {
               <span className="font-semibold">Quick Reference:</span>
             </p>
             <ul className="font-body-sm text-body-sm text-text-secondary space-y-1 ml-4 list-disc">
-              <li><span className="font-semibold text-text-primary">Gemini:</span> Primary provider.</li>
-              <li><span className="font-semibold text-text-primary">Groq:</span> Fallback provider.</li>
+              <li><span className="font-semibold text-text-primary">Gemini:</span> Primary provider. Add multiple keys to multiply your 15 RPM free-tier limit (e.g., 3 keys = 45 RPM).</li>
+              <li><span className="font-semibold text-text-primary">Groq:</span> Fallback provider when Gemini is unavailable.</li>
               <li><span className="font-semibold text-text-primary">OpenAI:</span> Final fallback provider.</li>
             </ul>
           </div>

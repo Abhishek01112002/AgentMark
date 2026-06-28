@@ -212,7 +212,7 @@ def main():
 
     calendar = pub_output["content_calendar"]
     print(f"\n   Total Weeks:  {calendar.get('total_weeks', 'N/A')}")
-    print(f"   Start Date:   {calendar.get('start_date', 'N/A')}")
+    print(f"   Start Date:   {calendar.get('campaign_start_date', 'N/A')}")
 
     for week in calendar.get("weeks", []):
         print(f"\n   {'─' * 80}")
@@ -224,7 +224,7 @@ def main():
         print(f"      Activities ({len(week.get('activities', []))}):")
         for activity in week.get("activities", [])[:6]:  # Show max 6 per week
             day = activity.get('day', 'N/A')
-            channel = activity.get('channel', 'N/A').upper()
+            channel = activity['channel'].value.upper() if hasattr(activity.get('channel'), 'value') else activity.get('channel', 'N/A').upper()
             content_type = activity.get('content_type', 'N/A')
             description = activity.get('description', 'N/A')[:60]
             print(f"        [{day}] {channel} — {content_type}: {description}...")
