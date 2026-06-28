@@ -331,4 +331,4 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
   );
 };
 
-export default CopywriterContent;
+export default React.memo(CopywriterContent);

@@ -246,4 +246,4 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
   );
 };
 
-export default ReviewContent;
+export default React.memo(ReviewContent);

@@ -226,4 +226,4 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
   );
 };
 
-export default OverviewContent;
+export default React.memo(OverviewContent);

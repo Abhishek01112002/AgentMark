@@ -256,4 +256,4 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   );
 };
 
-export default ResearchContent;
+export default React.memo(ResearchContent);

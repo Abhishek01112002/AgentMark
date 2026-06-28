@@ -889,4 +889,4 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   );
 };
 
-export default VisualsContent;
+export default React.memo(VisualsContent);

@@ -113,6 +113,31 @@ const CampaignResultPage: React.FC = () => {
     };
   }, [campaign]);
 
+  // Memoize strategyData including flat content calendar to preserve referential identity for React.memo
+  const memoizedStrategyData = React.useMemo(() => {
+    const aiOutputs = campaign?.aiOutputs || {};
+    if (!aiOutputs.strategy_output) return null;
+    const rawCalendar = aiOutputs.publisher_output?.content_calendar || {};
+    const weeks = rawCalendar.weeks || [];
+    const flatCalendar: any[] = [];
+    weeks.forEach((w: any) => {
+      const weekLabel = w.week_label || `Week ${w.week_number}`;
+      (w.activities || []).forEach((act: any) => {
+        flatCalendar.push({
+          week: weekLabel,
+          channel: act.channel,
+          content_type: act.content_type,
+          topic: act.description,
+          status: 'planned'
+        });
+      });
+    });
+    return {
+      ...aiOutputs.strategy_output,
+      content_calendar: flatCalendar
+    };
+  }, [campaign?.aiOutputs]);
+
   useEffect(() => {
     const fetchCampaign = async () => {
       if (!campaignId) return;
@@ -218,26 +243,7 @@ const CampaignResultPage: React.FC = () => {
       case 'research':
         return <ResearchContent data={aiOutputs.research_output} />;
       case 'strategy': {
-        const rawCalendar = aiOutputs.publisher_output?.content_calendar || {};
-        const weeks = rawCalendar.weeks || [];
-        const flatCalendar: any[] = [];
-        weeks.forEach((w: any) => {
-          const weekLabel = w.week_label || `Week ${w.week_number}`;
-          (w.activities || []).forEach((act: any) => {
-            flatCalendar.push({
-              week: weekLabel,
-              channel: act.channel,
-              content_type: act.content_type,
-              topic: act.description,
-              status: 'planned'
-            });
-          });
-        });
-        const strategyData = {
-          ...aiOutputs.strategy_output,
-          content_calendar: flatCalendar
-        };
-        return <StrategyContent data={strategyData} campaign={campaign} />;
+        return <StrategyContent data={memoizedStrategyData} campaign={campaign} />;
       }
       case 'copy':
         return <CopywriterContent data={aiOutputs.copy_output} />;

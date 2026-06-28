@@ -890,4 +890,4 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   );
 };
 
-export default StrategyContent;
+export default React.memo(StrategyContent);

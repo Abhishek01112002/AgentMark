@@ -772,4 +772,4 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
   );
 };
 
-export default PublisherContent;
+export default React.memo(PublisherContent);
