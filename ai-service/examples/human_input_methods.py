@@ -12,8 +12,7 @@ import json
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.state import CampaignState
-from agents.human_approval import submit_human_approval, get_campaign_summary
-from workflow.graph import create_campaign_graph
+from agents.human_approval import submit_human_approval
 
 
 # ==================== METHOD 1: DIRECT FUNCTION CALL ====================
@@ -68,7 +67,7 @@ def method_1_direct_call():
     # Submit decision
     state = submit_human_approval(state, decision)
     
-    print(f"\n3. Decision submitted:")
+    print("\n3. Decision submitted:")
     print(f"   Human status: {state.human_approval_status}")
     print(f"   Awaiting approval: {state.awaiting_human_approval}")
     

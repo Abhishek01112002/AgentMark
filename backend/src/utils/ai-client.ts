@@ -91,7 +91,7 @@ class AIServiceClient {
 
   constructor() {
     this.baseUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
-    this.timeout = 600000; // 10 minutes timeout
+    this.timeout = 300000; // 5 minutes timeout for campaign generation
   }
 
   /**
@@ -141,17 +141,27 @@ class AIServiceClient {
    * Health check for AI Service
    */
   async healthCheck(): Promise<{ status: string; service: string }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
         method: 'GET',
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('AI Service health check failed');
       }
 
       return await response.json() as { status: string; service: string };
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('AI Service health check timed out');
+      }
       throw new Error('AI Service is unavailable');
     }
   }
@@ -160,6 +170,9 @@ class AIServiceClient {
    * Enhance a prompt using the AI Service
    */
   async enhancePrompt(prompt: string, userInput?: string, llmConfig?: any): Promise<string> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+
     try {
       const response = await fetch(`${this.baseUrl}/campaigns/enhance-prompt`, {
         method: 'POST',
@@ -171,7 +184,10 @@ class AIServiceClient {
           user_input: userInput || null,
           llm_config: llmConfig || null,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
@@ -181,6 +197,10 @@ class AIServiceClient {
       const result = await response.json() as { enhanced_prompt: string };
       return result.enhanced_prompt;
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('AI Service prompt enhancement timed out');
+      }
       throw new Error(error.message || 'AI Service prompt enhancement failed');
     }
   }

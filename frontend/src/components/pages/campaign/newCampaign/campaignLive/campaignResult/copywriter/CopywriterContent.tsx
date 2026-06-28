@@ -19,17 +19,30 @@ const platforms = [
 ];
 
 const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
-  const hasRealData = data && Object.keys(data).length > 0;
+  const parsedData = React.useMemo(() => {
+    if (!data) return null;
+    if (typeof data === 'string') {
+      try { return JSON.parse(data); } catch { return data; }
+    }
+    return data;
+  }, [data]);
+
+  const flatData = React.useMemo(() => {
+    if (!parsedData) return null;
+    return parsedData.copies ? { ...parsedData, ...parsedData.copies } : parsedData;
+  }, [parsedData]);
+
+  const hasRealData = flatData && Object.keys(flatData).length > 0;
   const [copied, setCopied] = useState(false);
 
   // Extract data from AI output
-  const inferredGoal = data?.inferred_goal || '';
-  const messagingFramework = data?.messaging_framework || {};
-  const strategicAlignment = data?.strategic_alignment || {};
-  const copyReadiness = data?.copy_readiness || {};
+  const inferredGoal = flatData?.inferred_goal || '';
+  const messagingFramework = flatData?.messaging_framework || {};
+  const strategicAlignment = flatData?.strategic_alignment || {};
+  const copyReadiness = flatData?.copy_readiness || {};
 
   // Get available platforms from data
-  const availablePlatforms = platforms.filter(p => data?.[p.id]);
+  const availablePlatforms = platforms.filter(p => flatData?.[p.id]);
 
   const tabs = availablePlatforms.length > 0 ? availablePlatforms : platforms.slice(0, 4);
 
@@ -38,7 +51,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   // Extract copy from AI output
-  const activePlatformData = data?.[activeTab] || {};
+  const activePlatformData = flatData?.[activeTab] || {};
   const ctas = activePlatformData?.ctas || {};
 
   /** Build a readable text block for the active platform's copy */
@@ -107,10 +120,6 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
           <h2 className="text-2xl md:text-3xl font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
           <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for "Q4 Product Launch".'}</p>
         </div>
-        <div className="flex items-center gap-2 bg-[#111118] p-1 rounded-lg border border-[#2A2A38]">
-          <div className="w-2 h-2 rounded-full bg-[#6366F1] ml-2" style={{ animation: 'pulse 2s infinite' }} />
-          <span className="text-xs px-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>AI Active</span>
-        </div>
       </div>
       </div>
 
@@ -165,6 +174,44 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
                 {copied ? 'Copied!' : 'Copy to Clipboard'}
               </button>
             </div>
+
+            {/* Channel-Specific Messaging (Strategy Box) */}
+            {(() => {
+              const framework = parsedData?.messaging_framework || {};
+              const activeChannelMessaging = framework.channel_messaging?.find(
+                (ch: any) => {
+                  if (!ch?.channel_name) return false;
+                  const name = ch.channel_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  const tab = activeTab.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  return name === tab || name.includes(tab) || tab.includes(name);
+                }
+              );
+              if (!activeChannelMessaging) return null;
+              return (
+                <div className="mb-6 p-4 rounded-xl bg-[#0A0A0F] border border-[#2A2A38]/80 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#6366F1]" />
+                  <div className="text-[10px] uppercase tracking-wider text-[#A0A0D2] font-semibold mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                    🎯 Channel Strategy & Angle
+                  </div>
+                  <p className="text-sm font-medium mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                    {activeChannelMessaging.approach}
+                  </p>
+                  {activeChannelMessaging.key_points?.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {activeChannelMessaging.key_points.map((point: string, idx: number) => (
+                        <span 
+                          key={idx} 
+                          className="px-2.5 py-1 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs font-semibold"
+                          style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8083ff' }}
+                        >
+                          #{point}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="space-y-4">
               {activePlatformData.headline && (
@@ -283,30 +330,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
             </div>
           )}
 
-          {/* Channel Messaging */}
-          {messagingFramework.channel_messaging?.length > 0 && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Channel Messaging</h4>
-              <div className="space-y-3">
-                {messagingFramework.channel_messaging.map((ch: any, idx: number) => (
-                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3">
-                    <h5 className="text-xs font-medium mb-1 flex items-center gap-1.5" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-                      <ChannelIcon channel={ch.channel_name} size={12} />
-                      {ch.channel_name}
-                    </h5>
-                    <p className="text-xs mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{ch.approach}</p>
-                    {ch.key_points?.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {ch.key_points.map((point: string, pidx: number) => (
-                          <span key={pidx} className="px-2 py-0.5 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{point}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import CreateProjectModal from './CreateProjectModal';
 import DeleteProjectModal from './DeleteProjectModal';
+import { formatDDMonYYYY } from '../../../utils/formatDate';
 
 interface Project {
   id: string;
@@ -85,8 +86,7 @@ const ProjectsContent: React.FC = () => {
   };
 
   const getTimeAgo = (date: string) => {
-    const past = new Date(date);
-    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDDMonYYYY(new Date(date));
   };
 
   if (loading) {

@@ -65,41 +65,41 @@ def main():
     
     research_output = json.loads(state.research_output)
     
-    print(f"\n✅ Research Completed Successfully!")
+    print("\n✅ Research Completed Successfully!")
     print(f"\nStatus: {state.status}")
     
-    print(f"\n📊 MARKET ANALYSIS:")
+    print("\n📊 MARKET ANALYSIS:")
     ma = research_output['market_analysis']
     print(f"   TAM: {ma['total_addressable_market']}")
     print(f"   Growth Rate: {ma['growth_rate']}")
-    print(f"   Market Trends:")
+    print("   Market Trends:")
     for trend in ma['market_trends']:
         print(f"     • {trend}")
     
-    print(f"\n🏆 COMPETITOR ANALYSIS:")
+    print("\n🏆 COMPETITOR ANALYSIS:")
     ca = research_output['competitor_analysis']
     print(f"   Top Competitors: {', '.join(ca['top_competitors'])}")
-    print(f"   Differentiation Opportunity:")
+    print("   Differentiation Opportunity:")
     print(f"     {ca['differentiation_opportunity']}")
     
-    print(f"\n👥 AUDIENCE INSIGHTS:")
+    print("\n👥 AUDIENCE INSIGHTS:")
     ai = research_output['audience_insights']
-    print(f"   Pain Points:")
+    print("   Pain Points:")
     for pain in ai['pain_points']:
         print(f"     • {pain}")
-    print(f"   Motivations:")
+    print("   Motivations:")
     for motivation in ai['motivations']:
         print(f"     • {motivation}")
     print(f"   Preferred Channels: {', '.join(ai['preferred_channels'])}")
     
-    print(f"\n💡 MARKET OPPORTUNITIES:")
+    print("\n💡 MARKET OPPORTUNITIES:")
     for opp in research_output['market_opportunities']:
         print(f"   • {opp}")
     
-    print(f"\n🎯 RECOMMENDED APPROACH:")
+    print("\n🎯 RECOMMENDED APPROACH:")
     print(f"   {research_output['recommended_approach']}")
     
-    print(f"\n💾 Full Research Output:")
+    print("\n💾 Full Research Output:")
     print(json.dumps(research_output, indent=2))
     
     print("\n" + "="*100)

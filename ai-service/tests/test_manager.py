@@ -129,7 +129,7 @@ def test_manager_output_is_json():
     try:
         parsed = json.loads(result.manager_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: Manager output is valid JSON")
+        print("✅ PASS: Manager output is valid JSON")
         print(f"   Keys in JSON: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         pytest.fail(f"Manager output is not valid JSON: {e}")
@@ -167,7 +167,7 @@ def test_target_audience_field_exists():
     assert isinstance(parsed["target_audience"], str), "target_audience should be a string"
     assert len(parsed["target_audience"]) > 0, "target_audience should not be empty"
     
-    print(f"✅ PASS: Target Audience field exists")
+    print("✅ PASS: Target Audience field exists")
     print(f"   Value: '{parsed['target_audience']}'")
 
 
@@ -203,7 +203,7 @@ def test_channels_field_exists():
     assert isinstance(parsed["channels"], list), "channels should be a list"
     assert len(parsed["channels"]) > 0, "channels should not be empty list"
     
-    print(f"✅ PASS: Channels field exists")
+    print("✅ PASS: Channels field exists")
     print(f"   Value: {parsed['channels']}")
 
 
@@ -239,7 +239,7 @@ def test_deliverables_field_exists():
     assert isinstance(parsed["deliverables"], list), "deliverables should be a list"
     assert len(parsed["deliverables"]) > 0, "deliverables should not be empty list"
     
-    print(f"✅ PASS: Deliverables field exists")
+    print("✅ PASS: Deliverables field exists")
     print(f"   Value: {parsed['deliverables']}")
 
 
@@ -275,7 +275,7 @@ def test_brand_voice_field_exists():
     assert isinstance(parsed["brand_voice"], str), "brand_voice should be a string"
     assert len(parsed["brand_voice"]) > 0, "brand_voice should not be empty"
     
-    print(f"✅ PASS: Brand Voice field exists")
+    print("✅ PASS: Brand Voice field exists")
     print(f"   Value: '{parsed['brand_voice']}'")
 
 
@@ -311,7 +311,7 @@ def test_industry_field_exists():
     assert isinstance(parsed["industry"], str), "industry should be a string"
     assert len(parsed["industry"]) > 0, "industry should not be empty"
     
-    print(f"✅ PASS: Industry field exists")
+    print("✅ PASS: Industry field exists")
     print(f"   Value: {parsed['industry']}")
 
 
@@ -347,7 +347,7 @@ def test_primary_goal_field_exists():
     assert isinstance(parsed["primary_goal"], str), "primary_goal should be a string"
     assert len(parsed["primary_goal"]) > 0, "primary_goal should not be empty"
     
-    print(f"✅ PASS: Primary Goal field exists")
+    print("✅ PASS: Primary Goal field exists")
     print(f"   Value: '{parsed['primary_goal']}'")
 
 
@@ -383,8 +383,8 @@ def test_status_updated():
     # After
     assert result.status == "manager_complete", "Status should be updated to 'manager_complete'"
     
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: pending")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: pending")
     print(f"   After: {result.status}")
 
 
@@ -443,7 +443,7 @@ def test_industry_determines_channels():
     assert any(ch in ecom_channels_lower for ch in ["instagram", "facebook", "tiktok", "social"]), \
         "E-commerce should include social channels like Instagram or Facebook"
     
-    print(f"✅ PASS: Industry determines channels")
+    print("✅ PASS: Industry determines channels")
     print(f"   SaaS channels: {saas_parsed['channels']}")
     print(f"   E-commerce channels: {ecom_parsed['channels']}")
 
@@ -503,7 +503,7 @@ def test_goal_determines_deliverables():
     assert any(term in sales_deliverables_lower for term in ["case study", "demo", "comparison", "trial"]), \
         "Sales should include proof/demo content"
     
-    print(f"✅ PASS: Primary goal determines deliverables")
+    print("✅ PASS: Primary goal determines deliverables")
     print(f"   Lead Gen deliverables: {lead_gen_parsed['deliverables']}")
     print(f"   Sales deliverables: {sales_parsed['deliverables']}")
 
@@ -551,7 +551,7 @@ def test_all_required_fields_present():
         assert field in parsed, f"Missing required field: {field}"
         assert parsed[field] is not None, f"Field '{field}' should not be None"
     
-    print(f"✅ PASS: All required fields present")
+    print("✅ PASS: All required fields present")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -580,7 +580,7 @@ def test_manager_agent_integration():
         brand_voice="professional"
     )
     
-    print(f"Input:")
+    print("Input:")
     print(f"  campaign_name: {state.campaign_name}")
     print(f"  brand_name: {state.brand_name}")
     print(f"  industry: {state.industry}")
@@ -605,7 +605,7 @@ def test_manager_agent_integration():
     assert "channels" in parsed and len(parsed["channels"]) > 0
     assert "deliverables" in parsed and len(parsed["deliverables"]) > 0
     
-    print(f"\nOutput:")
+    print("\nOutput:")
     print(f"  status: {result.status} ✅")
     print(f"  campaign_name: {parsed['campaign_name']} ✅")
     print(f"  brand_name: {parsed['brand_name']} ✅")
@@ -616,7 +616,7 @@ def test_manager_agent_integration():
     print(f"  channels: {parsed['channels']} ✅")
     print(f"  deliverables: {parsed['deliverables']} ✅")
     
-    print(f"\n✅ PASS: Integration test successful")
+    print("\n✅ PASS: Integration test successful")
 
 
 # ==================== TEST 15: Input Fields Preserved in Output ====================
@@ -653,8 +653,8 @@ def test_input_fields_preserved_in_output():
     assert parsed["target_audience"] == "Healthcare professionals, doctors aged 35-50", "target_audience should be preserved"
     assert parsed["brand_voice"] == "authoritative", "brand_voice should be preserved"
     
-    print(f"✅ PASS: All input fields preserved exactly")
-    print(f"   All 6 input fields match output ✓")
+    print("✅ PASS: All input fields preserved exactly")
+    print("   All 6 input fields match output ✓")
 
 
 # ==================== TEST 16: Manager Handles All Industries ====================
@@ -789,8 +789,8 @@ if __name__ == "__main__":
     print(f"❌ Failed: {failed}")
     
     if failed == 0:
-        print(f"\n🎉 ALL TESTS PASSED!")
+        print("\n🎉 ALL TESTS PASSED!")
     else:
-        print(f"\n⚠️  Some tests failed")
+        print("\n⚠️  Some tests failed")
     
     print("=" * 80)

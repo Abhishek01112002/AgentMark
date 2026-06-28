@@ -1,4 +1,4 @@
-export const constants = {
+const constants = {
   industries: [
     { value: 'saas', label: 'SaaS & Technology' },
     { value: 'ecommerce', label: 'E-Commerce' },
@@ -21,7 +21,10 @@ export const constants = {
     { value: 'bold', label: 'Bold' },
     { value: 'luxury', label: 'Luxury' },
     { value: 'casual', label: 'Casual' },
-    { value: 'authoritative', label: 'Authoritative' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'empathetic', label: 'Empathetic' },
+    { value: 'trustworthy', label: 'Trustworthy' },
+    { value: 'other', label: 'Other (Specify)' },
   ],
 };
 

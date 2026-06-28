@@ -98,7 +98,7 @@ def run_complete_campaign_flow():
     print(f"   Goal:     {summary['campaign_info']['goal']}")
     
     if summary["ai_review"]:
-        print(f"\n📊 AI Quality Scores:")
+        print("\n📊 AI Quality Scores:")
         print(f"   Overall:   {summary['ai_review']['overall_score']}/100")
         print(f"   Research:  {summary['ai_review']['research_score']}/100")
         print(f"   Strategy:  {summary['ai_review']['strategy_score']}/100")
@@ -154,7 +154,7 @@ def run_complete_campaign_flow():
     print("\n[7] Submitting your decision...")
     state = submit_human_approval(state, decision)
     
-    print(f"✓ Decision submitted")
+    print("✓ Decision submitted")
     print(f"  Awaiting approval: {state.awaiting_human_approval}")
     print(f"  Approval status: {state.human_approval_status}")
     
@@ -193,14 +193,14 @@ def run_complete_campaign_flow():
         print(f"   Brand:    {summary['campaign_info']['brand']}")
         
         if summary["ai_review"]:
-            print(f"\n📊 AI Quality Scores (Updated):")
+            print("\n📊 AI Quality Scores (Updated):")
             print(f"   Overall:   {summary['ai_review']['overall_score']}/100")
             print(f"   Research:  {summary['ai_review']['research_score']}/100")
             print(f"   Strategy:  {summary['ai_review']['strategy_score']}/100")
             print(f"   Copy:      {summary['ai_review']['copy_score']}/100")
             print(f"   Image:     {summary['ai_review']['image_score']}/100")
         
-        print(f"\n📊 Revision Counts:")
+        print("\n📊 Revision Counts:")
         print(f"   Research:  {state.research_revision_count or 0}/3")
         print(f"   Strategy:  {state.strategy_revision_count or 0}/3")
         print(f"   Copy:      {state.copy_revision_count or 0}/3")
@@ -308,7 +308,7 @@ def run_complete_campaign_flow():
         try:
             state = submit_human_approval(state, decision)
             
-            print(f"✓ Decision submitted")
+            print("✓ Decision submitted")
             print(f"  Awaiting approval: {state.awaiting_human_approval}")
             print(f"  Approval status: {state.human_approval_status}")
             

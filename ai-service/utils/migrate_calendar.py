@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 from schemas.agent_outputs import ContentCalendar, CalendarWeek, CalendarActivity, Channel, normalize_channel_name
 from itertools import groupby
 
@@ -18,7 +21,7 @@ def migrate_flat_calendar(flat_entries: list[dict], campaign_start_date: str = "
             normalized = normalize_channel_name(raw_channel)
 
             if normalized is None:
-                print(f"⚠️  Unknown channel '{raw_channel}' in week {week_num} — skipping")
+                logger.info(f"⚠️  Unknown channel '{raw_channel}' in week {week_num} — skipping")
                 continue
 
             activities.append(CalendarActivity(
@@ -31,7 +34,7 @@ def migrate_flat_calendar(flat_entries: list[dict], campaign_start_date: str = "
             ))
 
         if not activities:
-            print(f"⚠️  Week {week_num} has no valid activities — skipping")
+            logger.info(f"⚠️  Week {week_num} has no valid activities — skipping")
             continue
 
         weeks.append(CalendarWeek(

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
+import { formatDDMonYYYY } from '../../../utils/formatDate';
 
 interface Campaign {
   id: string;
@@ -164,8 +165,7 @@ const CampaignHistoryContent: React.FC = () => {
   };
 
   const getTimeAgo = (date: string) => {
-    const past = new Date(date);
-    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDDMonYYYY(new Date(date));
   };
 
   if (loading) {

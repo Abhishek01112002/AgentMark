@@ -2,6 +2,9 @@
 LLM Factory - Dynamic provider selection with automatic fallback and key rotation
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import os
 import threading
 from contextvars import ContextVar
@@ -57,7 +60,7 @@ def _clients_for_key_string(key_string: str | None, ClientClass, env_fallback: s
         try:
             clients.append(ClientClass(api_key=key))
         except Exception as e:
-            print(f"⚠️  Skipping invalid {ClientClass.__name__} key ({key[:8]}...): {e}")
+            logger.info(f"⚠️  Skipping invalid {ClientClass.__name__} key ({key[:8]}...): {e}")
     return clients
 
 
@@ -81,7 +84,7 @@ def _build_provider_pool(config: dict) -> ProviderPool:
     for name, _ in providers:
         providers_by_type[name] = providers_by_type.get(name, 0) + 1
     key_summary = ", ".join(f"{v}x {k}" for k, v in providers_by_type.items())
-    print(f"✅ Provider pool built: {total_keys} client(s) [{key_summary}]")
+    logger.info(f"✅ Provider pool built: {total_keys} client(s) [{key_summary}]")
 
     return ProviderPool(providers)
 

@@ -102,7 +102,7 @@ def main():
     manager_plan = json.loads(state.manager_output)
     channels = manager_plan.get('channels', [])
 
-    print(f"\n✅ Copywriter Completed Successfully!")
+    print("\n✅ Copywriter Completed Successfully!")
     print(f"   Status: {state.status}")
     print(f"   Output Size: {len(state.copy_output)} characters")
     print(f"   Channels Generated: {', '.join(channels)}")
@@ -122,7 +122,7 @@ def main():
             
             print(f"   Headline:      {channel_copy['headline']}")
             print(f"\n   Body:\n{channel_copy['body']}")
-            print(f"\n   CTAs:")
+            print("\n   CTAs:")
             for cta_key, cta_val in channel_copy["ctas"].items():
                 print(f"     [{cta_key}]: {cta_val}")
 
@@ -134,22 +134,22 @@ def main():
 
     print(f"\n   Brand Promise:\n   {framework['brand_promise']}")
 
-    print(f"\n   Message Hierarchy:")
+    print("\n   Message Hierarchy:")
     hierarchy = framework["message_hierarchy"]
     print(f"     Level 1 (Primary):    {hierarchy['level_1_primary']}")
-    print(f"     Level 2 (Supporting):")
+    print("     Level 2 (Supporting):")
     for msg in hierarchy["level_2_supporting"]:
         print(f"       • {msg}")
-    print(f"     Level 3 (Proof):")
+    print("     Level 3 (Proof):")
     for proof in hierarchy["level_3_proof"]:
         print(f"       • {proof}")
 
-    print(f"\n   Segment Messaging:")
+    print("\n   Segment Messaging:")
     for seg_msg in framework["segment_messaging"]:
         print(f"     [{seg_msg['segment']}] (tone: {seg_msg['tone']})")
         print(f"       → {seg_msg['message']}")
 
-    print(f"\n   Channel Messaging:")
+    print("\n   Channel Messaging:")
     for ch_name, ch_details in framework["channel_messaging"].items():
         print(f"     {ch_name.upper()}:")
         print(f"       Tone:      {ch_details['tone']}")
@@ -158,14 +158,14 @@ def main():
         print(f"       Format:    {ch_details['format']}")
 
     print(f"\n   Voice Guidelines ({copy_output['inferred_goal'].upper()} campaign):")
-    print(f"     DO:")
+    print("     DO:")
     for do_item in framework["voice_guidelines"]["do"]:
         print(f"       ✓ {do_item}")
-    print(f"     DON'T:")
+    print("     DON'T:")
     for dont_item in framework["voice_guidelines"]["dont"]:
         print(f"       ✗ {dont_item}")
 
-    print(f"\n   Messaging Principles:")
+    print("\n   Messaging Principles:")
     for i, principle in enumerate(framework["messaging_principles"], 1):
         print(f"     {i}. {principle}")
 
@@ -178,7 +178,7 @@ def main():
     print(f"   Key Messages Count:      {alignment['key_messages_count']}")
     print(f"   Content Pillars Count:   {alignment['content_pillars_count']}")
     print(f"   Audience Segments Count: {alignment['audience_segments_count']}")
-    print(f"   Deliverables:")
+    print("   Deliverables:")
     for d in alignment["deliverables"]:
         print(f"     • {d}")
 

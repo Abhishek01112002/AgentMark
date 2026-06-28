@@ -505,7 +505,7 @@ def test_review_output_is_set_and_valid_json():
     except json.JSONDecodeError as e:
         raise AssertionError(f"review_output is not valid JSON: {e}")
 
-    print(f"✅ PASS: review_output is valid JSON")
+    print("✅ PASS: review_output is valid JSON")
     print(f"   Keys: {list(parsed.keys())}")
 
 
@@ -546,7 +546,7 @@ def test_review_output_has_all_required_fields():
         assert field in parsed, f"review_output missing field: '{field}'"
         assert parsed[field] is not None, f"review_output field '{field}' should not be None"
 
-    print(f"✅ PASS: All required fields present in review_output")
+    print("✅ PASS: All required fields present in review_output")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -583,7 +583,7 @@ def test_each_agent_review_has_required_subfields():
         assert isinstance(review["score"], int), f"{review_key}.score should be int"
         assert 0 <= review["score"] <= 100, f"{review_key}.score should be 0-100"
 
-    print(f"✅ PASS: All agent reviews have required sub-fields")
+    print("✅ PASS: All agent reviews have required sub-fields")
     for review_key in agent_review_keys:
         review = parsed[review_key]
         print(f"   ✓ {review_key}: score={review['score']}, approved={review['approved']}")
@@ -610,7 +610,7 @@ def test_perfect_state_returns_review_complete():
     assert result.status == "review_complete", \
         f"Perfect state should return 'review_complete', got: '{result.status}'"
 
-    print(f"✅ PASS: Perfect state returns 'review_complete'")
+    print("✅ PASS: Perfect state returns 'review_complete'")
     print(f"   status: {result.status}")
 
 
@@ -635,9 +635,9 @@ def test_perfect_state_sets_next_step_to_publisher():
     if result.status == "review_complete":
         assert result.next_step == "proceed_to_publisher", \
             f"next_step should be 'proceed_to_publisher', got: '{result.next_step}'"
-        print(f"✅ PASS: next_step correctly set to 'proceed_to_publisher'")
+        print("✅ PASS: next_step correctly set to 'proceed_to_publisher'")
     else:
-        print(f"✅ PASS: Review not complete, next_step is revision-related (expected for high-quality-bar LLM)")
+        print("✅ PASS: Review not complete, next_step is revision-related (expected for high-quality-bar LLM)")
         print(f"   status: {result.status}")
         print(f"   next_step: {result.next_step}")
 
@@ -663,7 +663,7 @@ def test_perfect_state_scores_high_overall():
     score = parsed["overall_quality_score"]
     assert score >= 80, f"Perfect state should score ≥80 (overall threshold), got: {score}"
 
-    print(f"✅ PASS: Perfect state scores ≥80 overall")
+    print("✅ PASS: Perfect state scores ≥80 overall")
     print(f"   overall_quality_score: {score}/100")
 
 
@@ -696,7 +696,7 @@ def test_perfect_state_all_individual_scores_pass():
         assert score >= 75, \
             f"{agent_key} should score ≥75 (individual threshold), got: {score}"
 
-    print(f"✅ PASS: All individual agent scores ≥75")
+    print("✅ PASS: All individual agent scores ≥75")
     for agent_key, score in agent_score_map.items():
         print(f"   ✓ {agent_key}: {score}/100")
 
@@ -730,7 +730,7 @@ def test_flawed_research_triggers_revision():
     assert result.status == "research_revision_required", \
         f"Flawed research should trigger 'research_revision_required', got: '{result.status}'"
 
-    print(f"✅ PASS: Flawed research triggers research_revision_required")
+    print("✅ PASS: Flawed research triggers research_revision_required")
     print(f"   status: {result.status}")
 
 
@@ -771,7 +771,7 @@ def test_flawed_strategy_triggers_revision():
     assert result.status == "strategy_revision_required", \
         f"Flawed strategy should trigger 'strategy_revision_required', got: '{result.status}'"
 
-    print(f"✅ PASS: Flawed strategy triggers strategy_revision_required")
+    print("✅ PASS: Flawed strategy triggers strategy_revision_required")
     print(f"   status: {result.status}")
 
 
@@ -829,7 +829,7 @@ def test_flawed_copy_triggers_revision():
     assert result.status == "copy_revision_required", \
         f"Flawed copy should trigger 'copy_revision_required', got: '{result.status}'"
 
-    print(f"✅ PASS: Flawed copy triggers copy_revision_required")
+    print("✅ PASS: Flawed copy triggers copy_revision_required")
     print(f"   status: {result.status}")
 
 
@@ -867,7 +867,7 @@ def test_flawed_image_triggers_revision():
     assert result.status == "image_revision_required", \
         f"Flawed image should trigger 'image_revision_required', got: '{result.status}'"
 
-    print(f"✅ PASS: Flawed image triggers image_revision_required")
+    print("✅ PASS: Flawed image triggers image_revision_required")
     print(f"   status: {result.status}")
 
 
@@ -917,7 +917,7 @@ def test_revision_priority_research_over_strategy():
     assert result.status == "research_revision_required", \
         f"Research should take priority over Strategy. Got: '{result.status}'"
 
-    print(f"✅ PASS: Research revision prioritised over Strategy revision")
+    print("✅ PASS: Research revision prioritised over Strategy revision")
     print(f"   status: {result.status}")
 
 
@@ -970,7 +970,7 @@ def test_revision_priority_strategy_over_copy():
     assert result.status == "strategy_revision_required", \
         f"Strategy should take priority over Copy. Got: '{result.status}'"
 
-    print(f"✅ PASS: Strategy revision prioritised over Copy revision")
+    print("✅ PASS: Strategy revision prioritised over Copy revision")
     print(f"   status: {result.status}")
 
 
@@ -1012,7 +1012,7 @@ def test_revision_priority_copy_over_image():
     assert result.status == "copy_revision_required", \
         f"Copy should take priority over Image. Got: '{result.status}'"
 
-    print(f"✅ PASS: Copy revision prioritised over Image revision")
+    print("✅ PASS: Copy revision prioritised over Image revision")
     print(f"   status: {result.status}")
 
 
@@ -1053,7 +1053,7 @@ def test_review_feedback_set_when_revision_needed():
     assert isinstance(feedback["issues"], list), "issues should be a list"
     assert len(feedback["issues"]) > 0, "issues list should not be empty"
 
-    print(f"✅ PASS: review_feedback correctly set when revision needed")
+    print("✅ PASS: review_feedback correctly set when revision needed")
     print(f"   agent: {feedback['agent']}")
     print(f"   issues count: {len(feedback['issues'])}")
     print(f"   next_step: {feedback['next_step']}")
@@ -1110,7 +1110,7 @@ def test_next_step_set_correctly_for_revision_targets():
         f"Image revision should set next_step='await_image_revision', got: '{result.next_step}'"
     print(f"   ✓ Image → next_step='{result.next_step}'")
 
-    print(f"\n✅ PASS: next_step correctly set for all revision targets")
+    print("\n✅ PASS: next_step correctly set for all revision targets")
 
 
 # ==================== TEST 18: Revision Count Incremented ====================
@@ -1151,7 +1151,7 @@ def test_revision_count_incremented():
     assert count2 == 2, \
         f"Revision count should be 2 after second revision. count1={count1}, count2={count2}"
 
-    print(f"✅ PASS: Revision count increments correctly")
+    print("✅ PASS: Revision count increments correctly")
     print(f"   After revision 1: count={count1}")
     print(f"   After revision 2: count={count2}")
 
@@ -1188,7 +1188,7 @@ def test_max_revisions_forces_approval():
     assert result.next_step == "proceed_to_publisher", \
         f"At max revisions, next_step should be 'proceed_to_publisher', got: '{result.next_step}'"
 
-    print(f"✅ PASS: Max revisions forces review_complete")
+    print("✅ PASS: Max revisions forces review_complete")
     print(f"   status: {result.status}")
     print(f"   next_step: {result.next_step}")
 
@@ -1224,7 +1224,7 @@ def test_research_missing_tam_produces_specific_issue():
     assert tam_issue_found, \
         f"Missing TAM should produce specific issue. Got issues: {research_issues}"
 
-    print(f"✅ PASS: Missing TAM produces correct specific issue")
+    print("✅ PASS: Missing TAM produces correct specific issue")
     print(f"   Issues: {research_issues}")
 
 
@@ -1256,7 +1256,7 @@ def test_strategy_invalid_inferred_goal_produces_issue():
     assert goal_issue_found, \
         f"Invalid inferred_goal should produce specific issue. Got: {strategy_issues}"
 
-    print(f"✅ PASS: Invalid inferred_goal produces correct issue")
+    print("✅ PASS: Invalid inferred_goal produces correct issue")
     print(f"   Issues: {strategy_issues}")
 
 
@@ -1288,8 +1288,8 @@ def test_copy_inferred_goal_mismatch_produces_issue():
     assert mismatch_found, \
         f"Goal mismatch should produce specific issue. Got issues: {copy_issues}"
 
-    print(f"✅ PASS: Goal mismatch produces correct issue")
-    print(f"   Strategy goal: lead_gen, Copy goal: sales")
+    print("✅ PASS: Goal mismatch produces correct issue")
+    print("   Strategy goal: lead_gen, Copy goal: sales")
     print(f"   Issues: {copy_issues}")
 
 
@@ -1328,7 +1328,7 @@ def test_image_empty_prompts_array_produces_issue():
     assert empty_issue_found, \
         f"Empty image_prompts should produce issue. Got: {image_issues}"
 
-    print(f"✅ PASS: Empty image_prompts array produces correct issue")
+    print("✅ PASS: Empty image_prompts array produces correct issue")
     print(f"   Issues: {image_issues}")
 
 
@@ -1364,7 +1364,7 @@ def test_weighted_quality_score_calculation():
         f"Weighted score should be ~{expected_score} " \
         f"(r={r}*0.25 + s={s}*0.30 + c={c}*0.25 + i={i}*0.20), got: {actual_score}"
 
-    print(f"✅ PASS: Weighted quality score correctly calculated")
+    print("✅ PASS: Weighted quality score correctly calculated")
     print(f"   Formula: {r}*0.25 + {s}*0.30 + {c}*0.25 + {i}*0.20 = {expected_score}")
     print(f"   Actual overall_quality_score: {actual_score}")
 
@@ -1415,13 +1415,13 @@ def test_low_overall_score_triggers_revision():
     # If score is low, either explicit failure OR overall threshold triggers revision
     if result.status != "review_complete":
         print(f"   Status: {result.status} (revision triggered as expected)")
-        print(f"✅ PASS: Low quality triggers revision when below threshold")
+        print("✅ PASS: Low quality triggers revision when below threshold")
     else:
         # If it passed, at least verify the score was checked
         overall = parsed["overall_quality_score"]
         print(f"   Overall score: {overall}/100")
-        print(f"   Note: Mediocre but above thresholds - review_complete is valid")
-        print(f"✅ PASS: Quality score system working as expected")
+        print("   Note: Mediocre but above thresholds - review_complete is valid")
+        print("✅ PASS: Quality score system working as expected")
 
 
 # ==================== TEST 26: research_review Approved True for Perfect Research ====================
@@ -1452,7 +1452,7 @@ def test_research_review_approved_true_for_perfect_research():
     assert research_review["approved"] is True, \
         f"Research with score {research_review['score']} >= 75 must have approved=True, got: {research_review['approved']}"
 
-    print(f"✅ PASS: Perfect research review approved=True with score ≥75")
+    print("✅ PASS: Perfect research review approved=True with score ≥75")
     print(f"   approved: {research_review['approved']}")
     print(f"   issues: {len(research_review['issues'])} issues")
     print(f"   score: {research_review['score']}/100")
@@ -1486,8 +1486,8 @@ def test_image_short_visual_direction_produces_issue():
     assert short_issue_found, \
         f"Incomplete visual direction should produce issue. Got: {image_issues}"
 
-    print(f"✅ PASS: Incomplete visual_direction produces correct issue")
-    print(f"   visual_direction missing fields")
+    print("✅ PASS: Incomplete visual_direction produces correct issue")
+    print("   visual_direction missing fields")
     print(f"   Issues: {image_issues}")
 
 
@@ -1519,8 +1519,8 @@ def test_email_subject_over_60_chars_produces_issue():
     assert subject_issue_found, \
         f"Long email subject should produce issue. Got: {copy_issues}"
 
-    print(f"✅ PASS: Email subject over 60 chars produces correct issue")
-    print(f"   Subject length: 65 chars (limit: 60)")
+    print("✅ PASS: Email subject over 60 chars produces correct issue")
+    print("   Subject length: 65 chars (limit: 60)")
     print(f"   Issues: {copy_issues}")
 
 
@@ -1552,7 +1552,7 @@ def test_all_valid_inferred_goals_pass_strategy_validation():
 
         print(f"   ✓ goal='{goal}': no inferred_goal issues ✓")
 
-    print(f"\n✅ PASS: All 4 valid inferred_goals pass strategy validation")
+    print("\n✅ PASS: All 4 valid inferred_goals pass strategy validation")
 
 
 # ==================== TEST 30: Full Integration Test ====================
@@ -1590,13 +1590,13 @@ def test_reviewer_agent_integration():
         status="image_complete"
     )
 
-    print(f"Input:")
-    print(f"  campaign_name: Q3 Product Launch")
-    print(f"  brand_name: AgentMark")
-    print(f"  industry: saas")
-    print(f"  brand_voice: professional")
-    print(f"  inferred_goal: lead_gen")
-    print(f"  Total fields to validate: 28 (5+13+8+2)")
+    print("Input:")
+    print("  campaign_name: Q3 Product Launch")
+    print("  brand_name: AgentMark")
+    print("  industry: saas")
+    print("  brand_voice: professional")
+    print("  inferred_goal: lead_gen")
+    print("  Total fields to validate: 28 (5+13+8+2)")
 
     result = reviewer_agent(state)
 
@@ -1622,7 +1622,7 @@ def test_reviewer_agent_integration():
     assert overall_score >= 80, \
         f"Overall score should be ≥80 (overall threshold), got: {overall_score}"
 
-    print(f"\nOutput:")
+    print("\nOutput:")
     print(f"  status: {result.status} ✅")
     print(f"  next_step: {result.next_step} ✅")
     print(f"  research_review: score={parsed['research_review']['score']}, approved={parsed['research_review']['approved']} ✅")
@@ -1632,8 +1632,8 @@ def test_reviewer_agent_integration():
     print(f"  overall_quality_score: {parsed['overall_quality_score']}/100 ✅")
     print(f"  reviewer: {parsed['reviewer']} ✅")
     print(f"  reviewed_at: {parsed['reviewed_at'][:19]} ✅")
-    print(f"\n✅ PASS: Full integration test successful")
-    print(f"   28 fields validated (5 research + 13 strategy + 8 copy + 2 image)")
+    print("\n✅ PASS: Full integration test successful")
+    print("   28 fields validated (5 research + 13 strategy + 8 copy + 2 image)")
 
 
 # ==================== RUN ALL TESTS ====================
@@ -1707,41 +1707,41 @@ if __name__ == "__main__":
     print(f"Total Tests: {len(tests)}")
     print(f"✅ Passed: {passed}")
     print(f"❌ Failed: {failed}")
-    print(f"\nTest Coverage:")
-    print(f"  - Agent execution and output not empty ✓")
-    print(f"  - review_output valid JSON ✓")
-    print(f"  - All top-level review_output fields (10 fields) ✓")
-    print(f"  - All agent reviews have sub-fields (approved/issues/feedback/score) ✓")
-    print(f"  - Perfect state → review_complete ✓")
-    print(f"  - Perfect state → next_step=proceed_to_publisher ✓")
-    print(f"  - Perfect state → overall_quality_score ≥80 ✓")
-    print(f"  - Perfect state → all individual scores ≥75 ✓")
-    print(f"  - Flawed research → research_revision_required ✓")
-    print(f"  - Flawed strategy → strategy_revision_required ✓")
-    print(f"  - Flawed copy → copy_revision_required ✓")
-    print(f"  - Flawed image → image_revision_required ✓")
-    print(f"  - Revision priority: Research > Strategy ✓")
-    print(f"  - Revision priority: Strategy > Copy ✓")
-    print(f"  - Revision priority: Copy > Image ✓")
-    print(f"  - review_feedback set with agent/issues/next_step ✓")
-    print(f"  - next_step correctly set per revision target ✓")
-    print(f"  - Revision count increments correctly ✓")
-    print(f"  - Max revisions (3) forces review_complete ✓")
-    print(f"  - Missing TAM produces specific issue ✓")
-    print(f"  - Invalid inferred_goal produces specific issue ✓")
-    print(f"  - Copy goal mismatch produces specific issue ✓")
-    print(f"  - Empty image_prompts produces specific issue ✓")
-    print(f"  - Weighted quality score formula (25/30/25/20) ✓")
-    print(f"  - Low overall score triggers revision ✓")
-    print(f"  - Perfect research → approved=True when score≥75 ✓")
-    print(f"  - Short visual_direction produces specific issue ✓")
-    print(f"  - Email subject >60 chars produces specific issue ✓")
-    print(f"  - All 4 valid inferred_goals accepted ✓")
-    print(f"  - Full integration test (28 fields validated) ✓")
+    print("\nTest Coverage:")
+    print("  - Agent execution and output not empty ✓")
+    print("  - review_output valid JSON ✓")
+    print("  - All top-level review_output fields (10 fields) ✓")
+    print("  - All agent reviews have sub-fields (approved/issues/feedback/score) ✓")
+    print("  - Perfect state → review_complete ✓")
+    print("  - Perfect state → next_step=proceed_to_publisher ✓")
+    print("  - Perfect state → overall_quality_score ≥80 ✓")
+    print("  - Perfect state → all individual scores ≥75 ✓")
+    print("  - Flawed research → research_revision_required ✓")
+    print("  - Flawed strategy → strategy_revision_required ✓")
+    print("  - Flawed copy → copy_revision_required ✓")
+    print("  - Flawed image → image_revision_required ✓")
+    print("  - Revision priority: Research > Strategy ✓")
+    print("  - Revision priority: Strategy > Copy ✓")
+    print("  - Revision priority: Copy > Image ✓")
+    print("  - review_feedback set with agent/issues/next_step ✓")
+    print("  - next_step correctly set per revision target ✓")
+    print("  - Revision count increments correctly ✓")
+    print("  - Max revisions (3) forces review_complete ✓")
+    print("  - Missing TAM produces specific issue ✓")
+    print("  - Invalid inferred_goal produces specific issue ✓")
+    print("  - Copy goal mismatch produces specific issue ✓")
+    print("  - Empty image_prompts produces specific issue ✓")
+    print("  - Weighted quality score formula (25/30/25/20) ✓")
+    print("  - Low overall score triggers revision ✓")
+    print("  - Perfect research → approved=True when score≥75 ✓")
+    print("  - Short visual_direction produces specific issue ✓")
+    print("  - Email subject >60 chars produces specific issue ✓")
+    print("  - All 4 valid inferred_goals accepted ✓")
+    print("  - Full integration test (28 fields validated) ✓")
     print(f"  - Total: {len(tests)} reviewer tests")
-    print(f"  - Fields validated: 28 (5 research + 13 strategy + 8 copy + 2 image)")
-    print(f"  - Thresholds: Individual ≥75%, Overall ≥80%")
-    print(f"  - Max revisions: 3 per agent")
+    print("  - Fields validated: 28 (5 research + 13 strategy + 8 copy + 2 image)")
+    print("  - Thresholds: Individual ≥75%, Overall ≥80%")
+    print("  - Max revisions: 3 per agent")
 
     if failed == 0:
         print(f"\n🎉 ALL {len(tests)} TESTS PASSED!")

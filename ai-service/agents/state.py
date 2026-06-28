@@ -24,7 +24,10 @@ Complete Workflow:
   Final Campaign Output
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+import logging
+logger = logging.getLogger(__name__)
+
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -191,11 +194,11 @@ class CampaignState(BaseModel):
 
 # Module-level information
 if __name__ == "__main__":
-    print("="*80)
-    print("CampaignState - Pydantic Model for LangGraph Workflow")
-    print("="*80)
-    print("\nThis module defines the state structure for the 7-agent workflow.")
-    print("\nUsage:")
-    print("  from agents.state import CampaignState")
-    print("\n  state = CampaignState(**user_data)")
-    print("="*80)
+    logger.info("="*80)
+    logger.info("CampaignState - Pydantic Model for LangGraph Workflow")
+    logger.info("="*80)
+    logger.info("\nThis module defines the state structure for the 7-agent workflow.")
+    logger.info("\nUsage:")
+    logger.info("  from agents.state import CampaignState")
+    logger.info("\n  state = CampaignState(**user_data)")
+    logger.info("="*80)

@@ -51,17 +51,17 @@ def main():
     
     plan = json.loads(result_state.manager_output)
     
-    print(f"\n✅ Manager Plan Generated Successfully!")
+    print("\n✅ Manager Plan Generated Successfully!")
     print(f"\nStatus: {result_state.status}")
-    print(f"\n📍 Recommended Channels:")
+    print("\n📍 Recommended Channels:")
     for i, channel in enumerate(plan['channels'], 1):
         print(f"   {i}. {channel}")
     
-    print(f"\n📦 Recommended Deliverables:")
+    print("\n📦 Recommended Deliverables:")
     for i, deliverable in enumerate(plan['deliverables'], 1):
         print(f"   {i}. {deliverable}")
     
-    print(f"\n💾 Full Output:")
+    print("\n💾 Full Output:")
     print(json.dumps(plan, indent=2))
     
     print("\n" + "="*100)

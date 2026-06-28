@@ -108,19 +108,19 @@ Build a realistic week-by-week content calendar based on the strategy timeline:
 - For each week, list activities per channel with specific days
 - Activities must be goal-specific and use the actual campaign content:
   * Week 1 (Phase 1): Setup, soft launch, foundation content
-  * Week 2-3 (Phase 2): Content push, audience building
-  * Week 4-6 (Phase 3): Full launch, conversion activities
-  * Week 7+ (Phase 4): Optimization, scaling, retargeting
+  * Week 2 (Phase 2): Content push, audience building
+  * Week 3 (Phase 3): Full launch, conversion activities
+  * Week 4 (Phase 4): Optimization, scaling, retargeting
 
 For each week entry:
   - week_label: Descriptive label matching the phase (e.g., "Week 1: Campaign Foundation")
   - week_start_date: Approximate date (start from next Monday from today)
   - theme: The weekly content theme tied to content_pillars or key_messages
   - activities: List of daily activities (3-7 per week), each with:
-    * day: Day of week + date, e.g. "Monday 2026-06-29"
+    * day: Day of week + date, e.g. "Monday 29-June-2026"
     * channel: One of: instagram, facebook, linkedin, twitter, tiktok, youtube, email, google_ads
     * content_type: Format e.g. Reel, Story, Post, Ad, Email, Video
-    * description: Specific task referencing actual campaign content (not generic)
+    * description: Detailed publishing instructions and execution directions (3-4 sentences). Explain exactly WHAT the content contains, the visual/creative setup, the key message to emphasize, and step-by-step directions for the publishing team (e.g., 'Post the Warp Mode drag race video. The caption must highlight the 0-60mph acceleration and EV cost savings. Direct users to the link in bio for bookings, and pin this post to the top of the feed for the next 48 hours. Add a first comment asking users if they've tried Warp Mode.')
     * caption_hook: Opening line the audience reads first
     * effort: Exactly "low", "medium", or "high"
     * quick_win: Boolean — true if ships same day with no dependencies
@@ -271,17 +271,17 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
         "secondary_kpi": "target value",
         "tertiary_kpi": "target value"
       }},
-      "launch_date": "YYYY-MM-DD",
+      "launch_date": "DD-Month-YYYY",
       "status": "READY"
     }}
   ],
   "content_calendar": {{
     "total_weeks": 4,
-    "campaign_start_date": "YYYY-MM-DD",
+    "campaign_start_date": "DD-Month-YYYY",
     "weeks": [
       {{
         "week_label": "Week 1: Campaign Foundation",
-        "week_start_date": "YYYY-MM-DD",
+        "week_start_date": "DD-Month-YYYY",
         "theme": "Weekly content theme tied to key messages",
         "activities": [
           {{
@@ -348,5 +348,5 @@ QUALITY CHECKLIST (ensure all are true before responding):
 - missing_assets lists only truly missing assets (not already covered)
 - projected_metrics includes all 9 fields: total_reach, lead_target, estimated_ctr, estimated_cost, roi_projection, projection_note, channel_breakdown, timeline_to_results, projection_confidence, confidence_explanation
 - executive_summary is 4-6 sentences and mentions {brand_name} and {campaign_name}
-- All dates are in YYYY-MM-DD format
+- All dates are in DD-Month-YYYY format (e.g. 28-June-2026)
 - JSON is valid with no trailing commas or syntax errors

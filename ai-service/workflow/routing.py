@@ -28,6 +28,9 @@ ROUTING DECISION TREE:
 MAX_REVISIONS = 3 per agent
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 from agents.state import CampaignState
 
@@ -53,34 +56,39 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
     - "end" → End workflow (max revisions reached or critical error)
     """
     
-    print("\n" + "="*80)
-    print("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
-    print("="*80)
+    logger.info("\n" + "="*80)
+    logger.info("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
+    logger.info("="*80)
     
+    # Check for upstream errors to prevent infinite loops
+    if state.status == "error" or state.error:
+        logger.info("💥 Upstream error detected - ending workflow")
+        return "end"
+        
     # Check if review output exists
     if not state.review_output:
-        print("⚠️  No review output found - defaulting to human approval")
+        logger.info("⚠️  No review output found - defaulting to human approval")
         return "human_approval"
     
     try:
         review_data = json.loads(state.review_output)
     except (json.JSONDecodeError, TypeError) as e:
-        print(f"⚠️  Could not parse review output: {e} - defaulting to human approval")
+        logger.info(f"⚠️  Could not parse review output: {e} - defaulting to human approval")
         return "human_approval"
     
     # Get review status
     status = review_data.get("status", "approved")
     
-    print(f"📊 AI Review Status: {status}")
+    logger.info(f"📊 AI Review Status: {status}")
     
     # If AI approved, go to human approval
     if status == "approved":
-        print("✅ AI APPROVED - Routing to Human Approval (HITL)")
+        logger.info("✅ AI APPROVED - Routing to Human Approval (HITL)")
         return "human_approval"
     
     # If revision required, check which agents need work
     if status == "revision_required":
-        print("⚠️  AI Detected Issues - Routing for Revision...")
+        logger.info("⚠️  AI Detected Issues - Routing for Revision...")
         
         # Get individual agent reviews
         research_review = review_data.get("research_review", {})
@@ -105,62 +113,62 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         copy_revisions = state.copy_revision_count or 0
         image_revisions = state.image_revision_count or 0
         
-        print(f"\n📈 Agent Scores:")
-        print(f"   Research:  {research_score}/100 (Revisions: {research_revisions}/{MAX_REVISIONS})")
-        print(f"   Strategy:  {strategy_score}/100 (Revisions: {strategy_revisions}/{MAX_REVISIONS})")
-        print(f"   Copy:      {copy_score}/100 (Revisions: {copy_revisions}/{MAX_REVISIONS})")
-        print(f"   Image:     {image_score}/100 (Revisions: {image_revisions}/{MAX_REVISIONS})")
+        logger.info("\n📈 Agent Scores:")
+        logger.info(f"   Research:  {research_score}/100 (Revisions: {research_revisions}/{MAX_REVISIONS})")
+        logger.info(f"   Strategy:  {strategy_score}/100 (Revisions: {strategy_revisions}/{MAX_REVISIONS})")
+        logger.info(f"   Copy:      {copy_score}/100 (Revisions: {copy_revisions}/{MAX_REVISIONS})")
+        logger.info(f"   Image:     {image_score}/100 (Revisions: {image_revisions}/{MAX_REVISIONS})")
         
         # Priority 1: Research needs revision (affects everything downstream)
         if not research_approved or research_score < MIN_AGENT_SCORE:
             if research_revisions < MAX_REVISIONS:
-                print(f"\n🔄 Routing to RESEARCH for revision (will be attempt {research_revisions + 1}/{MAX_REVISIONS})")
-                print(f"   Score: {research_score}/100")
-                print(f"   Issues: {research_review.get('issues', [])}")
-                print(f"   🧹 Agent will clear research_output and re-run")
+                logger.info(f"\n🔄 Routing to RESEARCH for revision (will be attempt {research_revisions + 1}/{MAX_REVISIONS})")
+                logger.info(f"   Score: {research_score}/100")
+                logger.info(f"   Issues: {research_review.get('issues', [])}")
+                logger.info("   🧹 Agent will clear research_output and re-run")
                 return "revise_research"
             else:
-                print(f"\n⚠️  Research hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
+                logger.info(f"\n⚠️  Research hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
         # Priority 2: Strategy needs revision (affects copy and image)
         if not strategy_approved or strategy_score < MIN_AGENT_SCORE:
             if strategy_revisions < MAX_REVISIONS:
-                print(f"\n🔄 Routing to STRATEGY for revision (will be attempt {strategy_revisions + 1}/{MAX_REVISIONS})")
-                print(f"   Score: {strategy_score}/100")
-                print(f"   Issues: {strategy_review.get('issues', [])}")
-                print(f"   🧹 Agent will clear strategy_output and re-run")
+                logger.info(f"\n🔄 Routing to STRATEGY for revision (will be attempt {strategy_revisions + 1}/{MAX_REVISIONS})")
+                logger.info(f"   Score: {strategy_score}/100")
+                logger.info(f"   Issues: {strategy_review.get('issues', [])}")
+                logger.info("   🧹 Agent will clear strategy_output and re-run")
                 return "revise_strategy"
             else:
-                print(f"\n⚠️  Strategy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
+                logger.info(f"\n⚠️  Strategy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
         # Priority 3: Copy needs revision
         if not copy_approved or copy_score < MIN_AGENT_SCORE:
             if copy_revisions < MAX_REVISIONS:
-                print(f"\n🔄 Routing to COPYWRITER for revision (will be attempt {copy_revisions + 1}/{MAX_REVISIONS})")
-                print(f"   Score: {copy_score}/100")
-                print(f"   Issues: {copy_review.get('issues', [])}")
-                print(f"   🧹 Agent will clear copy_output and re-run")
+                logger.info(f"\n🔄 Routing to COPYWRITER for revision (will be attempt {copy_revisions + 1}/{MAX_REVISIONS})")
+                logger.info(f"   Score: {copy_score}/100")
+                logger.info(f"   Issues: {copy_review.get('issues', [])}")
+                logger.info("   🧹 Agent will clear copy_output and re-run")
                 return "revise_copy"
             else:
-                print(f"\n⚠️  Copy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
+                logger.info(f"\n⚠️  Copy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
         # Priority 4: Image needs revision
         if not image_approved or image_score < MIN_AGENT_SCORE:
             if image_revisions < MAX_REVISIONS:
-                print(f"\n🔄 Routing to IMAGE PROMPT for revision (will be attempt {image_revisions + 1}/{MAX_REVISIONS})")
-                print(f"   Score: {image_score}/100")
-                print(f"   Issues: {image_review.get('issues', [])}")
-                print(f"   🧹 Agent will clear image_output and re-run")
+                logger.info(f"\n🔄 Routing to IMAGE PROMPT for revision (will be attempt {image_revisions + 1}/{MAX_REVISIONS})")
+                logger.info(f"   Score: {image_score}/100")
+                logger.info(f"   Issues: {image_review.get('issues', [])}")
+                logger.info("   🧹 Agent will clear image_output and re-run")
                 return "revise_image"
             else:
-                print(f"\n⚠️  Image hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
+                logger.info(f"\n⚠️  Image hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
         # If we get here, all agents hit max revisions but still not approved
-        print("\n⚠️  All agents hit MAX_REVISIONS - proceeding to human approval with current quality")
+        logger.info("\n⚠️  All agents hit MAX_REVISIONS - proceeding to human approval with current quality")
         return "human_approval"
     
     # Default: proceed to human approval
-    print("✅ No blocking issues - Routing to Human Approval")
+    logger.info("✅ No blocking issues - Routing to Human Approval")
     return "human_approval"
 
 
@@ -178,32 +186,37 @@ def route_after_human_approval(state: CampaignState) -> str:
     Note: If awaiting_human_approval=True, workflow will END and must be resumed later
     """
     
-    print("\n" + "="*80)
-    print("🔀 ROUTING DECISION AFTER HUMAN APPROVAL")
-    print("="*80)
+    logger.info("\n" + "="*80)
+    logger.info("🔀 ROUTING DECISION AFTER HUMAN APPROVAL")
+    logger.info("="*80)
     
+    # Check for upstream errors to prevent infinite loops
+    if state.status == "error" or state.error:
+        logger.info("💥 Upstream error detected - ending workflow")
+        return "end"
+        
     # Check if still awaiting human approval
     if state.awaiting_human_approval:
-        print("⏸️  Awaiting human approval - workflow will END here")
-        print("   After human approves, call workflow.invoke(state) again")
+        logger.info("⏸️  Awaiting human approval - workflow will END here")
+        logger.info("   After human approves, call workflow.invoke(state) again")
         return "end"
     
     # Check human decision
     human_status = state.human_approval_status
     
-    print(f"👤 Human Decision: {human_status}")
+    logger.info(f"👤 Human Decision: {human_status}")
     
     if human_status == "approved":
-        print("✅ HUMAN APPROVED - Routing DIRECTLY to Publisher (skip reviewer)")
+        logger.info("✅ HUMAN APPROVED - Routing DIRECTLY to Publisher (skip reviewer)")
         if state.human_feedback:
-            print(f"   Human Feedback: {state.human_feedback}")
+            logger.info(f"   Human Feedback: {state.human_feedback}")
         # CRITICAL: Go directly to publisher, do NOT go back through reviewer
         return "publish"
     
     elif human_status == "rejected":
         target = state.human_revision_target
-        print(f"⚠️  HUMAN REJECTED - Routing to {target.upper()} for revision")
-        print(f"   Human Feedback: {state.human_feedback}")
+        logger.info(f"⚠️  HUMAN REJECTED - Routing to {target.upper()} for revision")
+        logger.info(f"   Human Feedback: {state.human_feedback}")
         
         # Route to appropriate agent
         if target == "research":
@@ -215,11 +228,11 @@ def route_after_human_approval(state: CampaignState) -> str:
         elif target == "image_prompt":
             return "revise_image"
         else:
-            print(f"⚠️  Unknown revision target: {target} - defaulting to publish")
+            logger.info(f"⚠️  Unknown revision target: {target} - defaulting to publish")
             return "publish"
     
     # Default: proceed to publish
-    print("✅ No specific action - Routing to Publisher")
+    logger.info("✅ No specific action - Routing to Publisher")
     return "publish"
 
 
@@ -303,22 +316,22 @@ def has_hit_max_revisions(state: CampaignState) -> bool:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("=" * 80)
-    print("⚠️  This is the routing logic module.")
-    print("    Used by workflow/graph.py for conditional routing.")
-    print("=" * 80)
+    logger.info("=" * 80)
+    logger.info("⚠️  This is the routing logic module.")
+    logger.info("    Used by workflow/graph.py for conditional routing.")
+    logger.info("=" * 80)
     
     # Example: Test routing logic
-    print("\n📚 ROUTING LOGIC EXPLANATION (WITH HITL):")
-    print("-" * 80)
-    print(f"MAX_REVISIONS per agent: {MAX_REVISIONS}")
-    print(f"MIN_AGENT_SCORE threshold: {MIN_AGENT_SCORE}/100")
-    print("\nDecision Flow:")
-    print("  1. AI Reviewer checks quality")
-    print("     ├─→ Issues found? → Route to specific agent for revision")
-    print("     └─→ Approved? → Route to Human Approval (HITL)")
-    print("  2. Human Approval (pauses workflow)")
-    print("     ├─→ Human approves? → Route to Publisher")
-    print("     └─→ Human rejects? → Route to specific agent for revision")
-    print("\nIf any agent hits MAX_REVISIONS, proceed to next step anyway.")
-    print("=" * 80)
+    logger.info("\n📚 ROUTING LOGIC EXPLANATION (WITH HITL):")
+    logger.info("-" * 80)
+    logger.info(f"MAX_REVISIONS per agent: {MAX_REVISIONS}")
+    logger.info(f"MIN_AGENT_SCORE threshold: {MIN_AGENT_SCORE}/100")
+    logger.info("\nDecision Flow:")
+    logger.info("  1. AI Reviewer checks quality")
+    logger.info("     ├─→ Issues found? → Route to specific agent for revision")
+    logger.info("     └─→ Approved? → Route to Human Approval (HITL)")
+    logger.info("  2. Human Approval (pauses workflow)")
+    logger.info("     ├─→ Human approves? → Route to Publisher")
+    logger.info("     └─→ Human rejects? → Route to specific agent for revision")
+    logger.info("\nIf any agent hits MAX_REVISIONS, proceed to next step anyway.")
+    logger.info("=" * 80)

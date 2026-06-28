@@ -4,6 +4,9 @@ Clears __pycache__ before launching to prevent stale compiled modules,
 then starts Uvicorn with auto-reload enabled for smooth development.
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import os
 import sys
 import subprocess
@@ -21,7 +24,7 @@ def clear_pycache(root_dir: str):
                     shutil.rmtree(full_path)
                     removed += 1
                 except Exception as e:
-                    print(f"Warning: Could not remove {full_path}: {e}")
+                    logger.info(f"Warning: Could not remove {full_path}: {e}")
     return removed
 
 
@@ -31,14 +34,14 @@ if __name__ == '__main__':
     os.chdir(script_dir)
 
     # Clear stale __pycache__
-    print("🧹 Cleaning stale __pycache__ directories...")
+    logger.info("🧹 Cleaning stale __pycache__ directories...")
     count = clear_pycache(script_dir)
-    print(f"   Removed {count} __pycache__ dir(s)")
+    logger.info(f"   Removed {count} __pycache__ dir(s)")
 
     # Start Uvicorn with auto-reload
-    print("🚀 Starting AI Service with auto-reload...")
-    print("   URL: http://127.0.0.1:5002")
-    print("   Press Ctrl+C to stop\n")
+    logger.info("🚀 Starting AI Service with auto-reload...")
+    logger.info("   URL: http://127.0.0.1:5002")
+    logger.info("   Press Ctrl+C to stop\n")
 
     port = int(os.getenv("SERVICE_PORT", 5002))
     host = os.getenv("SERVICE_HOST", "0.0.0.0")

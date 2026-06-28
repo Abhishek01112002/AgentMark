@@ -3,6 +3,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import authRoutes from './modules/auth/auth.routes';
@@ -23,6 +24,8 @@ import { globalRateLimiter, authRateLimiter, campaignRateLimiter } from './middl
 export const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Helmet secures Express by setting various HTTP headers
+app.use(helmet());
 app.use(cors());
 // Apply global rate limiting to all requests
 app.use(globalRateLimiter);
@@ -36,7 +39,7 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRateLimiter, authRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/campaigns', campaignRateLimiter, campaignRoutes);
+app.use('/api/campaigns', campaignRoutes);
 app.use('/api/constants', constantsRoutes);
 app.use('/api/imagekit', imagekitRoutes);
 app.use('/api/notifications', notificationRoutes);

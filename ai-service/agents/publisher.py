@@ -61,6 +61,9 @@ Publisher = LLM-Powered Distribution Strategist
 - Uses prompt template from utils/prompts/publisher_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 import json
@@ -100,13 +103,13 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     6. Update state with publisher_output and mark status as completed
     """
 
-    print("\n" + "=" * 80)
-    print("📢 PUBLISHER AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("📢 PUBLISHER AGENT ACTIVATED")
+    logger.info("=" * 80)
 
     # ========== STEP 1: READ MANAGER OUTPUT (REQUIRED) ==========
-    print("\n[STEP 1] Reading manager output (channels + deliverables)...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading manager output (channels + deliverables)...")
+    logger.info("-" * 80)
 
     if not state.manager_output:
         raise ValueError("manager_output is required - Publisher needs channel and deliverable definitions")
@@ -119,12 +122,12 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     channels = normalize_channel_list(manager_data.get("channels", []))
     deliverables = manager_data.get("deliverables", [])
 
-    print(f"✓ Channels:     {channels}")
-    print(f"✓ Deliverables: {deliverables}")
+    logger.info(f"✓ Channels:     {channels}")
+    logger.info(f"✓ Deliverables: {deliverables}")
 
     # ========== STEP 2: READ STRATEGY OUTPUT (REQUIRED) ==========
-    print("\n[STEP 2] Reading strategy output (goal + timeline + metrics)...")
-    print("-" * 80)
+    logger.info("\n[STEP 2] Reading strategy output (goal + timeline + metrics)...")
+    logger.info("-" * 80)
 
     if not state.strategy_output:
         raise ValueError("strategy_output is required - Publisher needs strategic foundation")
@@ -151,17 +154,17 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     if strategy_deliverables:
         deliverables = strategy_deliverables
 
-    print(f"✓ Inferred Goal:     {inferred_goal}")
-    print(f"✓ Positioning:       {positioning[:60]}...")
-    print(f"✓ Timeline Phases:   {len(timeline)}")
-    print(f"✓ Success Metrics:   {list(success_metrics.keys())[:3]}")
-    print(f"✓ Channel Strategy:  {list(channel_strategy.keys())[:3]}")
-    print(f"✓ Channels (final):  {channels}")
-    print(f"✓ Deliverables:      {deliverables}")
+    logger.info(f"✓ Inferred Goal:     {inferred_goal}")
+    logger.info(f"✓ Positioning:       {positioning[:60]}...")
+    logger.info(f"✓ Timeline Phases:   {len(timeline)}")
+    logger.info(f"✓ Success Metrics:   {list(success_metrics.keys())[:3]}")
+    logger.info(f"✓ Channel Strategy:  {list(channel_strategy.keys())[:3]}")
+    logger.info(f"✓ Channels (final):  {channels}")
+    logger.info(f"✓ Deliverables:      {deliverables}")
 
     # ========== STEP 3: READ STATE METADATA ==========
-    print("\n[STEP 3] Reading campaign metadata from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 3] Reading campaign metadata from state...")
+    logger.info("-" * 80)
 
     campaign_name = state.campaign_name or "Unnamed Campaign"
     brand_name = state.brand_name or "Unnamed Brand"
@@ -170,15 +173,15 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     target_audience = state.target_audience or "General Audience"
     brief = state.brief or f"Marketing campaign for {brand_name}"
 
-    print(f"✓ Campaign:       {campaign_name}")
-    print(f"✓ Brand:          {brand_name}")
-    print(f"✓ Industry:       {industry}")
-    print(f"✓ Brand Voice:    {brand_voice}")
-    print(f"✓ Target Audience:{target_audience[:60]}...")
+    logger.info(f"✓ Campaign:       {campaign_name}")
+    logger.info(f"✓ Brand:          {brand_name}")
+    logger.info(f"✓ Industry:       {industry}")
+    logger.info(f"✓ Brand Voice:    {brand_voice}")
+    logger.info(f"✓ Target Audience:{target_audience[:60]}...")
 
     # ========== STEP 4: READ COPY OUTPUT (OPTIONAL) ==========
-    print("\n[STEP 4] Reading copy output for asset inventory...")
-    print("-" * 80)
+    logger.info("\n[STEP 4] Reading copy output for asset inventory...")
+    logger.info("-" * 80)
 
     copy_summary = {}
     copy_readiness = {}
@@ -218,19 +221,19 @@ def publisher_agent(state: CampaignState) -> CampaignState:
                 "channel_headlines": copy_headlines
             }
 
-            print(f"✓ Copy available for channels: {copy_summary['channels_with_copy']}")
-            print(f"✓ Readiness flags: {copy_readiness}")
+            logger.info(f"✓ Copy available for channels: {copy_summary['channels_with_copy']}")
+            logger.info(f"✓ Readiness flags: {copy_readiness}")
 
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"⚠️  Could not parse copy_output: {e} — using safe defaults")
+            logger.info(f"⚠️  Could not parse copy_output: {e} — using safe defaults")
             copy_summary = {"note": "Copy output unavailable"}
     else:
-        print("⚠️  No copy output available — LLM will use strategic context")
+        logger.info("⚠️  No copy output available — LLM will use strategic context")
         copy_summary = {"note": "Copy output not yet generated"}
 
     # ========== STEP 5: READ IMAGE OUTPUT (OPTIONAL) ==========
-    print("\n[STEP 5] Reading image output for visual asset inventory...")
-    print("-" * 80)
+    logger.info("\n[STEP 5] Reading image output for visual asset inventory...")
+    logger.info("-" * 80)
 
     image_summary = {}
 
@@ -254,21 +257,21 @@ def publisher_agent(state: CampaignState) -> CampaignState:
                 ]
             }
 
-            print(f"✓ Visual direction: {image_summary['visual_direction'][:60]}...")
-            print(f"✓ Image prompts: {image_summary['total_prompts']} assets")
+            logger.info(f"✓ Visual direction: {image_summary['visual_direction'][:60]}...")
+            logger.info(f"✓ Image prompts: {image_summary['total_prompts']} assets")
             for asset in image_summary["image_prompts"]:
-                print(f"   • {asset['deliverable']} ({asset['aspect_ratio']}) - {asset.get('rationale', 'N/A')[:40]}...")
+                logger.info(f"   • {asset['deliverable']} ({asset['aspect_ratio']}) - {asset.get('rationale', 'N/A')[:40]}...")
 
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"⚠️  Could not parse image_output: {e} — using safe defaults")
+            logger.info(f"⚠️  Could not parse image_output: {e} — using safe defaults")
             image_summary = {"note": "Image output unavailable"}
     else:
-        print("⚠️  No image output available — LLM will note pending visual assets")
+        logger.info("⚠️  No image output available — LLM will note pending visual assets")
         image_summary = {"note": "Image output not yet generated"}
 
     # ========== STEP 6: READ REVIEW OUTPUT (OPTIONAL) ==========
-    print("\n[STEP 6] Reading review output for publishing decision...")
-    print("-" * 80)
+    logger.info("\n[STEP 6] Reading review output for publishing decision...")
+    logger.info("-" * 80)
 
     review_summary = {}
     quality_score = 0
@@ -299,7 +302,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
                 agent_data = review_data.get(agent_key, {})
                 agent_score = agent_data.get("score", 0)
                 agent_issues = agent_data.get("issues", [])
-                agent_approved = agent_data.get("approved", False)
+                agent_data.get("approved", False)
                 agent_name = agent_key.replace("_review", "")
                 agent_scores[agent_name] = agent_score
                 if agent_issues:
@@ -324,32 +327,32 @@ def publisher_agent(state: CampaignState) -> CampaignState:
                 "reviewer": review_data.get("reviewer", "Reviewer Agent")
             }
 
-            print(f"✓ Quality Score: {quality_score}/100")
-            print(f"✓ Status: {status}")
-            print(f"✓ Approved: {approved}")
-            print(f"✓ Individual Threshold Met: {individual_threshold_met}")
-            print(f"✓ Overall Threshold Met: {overall_threshold_met}")
-            print(f"✓ Agent Scores: {agent_scores}")
+            logger.info(f"✓ Quality Score: {quality_score}/100")
+            logger.info(f"✓ Status: {status}")
+            logger.info(f"✓ Approved: {approved}")
+            logger.info(f"✓ Individual Threshold Met: {individual_threshold_met}")
+            logger.info(f"✓ Overall Threshold Met: {overall_threshold_met}")
+            logger.info(f"✓ Agent Scores: {agent_scores}")
             if all_issues:
-                print(f"✓ Issues found: {len(all_issues)}")
+                logger.info(f"✓ Issues found: {len(all_issues)}")
 
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"⚠️  Could not parse review_output: {e}")
+            logger.info(f"⚠️  Could not parse review_output: {e}")
             raise ValueError(
                 "Reviewer output is corrupted — publish blocked. "
                 "quality_score will NOT be defaulted to 100."
             )
     else:
-        print("❌ No review output — reviewer did not run")
+        logger.info("❌ No review output — reviewer did not run")
         raise ValueError(
             "Reviewer returned None — publish blocked. "
             "quality_score will NOT be defaulted to 100."
         )
 
     # ========== STEP 7: GENERATE PUBLISHING PLAN WITH LLM ==========
-    print("\n[STEP 7] Generating comprehensive publishing plan with LLM...")
-    print("-" * 80)
-    print("📢 AI Distribution Strategist building publishing plan...")
+    logger.info("\n[STEP 7] Generating comprehensive publishing plan with LLM...")
+    logger.info("-" * 80)
+    logger.info("📢 AI Distribution Strategist building publishing plan...")
 
     # Initialize LLM client
     llm = get_llm_client()
@@ -378,7 +381,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     else:
         expected_decision = "APPROVED_FOR_PUBLISHING"  # Default when can_publish is true but score is absent
 
-    print(f"   can_publish: {can_publish} | Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
+    logger.info(f"   can_publish: {can_publish} | Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
 
     # Load publisher prompt and format with all campaign data
     prompt = load_prompt(
@@ -415,7 +418,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         expected_decision=expected_decision
     )
 
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
 
     # Get structured LLM response with error handling
     publisher_output, state = safe_llm_call(
@@ -428,11 +431,11 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         return state  # Error already logged in state
 
     # ========== POST-PROCESSING: ENFORCE STRICT RULES ==========
-    print("\n   Enforcing strict decision and status rules...")
+    logger.info("\n   Enforcing strict decision and status rules...")
     
     # Force correct publishing decision based on quality score
     if publisher_output.publishing_decision != expected_decision:
-        print(f"   ⚠️  LLM produced '{publisher_output.publishing_decision}', correcting to '{expected_decision}'")
+        logger.info(f"   ⚠️  LLM produced '{publisher_output.publishing_decision}', correcting to '{expected_decision}'")
         publisher_output.publishing_decision = expected_decision
     
     # Force correct channel status based on copy availability
@@ -458,43 +461,42 @@ def publisher_agent(state: CampaignState) -> CampaignState:
             # Non-copy channels (e.g., website, blog) can be READY if they have content
             plan.status = "READY"
     
-    print("   ✓ Decision and status rules enforced")
+    logger.info("   ✓ Decision and status rules enforced")
 
     # ========== STEP 8: DISPLAY PUBLISHING PLAN SUMMARY ==========
-    print("\n[STEP 8] Publishing plan generated!")
-    print("-" * 80)
-    print("✅ Publishing plan generated by LLM!")
+    logger.info("\n[STEP 8] Publishing plan generated!")
+    logger.info("-" * 80)
+    logger.info("✅ Publishing plan generated by LLM!")
 
-    print(f"\n📝 Publishing Decision: {publisher_output.publishing_decision}")
-    print(f"   Rationale: {publisher_output.decision_rationale[:100]}...")
+    logger.info(f"\n📝 Publishing Decision: {publisher_output.publishing_decision}")
+    logger.info(f"   Rationale: {publisher_output.decision_rationale[:100]}...")
 
-    print(f"\n📅 Content Calendar:")
-    print(f"   Total Weeks: {publisher_output.content_calendar.total_weeks}")
-    print(f"   Start Date:  {publisher_output.content_calendar.start_date}")
-    print(f"   End Date:    {publisher_output.content_calendar.end_date}")
+    logger.info("\n📅 Content Calendar:")
+    logger.info(f"   Total Weeks: {publisher_output.content_calendar.total_weeks}")
+    logger.info(f"   Start Date:  {publisher_output.content_calendar.campaign_start_date}")
 
-    print(f"\n📊 Publishing Plan ({len(publisher_output.publishing_plan)} channels):")
+    logger.info(f"\n📊 Publishing Plan ({len(publisher_output.publishing_plan)} channels):")
     for plan in publisher_output.publishing_plan[:3]:
-        print(f"   • {plan.channel}: {plan.priority} priority - {plan.status}")
+        logger.info(f"   • {plan.channel}: {plan.priority} priority - {plan.status}")
 
-    print(f"\n📦 Asset Checklist:")
-    print(f"   Copy Assets:   {len(publisher_output.asset_checklist.copy_assets)}")
-    print(f"   Visual Assets: {len(publisher_output.asset_checklist.visual_assets)}")
+    logger.info("\n📦 Asset Checklist:")
+    logger.info(f"   Copy Assets:   {len(publisher_output.asset_checklist.copy_assets)}")
+    logger.info(f"   Visual Assets: {len(publisher_output.asset_checklist.visual_assets)}")
     if publisher_output.asset_checklist.missing_assets:
-        print(f"   Missing:       {len(publisher_output.asset_checklist.missing_assets)} items")
+        logger.info(f"   Missing:       {len(publisher_output.asset_checklist.missing_assets)} items")
 
-    print(f"\n📈 Projected Metrics:")
-    print(f"   Total Reach: {publisher_output.projected_metrics.total_reach}")
-    print(f"   Lead Target: {publisher_output.projected_metrics.lead_target}")
-    print(f"   Est. CTR:    {publisher_output.projected_metrics.estimated_ctr}")
-    print(f"   ROI:         {publisher_output.projected_metrics.roi_projection}")
+    logger.info("\n📈 Projected Metrics:")
+    logger.info(f"   Total Reach: {publisher_output.projected_metrics.total_reach}")
+    logger.info(f"   Lead Target: {publisher_output.projected_metrics.lead_target}")
+    logger.info(f"   Est. CTR:    {publisher_output.projected_metrics.estimated_ctr}")
+    logger.info(f"   ROI:         {publisher_output.projected_metrics.roi_projection}")
 
-    print(f"\n📝 Executive Summary:")
-    print(f"   {publisher_output.executive_summary[:150]}...")
+    logger.info("\n📝 Executive Summary:")
+    logger.info(f"   {publisher_output.executive_summary[:150]}...")
 
     # ========== STEP 9: WRITE TO STATE ==========
-    print("\n[STEP 9] Writing to state...")
-    print("-" * 80)
+    logger.info("\n[STEP 9] Writing to state...")
+    logger.info("-" * 80)
 
     publisher_output_json = publisher_output.model_dump_json(indent=2)
 
@@ -503,16 +505,16 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     state.workflow_finished = True  # Mark workflow as completely finished
     state.error = None
 
-    print("✅ State updated:")
-    print(f"   publisher_output: {len(publisher_output_json)} characters")
-    print(f"   status: {state.status}")
+    logger.info("✅ State updated:")
+    logger.info(f"   publisher_output: {len(publisher_output_json)} characters")
+    logger.info(f"   status: {state.status}")
 
-    print("\n" + "=" * 80)
-    print("✅ PUBLISHER AGENT COMPLETE")
-    print(f"   Decision:  {publisher_output.publishing_decision}")
-    print(f"   Channels:  {len(publisher_output.publishing_plan)}")
-    print(f"   Calendar:  {publisher_output.content_calendar.total_weeks} weeks")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ PUBLISHER AGENT COMPLETE")
+    logger.info(f"   Decision:  {publisher_output.publishing_decision}")
+    logger.info(f"   Channels:  {len(publisher_output.publishing_plan)}")
+    logger.info(f"   Calendar:  {publisher_output.content_calendar.total_weeks} weeks")
+    logger.info("=" * 80)
 
     return state
 
@@ -520,9 +522,9 @@ def publisher_agent(state: CampaignState) -> CampaignState:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Publisher Agent, run: python examples/run_publisher.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Publisher Agent, run: python examples/run_publisher.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("=" * 80)
     

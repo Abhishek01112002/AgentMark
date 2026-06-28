@@ -4,7 +4,10 @@ Agent Error Handling Utility
 Provides consistent error handling and retry logic for all agents.
 """
 
-from typing import Type, TypeVar, Callable
+import logging
+logger = logging.getLogger(__name__)
+
+from typing import TypeVar, Callable
 from pydantic import BaseModel
 from agents.state import CampaignState
 
@@ -46,7 +49,7 @@ def safe_llm_call(
         
     except Exception as e:
         error_msg = f"{agent_name} Agent Error: {str(e)[:300]}"
-        print(f"\n💥 {error_msg}")
+        logger.info(f"\n💥 {error_msg}")
         
         state.status = error_status
         state.error = error_msg

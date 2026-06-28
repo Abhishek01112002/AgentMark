@@ -13,13 +13,16 @@ Redis Integration:
 """
 
 import os
-import json
 import logging
-import uuid
 import asyncio
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
+from concurrent.futures import ThreadPoolExecutor
+
+# Dedicated thread pool for executing long-running campaign workflows.
+# This prevents campaign runs (which take 1-2 minutes) from exhausting FastAPI's default thread pool.
+campaign_executor = ThreadPoolExecutor(max_workers=50, thread_name_prefix="campaign_workflow")
 
 from agents.state import CampaignState
 from schemas.campaign import (
@@ -148,8 +151,9 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
 
     try:
         set_llm_config(payload.llm_config)
-        # Run blocking LangGraph call in a thread pool — never block the event loop
-        final_state = await run_in_threadpool(_run_workflow, workflow, state)
+        # Run blocking LangGraph call in our dedicated campaign thread pool — never block the main event loop
+        loop = asyncio.get_running_loop()
+        final_state = await loop.run_in_executor(campaign_executor, _run_workflow, workflow, state)
     except Exception as exc:
         logger.error("Workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
         # Publish failure event to Redis so Express can update DB status.
@@ -190,7 +194,15 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         "image_revision_count": final_state.image_revision_count or 0,
     }
 
-    if final_state.awaiting_human_approval:
+    if final_state.status == "error":
+        publish_agent_event(
+            campaign_id=campaign_id,
+            agent="system",
+            status="failed",
+            error=final_state.error or "Workflow encountered an error",
+            extra={"outputs": outputs_dict},
+        )
+    elif final_state.awaiting_human_approval:
         publish_agent_event(
             campaign_id=campaign_id,
             agent="system",

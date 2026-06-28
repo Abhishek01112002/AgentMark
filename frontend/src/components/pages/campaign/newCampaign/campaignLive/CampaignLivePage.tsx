@@ -160,7 +160,10 @@ const CampaignLivePage: React.FC = () => {
     };
 
     return {
-      copyData: getOutputField('copy_output') || getOutputField('copyOutput'),
+      copyData: (() => {
+        const rawCopy = getOutputField('copy_output') || getOutputField('copyOutput');
+        return rawCopy && rawCopy.copies ? { ...rawCopy, ...rawCopy.copies } : rawCopy;
+      })(),
       strategyData: getOutputField('strategy_output') || getOutputField('strategyOutput'),
       imageData: getOutputField('image_output') || getOutputField('imageOutput'),
       managerData: getOutputField('manager_output') || getOutputField('managerOutput'),
@@ -919,7 +922,7 @@ const CampaignLivePage: React.FC = () => {
           <div
             onClick={() => setIsMinimized(true)}
             className="fixed inset-0 z-[90] cursor-pointer"
-            style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)' }}
+            style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 50%, transparent 100%)' }}
           />
         )}
 
@@ -931,19 +934,21 @@ const CampaignLivePage: React.FC = () => {
                 setIsMinimized(false);
               }
             }}
-            className={`fixed bottom-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full border shadow-2xl backdrop-blur-md select-none transition-all duration-300 ${
+            className={`fixed bottom-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full shadow-2xl backdrop-blur-xl select-none transition-all duration-300 ${
               isMinimized 
-                ? 'right-6 border-[#4edea3]/40 bg-[#111118]/95 cursor-pointer hover:border-[#4edea3]/70 hover:scale-105' 
-                : 'left-1/2 -translate-x-1/2 border-[#c0c1ff]/40 bg-[#111118]/95 cursor-default'
+                ? 'right-6 cursor-pointer hover:scale-105' 
+                : 'left-1/2 -translate-x-1/2 cursor-default'
             }`}
             style={{ 
-              boxShadow: isMinimized ? '0 0 30px rgba(78,222,163,0.15)' : '0 0 40px rgba(192,193,255,0.15)',
+              background: isMinimized ? 'rgba(17,17,24,0.92)' : 'rgba(17,17,24,0.88)',
+              border: isMinimized ? '1px solid rgba(110,231,183,0.3)' : '1px solid rgba(165,182,252,0.25)',
+              boxShadow: isMinimized ? '0 0 30px rgba(110,231,183,0.12), 0 8px 32px rgba(0,0,0,0.4)' : '0 0 40px rgba(165,182,252,0.08), 0 8px 32px rgba(0,0,0,0.3)',
             }}
           >
-            <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#4edea3] animate-ping' : 'bg-[#c0c1ff] animate-pulse'}`} />
-            <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: isMinimized ? '#4edea3' : '#c0c1ff' }}>
+            <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#6EE7B7] animate-ping' : 'bg-[#A5B6FC] animate-pulse'}`} />
+            <span className="text-xs font-medium" style={{ fontFamily: 'Inter, sans-serif', color: isMinimized ? '#6EE7B7' : '#A5B6FC' }}>
               {isMinimized 
-                ? 'Review Pending (Click to Expand Panel) ↗' 
+                ? 'Review Pending — Click to Expand' 
                 : 'Human Review Required — Click outside to minimize & inspect page'}
             </span>
           </div>
@@ -951,44 +956,65 @@ const CampaignLivePage: React.FC = () => {
 
         {/* Right-side Inspector Drawer */}
         <div
-          className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col ${
-            showHumanReview && !isMinimized ? 'open' : ''
+          className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col transition-all duration-400 ease-out ${
+            showHumanReview && !isMinimized ? 'open translate-x-0' : 'translate-x-full'
           }`}
-          style={{ width: '100%', maxWidth: '480px', background: '#0d0d14', borderLeft: '1px solid rgba(192,193,255,0.15)', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
+          style={{ width: '100%', maxWidth: '480px', background: '#0c0c14', borderLeft: '1px solid rgba(192,193,255,0.08)', boxShadow: '-24px 0 80px rgba(0,0,0,0.7), inset 1px 0 0 rgba(255,255,255,0.02)' }}
         >
           {/* ── Drawer Header ───────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e1e2b]" style={{ background: '#0d0d14' }}>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.04)]" style={{ background: 'linear-gradient(180deg, rgba(192,193,255,0.03) 0%, transparent 100%)' }}>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(192,193,255,0.1)', border: '1px solid rgba(192,193,255,0.2)' }}>
-                <span className="material-symbols-outlined text-[18px] text-[#4edea3]" style={{ fontVariationSettings: "'FILL' 1" }}>fact_check</span>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center relative" style={{ background: 'linear-gradient(135deg, rgba(192,193,255,0.12), rgba(78,222,163,0.08))', border: '1px solid rgba(192,193,255,0.15)' }}>
+                <span className="material-symbols-outlined text-[18px]" style={{ color: '#c0c1ff', fontVariationSettings: "'FILL' 1" }}>fact_check</span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ background: '#6EE7B7', boxShadow: '0 0 6px rgba(110,231,183,0.5)' }} />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Human-in-the-Loop</p>
-                <h2 className="text-sm font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Inspector Panel</h2>
+                <p className="text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Human-in-the-Loop</p>
+                <h2 className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#EDEDF5' }}>Inspector Panel</h2>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {qualityScore !== null && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold mr-1" style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(78,222,163,0.12)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.25)' }}>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', background: qualityScore >= 7 ? 'rgba(110,231,183,0.1)' : 'rgba(252,165,165,0.1)', color: qualityScore >= 7 ? '#6EE7B7' : '#FCA5A5', border: `1px solid ${qualityScore >= 7 ? 'rgba(110,231,183,0.15)' : 'rgba(252,165,165,0.15)'}` }}>
                   {qualityScore.toFixed(1)}/10
                 </span>
               )}
-              {/* Minimize/Collapse Button */}
               <button 
                 onClick={() => setIsMinimized(true)} 
-                className="p-1 rounded hover:bg-[#1e1e2b] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+                className="p-1.5 rounded-lg hover:bg-[rgba(255,255,255,0.04)] text-[#6B6B80] hover:text-[#C8C8D0] transition-all duration-200"
                 title="Minimize Inspector Panel"
               >
-                <span className="material-symbols-outlined text-[20px] block">keyboard_double_arrow_right</span>
+                <span className="material-symbols-outlined text-[18px] block">close</span>
               </button>
             </div>
           </div>
 
           {/* ── Drawer Tabs ─────────────────────────────────────────────────── */}
-          <div className="flex border-b border-[#1e1e2b] px-2">
-            <button className={`drawer-tab-btn ${drawerTab === 'scores' ? 'active' : ''}`} onClick={() => setDrawerTab('scores')}>Review Scores</button>
-            <button className={`drawer-tab-btn ${drawerTab === 'inspect' ? 'active' : ''}`} onClick={() => setDrawerTab('inspect')}>Inspect Drafts</button>
-            <button className={`drawer-tab-btn ${drawerTab === 'revise' ? 'active' : ''}`} onClick={() => setDrawerTab('revise')}>Request Revision</button>
+          <div className="flex px-4 pt-3 pb-0 gap-1" style={{ background: 'linear-gradient(180deg, rgba(192,193,255,0.02) 0%, transparent 100%)' }}>
+            {([
+              { key: 'scores', label: 'Review Scores', icon: 'score' },
+              { key: 'inspect', label: 'Inspect Drafts', icon: 'article' },
+              { key: 'revise', label: 'Request Revision', icon: 'edit' },
+            ] as const).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setDrawerTab(key)}
+                className="relative flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-medium transition-all duration-200 rounded-lg"
+                style={{
+                  fontFamily: 'Inter, sans-serif',
+                  color: drawerTab === key ? '#EDEDF5' : '#5A5A6E',
+                  background: drawerTab === key ? 'rgba(192,193,255,0.06)' : 'transparent',
+                }}
+              >
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: drawerTab === key ? "'FILL' 1" : "'FILL' 0" }}>
+                  {icon}
+                </span>
+                {label}
+                {drawerTab === key && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/5 h-[2px] rounded-full" style={{ background: 'linear-gradient(90deg, rgba(192,193,255,0.6), rgba(192,193,255,0.2))' }} />
+                )}
+              </button>
+            ))}
           </div>
 
           {/* ── Tab Content ─────────────────────────────────────────────────── */}
@@ -996,33 +1022,34 @@ const CampaignLivePage: React.FC = () => {
 
             {/* TAB 1 — Review Scores */}
             {drawerTab === 'scores' && (
-              <div className="p-6 space-y-5">
+              <div className="p-5 space-y-4">
 
                 {/* Overall Score Ring */}
-                <div className="flex items-center gap-6 p-5 rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
-                  <div className="relative flex-shrink-0 w-[88px] h-[88px]">
-                    <svg width="88" height="88" viewBox="0 0 88 88">
-                      <circle cx="44" cy="44" r="36" fill="none" stroke="#1e1e2b" strokeWidth="8" />
+                <div className="flex items-center gap-5 p-5 rounded-xl" style={{ background: 'linear-gradient(135deg, rgba(192,193,255,0.03), rgba(110,231,183,0.02))', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="relative flex-shrink-0 w-[84px] h-[84px]">
+                    <svg width="84" height="84" viewBox="0 0 84 84">
+                      <circle cx="42" cy="42" r="34" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
                       <circle
-                        cx="44" cy="44" r="36" fill="none"
-                        stroke={qualityScore !== null && qualityScore >= 8.5 ? '#4edea3' : qualityScore !== null && qualityScore >= 7 ? '#FFA500' : '#F43F5E'}
-                        strokeWidth="8" strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 36}`}
-                        strokeDashoffset={`${2 * Math.PI * 36 * (1 - (qualityScore ?? 0) / 10)}`}
-                        transform="rotate(-90 44 44)"
+                        cx="42" cy="42" r="34" fill="none"
+                        stroke={qualityScore !== null && qualityScore >= 8.5 ? '#6EE7B7' : qualityScore !== null && qualityScore >= 7 ? '#FCD34D' : '#FCA5A5'}
+                        strokeWidth="6" strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 34}`}
+                        strokeDashoffset={`${2 * Math.PI * 34 * (1 - (qualityScore ?? 0) / 10)}`}
+                        transform="rotate(-90 42 42)"
                         className="score-ring"
+                        style={{ filter: qualityScore !== null && qualityScore >= 7 ? 'drop-shadow(0 0 8px rgba(110,231,183,0.3))' : 'drop-shadow(0 0 8px rgba(252,165,165,0.2))' }}
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
+                      <span className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em', color: '#EDEDF5' }}>
                         {qualityScore !== null ? qualityScore.toFixed(1) : '—'}
                       </span>
-                      <span className="text-[9px]" style={{ color: '#4A4A5E' }}>/10</span>
+                      <span className="text-[8px] font-medium" style={{ color: '#5A5A6E' }}>/10</span>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Overall Quality</p>
-                    <p className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Overall Quality</p>
+                    <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: qualityScore !== null && qualityScore >= 8.5 ? '#6EE7B7' : qualityScore !== null && qualityScore >= 7 ? '#FCD34D' : '#8B8B9E' }}>
                       {qualityScore !== null && qualityScore >= 8.5
                         ? 'Excellent — content meets all quality benchmarks.'
                         : qualityScore !== null && qualityScore >= 7
@@ -1035,11 +1062,11 @@ const CampaignLivePage: React.FC = () => {
                 </div>
 
                 {/* Per-Agent Score Bars */}
-                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1e1e2b' }}>
-                  <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b' }}>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Agent Quality Breakdown</p>
+                <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Agent Quality Breakdown</p>
                   </div>
-                  <div className="p-4 space-y-4" style={{ background: '#0d0d14' }}>
+                  <div className="p-4 space-y-4">
                     {([
                       { key: 'research', label: 'Research', icon: 'search' },
                       { key: 'strategy', label: 'Strategy', icon: 'lightbulb' },
@@ -1048,22 +1075,22 @@ const CampaignLivePage: React.FC = () => {
                     ] as const).map(({ key, label, icon }) => {
                       const score = agentScores[key as keyof typeof agentScores];
                       const pct = score !== null ? (score / 10) * 100 : 0;
-                      const color = score === null ? '#4A4A5E' : score >= 8.5 ? '#4edea3' : score >= 7 ? '#FFA500' : '#F43F5E';
+                      const color = score === null ? '#5A5A6E' : score >= 8.5 ? '#6EE7B7' : score >= 7 ? '#FCD34D' : '#FCA5A5';
                       return (
                         <div key={key}>
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-[14px]" style={{ color }}>{icon}</span>
-                              <span className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{label}</span>
+                              <span className="material-symbols-outlined text-[13px]" style={{ color }}>{icon}</span>
+                              <span className="text-[11px] font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{label}</span>
                             </div>
-                            <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color }}>
+                            <span className="text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color }}>
                               {score !== null ? `${score.toFixed(1)}/10` : '—'}
                             </span>
                           </div>
-                          <div className="h-1.5 rounded-full" style={{ background: '#1e1e2b' }}>
+                          <div className="h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.04)' }}>
                             <div
-                              className="h-full rounded-full transition-all duration-700"
-                              style={{ width: `${pct}%`, background: color }}
+                              className="h-full rounded-full transition-all duration-700 ease-out"
+                              style={{ width: `${pct}%`, background: color, boxShadow: score !== null ? `0 0 6px ${color}40` : 'none' }}
                             />
                           </div>
                         </div>
@@ -1074,49 +1101,48 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Reviewer Notes */}
                 {reviewerNotes && (
-                  <div className="rounded-xl" style={{ border: '1px solid #1e1e2b' }}>
-                    <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b', borderRadius: '12px 12px 0 0' }}>
-                      <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>AI Reviewer Summary</p>
+                  <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>AI Reviewer Summary</p>
                     </div>
-                    <div className="p-4 space-y-3" style={{ background: '#0d0d14', borderRadius: '0 0 12px 12px' }}>
+                    <div className="p-4 space-y-3">
                       {reviewerNotes.feedback && (
-                        <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{reviewerNotes.feedback}</p>
+                        <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{reviewerNotes.feedback}</p>
                       )}
                       {reviewerNotes.issues.length > 0 && (
-                        <ul className="space-y-2 mt-2">
+                        <ul className="space-y-2">
                           {reviewerNotes.issues.map((issue, i) => (
                             <li key={i} className="flex items-start gap-2">
-                              <span className="material-symbols-outlined text-[14px] mt-0.5 flex-shrink-0" style={{ color: '#c0c1ff' }}>info</span>
-                              <span className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{issue}</span>
+                              <span className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ background: '#FCA5A5' }} />
+                              <span className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{issue}</span>
                             </li>
                           ))}
                         </ul>
                       )}
                       {!reviewerNotes.feedback && reviewerNotes.issues.length === 0 && (
-                        <p className="text-xs" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>No specific notes from the reviewer.</p>
+                        <p className="text-xs" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>No specific notes from the reviewer.</p>
                       )}
                     </div>
                   </div>
                 )}
 
                 {/* Revision counter pills */}
-                <div className="rounded-xl" style={{ border: '1px solid #1e1e2b' }}>
-                  <div className="px-4 py-3" style={{ background: '#111118', borderBottom: '1px solid #1e1e2b', borderRadius: '12px 12px 0 0' }}>
-                    <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Revision Budget Used</p>
+                <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Revision Budget Used</p>
                   </div>
-                  <div className="p-4 grid grid-cols-2 gap-3" style={{ background: '#0d0d14', borderRadius: '0 0 12px 12px' }}>
+                  <div className="p-4 grid grid-cols-2 gap-2">
                     {Object.entries(revisionCounts).map(([key, count]) => {
                       const MAX = 3;
                       const label = key === 'copywriter' ? 'Copywriter' : key === 'image_prompt' ? 'Image Prompt' : key.charAt(0).toUpperCase() + key.slice(1);
                       const isMax = count >= MAX;
-                      const isWarn = count === MAX - 1;
-                      const dotColor = isMax ? '#F43F5E' : isWarn ? '#FFA500' : '#4edea3';
+                      const dotColor = isMax ? '#FCA5A5' : count === MAX - 1 ? '#FCD34D' : '#6EE7B7';
                       return (
-                        <div key={key} className="flex items-center justify-between px-3 py-2 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
-                          <span className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{label}</span>
-                          <span className="flex items-center gap-1.5">
+                        <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                          <span className="text-[11px] font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{label}</span>
+                          <span className="flex items-center gap-1">
                             {[0,1,2].map(i => (
-                              <span key={i} className="w-2 h-2 rounded-full" style={{ background: i < count ? dotColor : '#1e1e2b' }} />
+                              <span key={i} className="w-[6px] h-[6px] rounded-full" style={{ background: i < count ? dotColor : 'rgba(255,255,255,0.06)' }} />
                             ))}
                           </span>
                         </div>
@@ -1127,19 +1153,20 @@ const CampaignLivePage: React.FC = () => {
 
                 <button
                   onClick={() => setDrawerTab('inspect')}
-                  className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                  style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(192,193,255,0.08)', color: '#c0c1ff', border: '1px solid rgba(192,193,255,0.15)' }}
+                  className="w-full py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
+                  style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                 >
-                  <span className="material-symbols-outlined text-[16px]">article</span>
-                  Review Full Drafts →
+                  <span className="material-symbols-outlined text-[15px]">article</span>
+                  Review Full Drafts
+                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                 </button>
               </div>
             )}
 
             {/* TAB 2 — Inspect Drafts */}
             {drawerTab === 'inspect' && (
-              <div className="p-6 space-y-4">
-                <p className="text-[10px] uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Generated Campaign Artifacts</p>
+              <div className="p-5 space-y-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Generated Campaign Artifacts</p>
 
                 {parsedPreviewOutputs ? (() => {
                   const { copyData, strategyData, imageData, managerData } = parsedPreviewOutputs;
@@ -1153,17 +1180,17 @@ const CampaignLivePage: React.FC = () => {
                         <div className="space-y-2">
                           {strategyData.positioning && (
                             <div>
-                              <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>Positioning</p>
-                              <p className="text-xs leading-relaxed" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{strategyData.positioning}</p>
+                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Positioning</p>
+                              <p className="text-xs leading-relaxed" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{strategyData.positioning}</p>
                             </div>
                           )}
                           {strategyData.key_messages && strategyData.key_messages.length > 0 && (
                             <div>
-                              <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>Key Messages</p>
+                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Key Messages</p>
                               <ul className="space-y-1">
                                 {strategyData.key_messages.slice(0, 3).map((msg: string, i: number) => (
-                                  <li key={i} className="text-xs flex items-start gap-2" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>
-                                    <span className="text-[#c0c1ff] flex-shrink-0 mt-0.5">→</span>{msg}
+                                  <li key={i} className="text-xs flex items-start gap-2" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>
+                                    <span className="text-[#A5B6FC] flex-shrink-0 mt-0.5">→</span>{msg}
                                   </li>
                                 ))}
                               </ul>
@@ -1200,26 +1227,26 @@ const CampaignLivePage: React.FC = () => {
                             
                             if (!hasCopy) {
                               return (
-                                <div key={ch} className="p-3 rounded-lg border border-[#F43F5E]/20 bg-[#F43F5E]/5">
-                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold flex items-center gap-1.5" style={{ color: '#F43F5E', fontFamily: 'JetBrains Mono, monospace' }}>
+                                <div key={ch} className="p-3 rounded-lg" style={{ border: '1px solid rgba(252,165,165,0.15)', background: 'rgba(252,165,165,0.04)' }}>
+                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#FCA5A5', fontFamily: 'Inter, sans-serif' }}>
                                     <ChannelIcon channel={ch} size={10} />
                                     <span>{ch.replace('_', ' ')}</span>
                                   </p>
-                                  <p className="text-xs text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
-                                    ⚠️ Copywriter agent did not generate content for this channel.
+                                  <p className="text-xs" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                                    Copywriter agent did not generate content for this channel.
                                   </p>
                                 </div>
                               );
                             }
                             
                             return (
-                                <div key={ch} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
-                                  <p className="text-[9px] uppercase tracking-wider mb-1.5 font-semibold flex items-center gap-1.5" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>
+                                <div key={ch} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#6EE7B7', fontFamily: 'Inter, sans-serif' }}>
                                     <ChannelIcon channel={ch} size={10} />
                                     <span>{ch.replace('_', ' ')}</span>
                                   </p>
-                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
-                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#EDEDF5', fontFamily: 'Inter, sans-serif' }}>{headline}</p>}
+                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
                                 </div>
                             );
                           })}
@@ -1235,16 +1262,16 @@ const CampaignLivePage: React.FC = () => {
                       content: (
                         <div className="space-y-3">
                           {imageData.image_prompts.map((p: any, i: number) => (
-                            <div key={i} className="p-3 rounded-lg" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
+                            <div key={i} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                               <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: '#FFA500', fontFamily: 'JetBrains Mono, monospace' }}>
+                                <p className="text-[9px] font-medium uppercase tracking-[0.08em]" style={{ color: '#FCD34D', fontFamily: 'Inter, sans-serif' }}>
                                   {p.deliverable_name || `Prompt ${i + 1}`}
                                 </p>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,165,0,0.1)', color: '#FFA500', fontFamily: 'JetBrains Mono, monospace' }}>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: 'rgba(252,211,77,0.08)', color: '#FCD34D', fontFamily: 'Inter, sans-serif' }}>
                                   {p.aspect_ratio || '1:1'}
                                 </span>
                               </div>
-                              <p className="text-[11px] leading-relaxed line-clamp-4" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>{p.prompt}</p>
+                              <p className="text-[11px] leading-relaxed line-clamp-4" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{p.prompt}</p>
                             </div>
                           ))}
                         </div>
@@ -1255,8 +1282,8 @@ const CampaignLivePage: React.FC = () => {
                   if (sections.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-16 text-center">
-                        <span className="material-symbols-outlined text-[40px] mb-3" style={{ color: '#2A2A38' }}>article</span>
-                        <p className="text-sm" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>Campaign drafts are not yet available.</p>
+                        <span className="material-symbols-outlined text-[36px] mb-3" style={{ color: '#3A3A4E' }}>article</span>
+                        <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Campaign drafts are not yet available.</p>
                       </div>
                     );
                   }
@@ -1264,10 +1291,10 @@ const CampaignLivePage: React.FC = () => {
                   return (
                     <>
                       {sections.map(({ label, icon, color, content }) => (
-                        <div key={label} className="draft-card rounded-xl" style={{ border: '1px solid #1e1e2b', background: '#0d0d14' }}>
-                          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid #1e1e2b', background: '#111118', borderRadius: '12px 12px 0 0' }}>
-                            <span className="material-symbols-outlined text-[16px]" style={{ color }}>{icon}</span>
-                            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color }}>{label}</p>
+                        <div key={label} className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)', background: '#0c0c14' }}>
+                          <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <span className="material-symbols-outlined text-[15px]" style={{ color }}>{icon}</span>
+                            <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color }}>{label}</p>
                           </div>
                           <div className="p-4">{content}</div>
                         </div>
@@ -1275,18 +1302,18 @@ const CampaignLivePage: React.FC = () => {
 
                       <button
                         onClick={() => navigate(`/campaign/${campaignId}/result`)}
-                        className="w-full py-2.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-colors"
-                        style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(192,193,255,0.08)', color: '#c0c1ff', border: '1px solid rgba(192,193,255,0.15)' }}
+                        className="w-full py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
+                        style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                       >
-                        <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                        <span className="material-symbols-outlined text-[15px]">open_in_new</span>
                         Open Full Results Page
                       </button>
                     </>
                   );
                 })() : (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <span className="material-symbols-outlined text-[40px] mb-3" style={{ color: '#2A2A38' }}>hourglass_empty</span>
-                    <p className="text-sm" style={{ color: '#4A4A5E', fontFamily: 'Sora, sans-serif' }}>Loading campaign data...</p>
+                    <span className="material-symbols-outlined text-[36px] mb-3" style={{ color: '#3A3A4E' }}>hourglass_empty</span>
+                    <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Loading campaign data...</p>
                   </div>
                 )}
               </div>
@@ -1294,11 +1321,11 @@ const CampaignLivePage: React.FC = () => {
 
             {/* TAB 3 — Request Revision */}
             {drawerTab === 'revise' && (
-              <div className="p-6 space-y-5">
+              <div className="p-5 space-y-5">
 
                 {/* Agent Selector */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Select Agent to Revise</label>
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2.5" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Select Agent to Revise</label>
                   <div className="grid grid-cols-2 gap-2">
                     {([
                       { key: 'research', label: 'Research', icon: 'search', downstream: 'Re-runs Strategy → Copy → Image → Reviewer' },
@@ -1315,21 +1342,21 @@ const CampaignLivePage: React.FC = () => {
                           onClick={() => !isMax && setSelectedAgent(key)}
                           disabled={isMax}
                           title={downstream}
-                          className="relative flex flex-col items-start p-3 rounded-xl text-left transition-all"
+                          className="relative flex flex-col items-start p-3.5 rounded-xl text-left transition-all duration-200"
                           style={{
-                            background: isSelected ? 'rgba(192,193,255,0.1)' : '#111118',
-                            border: isSelected ? '1px solid rgba(192,193,255,0.4)' : '1px solid #1e1e2b',
-                            opacity: isMax ? 0.4 : 1,
+                            background: isSelected ? 'linear-gradient(135deg, rgba(192,193,255,0.08), rgba(192,193,255,0.02))' : 'rgba(255,255,255,0.02)',
+                            border: isSelected ? '1px solid rgba(192,193,255,0.25)' : '1px solid rgba(255,255,255,0.04)',
+                            opacity: isMax ? 0.35 : 1,
                             cursor: isMax ? 'not-allowed' : 'pointer',
                           }}
                         >
-                          <span className="material-symbols-outlined text-[18px] mb-2" style={{ color: isSelected ? '#c0c1ff' : '#4A4A5E' }}>{icon}</span>
-                          <span className="text-xs font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: isSelected ? '#F1F1F3' : '#8B8B9E' }}>{label}</span>
-                          <div className="flex items-center gap-1 mt-1.5">
+                          <span className="material-symbols-outlined text-[16px] mb-2" style={{ color: isSelected ? '#A5A6F0' : '#5A5A6E' }}>{icon}</span>
+                          <span className="text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: isSelected ? '#EDEDF5' : '#9B9BAF' }}>{label}</span>
+                          <div className="flex items-center gap-1.5 mt-2">
                             {[0,1,2].map(i => (
-                              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: i < count ? '#F43F5E' : '#1e1e2b' }} />
+                              <span key={i} className="w-[5px] h-[5px] rounded-full" style={{ background: i < count ? '#FCA5A5' : 'rgba(255,255,255,0.06)' }} />
                             ))}
-                            <span className="text-[9px] ml-1" style={{ color: isMax ? '#F43F5E' : '#4A4A5E', fontFamily: 'JetBrains Mono, monospace' }}>{count}/3{isMax ? ' MAX' : ''}</span>
+                            <span className="text-[9px] ml-0.5 font-medium" style={{ color: isMax ? '#FCA5A5' : '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>{count}/3</span>
                           </div>
                         </button>
                       );
@@ -1339,9 +1366,12 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Downstream Impact */}
                 {selectedAgent && (
-                  <div className="p-3 rounded-xl" style={{ background: 'rgba(192,193,255,0.05)', border: '1px solid rgba(192,193,255,0.15)' }}>
-                    <p className="text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>⚡ Downstream Impact</p>
-                    <p className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                  <div className="p-3.5 rounded-xl" style={{ background: 'rgba(165,182,252,0.04)', border: '1px solid rgba(165,182,252,0.1)' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#A5B6FC' }}>
+                      <span className="material-symbols-outlined text-[12px] align-middle mr-1">bolt</span>
+                      Downstream Impact
+                    </p>
+                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
                       {selectedAgent === 'research' && 'Revising Research will cascade to Strategy → Copywriter → Image Prompt → Reviewer. All downstream agents will re-run.'}
                       {selectedAgent === 'strategy' && 'Revising Strategy will cascade to Copywriter → Image Prompt → Reviewer.'}
                       {selectedAgent === 'copywriter' && 'Revising Copywriter will cascade to Image Prompt → Reviewer.'}
@@ -1352,24 +1382,23 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Feedback Textarea */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Revision Instructions</label>
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Revision Instructions</label>
                   <textarea
                     value={revisionFeedback}
                     onChange={(e) => setRevisionFeedback(e.target.value)}
                     placeholder="Be specific — what should be changed, improved, or rewritten?"
-                    rows={5}
-                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none focus:ring-2"
+                    rows={4}
+                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none transition-all duration-200"
                     style={{
-                      background: '#111118',
-                      border: '1px solid #2A2A38',
-                      color: '#F1F1F3',
-                      fontFamily: 'Sora, sans-serif',
-                      boxShadow: 'none',
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      color: '#EDEDF5',
+                      fontFamily: 'Inter, sans-serif',
                     }}
-                    onFocus={(e) => { e.target.style.border = '1px solid rgba(192,193,255,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(192,193,255,0.1)'; }}
-                    onBlur={(e) => { e.target.style.border = '1px solid #2A2A38'; e.target.style.boxShadow = 'none'; }}
+                    onFocus={(e) => { e.target.style.border = '1px solid rgba(165,182,252,0.3)'; e.target.style.boxShadow = '0 0 0 3px rgba(165,182,252,0.06)'; }}
+                    onBlur={(e) => { e.target.style.border = '1px solid rgba(255,255,255,0.06)'; e.target.style.boxShadow = 'none'; }}
                   />
-                  <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Sora, sans-serif', color: '#4A4A5E' }}>
+                  <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>
                     Tip: Be specific — mention what's wrong and what tone/direction you prefer.
                   </p>
                 </div>
@@ -1377,27 +1406,23 @@ const CampaignLivePage: React.FC = () => {
                 <button
                   onClick={handleRequestRevision}
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
-                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]"
+                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    background: 'linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)',
-                    boxShadow: '0 4px 15px rgba(244, 63, 94, 0.3)',
-                    color: '#FFFFFF',
-                    opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.4 : 1,
-                    cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    background: 'linear-gradient(135deg, rgba(252,165,165,0.15), rgba(239,68,68,0.1))',
+                    color: '#FCA5A5',
+                    border: '1px solid rgba(252,165,165,0.15)',
                   }}
                   onMouseEnter={(e) => {
-                    if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 22px rgba(244, 63, 94, 0.45)';
-                      (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)';
+                    if ((revisionCounts[selectedAgent as keyof typeof revisionCounts] || 0) < 3) {
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,165,165,0.2), rgba(239,68,68,0.15))';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 15px rgba(244, 63, 94, 0.3)';
-                    (e.currentTarget as HTMLButtonElement).style.filter = 'none';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(252,165,165,0.15), rgba(239,68,68,0.1))';
                   }}
                 >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  <span className="material-symbols-outlined text-[17px]">refresh</span>
                   Request Revision
                 </button>
               </div>
@@ -1405,26 +1430,28 @@ const CampaignLivePage: React.FC = () => {
           </div>
 
           {/* ── Sticky Footer — Approve & Publish ───────────────────────────── */}
-          <div className="px-6 py-4" style={{ borderTop: '1px solid #1e1e2b', background: '#0d0d14' }}>
-            <button
-              onClick={handleApprove}
-              className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-              style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                background: 'linear-gradient(135deg, #c0c1ff 0%, #a8a9ff 100%)',
-                color: '#0e0e13',
-                boxShadow: '0 4px 20px rgba(192,193,255,0.25)',
+          {drawerTab !== 'revise' && (
+            <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'linear-gradient(0deg, rgba(192,193,255,0.02) 0%, transparent 100%)' }}>
+              <button
+                onClick={handleApprove}
+                className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98]"
+                style={{
+                fontFamily: 'Inter, sans-serif',
+                background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 100%)',
+                color: '#0A0A0F',
+                boxShadow: '0 4px 24px rgba(110,231,183,0.25)',
               }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(110,231,183,0.35)'; (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.05)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(110,231,183,0.25)'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
             >
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              <span className="material-symbols-outlined text-[19px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Approve &amp; Publish Campaign
             </button>
-            <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#4A4A5E' }}>
+            <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>
               This will trigger the Publisher Agent to finalize all deliverables.
             </p>
           </div>
+          )}
         </div>
 
       </div>

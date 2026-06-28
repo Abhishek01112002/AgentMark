@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Compass, Columns, Calendar, MessageSquare, KeyRound, Users, BarChart3, Award, DollarSign, Share2, PlayCircle, FileDown, AlertTriangle } from 'lucide-react';
+import { Compass, Columns, Calendar, MessageSquare, KeyRound, Users, BarChart3, Award, DollarSign, Share2, FileDown, AlertTriangle } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
+import { formatDDMonYYYY, displayDate } from '../../../../../../../utils/formatDate';
 
 interface StrategyContentProps {
   data?: any;
@@ -64,8 +65,16 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
   // ─── Build self-contained print HTML in a new popup ───────────────────────
   const buildPrintHTML = (): string => {
-    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const today = `${String(new Date().getDate()).padStart(2,'0')}-${new Date().toLocaleDateString('en-US',{month:'long'})}-${new Date().getFullYear()}`;
     const esc = (s: string) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const fmtDate = (s: string) => {
+      const m = (s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        return `${m[3]}-${months[parseInt(m[2])-1]}-${m[1]}`;
+      }
+      return s || '';
+    };
 
     const sectionWrap = (title: string, inner: string) => `
       <div class="section">
@@ -135,7 +144,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             <div class="card-title" style="margin:0">${esc(phase.phase_name)}</div>
             <span class="badge">${esc(phase.duration)}</span>
           </div>
-          ${phase.start_date && phase.end_date ? `<div class="meta-label" style="margin-bottom:10px">${esc(phase.start_date)} → ${esc(phase.end_date)}</div>` : ''}
+          ${phase.start_date && phase.end_date ? `<div class="meta-label" style="margin-bottom:10px">${esc(fmtDate(phase.start_date))} → ${esc(fmtDate(phase.end_date))}</div>` : ''}
           ${(phase.activities || []).map((a: string) => bullet(a)).join('')}
         `))
       ));
@@ -504,7 +513,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
             <h1>Campaign Strategy Report</h1>
           </div>
           <div className="pdf-meta">
-            <div>Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            <div>Generated: {formatDDMonYYYY(new Date())}</div>
             {inferredGoal && <div>Goal: {inferredGoal.replace('_', ' ').toUpperCase()}</div>}
           </div>
         </div>
@@ -533,13 +542,10 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               )}
               <button
                 onClick={handleExportPDF}
-                className="px-4 py-2 rounded-lg border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1A1A24] flex items-center gap-2"
-                style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}
+                className="px-4 py-2 rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
+                style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
               >
                 <FileDown size={16} />Export PDF
-              </button>
-              <button className="px-4 py-2 rounded-lg bg-[#6366F1] text-sm font-medium transition-opacity hover:opacity-90 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-                <PlayCircle size={16} />Execute
               </button>
             </div>
           </div>
@@ -672,7 +678,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                       <div className="flex items-center gap-2">
                         <span className="text-xs px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{phase.duration}</span>
                         {phase.start_date && phase.end_date && (
-                          <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{phase.start_date} - {phase.end_date}</span>
+                          <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{displayDate(phase.start_date)} - {displayDate(phase.end_date)}</span>
                         )}
                       </div>
                     </div>
@@ -830,59 +836,54 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Content Rollout Table */}
-        <div className="card-elevate pdf-section rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-          <div className="p-5 md:p-6 border-b border-[#2A2A38] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
-              <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout
-            </h2>
-            {displayCalendar.length > 10 && (
-              <button 
-                onClick={() => setIsTimelineExpanded(!isTimelineExpanded)} 
-                className="text-sm hover:underline pdf-no-print" 
-                style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}
-              >
-                {isTimelineExpanded ? 'Collapse Timeline' : 'View Full Timeline'}
-              </button>
-            )}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 640 }}>
-              <thead>
-                <tr className="bg-[#1A1A24] border-b border-[#2A2A38]">
-                  {['Week', 'Channel', 'Content Type', 'Topic / Asset', 'Status'].map((header, idx) => (
-                    <th key={idx} className={`py-3 px-4 md:px-6 text-xs uppercase tracking-wider ${idx === 4 ? 'text-right' : ''}`} style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, color: '#A0A0D2' }}>{header}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="text-sm divide-y divide-[#2A2A38]/50">
-                {(isTimelineExpanded ? displayCalendar : displayCalendar.slice(0, 10)).map((row: any, idx: number) => {
-                  const statusStyle = getStatusStyle(row.status || 'planned');
-                  return (
-                    <tr key={idx} className="hover:bg-[#111118] transition-colors">
-                      <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
-                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.channel || row.platform || 'N/A'}</td>
-                      <td className="py-4 px-4 md:px-6">
-                        <span className="px-2 py-1 bg-[#1A1A24] rounded text-xs border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.type || row.content_type || 'Content'}</span>
-                      </td>
-                      <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
-                      <td className="py-4 px-4 md:px-6 text-right">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: statusStyle.bg, color: statusStyle.text, fontWeight: 500 }}>
-                          <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${row.status === 'review' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
-                          {row.statusLabel || row.status || 'Planned'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        {displayCalendar.length === 0 && (
-          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-            <p className="text-sm flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-              No content calendar data yet. This will be populated after the AI publisher agent completes the campaign publication plan.
-            </p>
+        {displayCalendar.length > 0 && (
+          <div className="card-elevate pdf-section rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="p-5 md:p-6 border-b border-[#2A2A38] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h2 className="text-lg md:text-xl flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
+                <Calendar size={20} className="text-[#8B8B9E] pdf-no-print" />Content Rollout
+              </h2>
+              {displayCalendar.length > 10 && (
+                <button 
+                  onClick={() => setIsTimelineExpanded(!isTimelineExpanded)} 
+                  className="text-sm hover:underline pdf-no-print" 
+                  style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}
+                >
+                  {isTimelineExpanded ? 'Collapse Timeline' : 'View Full Timeline'}
+                </button>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 640 }}>
+                <thead>
+                  <tr className="bg-[#1A1A24] border-b border-[#2A2A38]">
+                    {['Week', 'Channel', 'Content Type', 'Topic / Asset', 'Status'].map((header, idx) => (
+                      <th key={idx} className={`py-3 px-4 md:px-6 text-xs uppercase tracking-wider ${idx === 4 ? 'text-right' : ''}`} style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, color: '#A0A0D2' }}>{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="text-sm divide-y divide-[#2A2A38]/50">
+                  {(isTimelineExpanded ? displayCalendar : displayCalendar.slice(0, 10)).map((row: any, idx: number) => {
+                    const statusStyle = getStatusStyle(row.status || 'planned');
+                    return (
+                      <tr key={idx} className="hover:bg-[#111118] transition-colors">
+                        <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
+                        <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.channel || row.platform || 'N/A'}</td>
+                        <td className="py-4 px-4 md:px-6">
+                          <span className="px-2 py-1 bg-[#1A1A24] rounded text-xs border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.type || row.content_type || 'Content'}</span>
+                        </td>
+                        <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
+                        <td className="py-4 px-4 md:px-6 text-right">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: statusStyle.bg, color: statusStyle.text, fontWeight: 500 }}>
+                            <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${row.status === 'review' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
+                            {row.statusLabel || row.status || 'Planned'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

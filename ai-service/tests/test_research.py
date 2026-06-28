@@ -186,7 +186,7 @@ def test_research_output_is_json():
     try:
         parsed = json.loads(result.research_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: Research output is valid JSON")
+        print("✅ PASS: Research output is valid JSON")
         print(f"   Keys in JSON: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         pytest.fail(f"Research output is not valid JSON: {e}")
@@ -241,7 +241,7 @@ def test_all_research_output_fields_exist():
         assert field in parsed, f"Missing required field: {field}"
         assert parsed[field] is not None, f"Field '{field}' should not be None"
     
-    print(f"✅ PASS: All research output fields exist")
+    print("✅ PASS: All research output fields exist")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -287,7 +287,7 @@ def test_market_analysis_field():
     assert isinstance(market["market_trends"], list), "market_trends should be a list"
     assert len(market["market_trends"]) > 0, "market_trends should not be empty"
     
-    print(f"✅ PASS: Market analysis field is correct")
+    print("✅ PASS: Market analysis field is correct")
     print(f"   TAM: {market['total_addressable_market']}")
     print(f"   Growth: {market['growth_rate']}")
     print(f"   Trends: {market['market_trends']}")
@@ -333,7 +333,7 @@ def test_competitor_analysis_field():
     assert isinstance(competitors["top_competitors"], list), "top_competitors should be a list"
     assert len(competitors["top_competitors"]) > 0, "top_competitors should not be empty"
     
-    print(f"✅ PASS: Competitor analysis field is correct")
+    print("✅ PASS: Competitor analysis field is correct")
     print(f"   Competitors: {competitors['top_competitors']}")
     print(f"   Differentiation: {competitors['differentiation_opportunity']}")
 
@@ -380,7 +380,7 @@ def test_audience_insights_field():
     assert isinstance(audience["motivations"], list), "motivations should be a list"
     assert isinstance(audience["preferred_channels"], list), "preferred_channels should be a list"
     
-    print(f"✅ PASS: Audience insights field is correct")
+    print("✅ PASS: Audience insights field is correct")
     print(f"   Pain points: {audience['pain_points']}")
     print(f"   Motivations: {audience['motivations']}")
     print(f"   Channels: {audience['preferred_channels']}")
@@ -424,7 +424,7 @@ def test_market_opportunities_field():
     assert len(opportunities) > 0, "market_opportunities should not be empty"
     assert all(isinstance(opp, str) for opp in opportunities), "All opportunities should be strings"
     
-    print(f"✅ PASS: Market opportunities field is correct")
+    print("✅ PASS: Market opportunities field is correct")
     print(f"   Opportunities: {opportunities}")
 
 
@@ -465,7 +465,7 @@ def test_recommended_approach_field():
     assert isinstance(approach, str), "recommended_approach should be a string"
     assert len(approach) > 0, "recommended_approach should not be empty"
     
-    print(f"✅ PASS: Recommended approach field is correct")
+    print("✅ PASS: Recommended approach field is correct")
     print(f"   Approach: {approach}")
 
 
@@ -507,8 +507,8 @@ def test_status_updated():
     # After
     assert result.status == "research_complete", "Status should be updated to 'research_complete'"
     
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: manager_complete")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: manager_complete")
     print(f"   After: {result.status}")
 
 
@@ -571,7 +571,7 @@ def test_industry_determines_research():
     assert parsed_saas["market_analysis"] != parsed_health["market_analysis"], "Different industries should have different market analysis"
     assert parsed_saas["competitor_analysis"] != parsed_health["competitor_analysis"], "Different industries should have different competitors"
     
-    print(f"✅ PASS: Industry determines research")
+    print("✅ PASS: Industry determines research")
     print(f"   SaaS TAM: {parsed_saas['market_analysis']['total_addressable_market']}")
     print(f"   Healthcare TAM: {parsed_health['market_analysis']['total_addressable_market']}")
 
@@ -632,7 +632,7 @@ def test_goal_determines_audience_insights():
     # Verify: Different goals produce different audience insights
     assert parsed_awareness["audience_insights"] != parsed_sales["audience_insights"], "Different goals should have different audience insights"
     
-    print(f"✅ PASS: Goal determines audience insights")
+    print("✅ PASS: Goal determines audience insights")
     print(f"   Awareness pain points: {parsed_awareness['audience_insights']['pain_points']}")
     print(f"   Sales pain points: {parsed_sales['audience_insights']['pain_points']}")
 
@@ -670,8 +670,8 @@ def test_brief_with_fallback():
     try:
         result = research_agent(state)
         assert result.research_output is not None, "Should produce research output"
-        print(f"✅ PASS: Brief fallback works")
-        print(f"   Research generated with fallback context")
+        print("✅ PASS: Brief fallback works")
+        print("   Research generated with fallback context")
     except Exception as e:
         pytest.fail(f"Should handle None brief gracefully, but got: {e}")
 
@@ -735,13 +735,13 @@ def test_different_briefs_produce_different_research():
     result1 = research_agent(state1)
     result2 = research_agent(state2)
     
-    parsed1 = json.loads(result1.research_output)
-    parsed2 = json.loads(result2.research_output)
+    json.loads(result1.research_output)
+    json.loads(result2.research_output)
     
     # Verify: Different briefs should produce different research
     assert result1.research_output != result2.research_output, "Different briefs should produce different research"
     
-    print(f"✅ PASS: Different briefs produce different research")
+    print("✅ PASS: Different briefs produce different research")
     print(f"   Campaign 1 research length: {len(result1.research_output)} chars")
     print(f"   Campaign 2 research length: {len(result2.research_output)} chars")
 
@@ -794,9 +794,9 @@ def test_research_respects_target_audience():
     assert result1.research_output is not None, "Enterprise research should be generated"
     assert result2.research_output is not None, "Designer research should be generated"
     
-    print(f"✅ PASS: Research respects target audience")
-    print(f"   Enterprise research generated ✓")
-    print(f"   Designer research generated ✓")
+    print("✅ PASS: Research respects target audience")
+    print("   Enterprise research generated ✓")
+    print("   Designer research generated ✓")
 
 
 # ==================== TEST 16: Brand Voice Influences Research ====================
@@ -849,9 +849,9 @@ def test_brand_voice_influences_research():
     assert result_prof.research_output is not None, "Professional research should be generated"
     assert result_friendly.research_output is not None, "Friendly research should be generated"
     
-    print(f"✅ PASS: Brand voice influences research")
-    print(f"   Professional research generated ✓")
-    print(f"   Friendly research generated ✓")
+    print("✅ PASS: Brand voice influences research")
+    print("   Professional research generated ✓")
+    print("   Friendly research generated ✓")
 
 
 # ==================== TEST 17: No Error Field Set ====================
@@ -888,7 +888,7 @@ def test_no_error_field_set():
     # Verify: No error set
     assert result.error is None, "error field should be None on success"
     
-    print(f"✅ PASS: No error field set")
+    print("✅ PASS: No error field set")
     print(f"   error: {result.error}")
 
 
@@ -936,7 +936,7 @@ def test_research_agent_integration():
         status="manager_complete"
     )
     
-    print(f"Input (from Manager Agent - 12 fields):")
+    print("Input (from Manager Agent - 12 fields):")
     print(f"  campaign_name: {manager_data['campaign_name']}")
     print(f"  brand_name: {manager_data['brand_name']}")
     print(f"  industry: {manager_data['industry']}")
@@ -975,17 +975,17 @@ def test_research_agent_integration():
         assert field in parsed, f"Missing field: {field}"
         assert parsed[field] is not None, f"Field {field} should not be None"
     
-    print(f"\nOutput (Research Agent - 5 fields):")
+    print("\nOutput (Research Agent - 5 fields):")
     print(f"  status: {result.status} ✅")
-    print(f"  market_analysis: present ✅")
-    print(f"  competitor_analysis: present ✅")
-    print(f"  audience_insights: present ✅")
-    print(f"  market_opportunities: present ✅")
-    print(f"  recommended_approach: present ✅")
+    print("  market_analysis: present ✅")
+    print("  competitor_analysis: present ✅")
+    print("  audience_insights: present ✅")
+    print("  market_opportunities: present ✅")
+    print("  recommended_approach: present ✅")
     print(f"  research_output length: {len(result.research_output)} chars ✅")
     print(f"  error: {result.error} ✅")
     
-    print(f"\n✅ PASS: Integration test successful")
+    print("\n✅ PASS: Integration test successful")
 
 
 # ==================== TEST 19: Target Audience Customizes Pain Points ====================
@@ -1046,7 +1046,7 @@ def test_target_audience_customizes_pain_points():
     assert pain_points_cto != pain_points_marketer, \
         "Different target audiences should produce different pain points"
     
-    print(f"✅ PASS: Target audience customization works")
+    print("✅ PASS: Target audience customization works")
     print(f"   CTO pain points: {pain_points_cto[:2]}")
     print(f"   Marketer pain points: {pain_points_marketer[:2]}")
 
@@ -1105,7 +1105,7 @@ def test_brand_voice_personalizes_approach():
     assert approach_prof != approach_friendly, \
         "Different brand voices should produce different recommended approaches"
     
-    print(f"✅ PASS: Brand voice personalization works")
+    print("✅ PASS: Brand voice personalization works")
     print(f"   Professional approach: {approach_prof[:80]}...")
     print(f"   Friendly approach: {approach_friendly[:80]}...")
 
@@ -1275,12 +1275,12 @@ if __name__ == "__main__":
     print(f"Total Tests: {len(tests)}")
     print(f"✅ Passed: {passed}")
     print(f"❌ Failed: {failed}")
-    print(f"\nComparison to Manager Tests (14 tests):")
-    print(f"  - Helper includes all 12 Manager fields ✓")
-    print(f"  - Tests validate each of 5 research output fields ✓")
-    print(f"  - Tests verify industry determines research ✓")
-    print(f"  - Tests verify goal determines audience insights ✓")
-    print(f"  - Integration test with full 12-field Manager data ✓")
+    print("\nComparison to Manager Tests (14 tests):")
+    print("  - Helper includes all 12 Manager fields ✓")
+    print("  - Tests validate each of 5 research output fields ✓")
+    print("  - Tests verify industry determines research ✓")
+    print("  - Tests verify goal determines audience insights ✓")
+    print("  - Integration test with full 12-field Manager data ✓")
     print(f"  - Total: {len(tests)} research tests (vs 14 manager tests)")
     
     if failed == 0:

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, AlertCircle, RotateCw, Send, Shield, Sparkles, ListTodo, Award, Activity } from 'lucide-react';
+import { CheckCircle, AlertCircle, Shield, Sparkles, ListTodo, Award, Activity } from 'lucide-react';
 
 interface ReviewContentProps {
   data?: any;
@@ -59,14 +59,6 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
             </div>
             <h2 className="text-2xl md:text-3xl font-semibold mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Quality Assessment</h2>
             <p className="text-sm md:text-base max-w-2xl" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>AI analysis of copy, visual coherence, and strategic alignment against brand guidelines.</p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            <button className="px-4 py-2 rounded-lg border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1A1A24] flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-              <RotateCw size={16} />Re-Run Analysis
-            </button>
-            <button className="px-5 py-2 rounded-lg bg-[#6366F1] text-sm font-bold transition-all hover:scale-95 flex items-center gap-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-              <Send size={16} />Approve & Route
-            </button>
           </div>
         </div>
       </div>

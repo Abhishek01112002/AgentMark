@@ -3,19 +3,13 @@ import {
   Palette,
   Check,
   Copy,
-  X,
   ChevronDown,
   ChevronUp,
   Sparkles,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  RotateCw,
-  Download,
-  FileText,
-  Wand2,
-  Share2,
-  Lock
+  RotateCw
 } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
@@ -54,7 +48,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const promptsList = Array.isArray(prompts) ? prompts : [];
 
   const [activeTab, setActiveTab] = useState<string>('all');
-  const [exportDrawerOpen, setExportDrawerOpen] = useState<boolean>(false);
   const [usedPrompts, setUsedPrompts] = useState<string[]>([]);
   const [expandedRationale, setExpandedRationale] = useState<string[]>([]);
   const [scoreOpen, setScoreOpen] = useState<string[]>([]);
@@ -140,21 +133,32 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   };
 
   const handleCopyAllPrompts = async () => {
-    if (promptsList.length === 0) { toast.error('No prompts to copy'); return; }
-    const formattedText = promptsList
-      .map((card, idx) => {
-        const cardId = getCardId(card, idx);
+    const targetPrompts = activeTab === 'all'
+      ? promptsList.map((card, idx) => ({ card, originalIdx: idx }))
+      : promptsList
+          .map((card, idx) => ({ card, originalIdx: idx }))
+          .filter(({ card }) => getPromptPlatformKey(card) === activeTab);
+
+    if (targetPrompts.length === 0) { toast.error('No prompts to copy'); return; }
+    
+    const formattedText = targetPrompts
+      .map(({ card, originalIdx }) => {
+        const cardId = getCardId(card, originalIdx);
         const text = enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : (card.prompt || '');
         const platformKey = getPromptPlatformKey(card);
-        const platformLabel = PLATFORM_CONFIG[platformKey].label;
+        const platformLabel = PLATFORM_CONFIG[platformKey]?.label || platformKey;
         return `=== ${platformLabel} ===\n${text}`;
       })
       .join('\n\n');
     try {
       await navigator.clipboard.writeText(formattedText);
-      toast.success('All prompts copied to clipboard!');
+      toast.success(
+        activeTab === 'all'
+          ? 'All prompts copied to clipboard!'
+          : `${PLATFORM_CONFIG[activeTab]?.label || activeTab} prompts copied!`
+      );
     } catch {
-      toast.error('Failed to copy all prompts');
+      toast.error('Failed to copy prompts');
     }
   };
 
@@ -162,7 +166,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
     new Set(promptsList.map((p: any) => getPromptPlatformKey(p)))
   ).filter(Boolean) as string[];
 
-  const uniquePlatformsCount = detectedPlatforms.length;
   const activeTabs = ['all', ...detectedPlatforms];
 
   const displayPrompts = (
@@ -207,17 +210,16 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
               <span className="px-3 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold text-[#F1F1F3]">
                 {promptsList.length} {promptsList.length === 1 ? 'prompt' : 'prompts'}
               </span>
-              <span className="px-3 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold text-[#F1F1F3]">
-                {uniquePlatformsCount} {uniquePlatformsCount === 1 ? 'platform' : 'platforms'}
-              </span>
             </div>
           )}
           <button
-            onClick={() => setExportDrawerOpen(true)}
-            className="px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-white text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98]"
+            onClick={handleCopyAllPrompts}
+            className="px-4 py-2 rounded-xl bg-transparent border border-[#2A2A38] hover:bg-[#1A1A24] text-[#F1F1F3] text-sm font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5"
           >
-            Export
+            <Copy size={14} />
+            Copy All Prompts
           </button>
+
         </div>
       </div>
       </div>
@@ -703,23 +705,60 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                         {isAccordionOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                       </button>
                       {isAccordionOpen && (
-                        <p className="mt-3 text-sm text-[#8B8B9E] leading-relaxed italic pl-4 border-l-2 border-[#2A2A38]">
-                          {card.rationale || 'No strategic rationale available.'}
-                        </p>
+                        <div className="mt-3 space-y-2 pl-4 border-l-2 border-[#2A2A38]">
+                          {(() => {
+                            const sentences = (card.rationale || '')
+                              .split(/(?<=[.!?])\s+/)
+                              .filter((s: string) => s.trim().length > 0);
+                            
+                            if (sentences.length === 0) {
+                              return <p className="text-sm text-[#8B8B9E] italic" style={{ fontFamily: 'Inter, sans-serif' }}>No strategic rationale available.</p>;
+                            }
+
+                            const colors = ['#CBD5E1', '#94A3B8', '#64748B', '#475569']; // Lower contrast, professional Slate-Gray hierarchy
+                            return sentences.map((sentence: string, sIdx: number) => (
+                              <p 
+                                key={sIdx} 
+                                className="text-xs md:text-sm leading-relaxed font-medium"
+                                style={{ fontFamily: 'Inter, sans-serif', color: colors[sIdx % colors.length] }}
+                              >
+                                • {sentence.trim()}
+                              </p>
+                            ));
+                          })()}
+                        </div>
                       )}
                     </div>
 
                     {/* Style keywords */}
                     {card.style_keywords?.length > 0 && (
                       <div className="flex flex-wrap gap-2">
-                        {card.style_keywords.slice(0, 5).map((kw: string, kidx: number) => (
-                          <span
-                            key={kidx}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold font-mono bg-[#8B5CF6]/10 text-[#A78BFA] border border-[#8B5CF6]/20"
-                          >
-                            #{kw.replace(/^#/, '')}
-                          </span>
-                        ))}
+                        {(() => {
+                          const tagColors = [
+                            { bg: 'rgba(99, 102, 241, 0.08)', text: '#A5B4FC', border: 'rgba(99, 102, 241, 0.15)' }, // Muted Indigo
+                            { bg: 'rgba(16, 185, 129, 0.08)', text: '#6EE7B7', border: 'rgba(16, 185, 129, 0.15)' }, // Muted Emerald
+                            { bg: 'rgba(245, 158, 11, 0.08)', text: '#FCD34D', border: 'rgba(245, 158, 11, 0.15)' }, // Muted Amber
+                            { bg: 'rgba(6, 182, 212, 0.08)', text: '#67E8F9', border: 'rgba(6, 182, 212, 0.15)' }, // Muted Cyan
+                            { bg: 'rgba(244, 63, 94, 0.08)', text: '#FDA4AF', border: 'rgba(244, 63, 94, 0.15)' }, // Muted Rose
+                          ];
+                          return card.style_keywords.slice(0, 5).map((kw: string, kidx: number) => {
+                            const color = tagColors[kidx % tagColors.length];
+                            return (
+                              <span
+                                key={kidx}
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors"
+                                style={{ 
+                                  fontFamily: 'Inter, sans-serif',
+                                  backgroundColor: color.bg,
+                                  borderColor: color.border,
+                                  color: color.text
+                                }}
+                              >
+                                #{kw.replace(/^#/, '')}
+                              </span>
+                            );
+                          });
+                        })()}
                       </div>
                     )}
                   </div>
@@ -744,147 +783,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       )}
 
 
-
-      {/* ── EXPORT DRAWER ───────────────────────────────────────────────── */}
-      {exportDrawerOpen && (
-        <div
-          onClick={() => setExportDrawerOpen(false)}
-          className="fixed inset-0 z-[90]"
-        />
-      )}
-      <div
-        className={`fixed right-0 top-0 w-[380px] bg-[#111118] border-l border-[#2A2A38] z-[100] shadow-2xl shadow-black/50 transition-transform duration-300 ${
-          exportDrawerOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-        onClick={e => e.stopPropagation()}
-        style={inter}
-      >
-        {/* ── HEADER ── */}
-        <div className="relative px-6 pt-8 pb-5">
-          <div className="absolute top-0 left-6 right-6 h-[1px] bg-gradient-to-r from-transparent via-[#6366F1]/60 to-transparent" />
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#6366F1]/20 to-[#6366F1]/5 border border-[#6366F1]/20 flex items-center justify-center">
-                <Download size={18} className="text-[#6366F1]" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-white tracking-tight">Export</h3>
-                <p className="text-xs text-[#8B8B9E] mt-0.5">
-                  {promptsList.length} {promptsList.length === 1 ? 'prompt' : 'prompts'} · {uniquePlatformsCount} {uniquePlatformsCount === 1 ? 'platform' : 'platforms'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setExportDrawerOpen(false)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6A6A7E] hover:text-white hover:bg-[#2A2A38] transition-all active:scale-90"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        </div>
-
-        {/* ── DIVIDER ── */}
-        <div className="mx-6 h-[1px] bg-gradient-to-r from-transparent via-[#2A2A38] to-transparent" />
-
-        {/* ── BODY ── */}
-        <div className="px-6 pt-5 pb-6 space-y-3">
-          {[
-            {
-              id: 'copy',
-              icon: Copy,
-              title: 'Copy All Prompts',
-              desc: 'All prompts with enhancements as formatted text.',
-              action: handleCopyAllPrompts,
-              cta: 'Copy All',
-              active: true,
-            },
-            {
-              id: 'pdf',
-              icon: FileText,
-              title: 'Download PDF Brief',
-              desc: 'Print-ready visual brief for offline review.',
-              action: undefined,
-              cta: 'Coming Soon',
-              active: false,
-            },
-            {
-              id: 'design',
-              icon: Wand2,
-              title: 'Send to Design Tool',
-              desc: 'Push prompts directly to DALL-E or Midjourney.',
-              action: undefined,
-              cta: 'Coming Soon',
-              active: false,
-            },
-            {
-              id: 'share',
-              icon: Share2,
-              title: 'Share Campaign Brief',
-              desc: 'Generate a secure viewing link for team review.',
-              action: undefined,
-              cta: 'Coming Soon',
-              active: false,
-            },
-          ].map(item => (
-            <div
-              key={item.id}
-              className={`group relative rounded-xl border transition-all duration-200 ${
-                item.active
-                  ? 'bg-[#0A0A0F] border-[#2A2A38] hover:border-[#6366F1]/30'
-                  : 'bg-[#0A0A0F]/40 border-[#2A2A38]/50 opacity-55'
-              }`}
-            >
-              {item.active && (
-                <div className="absolute left-0 top-2.5 bottom-2.5 w-[2px] rounded-full bg-[#6366F1]" />
-              )}
-              <div className={item.active ? 'pl-[14px] pr-4 py-3.5 space-y-2.5' : 'px-4 py-3.5 space-y-2.5'}>
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                      item.active
-                        ? 'bg-[#6366F1]/10 text-[#6366F1]'
-                        : 'bg-[#1A1A24] text-[#4A4A5E]'
-                    }`}
-                  >
-                    <item.icon size={15} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <h4
-                        className={`text-sm font-semibold ${
-                          item.active ? 'text-white' : 'text-[#8B8B9E]'
-                        }`}
-                      >
-                        {item.title}
-                      </h4>
-                      {!item.active && <Lock size={9} className="text-[#4A4A5E] shrink-0" />}
-                    </div>
-                    <p
-                      className={`text-xs leading-relaxed mt-0.5 ${
-                        item.active ? 'text-[#8B8B9E]' : 'text-[#6A6A7E]'
-                      }`}
-                    >
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={item.action}
-                  disabled={!item.active}
-                  className={`w-full py-2 rounded-lg text-xs font-semibold tracking-wide transition-all ${
-                    item.active
-                      ? 'bg-[#6366F1] hover:bg-[#5254d8] text-white active:scale-[0.98]'
-                      : 'bg-[#1A1A24] text-[#8B8B9E] cursor-not-allowed border border-[#2A2A38]/50'
-                  }`}
-                >
-                  {item.cta}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };

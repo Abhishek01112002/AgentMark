@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
 import { Check, Trash2 } from 'lucide-react';
+import { formatDDMonYYYY } from '../../../../utils/formatDate';
 
 const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
   success: { icon: 'task_alt', bg: 'bg-secondary-container/20', color: 'text-secondary' },
@@ -70,14 +71,9 @@ const Notifications: React.FC = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const currentPageIds = currentNotifications.map(n => n.id);
-      setSelectedIds(prev => {
-        const otherIds = prev.filter(id => !currentPageIds.includes(id));
-        return [...otherIds, ...currentPageIds];
-      });
+      setSelectedIds(notifications.map(n => n.id));
     } else {
-      const currentPageIds = currentNotifications.map(n => n.id);
-      setSelectedIds(prev => prev.filter(id => !currentPageIds.includes(id)));
+      setSelectedIds([]);
     }
   };
 
@@ -140,7 +136,7 @@ const Notifications: React.FC = () => {
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
-              checked={currentNotifications.length > 0 && currentNotifications.every(n => selectedIds.includes(n.id))}
+              checked={notifications.length > 0 && notifications.every(n => selectedIds.includes(n.id))}
               onChange={(e) => handleSelectAll(e.target.checked)}
               className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
             />
@@ -185,7 +181,10 @@ const Notifications: React.FC = () => {
                     <div className="flex justify-between items-start gap-2">
                       <p className="font-body-md text-body-md text-text-primary font-semibold truncate">{notification.title}</p>
                       <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {(() => {
+                            const d = new Date(notification.createdAt);
+                            return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                          })()}
                       </span>
                     </div>
                     <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">{notification.message}</p>

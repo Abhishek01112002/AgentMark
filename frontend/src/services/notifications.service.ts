@@ -1,6 +1,6 @@
 import api from './api';
 
-export type NotificationType = 'success' | 'warning' | 'error' | 'info';
+type NotificationType = 'success' | 'warning' | 'error' | 'info';
 
 export interface Notification {
   id: string;

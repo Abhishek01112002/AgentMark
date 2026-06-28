@@ -90,7 +90,7 @@ def run_campaign_with_hitl():
         # Show AI review scores
         if summary["ai_review"]:
             ai_review = summary["ai_review"]
-            print(f"\nAI Quality Assessment:")
+            print("\nAI Quality Assessment:")
             print(f"  Overall Score: {ai_review['overall_score']}/100")
             print(f"  Research:      {ai_review['research_score']}/100")
             print(f"  Strategy:      {ai_review['strategy_score']}/100")

@@ -159,7 +159,7 @@ def main():
 
     pub_output = json.loads(state.publisher_output)
 
-    print(f"\n✅ Publisher Completed Successfully!")
+    print("\n✅ Publisher Completed Successfully!")
     print(f"   Status:    {state.status}")
     print(f"   Output Size: {len(state.publisher_output)} characters")
 
@@ -173,7 +173,7 @@ def main():
         "⚠️" if decision == "REVISIONS_NEEDED" else "🚫"
     )
     print(f"\n   {decision_icon} Decision: {decision}")
-    print(f"\n   Rationale:")
+    print("\n   Rationale:")
     print(f"   {rationale}")
 
     # --- Executive Summary ---
@@ -201,7 +201,7 @@ def main():
         print(f"  Visual Asset:   {ch_plan.get('visual_asset_used', 'N/A')}")
         print(f"  Launch Date:    {ch_plan.get('launch_date', 'N/A')}")
         print(f"  Status:         {ch_plan.get('status', 'N/A')}")
-        print(f"  KPI Targets:")
+        print("  KPI Targets:")
         for kpi_name, kpi_val in ch_plan.get("kpi_targets", {}).items():
             print(f"    • {kpi_name}: {kpi_val}")
 
@@ -262,7 +262,7 @@ def main():
         for m in missing:
             print(f"      ❌ {m}")
     else:
-        print(f"\n   ✅ All deliverables have corresponding assets")
+        print("\n   ✅ All deliverables have corresponding assets")
 
     # --- Projected Metrics ---
     print("\n" + "-" * 100)
@@ -282,7 +282,7 @@ def main():
     if metrics.get("confidence_explanation"):
         print(f"   Explanation:         {metrics.get('confidence_explanation')}")
 
-    print(f"\n   Channel Breakdown:")
+    print("\n   Channel Breakdown:")
     for channel, contribution in metrics.get("channel_breakdown", {}).items():
         print(f"     • {channel.upper()}: {contribution}")
 
@@ -291,9 +291,9 @@ def main():
     print("📊 COMPLETE PIPELINE SUMMARY")
     print("-" * 100)
 
-    print(f"\n   ✅ Manager:      Channels + Deliverables planned")
-    print(f"   ✅ Research:     Market intelligence gathered")
-    print(f"   ✅ Strategy:     Positioning + Messaging defined")
+    print("\n   ✅ Manager:      Channels + Deliverables planned")
+    print("   ✅ Research:     Market intelligence gathered")
+    print("   ✅ Strategy:     Positioning + Messaging defined")
     print(f"   ✅ Copywriter:   Copy generated for {len(copy_channels)} channels")
     print(f"   ✅ Image Prompt: {len(image_out['image_prompts'])} DALL-E 3 prompts generated")
     print(f"   ✅ Reviewer:     Quality score: {overall.get('quality_score', 'N/A')}/100")

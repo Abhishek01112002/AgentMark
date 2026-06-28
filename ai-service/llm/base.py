@@ -3,11 +3,13 @@ Base LLM Client Interface
 All LLM providers must implement this interface
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import time
 import random
 import threading
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
 
 
 class TokenBucket:
@@ -105,7 +107,7 @@ class BaseLLMClient(ABC):
     def _wait_for_rate_limit(self, timeout: float = 60.0):
         if self.circuit_breaker.is_open():
             wait = 5.0
-            print(f"🔴 Circuit breaker open — pausing {wait}s before retry")
+            logger.info(f"🔴 Circuit breaker open — pausing {wait}s before retry")
             time.sleep(wait)
             if self.circuit_breaker.is_open():
                 raise RuntimeError(
@@ -128,7 +130,7 @@ class BaseLLMClient(ABC):
 
         base_delay = 2.0
         delay = base_delay * (2 ** attempt) + random.uniform(0, 1.0)  # exponential + jitter
-        print(f"⏳ Rate limit hit. Retrying in {delay:.1f}s... (Attempt {attempt + 1}/{max_retries})")
+        logger.info(f"⏳ Rate limit hit. Retrying in {delay:.1f}s... (Attempt {attempt + 1}/{max_retries})")
         time.sleep(delay)
         return True
 

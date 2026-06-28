@@ -219,7 +219,7 @@ def test_strategy_output_is_json():
     try:
         parsed = json.loads(result.strategy_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: Strategy output is valid JSON")
+        print("✅ PASS: Strategy output is valid JSON")
         print(f"   Keys in JSON: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         pytest.fail(f"Strategy output is not valid JSON: {e}")
@@ -278,7 +278,7 @@ def test_all_strategy_output_fields_exist():
         assert field in parsed, f"Missing required field: {field}"
         assert parsed[field] is not None, f"Field '{field}' should not be None"
     
-    print(f"✅ PASS: All strategy output fields exist")
+    print("✅ PASS: All strategy output fields exist")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -326,7 +326,7 @@ def test_positioning_from_research():
     assert "TestBrand" in positioning, "Positioning should include brand name"
     assert len(positioning) > 10, "Positioning should be a meaningful statement"
     
-    print(f"✅ PASS: Positioning is research-driven")
+    print("✅ PASS: Positioning is research-driven")
     print(f"   Positioning: {positioning}")
 
 
@@ -375,7 +375,7 @@ def test_key_messages_from_research():
     assert "cost" in all_messages or "simplif" in all_messages or "save" in all_messages, \
         "Messages should reference research pain points or motivations"
     
-    print(f"✅ PASS: Key messages are research-driven")
+    print("✅ PASS: Key messages are research-driven")
     for i, msg in enumerate(key_messages, 1):
         print(f"   {i}. {msg}")
 
@@ -419,7 +419,7 @@ def test_content_pillars_from_research():
     assert isinstance(content_pillars, list), "content_pillars should be a list"
     assert len(content_pillars) > 0, "content_pillars should not be empty"
     
-    print(f"✅ PASS: Content pillars are research-driven")
+    print("✅ PASS: Content pillars are research-driven")
     for pillar in content_pillars:
         print(f"   • {pillar}")
 
@@ -486,7 +486,7 @@ def test_channel_strategy_prioritized_by_research():
     assert research_channels_included, \
         "At least one research-preferred channel (LinkedIn or blogs) should be in strategy"
     
-    print(f"✅ PASS: Channels prioritized by research insights")
+    print("✅ PASS: Channels prioritized by research insights")
     for channel, details in channel_strategy.items():
         priority = details.get('priority', 'N/A')
         rationale = details.get('rationale', 'N/A')[:60] if isinstance(details.get('rationale'), str) else 'N/A'
@@ -533,7 +533,7 @@ def test_audience_segments_from_research():
     assert isinstance(audience_segments, list), "audience_segments should be a list"
     assert len(audience_segments) > 0, "audience_segments should not be empty"
     
-    print(f"✅ PASS: Audience segments created from research")
+    print("✅ PASS: Audience segments created from research")
     for segment in audience_segments:
         print(f"   • {segment['segment_name']}: {segment.get('demographics', 'N/A')}")
 
@@ -574,8 +574,8 @@ def test_status_updated():
     
     assert result.status == "strategy_complete", "Status should be updated to 'strategy_complete'"
     
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: research_complete")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: research_complete")
     print(f"   After: {result.status}")
 
 
@@ -621,7 +621,7 @@ def test_strategic_approach_from_research():
     assert "gated" in approach or "webinar" in approach or "pipeline" in approach, \
         "Approach should use research recommendation"
     
-    print(f"✅ PASS: Strategic approach from research")
+    print("✅ PASS: Strategic approach from research")
     print(f"   Approach: {approach}")
 
 
@@ -670,7 +670,7 @@ def test_research_foundation_preserved():
         assert section in research_foundation, f"Missing research section: {section}"
         assert research_foundation[section] is not None, f"Section {section} should not be None"
     
-    print(f"✅ PASS: Research foundation preserved")
+    print("✅ PASS: Research foundation preserved")
     for section in required_sections:
         print(f"   ✓ {section}")
 
@@ -745,7 +745,7 @@ def test_different_research_produces_different_strategy():
     assert parsed1["key_messages"] != parsed2["key_messages"], \
         "Different research should produce different key messages"
     
-    print(f"✅ PASS: Different research produces different strategy")
+    print("✅ PASS: Different research produces different strategy")
     print(f"   Strategy 1 messages: {parsed1['key_messages'][0][:60]}...")
     print(f"   Strategy 2 messages: {parsed2['key_messages'][0][:60]}...")
 
@@ -787,7 +787,7 @@ def test_timeline_created():
     assert isinstance(timeline, dict), "timeline should be a dictionary"
     assert len(timeline) >= 4, "timeline should have at least 4 phases"
     
-    print(f"✅ PASS: Timeline created with all phases")
+    print("✅ PASS: Timeline created with all phases")
     for phase_key, phase in timeline.items():
         print(f"   • {phase.get('phase_name', phase_key)}: {phase.get('duration', 'N/A')}")
 
@@ -876,7 +876,7 @@ def test_inferred_goal_is_valid():
     assert inferred_goal in valid_goals, \
         f"Inferred goal should be valid, got '{inferred_goal}'"
     
-    print(f"✅ PASS: Inferred goal is valid")
+    print("✅ PASS: Inferred goal is valid")
     print(f"   Goal: {inferred_goal}")
 
 
@@ -921,7 +921,7 @@ def test_competitive_differentiation_from_research():
     assert "competitors" in competitive_diff, "Should list competitors"
     assert len(competitive_diff["competitors"]) > 0, "Should have competitor list"
     
-    print(f"✅ PASS: Competitive differentiation from research")
+    print("✅ PASS: Competitive differentiation from research")
     print(f"   Differentiation: {competitive_diff['primary_differentiation']}")
     print(f"   Competitors: {competitive_diff['competitors']}")
 
@@ -977,7 +977,7 @@ def test_strategy_agent_integration():
         status="research_complete"
     )
     
-    print(f"Input (Research-driven):")
+    print("Input (Research-driven):")
     print(f"  campaign_name: {manager_data['campaign_name']}")
     print(f"  brand_name: {manager_data['brand_name']}")
     print(f"  industry: {manager_data['industry']}")
@@ -1017,7 +1017,7 @@ def test_strategy_agent_integration():
         assert field in parsed, f"Missing field: {field}"
         assert parsed[field] is not None, f"Field {field} should not be None"
     
-    print(f"\nOutput (Research-driven strategy):")
+    print("\nOutput (Research-driven strategy):")
     print(f"  status: {result.status} ✅")
     print(f"  positioning: {parsed['positioning'][:60]}... ✅")
     print(f"  key_messages: {len(parsed['key_messages'])} messages ✅")
@@ -1025,7 +1025,7 @@ def test_strategy_agent_integration():
     print(f"  channel_strategy: {len(parsed['channel_strategy'])} channels ✅")
     print(f"  research_foundation: {len(parsed['research_foundation'])} sections ✅")
     
-    print(f"\n✅ PASS: Integration test successful (Research-driven)")
+    print("\n✅ PASS: Integration test successful (Research-driven)")
 
 
 # ==================== TEST 19: Positioning Uses Exact Research Differentiation ====================
@@ -1066,7 +1066,7 @@ def test_positioning_uses_exact_research_differentiation():
     
     # Check if positioning is influenced by differentiation (flexible check)
     positioning_lower = parsed["positioning"].lower()
-    unique_diff_lower = unique_diff.lower()
+    unique_diff.lower()
     
     # Check for key concepts rather than exact match
     key_concepts = ["ai", "automation", "zero-code", "enterprise"]
@@ -1075,7 +1075,7 @@ def test_positioning_uses_exact_research_differentiation():
     assert len(found_concepts) >= 2, \
         f"Positioning should reference key differentiation concepts, found: {found_concepts}"
     
-    print(f"✅ PASS: Positioning influenced by research differentiation")
+    print("✅ PASS: Positioning influenced by research differentiation")
     print(f"   Positioning: {parsed['positioning']}")
 
 
@@ -1121,7 +1121,7 @@ def test_key_messages_address_exact_pain_points():
     assert "legacy" in all_messages or "integration" in all_messages, \
         "Messages should address specific pain points from research"
     
-    print(f"✅ PASS: Key messages address research pain points")
+    print("✅ PASS: Key messages address research pain points")
     for i, msg in enumerate(messages, 1):
         print(f"   {i}. {msg}")
 
@@ -1166,7 +1166,7 @@ def test_content_pillars_use_exact_market_trends():
     assert "quantum" in all_pillars or "edge ai" in all_pillars or "zero-trust" in all_pillars, \
         "Content pillars should use research market trends"
     
-    print(f"✅ PASS: Content pillars use research trends")
+    print("✅ PASS: Content pillars use research trends")
     for pillar in pillars:
         print(f"   • {pillar}")
 
@@ -1226,7 +1226,7 @@ def test_channels_prioritized_by_research_preferences():
         assert len(rationale) > 0, \
             "If LinkedIn is LOW priority, there should be a rationale explaining why"
     
-    print(f"✅ PASS: Channels prioritized by research")
+    print("✅ PASS: Channels prioritized by research")
     for channel, details in channel_strategy.items():
         print(f"   {channel}: {details.get('priority', 'N/A')} priority")
 
@@ -1268,7 +1268,7 @@ def test_strategic_approach_uses_research_recommendation():
     
     # Check if strategic approach is influenced by research (flexible check)
     approach_lower = approach.lower()
-    unique_approach_lower = unique_approach.lower()
+    unique_approach.lower()
     
     # Check for key concepts
     key_concepts = ["thought leadership", "ai", "content", "partnership"]
@@ -1277,7 +1277,7 @@ def test_strategic_approach_uses_research_recommendation():
     assert len(found_concepts) >= 2, \
         f"Strategic approach should reference key research concepts, found: {found_concepts}"
     
-    print(f"✅ PASS: Strategic approach influenced by research")
+    print("✅ PASS: Strategic approach influenced by research")
     print(f"   Approach: {approach}")
 
 
@@ -1331,7 +1331,7 @@ def test_goal_inferred_from_research_language():
         
         print(f"   ✓ '{approach_text[:40]}...' → {inferred_goal}")
     
-    print(f"\n✅ PASS: Goal inference produces valid goals")
+    print("\n✅ PASS: Goal inference produces valid goals")
 
 
 # ==================== RUN ALL TESTS ====================
@@ -1400,16 +1400,16 @@ if __name__ == "__main__":
     print(f"Total Tests: {len(tests)}")
     print(f"✅ Passed: {passed}")
     print(f"❌ Failed: {failed}")
-    print(f"\nTest Coverage:")
-    print(f"  - Helper function creates all 5 research fields ✓")
-    print(f"  - Tests validate research-driven decisions ✓")
-    print(f"  - Tests verify positioning from research differentiation ✓")
-    print(f"  - Tests verify messages from research pain points ✓")
-    print(f"  - Tests verify content from research trends ✓")
-    print(f"  - Tests verify channels prioritized by research ✓")
-    print(f"  - Tests verify research foundation preserved ✓")
-    print(f"  - Tests verify inferred_goal is valid (4 allowed values) ✓")
-    print(f"  - Integration test with full research data ✓")
+    print("\nTest Coverage:")
+    print("  - Helper function creates all 5 research fields ✓")
+    print("  - Tests validate research-driven decisions ✓")
+    print("  - Tests verify positioning from research differentiation ✓")
+    print("  - Tests verify messages from research pain points ✓")
+    print("  - Tests verify content from research trends ✓")
+    print("  - Tests verify channels prioritized by research ✓")
+    print("  - Tests verify research foundation preserved ✓")
+    print("  - Tests verify inferred_goal is valid (4 allowed values) ✓")
+    print("  - Integration test with full research data ✓")
     print(f"  - Total: {len(tests)} strategy tests")
     
     if failed == 0:

@@ -57,6 +57,9 @@ Reviewer = LLM-Powered Quality Analyst
 - Uses prompt template from utils/prompts/reviewer_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 import json
@@ -108,13 +111,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     7. Update state with review decision
     """
 
-    print("\n" + "=" * 80)
-    print("🔍 REVIEWER AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("🔍 REVIEWER AGENT ACTIVATED")
+    logger.info("=" * 80)
 
     # ========== STEP 1: READ ALL AGENT OUTPUTS ==========
-    print("\n[STEP 1] Reading all agent outputs from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading all agent outputs from state...")
+    logger.info("-" * 80)
 
     if not state.research_output:
         raise ValueError("research_output is required for review")
@@ -145,14 +148,14 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     except (json.JSONDecodeError, TypeError) as e:
         raise ValueError(f"Failed to parse image_output: {e}")
 
-    print(f"✓ Research Output: parsed ({len(state.research_output)} chars)")
-    print(f"✓ Strategy Output: parsed ({len(state.strategy_output)} chars)")
-    print(f"✓ Copy Output:     parsed ({len(state.copy_output)} chars)")
-    print(f"✓ Image Output:    parsed ({len(state.image_output)} chars)")
+    logger.info(f"✓ Research Output: parsed ({len(state.research_output)} chars)")
+    logger.info(f"✓ Strategy Output: parsed ({len(state.strategy_output)} chars)")
+    logger.info(f"✓ Copy Output:     parsed ({len(state.copy_output)} chars)")
+    logger.info(f"✓ Image Output:    parsed ({len(state.image_output)} chars)")
 
     # ========== STEP 2: READ CAMPAIGN METADATA ==========
-    print("\n[STEP 2] Reading campaign metadata from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 2] Reading campaign metadata from state...")
+    logger.info("-" * 80)
 
     campaign_name = state.campaign_name or "Unknown Campaign"
     brand_name = state.brand_name or "Unknown Brand"
@@ -165,49 +168,49 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         try:
             manager_data = json.loads(state.manager_output)
             channels_list = manager_data.get("channels", [])
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Silent error swallowed: {e}", exc_info=True)
     if not channels_list:
         channels_list = strategy_data.get("execution", {}).get("channels", [])
     if not channels_list:
         channels_list = getattr(state, "channels", []) or []
     channels = ', '.join(channels_list) if isinstance(channels_list, list) else str(channels_list)
 
-    print(f"✓ Campaign:     {campaign_name}")
-    print(f"✓ Brand:        {brand_name}")
-    print(f"✓ Industry:     {industry}")
-    print(f"✓ Goal:         {primary_goal}")
-    print(f"✓ Brand Voice:  {brand_voice}")
-    print(f"✓ Channels:     {channels}")
+    logger.info(f"✓ Campaign:     {campaign_name}")
+    logger.info(f"✓ Brand:        {brand_name}")
+    logger.info(f"✓ Industry:     {industry}")
+    logger.info(f"✓ Goal:         {primary_goal}")
+    logger.info(f"✓ Brand Voice:  {brand_voice}")
+    logger.info(f"✓ Channels:     {channels}")
 
     # ========== STEP 3: READ REVISION COUNTS ==========
-    print("\n[STEP 3] Checking revision history...")
-    print("-" * 80)
+    logger.info("\n[STEP 3] Checking revision history...")
+    logger.info("-" * 80)
 
     research_revision_count = getattr(state, "research_revision_count", 0) or 0
     strategy_revision_count = getattr(state, "strategy_revision_count", 0) or 0
     copy_revision_count = getattr(state, "copy_revision_count", 0) or 0
     image_revision_count = getattr(state, "image_revision_count", 0) or 0
 
-    print(f"✓ Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
-    print(f"✓ Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
-    print(f"✓ Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
-    print(f"✓ Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
+    logger.info(f"✓ Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
+    logger.info(f"✓ Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
+    logger.info(f"✓ Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
+    logger.info(f"✓ Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
 
     # ========== STEP 4: EXTRACT KEY FIELDS FOR DISPLAY ==========
-    print("\n[STEP 4] Summarizing outputs for LLM review...")
-    print("-" * 80)
+    logger.info("\n[STEP 4] Summarizing outputs for LLM review...")
+    logger.info("-" * 80)
 
     # Research summary
     market = research_data.get("market_analysis", {})
     competitors = research_data.get("competitor_analysis", {})
     audience = research_data.get("audience_insights", {})
-    print(f"✓ Research — TAM: {market.get('total_addressable_market', 'N/A')} | "
+    logger.info(f"✓ Research — TAM: {market.get('total_addressable_market', 'N/A')} | "
           f"Competitors: {len(competitors.get('top_competitors', []))} | "
           f"Pain Points: {len(audience.get('pain_points', []))}")
 
     # Strategy summary
-    print(f"✓ Strategy — Positioning: {str(strategy_data.get('positioning', 'N/A'))[:50]}... | "
+    logger.info(f"✓ Strategy — Positioning: {str(strategy_data.get('positioning', 'N/A'))[:50]}... | "
           f"Goal: {strategy_data.get('inferred_goal', 'N/A')} | "
           f"Segments: {len(strategy_data.get('audience_segments', []))}")
 
@@ -216,18 +219,18 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         k for k in copy_data.keys()
         if k not in ("inferred_goal", "messaging_framework", "strategic_alignment", "copy_readiness")
     ]
-    print(f"✓ Copy — Channels: {', '.join(copy_channels)} | "
+    logger.info(f"✓ Copy — Channels: {', '.join(copy_channels)} | "
           f"Goal: {copy_data.get('inferred_goal', 'N/A')}")
 
     # Image summary
     image_prompts = image_data.get("image_prompts", [])
-    print(f"✓ Image — Prompts: {len(image_prompts)} | "
+    logger.info(f"✓ Image — Prompts: {len(image_prompts)} | "
           f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
 
     # ========== STEP 5: REVIEW WITH LLM ==========
-    print("\n[STEP 5] Sending ALL 28 fields to LLM for quality analysis...")
-    print("-" * 80)
-    print("🔍 AI Quality Analyst reviewing campaign outputs...")
+    logger.info("\n[STEP 5] Sending ALL 28 fields to LLM for quality analysis...")
+    logger.info("-" * 80)
+    logger.info("🔍 AI Quality Analyst reviewing campaign outputs...")
 
     # Initialize LLM client
     llm = get_llm_client()
@@ -259,7 +262,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         image_output=json.dumps(image_data, indent=2)
     )
 
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
 
     # Get structured LLM response with error handling
     review_analysis, state = safe_llm_call(
@@ -272,8 +275,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         return state  # Error already logged in state
 
     # ========== STEP 6: EXTRACT SCORES AND DECISIONS ==========
-    print("\n[STEP 6] Processing quality scores and decisions...")
-    print("-" * 80)
+    logger.info("\n[STEP 6] Processing quality scores and decisions...")
+    logger.info("-" * 80)
 
     # Extract per-agent reviews
     research_review = review_analysis.research_review
@@ -303,18 +306,18 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     image_approved = image_score >= MIN_AGENT_SCORE
 
     # ========== STEP 7: DISPLAY QUALITY SCORES ==========
-    print("✅ Quality analysis complete!")
+    logger.info("✅ Quality analysis complete!")
 
-    print("\n📊 Individual Agent Scores:")
-    print(f"   Research:  {research_score}/100  {'✅' if research_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info("\n📊 Individual Agent Scores:")
+    logger.info(f"   Research:  {research_score}/100  {'✅' if research_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if research_approved else 'Issues Found'})")
-    print(f"   Strategy:  {strategy_score}/100  {'✅' if strategy_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Strategy:  {strategy_score}/100  {'✅' if strategy_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if strategy_approved else 'Issues Found'})")
-    print(f"   Copy:      {copy_score}/100  {'✅' if copy_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Copy:      {copy_score}/100  {'✅' if copy_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if copy_approved else 'Issues Found'})")
-    print(f"   Image:     {image_score}/100  {'✅' if image_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Image:     {image_score}/100  {'✅' if image_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if image_approved else 'Issues Found'})")
-    print(f"\n📈 Overall Quality Score: {overall_score}/100 "
+    logger.info(f"\n📈 Overall Quality Score: {overall_score}/100 "
           f"(Threshold: {MIN_QUALITY_SCORE}) "
           f"{'✅' if overall_score >= MIN_QUALITY_SCORE else '❌'}")
 
@@ -327,15 +330,15 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     ]:
         issues = agent_review.issues
         if issues:
-            print(f"\n   ⚠️  {agent_name} Issues:")
+            logger.info(f"\n   ⚠️  {agent_name} Issues:")
             for issue in issues[:3]:
-                print(f"      • {issue}")
+                logger.info(f"      • {issue}")
             if len(issues) > 3:
-                print(f"      ... and {len(issues) - 3} more")
+                logger.info(f"      ... and {len(issues) - 3} more")
 
     # ========== STEP 8: APPLY THRESHOLD LOGIC ==========
-    print("\n[STEP 8] Applying threshold logic and determining action...")
-    print("-" * 80)
+    logger.info("\n[STEP 8] Applying threshold logic and determining action...")
+    logger.info("-" * 80)
 
     all_approved = research_approved and strategy_approved and copy_approved and image_approved
     meets_overall_threshold = overall_score >= MIN_QUALITY_SCORE
@@ -359,16 +362,16 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     review_output_json = json.dumps(review_output, indent=2)
 
     # ========== STEP 10: UPDATE STATE ==========
-    print("\n[STEP 10] Updating state with review decision...")
-    print("-" * 80)
+    logger.info("\n[STEP 10] Updating state with review decision...")
+    logger.info("-" * 80)
 
     state.review_output = review_output_json
 
     if all_approved and meets_overall_threshold:
         # ✅ ALL APPROVED
-        print(f"✅ ALL OUTPUTS APPROVED - Ready for Publication")
-        print(f"   All agents meet individual threshold (≥{MIN_AGENT_SCORE})")
-        print(f"   Overall quality: {overall_score}/100 (≥{MIN_QUALITY_SCORE})")
+        logger.info("✅ ALL OUTPUTS APPROVED - Ready for Publication")
+        logger.info(f"   All agents meet individual threshold (≥{MIN_AGENT_SCORE})")
+        logger.info(f"   Overall quality: {overall_score}/100 (≥{MIN_QUALITY_SCORE})")
 
         state.status = "review_complete"
         state.next_step = "proceed_to_publisher"
@@ -391,8 +394,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
         if current_count >= MAX_REVISIONS:
             # Max revisions reached — force approve and proceed
-            print(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
-            print(f"   Proceeding to publisher despite quality issues")
+            logger.info(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
+            logger.info("   Proceeding to publisher despite quality issues")
 
             state.status = "review_complete"
             state.next_step = "proceed_to_publisher"
@@ -403,13 +406,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             new_count = current_count + 1
             setattr(state, revision_count_attr, new_count)
 
-            print(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
-            print(f"   Reason: {revision_target['reason']}")
-            print(f"   Issues: {len(revision_target['issues'])}")
-            print(f"   Revision #{new_count}/{MAX_REVISIONS}")
+            logger.info(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
+            logger.info(f"   Reason: {revision_target['reason']}")
+            logger.info(f"   Issues: {len(revision_target['issues'])}")
+            logger.info(f"   Revision #{new_count}/{MAX_REVISIONS}")
 
             for issue in revision_target["issues"][:5]:
-                print(f"   • {issue}")
+                logger.info(f"   • {issue}")
 
             review_feedback = {
                 "agent": revision_target["agent_name"],
@@ -427,13 +430,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             state.review_feedback = json.dumps(review_feedback, indent=2)
             state.next_step = revision_target["next_step"]
 
-    print(f"\n✅ State updated:")
-    print(f"   status:    {state.status}")
-    print(f"   next_step: {state.next_step}")
+    logger.info("\n✅ State updated:")
+    logger.info(f"   status:    {state.status}")
+    logger.info(f"   next_step: {state.next_step}")
 
-    print("\n" + "=" * 80)
-    print("✅ REVIEWER AGENT COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ REVIEWER AGENT COMPLETE")
+    logger.info("=" * 80)
 
     return state
 
@@ -484,13 +487,13 @@ def _add_explicit_validation_checks(
     if email_data and isinstance(email_data, dict):
         subject = email_data.get("subject", "")
         if subject and len(subject) > 60:
-            issue = f"Email subject too long. Must be under 60 characters."
+            issue = f"Email subject too long ({len(subject)} chars). Must be under 60 characters."
             if issue not in copy_review.issues:
                 copy_review.issues.append(issue)
                 if not copy_review.action_items:
                     copy_review.action_items = []
                 copy_review.action_items.append("Shorten email subject to be under 60 characters")
-                copy_review.score = min(copy_review.score, MIN_AGENT_SCORE - 1)
+                copy_review.score = max(0, copy_review.score - 5)
 
     # Check 2: Image prompts array must not be empty
     image_prompts = image_data.get("image_prompts", [])
@@ -596,8 +599,8 @@ def _determine_revision_target(
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Reviewer Agent, run: python examples/run_reviewer.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Reviewer Agent, run: python examples/run_reviewer.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("=" * 80)

@@ -130,7 +130,7 @@ def main():
 
     review_output = json.loads(state.review_output)
 
-    print(f"\n✅ Reviewer Completed Successfully!")
+    print("\n✅ Reviewer Completed Successfully!")
     print(f"   Status:    {state.status}")
     print(f"   Next Step: {state.next_step}")
 
@@ -148,14 +148,14 @@ def main():
     print(f"   Individual Threshold:  {'✅ Met (≥75 each)' if overall.get('individual_threshold_met') else '❌ Not Met'}")
     print(f"   Overall Threshold:     {'✅ Met (≥80)' if overall.get('overall_threshold_met') else '❌ Not Met'}")
 
-    print(f"\n   Summary:")
+    print("\n   Summary:")
     print(f"   {overall.get('summary', 'N/A')}")
 
-    print(f"\n   Campaign Strengths:")
+    print("\n   Campaign Strengths:")
     for strength in overall.get("strengths", []):
         print(f"     ✅ {strength}")
 
-    print(f"\n   Critical Improvements:")
+    print("\n   Critical Improvements:")
     for improvement in overall.get("critical_improvements", []):
         print(f"     ⚠️  {improvement}")
 
@@ -188,14 +188,14 @@ def main():
         # Field scores
         field_scores = agent_review.get("field_scores", {})
         if field_scores:
-            print(f"   Field Scores:")
+            print("   Field Scores:")
             for field, fscore in field_scores.items():
                 print(f"     • {field}: {fscore}")
 
         # Strengths
         strengths = agent_review.get("strengths", [])
         if strengths:
-            print(f"   Strengths:")
+            print("   Strengths:")
             for s in strengths:
                 print(f"     ✅ {s}")
 
@@ -209,14 +209,14 @@ def main():
         # Action items
         action_items = agent_review.get("action_items", [])
         if action_items:
-            print(f"   Action Items:")
+            print("   Action Items:")
             for action in action_items:
                 print(f"     🔧 {action}")
 
         # Cross-agent alignment
         alignment = agent_review.get("cross_agent_alignment", "")
         if alignment:
-            print(f"   Cross-Agent Alignment:")
+            print("   Cross-Agent Alignment:")
             print(f"     {alignment}")
 
     # --- Revision Feedback (if needed) ---
@@ -232,11 +232,11 @@ def main():
         print(f"   Revision Number:   {feedback.get('revision_number', 'N/A')}/{feedback.get('max_revisions', 3)}")
         print(f"   Next Step:         {feedback.get('next_step', 'N/A')}")
 
-        print(f"\n   Issues to Fix:")
+        print("\n   Issues to Fix:")
         for issue in feedback.get("issues", []):
             print(f"     ❌ {issue}")
 
-        print(f"\n   Action Items:")
+        print("\n   Action Items:")
         for action in feedback.get("action_items", []):
             print(f"     🔧 {action}")
 
@@ -255,9 +255,9 @@ def main():
     print("📊 COMPLETE PIPELINE SUMMARY")
     print("-" * 100)
 
-    print(f"\n   ✅ Manager:      Channels + Deliverables planned")
-    print(f"   ✅ Research:     Market intelligence gathered")
-    print(f"   ✅ Strategy:     Positioning + Key Messages defined")
+    print("\n   ✅ Manager:      Channels + Deliverables planned")
+    print("   ✅ Research:     Market intelligence gathered")
+    print("   ✅ Strategy:     Positioning + Key Messages defined")
     print(f"   ✅ Copywriter:   Channel copy generated for {len(copy_channels)} channels")
     print(f"   ✅ Image Prompt: {len(image_out['image_prompts'])} DALL-E 3 prompts generated")
     print(f"   ✅ Reviewer:     Quality analysis complete — Score: {quality_score}/100")

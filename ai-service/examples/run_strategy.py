@@ -79,21 +79,21 @@ def main():
     
     strategy_output = json.loads(state.strategy_output)
     
-    print(f"\n✅ Strategy Completed Successfully!")
+    print("\n✅ Strategy Completed Successfully!")
     print(f"\nStatus: {state.status}")
     
-    print(f"\n📍 POSITIONING:")
+    print("\n📍 POSITIONING:")
     print(f"   {strategy_output['positioning']}")
     
-    print(f"\n💬 KEY MESSAGES:")
+    print("\n💬 KEY MESSAGES:")
     for i, msg in enumerate(strategy_output['key_messages'], 1):
         print(f"   {i}. {msg}")
     
-    print(f"\n🎯 CONTENT PILLARS:")
+    print("\n🎯 CONTENT PILLARS:")
     for pillar in strategy_output['content_pillars']:
         print(f"   • {pillar}")
     
-    print(f"\n📊 CHANNEL STRATEGY:")
+    print("\n📊 CHANNEL STRATEGY:")
     for channel, details in strategy_output['channel_strategy'].items():
         print(f"   {channel.upper()}:")
         print(f"     Priority: {details['priority']}")
@@ -102,7 +102,7 @@ def main():
         print(f"     Focus: {details['content_focus']}")
         print()
     
-    print(f"👥 AUDIENCE SEGMENTS:")
+    print("👥 AUDIENCE SEGMENTS:")
     for seg in strategy_output['audience_segments']:
         print(f"   {seg['segment_name']}:")
         print(f"     Pain Point: {seg['pain_point']}")
@@ -110,28 +110,28 @@ def main():
         print(f"     Channels: {', '.join(seg['channels'])}")
         print()
     
-    print(f"📅 TIMELINE:")
+    print("📅 TIMELINE:")
     for phase_key, phase in strategy_output['timeline'].items():
         print(f"   {phase['name']} ({phase['duration']}):")
         print(f"     {phase['start_date']} to {phase.get('end_date', 'Ongoing')}")
         print(f"     Focus: {phase['focus']}")
         print()
     
-    print(f"📈 SUCCESS METRICS:")
+    print("📈 SUCCESS METRICS:")
     metrics = strategy_output['success_metrics']
     print(f"   Primary KPIs: {', '.join(metrics['primary'])}")
-    print(f"   Targets:")
+    print("   Targets:")
     for metric, target in metrics['targets'].items():
         print(f"     • {metric}: {target}")
     print(f"   Research Alignment: {metrics['research_alignment'][:80]}...")
     
-    print(f"\n🏆 COMPETITIVE DIFFERENTIATION:")
+    print("\n🏆 COMPETITIVE DIFFERENTIATION:")
     comp = strategy_output['competitive_differentiation']
     print(f"   Primary: {comp['primary_differentiation']}")
     print(f"   Competitors: {', '.join(comp['competitors'])}")
     print(f"   Advantage: {comp['competitive_advantage']}")
     
-    print(f"\n💡 TACTICAL OPPORTUNITIES:")
+    print("\n💡 TACTICAL OPPORTUNITIES:")
     for opp in strategy_output['market_opportunities']:
         for key, value in opp.items():
             if key.startswith('opportunity'):

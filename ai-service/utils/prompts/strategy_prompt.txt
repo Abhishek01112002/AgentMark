@@ -13,7 +13,6 @@ CAMPAIGN CONTEXT:
 MANAGER'S EXECUTION PLAN:
 - Channels: {channels}
 - Deliverables: {deliverables}
-{human_feedback_section}
 
 ⚠️ STRICT CHANNEL CONSTRAINT:
 You MUST only plan strategy for the channels listed above. Do NOT add, suggest, or default to any other channels (e.g., do NOT include LinkedIn just because it's a common B2B channel unless it is in the list above). All channel_strategy entries must use ONLY the channels from the Manager's list. If LinkedIn is not in {channels}, do not include it. This constraint is absolute and non-negotiable.
@@ -69,10 +68,10 @@ Based on the research insights above, develop a comprehensive strategy covering:
    - Tailor messages for each segment
 
 6. TIMELINE (4 phases)
-   - Phase 1: Planning & Setup (Week 1)
-   - Phase 2: Content Creation (Week 2-3)
-   - Phase 3: Launch & Execution (Week 4-6)
-   - Phase 4: Optimize & Scale (Week 7+)
+    - Phase 1: Planning & Setup (Week 1)
+    - Phase 2: Content Creation (Week 2)
+    - Phase 3: Launch & Execution (Week 3)
+    - Phase 4: Optimize & Scale (Week 4)
    - For each phase: phase_name, duration, activities list, start_date (null), end_date (null)
 
 10. CONTENT CALENDAR
@@ -231,3 +230,5 @@ IMPORTANT GUIDELINES:
 - Ensure budget_allocation has all 4 required fields with percentage values
 - Ensure realistic and phased execution
 - Infer the goal type (awareness/lead_gen/sales/retention) from the recommended approach
+
+{human_feedback_section}

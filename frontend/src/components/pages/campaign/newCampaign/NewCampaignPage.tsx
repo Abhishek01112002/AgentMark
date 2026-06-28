@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, Scale, FolderOpen, Plus, Loader2, AlertTriangle } from 'lucide-react';
+import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, FolderOpen, Plus, Loader2, AlertTriangle, Sparkles, Heart, ShieldCheck, PlusCircle } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../../services/api';
@@ -25,7 +25,10 @@ const VOICE_ICONS: Record<string, any> = {
   bold: Flame,
   luxury: Crown,
   casual: Coffee,
-  authoritative: Scale,
+  inspirational: Sparkles,
+  empathetic: Heart,
+  trustworthy: ShieldCheck,
+  other: PlusCircle,
 };
 
 const NewCampaignContent: React.FC = () => {
@@ -51,10 +54,12 @@ const NewCampaignContent: React.FC = () => {
     customGoal: '',
     targetAudience: '',
     brandVoice: 'professional',
+    customBrandVoice: '',
   });
 
   const customIndustryRef = useRef<HTMLInputElement>(null);
   const customGoalRef = useRef<HTMLInputElement>(null);
+  const customBrandVoiceRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (formData.industry === 'other') {
@@ -67,6 +72,12 @@ const NewCampaignContent: React.FC = () => {
       customGoalRef.current?.focus();
     }
   }, [formData.goal]);
+
+  useEffect(() => {
+    if (formData.brandVoice === 'other') {
+      customBrandVoiceRef.current?.focus();
+    }
+  }, [formData.brandVoice]);
 
   useEffect(() => {
     const projectIdFromUrl = searchParams.get('projectId');
@@ -153,7 +164,7 @@ const NewCampaignContent: React.FC = () => {
         industry: finalIndustry,
         primaryGoal: finalGoal,
         targetAudience: formData.targetAudience,
-        brandVoice: formData.brandVoice,
+        brandVoice: formData.brandVoice === 'other' ? formData.customBrandVoice : formData.brandVoice,
       });
 
       const { campaign } = response.data;
@@ -489,7 +500,24 @@ const NewCampaignContent: React.FC = () => {
               );
             })}
           </div>
-        </section>
+        {formData.brandVoice === 'other' && (
+          <div className="mt-4 space-y-2 animate-fadeIn">
+            <label className="block text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+              Custom Brand Voice
+            </label>
+            <input
+              ref={customBrandVoiceRef}
+              type="text"
+              required
+              value={formData.customBrandVoice}
+              onChange={(e) => setFormData({ ...formData, customBrandVoice: e.target.value })}
+              className="w-full rounded-lg px-3 py-2 text-sm border transition-all"
+              placeholder="Enter your custom brand voice (e.g., Witty, Sarcastic)..."
+              style={{ fontFamily: 'Sora, sans-serif' }}
+            />
+          </div>
+        )}
+      </section>
 
         <div className="flex items-center justify-between pt-4 border-t border-[#2A2A38]">
           <div className="flex items-center gap-2 bg-[#111118] border border-[#2A2A38] px-3 py-1.5 rounded-full">

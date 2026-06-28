@@ -12,7 +12,6 @@ CAMPAIGN METADATA:
 - Industry: {industry}
 - Target Audience: {target_audience}
 - Campaign Brief: {brief}
-{human_feedback_section}
 
 STRATEGIC FOUNDATION:
 - Positioning Statement: {positioning}
@@ -175,3 +174,5 @@ INDUSTRY VISUAL CONTEXT GUIDE:
 - finance: Abstract security imagery, growth charts visualized beautifully, professional environments, trust and stability symbols
 - healthcare: Medical technology, compassionate human moments, clean clinical environments, innovation in health, patient-centered care
 - other: Focus on the target audience's world, their environment, their aspirations, universal visual language
+
+{human_feedback_section}

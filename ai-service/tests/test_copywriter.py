@@ -291,7 +291,7 @@ def test_copy_output_is_json():
     try:
         parsed = json.loads(result.copy_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: Copy output is valid JSON")
+        print("✅ PASS: Copy output is valid JSON")
         print(f"   Keys in JSON: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         raise AssertionError(f"Copy output is not valid JSON: {e}")
@@ -333,7 +333,7 @@ def test_all_top_level_fields_exist():
     found_channels = [ch for ch in channel_fields if ch in parsed and parsed[ch] is not None]
     assert len(found_channels) > 0, "At least one channel should be present"
 
-    print(f"✅ PASS: All top-level output fields exist")
+    print("✅ PASS: All top-level output fields exist")
     for field in required_fields:
         print(f"   ✓ {field}")
     print(f"   ✓ Channels found: {found_channels}")
@@ -380,7 +380,7 @@ def test_email_copy_has_required_subfields():
     assert "primary" in email["ctas"], "CTAs should have 'primary' field"
     assert "secondary" in email["ctas"], "CTAs should have 'secondary' field"
 
-    print(f"✅ PASS: Email copy has all required sub-fields")
+    print("✅ PASS: Email copy has all required sub-fields")
     print(f"   Subject: {email['subject']}")
     print(f"   Headline: {email['headline'][:60]}...")
     print(f"   CTAs: primary={email['ctas']['primary']}, secondary={email['ctas']['secondary']}")
@@ -421,7 +421,7 @@ def test_linkedin_copy_has_required_subfields():
     assert isinstance(linkedin["ctas"], dict)
     assert "primary" in linkedin["ctas"], "CTAs should have 'primary' field"
 
-    print(f"✅ PASS: LinkedIn copy has all required sub-fields")
+    print("✅ PASS: LinkedIn copy has all required sub-fields")
     print(f"   Headline: {linkedin['headline'][:60]}...")
     print(f"   CTAs: primary={linkedin['ctas']['primary']}")
 
@@ -460,7 +460,7 @@ def test_instagram_copy_has_required_subfields():
     assert isinstance(instagram["body"], str) and len(instagram["body"]) > 0
     assert isinstance(instagram["ctas"], dict)
 
-    print(f"✅ PASS: Instagram copy has all required sub-fields")
+    print("✅ PASS: Instagram copy has all required sub-fields")
     print(f"   Headline: {instagram['headline'][:60]}...")
     print(f"   CTAs: primary={instagram['ctas'].get('primary', 'N/A')}")
 
@@ -499,7 +499,7 @@ def test_google_ads_copy_has_required_subfields():
     assert isinstance(google_ads["body"], str) and len(google_ads["body"]) > 0
     assert isinstance(google_ads["ctas"], dict)
 
-    print(f"✅ PASS: Google Ads copy has all required sub-fields")
+    print("✅ PASS: Google Ads copy has all required sub-fields")
     print(f"   Headline: {google_ads['headline'][:60]}...")
     print(f"   CTAs: primary={google_ads['ctas'].get('primary', 'N/A')}")
 
@@ -540,7 +540,7 @@ def test_messaging_framework_has_required_subfields():
     assert isinstance(framework["segment_messaging"], list) and len(framework["segment_messaging"]) > 0
     assert isinstance(framework["channel_messaging"], list) and len(framework["channel_messaging"]) > 0
 
-    print(f"✅ PASS: Messaging framework has all required sub-fields")
+    print("✅ PASS: Messaging framework has all required sub-fields")
     for subfield in required_subfields:
         print(f"   ✓ {subfield}")
 
@@ -566,8 +566,8 @@ def test_status_updated():
 
     assert result.status == "copy_complete", "Status should be updated to 'copy_complete'"
 
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: strategy_complete")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: strategy_complete")
     print(f"   After: {result.status}")
 
 
@@ -610,7 +610,7 @@ def test_brand_name_appears_in_copy():
     assert brand in all_copy, f"Brand name '{brand}' should appear in copy content"
 
     print(f"✅ PASS: Brand name '{brand}' appears in copy content")
-    print(f"   (brand_name correctly NOT in output - read from state instead)")
+    print("   (brand_name correctly NOT in output - read from state instead)")
 
 
 # ==================== TEST 12: Email Subject Line Length ====================
@@ -639,7 +639,7 @@ def test_email_subject_line_length():
 
     assert len(subject) <= 60, f"Email subject should be <= 60 chars but got {len(subject)}: '{subject}'"
 
-    print(f"✅ PASS: Email subject is within limit")
+    print("✅ PASS: Email subject is within limit")
     print(f"   Subject ({len(subject)} chars): {subject}")
 
 
@@ -669,7 +669,7 @@ def test_instagram_headline_length():
 
     assert len(headline) <= 150, f"Instagram headline should be <= 150 chars but got {len(headline)}"
 
-    print(f"✅ PASS: Instagram headline is within limit")
+    print("✅ PASS: Instagram headline is within limit")
     print(f"   Headline ({len(headline)} chars): {headline}")
 
 
@@ -699,7 +699,7 @@ def test_google_ads_headline_length():
 
     assert len(headline) <= 60, f"Google Ads headline should be <= 60 chars but got {len(headline)}: '{headline}'"
 
-    print(f"✅ PASS: Google Ads headline is within limit")
+    print("✅ PASS: Google Ads headline is within limit")
     print(f"   Headline ({len(headline)} chars): {headline}")
 
 
@@ -751,7 +751,7 @@ def test_inferred_goal_determines_cta_strategy():
             print(f"   ⚠️  goal='{goal}': No exact keywords, but CTAs generated")
             passed_goals += 1  # Still pass if CTAs exist
 
-    assert passed_goals == 2, f"Should test 2 goals successfully"
+    assert passed_goals == 2, "Should test 2 goals successfully"
     print(f"\n✅ PASS: Inferred goal shapes CTA strategy ({passed_goals} goals tested)")
 
 
@@ -793,7 +793,7 @@ def test_pain_points_appear_in_copy():
 
     assert found, f"Pain point keywords {pain_keywords} should appear in copy"
 
-    print(f"✅ PASS: Pain points referenced in copy")
+    print("✅ PASS: Pain points referenced in copy")
     print(f"   Pain point: '{unique_pain}'")
     print(f"   Keywords found: {[kw for kw in pain_keywords if kw in combined]}")
 
@@ -827,7 +827,7 @@ def test_brand_voice_in_value_proposition():
         
         print(f"   ✓ voice='{voice}': value proposition generated ✓")
 
-    print(f"\n✅ PASS: Brand voice influences value proposition")
+    print("\n✅ PASS: Brand voice influences value proposition")
 
 
 # ==================== TEST 18: Positioning Used in Messaging Framework ====================
@@ -858,7 +858,7 @@ def test_positioning_used_in_brand_promise():
     assert "NitroAI" in brand_promise, "Brand promise should include brand name"
     assert len(brand_promise) > 10, "Brand promise should be meaningful"
 
-    print(f"✅ PASS: Positioning influences brand promise")
+    print("✅ PASS: Positioning influences brand promise")
     print(f"   Brand Promise: {brand_promise}")
 
 
@@ -892,7 +892,7 @@ def test_segment_messaging_created():
         assert "message" in sm, "Each segment message should have 'message'"
         assert "tone" in sm, "Each segment message should have 'tone'"
 
-    print(f"✅ PASS: Segment messaging created")
+    print("✅ PASS: Segment messaging created")
     print(f"   Segments: {len(segment_messaging)}")
     for sm in segment_messaging:
         print(f"   ✓ {sm['segment_name']}: {sm['tone']} tone")
@@ -928,7 +928,7 @@ def test_channel_messaging_created():
         assert "approach" in cm, "Each channel message should have 'approach'"
         assert "key_points" in cm, "Each channel message should have 'key_points'"
 
-    print(f"✅ PASS: Channel messaging created")
+    print("✅ PASS: Channel messaging created")
     for cm in channel_messaging:
         print(f"   ✓ {cm['channel_name']}: {len(cm['key_points'])} key points")
 
@@ -963,7 +963,7 @@ def test_strategic_alignment_section_populated():
     assert isinstance(alignment["key_messages_count"], int) and alignment["key_messages_count"] > 0
     assert isinstance(alignment["deliverables"], list)
 
-    print(f"✅ PASS: Strategic alignment section populated")
+    print("✅ PASS: Strategic alignment section populated")
     print(f"   Positioning: {alignment['positioning_used'][:50]}...")
     print(f"   Key Messages: {alignment['key_messages_count']}")
     print(f"   Deliverables: {alignment['deliverables']}")
@@ -1008,7 +1008,7 @@ def test_copy_readiness_flags_all_channels():
         else:
             assert copy_field is None, f"Copy should be null for non-ready channel {flag}"
 
-    print(f"✅ PASS: Copy readiness flags match channel exclusivity rules")
+    print("✅ PASS: Copy readiness flags match channel exclusivity rules")
     print(f"   ✓ messaging_framework_complete: {readiness['messaging_framework_complete']}")
     for flag in channel_flags:
         print(f"   ✓ {flag}: {readiness[flag]}")
@@ -1048,7 +1048,7 @@ def test_different_goals_produce_different_email_subjects():
     assert len(unique_subjects) >= 2, \
         f"Different goals should produce different email subjects. Got: {subjects}"
 
-    print(f"✅ PASS: Different goals produce different email subjects")
+    print("✅ PASS: Different goals produce different email subjects")
     for goal, subject in subjects.items():
         print(f"   {goal}: {subject}")
 
@@ -1095,7 +1095,7 @@ def test_different_brands_produce_different_copy():
     assert "AlphaAI" in copy1 or "AlphaAI" in str(parsed1), "Brand 1 copy should mention AlphaAI"
     assert "BetaBot" in copy2 or "BetaBot" in str(parsed2), "Brand 2 copy should mention BetaBot"
 
-    print(f"✅ PASS: Different brands produce different copy")
+    print("✅ PASS: Different brands produce different copy")
     print(f"   AlphaAI copy length: {len(result1.copy_output)} chars")
     print(f"   BetaBot copy length: {len(result2.copy_output)} chars")
 
@@ -1126,7 +1126,7 @@ def test_different_industries_produce_different_tone():
     assert result_saas.copy_output != result_healthcare.copy_output, \
         "Different industries should influence copy"
 
-    print(f"✅ PASS: Different industries produce contextually appropriate copy")
+    print("✅ PASS: Different industries produce contextually appropriate copy")
     print(f"   SaaS copy length: {len(result_saas.copy_output)} chars")
     print(f"   Healthcare copy length: {len(result_healthcare.copy_output)} chars")
 
@@ -1157,7 +1157,7 @@ def test_multiple_competitors_in_alignment():
     assert "positioning_used" in alignment
     assert len(alignment["positioning_used"]) > 0
 
-    print(f"✅ PASS: Strategic alignment captures competitive context")
+    print("✅ PASS: Strategic alignment captures competitive context")
     print(f"   Positioning: {alignment['positioning_used'][:60]}...")
 
 
@@ -1189,7 +1189,7 @@ def test_content_pillars_influence_channel_copy():
     assert "positioning_used" in alignment
     assert len(alignment["positioning_used"]) > 0
 
-    print(f"✅ PASS: Content pillars influence strategic alignment")
+    print("✅ PASS: Content pillars influence strategic alignment")
     print(f"   Positioning reflects content pillars: {alignment['positioning_used'][:60]}...")
 
 
@@ -1219,7 +1219,7 @@ def test_audience_segments_tracked_in_alignment():
     assert "key_messages_count" in alignment
     assert alignment["key_messages_count"] > 0
 
-    print(f"✅ PASS: Audience segments influence strategic alignment")
+    print("✅ PASS: Audience segments influence strategic alignment")
     print(f"   Key Messages Count: {alignment['key_messages_count']}")
 
 
@@ -1249,7 +1249,7 @@ def test_deliverables_list_matches_strategy():
     assert isinstance(alignment["deliverables"], list)
     assert len(alignment["deliverables"]) > 0
 
-    print(f"✅ PASS: Deliverables tracked in strategic alignment")
+    print("✅ PASS: Deliverables tracked in strategic alignment")
     print(f"   Deliverables: {alignment['deliverables']}")
 
 
@@ -1282,9 +1282,9 @@ def test_copy_readiness_marks_messaging_framework_complete():
     assert "segment_messaging" in framework
     assert "channel_messaging" in framework
 
-    print(f"✅ PASS: Messaging framework marked as complete")
+    print("✅ PASS: Messaging framework marked as complete")
     print(f"   messaging_framework_complete: {readiness['messaging_framework_complete']}")
-    print(f"   Framework fields present: brand_promise, value_proposition, segment_messaging, channel_messaging")
+    print("   Framework fields present: brand_promise, value_proposition, segment_messaging, channel_messaging")
 
 
 # ==================== RUN ALL TESTS ====================

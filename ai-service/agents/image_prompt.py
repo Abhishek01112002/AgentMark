@@ -44,6 +44,9 @@ Image Prompt = LLM-Powered Visual Creative Engine
 - Uses prompt template from utils/prompts/image_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 import json
@@ -114,7 +117,7 @@ def _extract_copy_context(state: CampaignState) -> dict:
                 context["channel_ctas"][channel] = primary_cta
 
     except (json.JSONDecodeError, AttributeError) as e:
-        print(f"⚠️  Could not parse copy_output: {e}")
+        logger.info(f"⚠️  Could not parse copy_output: {e}")
 
     return context
 
@@ -154,7 +157,7 @@ def _extract_research_context(strategy_data: dict) -> dict:
         context["growth_rate"] = market.get("growth_rate", "")
 
     except (AttributeError, TypeError) as e:
-        print(f"⚠️  Could not parse research_foundation from strategy: {e}")
+        logger.info(f"⚠️  Could not parse research_foundation from strategy: {e}")
 
     return context
 
@@ -214,13 +217,13 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     6. Update state with image_output and mark status as complete
     """
 
-    print("\n" + "=" * 80)
-    print("🎨 IMAGE PROMPT AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("🎨 IMAGE PROMPT AGENT ACTIVATED")
+    logger.info("=" * 80)
 
     # ========== STEP 1: READ STRATEGY OUTPUT (PRIMARY INPUT) ==========
-    print("\n[STEP 1] Reading strategy output (PRIMARY visual source)...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading strategy output (PRIMARY visual source)...")
+    logger.info("-" * 80)
 
     if not state.strategy_output:
         raise ValueError("strategy_output is required - Image Agent needs Strategy insights")
@@ -250,25 +253,25 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             deliverables = manager_data.get("deliverables", [])
             if not channels:
                 channels = normalize_channel_list(manager_data.get("channels", []))
-            print("   ℹ️  Deliverables loaded from manager_output (fallback)")
-        except Exception:
-            pass
+            logger.info("   ℹ️  Deliverables loaded from manager_output (fallback)")
+        except Exception as e:
+            logger.error(f"Silent error swallowed: {e}", exc_info=True)
 
     # Smart fallback: infer from channels
     if not deliverables:
         deliverables = _infer_deliverables_from_channels(channels)
-        print(f"   ⚠️  No explicit deliverables - inferred from channels: {deliverables}")
+        logger.info(f"   ⚠️  No explicit deliverables - inferred from channels: {deliverables}")
 
-    print(f"✓ Positioning: {positioning[:60]}...")
-    print(f"✓ Content Pillars: {len(content_pillars)} pillars")
-    print(f"✓ Key Messages: {len(key_messages)} messages")
-    print(f"✓ Inferred Goal: {inferred_goal}")
-    print(f"✓ Deliverables to design: {deliverables}")
-    print(f"✓ Channels: {channels}")
+    logger.info(f"✓ Positioning: {positioning[:60]}...")
+    logger.info(f"✓ Content Pillars: {len(content_pillars)} pillars")
+    logger.info(f"✓ Key Messages: {len(key_messages)} messages")
+    logger.info(f"✓ Inferred Goal: {inferred_goal}")
+    logger.info(f"✓ Deliverables to design: {deliverables}")
+    logger.info(f"✓ Channels: {channels}")
 
     # ========== STEP 2: READ STATE METADATA ==========
-    print("\n[STEP 2] Reading campaign metadata from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 2] Reading campaign metadata from state...")
+    logger.info("-" * 80)
 
     campaign_name = state.campaign_name or "Unnamed Campaign"
     brand_name = state.brand_name or "Unnamed Brand"
@@ -277,44 +280,44 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     industry = state.industry or "other"
     brief = state.brief or f"Marketing campaign for {brand_name}"
 
-    print(f"✓ Campaign: {campaign_name}")
-    print(f"✓ Brand: {brand_name}")
-    print(f"✓ Industry: {industry}")
-    print(f"✓ Target Audience: {target_audience[:60]}...")
-    print(f"✓ Brand Voice: {brand_voice}")
+    logger.info(f"✓ Campaign: {campaign_name}")
+    logger.info(f"✓ Brand: {brand_name}")
+    logger.info(f"✓ Industry: {industry}")
+    logger.info(f"✓ Target Audience: {target_audience[:60]}...")
+    logger.info(f"✓ Brand Voice: {brand_voice}")
 
     # ========== STEP 3: EXTRACT COPY CONTEXT (TEXT OVERLAY) ==========
-    print("\n[STEP 3] Extracting copy headlines + CTAs for text overlay alignment...")
-    print("-" * 80)
+    logger.info("\n[STEP 3] Extracting copy headlines + CTAs for text overlay alignment...")
+    logger.info("-" * 80)
 
     copy_context = _extract_copy_context(state)
 
     if copy_context["available_channels"]:
-        print(f"✓ Copy context extracted for channels: {copy_context['available_channels']}")
+        logger.info(f"✓ Copy context extracted for channels: {copy_context['available_channels']}")
         for channel in copy_context["available_channels"]:
             headline = copy_context["channel_headlines"].get(channel, "N/A")
             cta = copy_context["channel_ctas"].get(channel, "N/A")
-            print(f"   [{channel}] Headline: {str(headline)[:50]}...")
-            print(f"   [{channel}] CTA: {str(cta)[:50]}...")
+            logger.info(f"   [{channel}] Headline: {str(headline)[:50]}...")
+            logger.info(f"   [{channel}] CTA: {str(cta)[:50]}...")
     else:
-        print("⚠️  No copy output available - LLM will generate text overlay suggestions")
+        logger.info("⚠️  No copy output available - LLM will generate text overlay suggestions")
 
     # ========== STEP 4: EXTRACT RESEARCH CONTEXT ==========
-    print("\n[STEP 4] Extracting research context from strategy.research_foundation...")
-    print("-" * 80)
+    logger.info("\n[STEP 4] Extracting research context from strategy.research_foundation...")
+    logger.info("-" * 80)
 
     research_context = _extract_research_context(strategy_data)
 
-    print(f"✓ Pain Points ({len(research_context['pain_points'])}): {research_context['pain_points'][:2]}")
-    print(f"✓ Motivations ({len(research_context['motivations'])}): {research_context['motivations'][:2]}")
-    print(f"✓ Market Trends ({len(research_context['market_trends'])}): {research_context['market_trends'][:2]}")
-    print(f"✓ Growth Rate: {research_context['growth_rate']}")
-    print(f"✓ Differentiation: {research_context['differentiation_opportunity'][:60]}...")
+    logger.info(f"✓ Pain Points ({len(research_context['pain_points'])}): {research_context['pain_points'][:2]}")
+    logger.info(f"✓ Motivations ({len(research_context['motivations'])}): {research_context['motivations'][:2]}")
+    logger.info(f"✓ Market Trends ({len(research_context['market_trends'])}): {research_context['market_trends'][:2]}")
+    logger.info(f"✓ Growth Rate: {research_context['growth_rate']}")
+    logger.info(f"✓ Differentiation: {research_context['differentiation_opportunity'][:60]}...")
 
     # ========== STEP 5: GENERATE IMAGE PROMPTS WITH LLM ==========
-    print("\n[STEP 5] Generating DALL-E 3 prompts with LLM...")
-    print("-" * 80)
-    print("🎨 AI Visual Director crafting production-ready prompts...")
+    logger.info("\n[STEP 5] Generating DALL-E 3 prompts with LLM...")
+    logger.info("-" * 80)
+    logger.info("🎨 AI Visual Director crafting production-ready prompts...")
 
     # Initialize LLM client
     llm = get_llm_client()
@@ -390,7 +393,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         deliverables_count=len(deliverables)
     )
 
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature reduces visual drift on unchanged prompts;
     # extra token budget covers the existing-output context in the prompt
@@ -398,7 +401,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     revision_max_tokens = 5000 if is_human_revision else 3000
 
     if is_human_revision:
-        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
     # Get structured LLM response with error handling
     image_output, state = safe_llm_call(
@@ -411,41 +414,41 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         return state  # Error already logged in state
 
     # ========== STEP 6: DISPLAY RESULTS ==========
-    print("\n[STEP 6] DALL-E 3 prompts generated!")
-    print("-" * 80)
-    print("✅ DALL-E 3 prompts generated by LLM!")
+    logger.info("\n[STEP 6] DALL-E 3 prompts generated!")
+    logger.info("-" * 80)
+    logger.info("✅ DALL-E 3 prompts generated by LLM!")
 
-    print(f"\n📐 Visual Direction:")
-    print(f"   Style: {image_output.visual_direction.overall_style}")
-    print(f"   Mood: {image_output.visual_direction.mood}")
-    print(f"   Colors: {', '.join(image_output.visual_direction.color_palette)}")
+    logger.info("\n📐 Visual Direction:")
+    logger.info(f"   Style: {image_output.visual_direction.overall_style}")
+    logger.info(f"   Mood: {image_output.visual_direction.mood}")
+    logger.info(f"   Colors: {', '.join(image_output.visual_direction.color_palette)}")
 
-    print(f"\n🖼️  Image Prompts ({len(image_output.image_prompts)} total):")
+    logger.info(f"\n🖼️  Image Prompts ({len(image_output.image_prompts)} total):")
     for i, prompt_obj in enumerate(image_output.image_prompts, 1):
-        print(f"\n   Prompt {i}: {prompt_obj.deliverable_name}")
-        print(f"   • Rationale:      {prompt_obj.rationale[:50]}...")
-        print(f"   • Visual Elements: {', '.join(prompt_obj.visual_elements[:3])}")
-        print(f"   • Style Keywords:  {', '.join(prompt_obj.style_keywords[:3])}")
-        print(f"   • DALL-E Prompt ({len(prompt_obj.prompt)} chars):")
-        print(f"     {prompt_obj.prompt[:100]}...")
+        logger.info(f"\n   Prompt {i}: {prompt_obj.deliverable_name}")
+        logger.info(f"   • Rationale:      {prompt_obj.rationale[:50]}...")
+        logger.info(f"   • Visual Elements: {', '.join(prompt_obj.visual_elements[:3])}")
+        logger.info(f"   • Style Keywords:  {', '.join(prompt_obj.style_keywords[:3])}")
+        logger.info(f"   • DALL-E Prompt ({len(prompt_obj.prompt)} chars):")
+        logger.info(f"     {prompt_obj.prompt[:100]}...")
 
     # ========== STEP 7: WRITE TO STATE ==========
-    print("\n[STEP 7] Writing to state...")
-    print("-" * 80)
+    logger.info("\n[STEP 7] Writing to state...")
+    logger.info("-" * 80)
 
     image_output_json = image_output.model_dump_json(indent=2)
 
     state.image_output = image_output_json
     state.status = "image_complete"
 
-    print("✅ State updated:")
-    print(f"   image_output: {len(image_output_json)} characters")
-    print(f"   prompts generated: {len(image_output.image_prompts)}")
-    print(f"   status: {state.status}")
+    logger.info("✅ State updated:")
+    logger.info(f"   image_output: {len(image_output_json)} characters")
+    logger.info(f"   prompts generated: {len(image_output.image_prompts)}")
+    logger.info(f"   status: {state.status}")
 
-    print("\n" + "=" * 80)
-    print("✅ IMAGE PROMPT AGENT COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ IMAGE PROMPT AGENT COMPLETE")
+    logger.info("=" * 80)
 
     return state
 
@@ -453,8 +456,8 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Image Prompt Agent, run: python examples/run_image_prompt.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Image Prompt Agent, run: python examples/run_image_prompt.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("=" * 80)

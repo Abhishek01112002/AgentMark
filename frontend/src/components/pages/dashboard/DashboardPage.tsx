@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
+import { formatDDMonYYYY } from '../../../utils/formatDate';
 
 type ProjectRow = {
   id: string;
@@ -444,7 +445,7 @@ function DashboardContent() {
                   </thead>
                   <tbody>
                     {recentProjects.map((row) => {
-                      const timeAgo = new Date(row.updatedAt).toLocaleDateString();
+                      const timeAgo = formatDDMonYYYY(new Date(row.updatedAt));
                       return (
                         <tr
                           key={row.id}

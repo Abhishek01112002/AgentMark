@@ -36,6 +36,9 @@ Manager = Strategic Analyzer (LLM-powered)
 - Uses prompt template from utils/prompts/manager_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
@@ -74,13 +77,13 @@ def manager_agent(state: CampaignState) -> CampaignState:
     6. Update state with output and mark status as complete
     """
     
-    print("\n" + "=" * 80)
-    print("🚀 MANAGER AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("🚀 MANAGER AGENT ACTIVATED")
+    logger.info("=" * 80)
     
     # ========== STEP 1: READ INPUT FROM STATE ==========
-    print("\n[STEP 1] Reading input from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading input from state...")
+    logger.info("-" * 80)
     
     campaign_name = state.campaign_name
     brand_name = state.brand_name
@@ -89,17 +92,17 @@ def manager_agent(state: CampaignState) -> CampaignState:
     target_audience = state.target_audience
     brand_voice = state.brand_voice
     
-    print(f"✓ Campaign Name: {campaign_name}")
-    print(f"✓ Brand Name: {brand_name}")
-    print(f"✓ Industry: {industry}")
-    print(f"✓ Primary Goal: {primary_goal}")
-    print(f"✓ Target Audience: {target_audience}")
-    print(f"✓ Brand Voice: {brand_voice}")
+    logger.info(f"✓ Campaign Name: {campaign_name}")
+    logger.info(f"✓ Brand Name: {brand_name}")
+    logger.info(f"✓ Industry: {industry}")
+    logger.info(f"✓ Primary Goal: {primary_goal}")
+    logger.info(f"✓ Target Audience: {target_audience}")
+    logger.info(f"✓ Brand Voice: {brand_voice}")
     
     # ========== STEP 2: ANALYZE & PLAN USING LLM ==========
-    print("\n[STEP 2] Manager analyzing campaign parameters with LLM...")
-    print("-" * 80)
-    print("🧠 Manager thinking with AI...")
+    logger.info("\n[STEP 2] Manager analyzing campaign parameters with LLM...")
+    logger.info("-" * 80)
+    logger.info("🧠 Manager thinking with AI...")
     
     # Initialize LLM client
     llm = get_llm_client()
@@ -115,7 +118,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
         brand_voice=brand_voice
     )
     
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
     
     # Get structured LLM response with error handling
     plan, state = safe_llm_call(
@@ -128,33 +131,33 @@ def manager_agent(state: CampaignState) -> CampaignState:
         return state  # Error already logged in state
     
     # ========== STEP 3: DISPLAY PLAN ==========
-    print("\n[STEP 3] Plan created by LLM!")
-    print("-" * 80)
+    logger.info("\n[STEP 3] Plan created by LLM!")
+    logger.info("-" * 80)
     
-    print(f"✅ Plan created by LLM!")
-    print(f"   Campaign: {plan.campaign_name}")
-    print(f"   Channels: {', '.join(plan.channels)}")
-    print(f"   Deliverables: {', '.join(plan.deliverables)}")
+    logger.info("✅ Plan created by LLM!")
+    logger.info(f"   Campaign: {plan.campaign_name}")
+    logger.info(f"   Channels: {', '.join(plan.channels)}")
+    logger.info(f"   Deliverables: {', '.join(plan.deliverables)}")
     
     # ========== STEP 4: WRITE TO STATE ==========
-    print("\n[STEP 4] Writing to state...")
-    print("-" * 80)
+    logger.info("\n[STEP 4] Writing to state...")
+    logger.info("-" * 80)
     
     manager_output_json = plan.model_dump_json(indent=2)
     
-    print("Manager Output (JSON):")
-    print(manager_output_json)
+    logger.info("Manager Output (JSON):")
+    logger.info(manager_output_json)
     
     state.manager_output = manager_output_json
     state.status = "manager_complete"
     
-    print("✅ State updated:")
-    print(f"   manager_output: {state.manager_output[:200]}... (truncated)")
-    print(f"   status: {state.status}")
+    logger.info("✅ State updated:")
+    logger.info(f"   manager_output: {state.manager_output[:200]}... (truncated)")
+    logger.info(f"   status: {state.status}")
     
-    print("\n" + "=" * 80)
-    print("✅ MANAGER AGENT COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ MANAGER AGENT COMPLETE")
+    logger.info("=" * 80)
     
     return state
 
@@ -162,8 +165,8 @@ def manager_agent(state: CampaignState) -> CampaignState:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "="*80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Manager Agent, run: python examples/run_manager.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("="*80)
+    logger.info("\n" + "="*80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Manager Agent, run: python examples/run_manager.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("="*80)

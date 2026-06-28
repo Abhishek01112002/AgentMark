@@ -380,7 +380,7 @@ def test_image_output_is_json():
     try:
         parsed = json.loads(result.image_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: Image output is valid JSON")
+        print("✅ PASS: Image output is valid JSON")
         print(f"   Keys in JSON: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         raise AssertionError(f"Image output is not valid JSON: {e}")
@@ -414,7 +414,7 @@ def test_all_top_level_fields_exist():
         assert field in parsed, f"Missing required field: {field}"
         assert parsed[field] is not None, f"Field '{field}' should not be None"
 
-    print(f"✅ PASS: All top-level output fields exist")
+    print("✅ PASS: All top-level output fields exist")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -485,7 +485,7 @@ def test_each_prompt_has_required_subfields():
                 assert isinstance(prompt_obj[subfield], list), \
                     f"Prompt {i+1} field '{subfield}' should be a list"
 
-    print(f"✅ PASS: All prompt objects have required sub-fields")
+    print("✅ PASS: All prompt objects have required sub-fields")
     for i, prompt_obj in enumerate(parsed["image_prompts"]):
         print(f"   Prompt {i+1} ({prompt_obj['deliverable_name']}): all fields ✓")
 
@@ -514,7 +514,7 @@ def test_dalle_prompt_minimum_length():
             f"Prompt {i+1} ({prompt_obj['deliverable_name']}) is too short: " \
             f"{len(prompt_text)} chars (minimum 50)"
 
-    print(f"✅ PASS: All DALL-E prompts meet minimum length requirement")
+    print("✅ PASS: All DALL-E prompts meet minimum length requirement")
     for i, prompt_obj in enumerate(parsed["image_prompts"]):
         print(f"   Prompt {i+1}: {len(prompt_obj['prompt'])} chars ✓")
 
@@ -541,8 +541,8 @@ def test_status_updated_to_image_complete():
     assert result.status == "image_complete", \
         f"Status should be 'image_complete' but got '{result.status}'"
 
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: copy_complete")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: copy_complete")
     print(f"   After: {result.status}")
 
 
@@ -587,8 +587,8 @@ def test_brand_name_appears_in_prompts():
     if brand in all_prompt_text:
         print(f"✅ PASS: Brand name '{brand}' appears in prompt content")
     else:
-        print(f"✅ PASS: Prompts generated (brand name presence may vary)")
-    print(f"   (brand_name correctly NOT in top-level output - read from state instead)")
+        print("✅ PASS: Prompts generated (brand name presence may vary)")
+    print("   (brand_name correctly NOT in top-level output - read from state instead)")
 
 
 # ==================== TEST 10: Visual Direction is Non-Empty String ====================
@@ -618,7 +618,7 @@ def test_visual_direction_is_non_empty_string():
     for field in required_fields:
         assert field in visual_direction, f"visual_direction missing {field}"
 
-    print(f"✅ PASS: visual_direction is properly structured")
+    print("✅ PASS: visual_direction is properly structured")
     print(f"   Overall Style: {visual_direction['overall_style'][:60]}...")
     print(f"   Mood: {visual_direction['mood'][:60]}...")
 
@@ -662,7 +662,7 @@ def test_brand_voice_determines_visual_style():
         else:
             print(f"   ⚠️  voice='{voice}' → style keywords generated (no exact match)")
 
-    print(f"\n✅ PASS: Brand voice influences visual style")
+    print("\n✅ PASS: Brand voice influences visual style")
 
 
 # ==================== TEST 12: Brand Voice Determines Color Palette ====================
@@ -704,7 +704,7 @@ def test_brand_voice_determines_color_palette():
         else:
             print(f"   ⚠️  voice='{voice}' → color palette generated (no exact match)")
 
-    print(f"\n✅ PASS: Brand voice influences color palette")
+    print("\n✅ PASS: Brand voice influences color palette")
 
 
 # ==================== TEST 13: Prompt Count Matches Deliverables ====================
@@ -772,7 +772,7 @@ def test_each_prompt_references_its_deliverable():
         assert expected in prompt_deliverables, \
             f"Deliverable '{expected}' not found in prompt deliverables: {prompt_deliverables}"
 
-    print(f"✅ PASS: Each prompt correctly references its deliverable")
+    print("✅ PASS: Each prompt correctly references its deliverable")
     for deliverable in custom_deliverables:
         print(f"   ✓ {deliverable}")
 
@@ -804,7 +804,7 @@ def test_aspect_ratio_correct_for_email_banner():
 
     assert email_prompt is not None, "Should have an email banner prompt"
     # Note: aspect_ratio not in current schema
-    print(f"✅ PASS: Email banner prompt exists")
+    print("✅ PASS: Email banner prompt exists")
     print(f"   Deliverable: {email_prompt['deliverable_name']}")
 
 
@@ -835,7 +835,7 @@ def test_aspect_ratio_correct_for_linkedin_post():
 
     assert linkedin_prompt is not None, "Should have a LinkedIn prompt"
     # Note: aspect_ratio not in current schema
-    print(f"✅ PASS: LinkedIn post prompt exists")
+    print("✅ PASS: LinkedIn post prompt exists")
     print(f"   Deliverable: {linkedin_prompt['deliverable_name']}")
 
 
@@ -866,7 +866,7 @@ def test_aspect_ratio_correct_for_instagram_story():
 
     assert instagram_prompt is not None, "Should have an Instagram story prompt"
     # Note: aspect_ratio not in current schema
-    print(f"✅ PASS: Instagram story prompt exists")
+    print("✅ PASS: Instagram story prompt exists")
     print(f"   Deliverable: {instagram_prompt['deliverable_name']}")
 
 
@@ -910,8 +910,8 @@ def test_text_overlay_uses_copy_headlines():
     for obj in parsed["image_prompts"]:
         assert len(obj["prompt"]) > 0, "Prompts should have content"
 
-    print(f"✅ PASS: Prompts generated with content")
-    print(f"   (Text overlay concepts embedded in visual prompts)")
+    print("✅ PASS: Prompts generated with content")
+    print("   (Text overlay concepts embedded in visual prompts)")
 
 
 # ==================== TEST 19: Works Without copy_output (Fallback) ====================
@@ -940,10 +940,10 @@ def test_works_without_copy_output():
     parsed = json.loads(result.image_output)
     assert len(parsed["image_prompts"]) >= 1, "Should still generate at least one prompt"
 
-    print(f"✅ PASS: Agent works without copy_output")
+    print("✅ PASS: Agent works without copy_output")
     print(f"   Status: {result.status}")
     print(f"   Prompts generated: {len(parsed['image_prompts'])}")
-    print(f"   (Fallback to positioning for text_overlay)")
+    print("   (Fallback to positioning for text_overlay)")
 
 
 # ==================== TEST 20: Raises When strategy_output Missing ====================
@@ -983,7 +983,7 @@ def test_raises_when_strategy_output_missing():
         except (ValueError, Exception):
             pass  # Expected
 
-    print(f"✅ PASS: Raises correctly when strategy_output is missing")
+    print("✅ PASS: Raises correctly when strategy_output is missing")
 
 
 # ==================== TEST 21: Industry Influences Prompt Content ====================
@@ -1027,7 +1027,7 @@ def test_industry_influences_prompt_content():
         else:
             print(f"   ✓ industry='{industry}': prompts generated (industry influence may vary)")
 
-    print(f"\n✅ PASS: Industry correctly influences prompt content for all 4 industries")
+    print("\n✅ PASS: Industry correctly influences prompt content for all 4 industries")
 
 
 # ==================== TEST 22: Positioning Appears in Visual Direction ====================
@@ -1053,16 +1053,16 @@ def test_positioning_appears_in_visual_direction():
 
     visual_direction = parsed["visual_direction"]
     all_vd_text = str(visual_direction).lower()
-    positioning_lower = unique_positioning.lower()
+    unique_positioning.lower()
 
     keywords = ["eliminates", "complexity", "platform"]
     found = any(kw in all_vd_text for kw in keywords)
 
     if found:
-        print(f"✅ PASS: Positioning influences visual direction")
-        print(f"   Positioning keywords found in visual direction")
+        print("✅ PASS: Positioning influences visual direction")
+        print("   Positioning keywords found in visual direction")
     else:
-        print(f"✅ PASS: Visual direction generated (positioning influence may vary)")
+        print("✅ PASS: Visual direction generated (positioning influence may vary)")
 
 
 # ==================== TEST 23: Market Trends Appear in Visual Direction ====================
@@ -1095,10 +1095,10 @@ def test_market_trends_appear_in_visual_direction():
     found = any(kw in all_vd_text for kw in keywords)
 
     if found:
-        print(f"✅ PASS: Market trends influence visual direction")
-        print(f"   Trend keywords found in visual direction")
+        print("✅ PASS: Market trends influence visual direction")
+        print("   Trend keywords found in visual direction")
     else:
-        print(f"✅ PASS: Visual direction generated (trend influence may vary)")
+        print("✅ PASS: Visual direction generated (trend influence may vary)")
 
 
 # ==================== TEST 24: Pain Points Influence Prompt Content ====================
@@ -1130,11 +1130,11 @@ def test_pain_points_influence_prompt_content():
     found = any(kw in all_prompts for kw in complexity_keywords)
     
     if found:
-        print(f"✅ PASS: Pain points influence prompt visual metaphors")
-        print(f"   Pain point: 'Overwhelming complexity in daily workflows'")
+        print("✅ PASS: Pain points influence prompt visual metaphors")
+        print("   Pain point: 'Overwhelming complexity in daily workflows'")
         print(f"   Visual metaphors found: {[kw for kw in complexity_keywords if kw in all_prompts]}")
     else:
-        print(f"✅ PASS: Prompts generated (pain point influence may vary)")
+        print("✅ PASS: Prompts generated (pain point influence may vary)")
 
 
 # ==================== TEST 25: Different Brands Produce Different Prompts ====================
@@ -1183,15 +1183,15 @@ def test_different_brands_produce_different_prompts():
     brand1_found = "AlphaVision" in prompts1
     brand2_found = "BetaWave" in prompts2
 
-    print(f"✅ PASS: Different brands produce different image prompts")
+    print("✅ PASS: Different brands produce different image prompts")
     if brand1_found:
-        print(f"   Brand 1 (AlphaVision): 'AlphaVision' in prompts ✓")
+        print("   Brand 1 (AlphaVision): 'AlphaVision' in prompts ✓")
     else:
-        print(f"   Brand 1 (AlphaVision): prompts generated (brand may be implicit)")
+        print("   Brand 1 (AlphaVision): prompts generated (brand may be implicit)")
     if brand2_found:
-        print(f"   Brand 2 (BetaWave): 'BetaWave' in prompts ✓")
+        print("   Brand 2 (BetaWave): 'BetaWave' in prompts ✓")
     else:
-        print(f"   Brand 2 (BetaWave): prompts generated (brand may be implicit)")
+        print("   Brand 2 (BetaWave): prompts generated (brand may be implicit)")
 
 
 # ==================== TEST 26: Fallback to Channels When Deliverables Empty ====================
@@ -1224,8 +1224,8 @@ def test_fallback_to_channels_when_deliverables_empty():
     assert len(parsed["image_prompts"]) >= 1, \
         "Should generate at least one prompt inferred from channels"
 
-    print(f"✅ PASS: Correctly falls back to channels when deliverables empty")
-    print(f"   Channels provided: ['linkedin', 'instagram', 'email']")
+    print("✅ PASS: Correctly falls back to channels when deliverables empty")
+    print("   Channels provided: ['linkedin', 'instagram', 'email']")
     print(f"   Prompts inferred: {[obj['deliverable_name'] for obj in parsed['image_prompts']]}")
 
 
@@ -1248,7 +1248,7 @@ def test_no_error_field_set_on_success():
 
     assert result.error is None, f"error field should be None on success, got: {result.error}"
 
-    print(f"✅ PASS: No error field set")
+    print("✅ PASS: No error field set")
     print(f"   error: {result.error}")
 
 
@@ -1287,12 +1287,12 @@ def test_text_overlay_does_not_use_body_copy():
 
     # Body copy marker should not appear in prompts or rationale
     assert unique_body_marker not in all_prompts, \
-        f"Body copy marker should NOT appear in image prompts"
+        "Body copy marker should NOT appear in image prompts"
     assert unique_body_marker not in all_rationale, \
-        f"Body copy marker should NOT appear in rationale"
+        "Body copy marker should NOT appear in rationale"
 
-    print(f"✅ PASS: Prompts focus on headlines, not body copy")
-    print(f"   Body marker correctly excluded from prompts and rationale")
+    print("✅ PASS: Prompts focus on headlines, not body copy")
+    print("   Body marker correctly excluded from prompts and rationale")
 
 
 # ==================== TEST 29: Different Deliverable Types Get Different Prompts ====================
@@ -1329,7 +1329,7 @@ def test_different_deliverable_types_get_different_prompts():
         f"All {len(diverse_deliverables)} deliverables should produce unique prompts. " \
         f"Got {len(unique_prompts)} unique prompts."
 
-    print(f"✅ PASS: Each deliverable type produces unique prompt content")
+    print("✅ PASS: Each deliverable type produces unique prompt content")
     for obj in parsed["image_prompts"]:
         print(f"   ✓ {obj['deliverable_name']}: unique prompt ({len(obj['prompt'])} chars)")
 
@@ -1398,11 +1398,11 @@ def test_image_prompt_agent_integration():
         status="copy_complete"
     )
 
-    print(f"Input:")
-    print(f"  campaign_name: Q3 Product Launch")
-    print(f"  brand_name: AgentMark")
-    print(f"  industry: saas")
-    print(f"  brand_voice: professional")
+    print("Input:")
+    print("  campaign_name: Q3 Product Launch")
+    print("  brand_name: AgentMark")
+    print("  industry: saas")
+    print("  brand_voice: professional")
     print(f"  deliverables: {strategy_data['execution']['deliverables']}")
 
     result = image_prompt_agent(state)
@@ -1443,11 +1443,11 @@ def test_image_prompt_agent_integration():
     all_prompts = " ".join(obj["prompt"] + " " + obj.get("rationale", "") for obj in parsed["image_prompts"])
     # More lenient - brand presence may vary
     if "AgentMark" not in all_prompts:
-        print(f"   Note: Brand name not directly in prompts (may be implicit)")
+        print("   Note: Brand name not directly in prompts (may be implicit)")
 
     # Professional voice → modern corporate style keywords
     first_prompt = parsed["image_prompts"][0]
-    style_keywords = " ".join(first_prompt.get("style_keywords", [])).lower()
+    " ".join(first_prompt.get("style_keywords", [])).lower()
     # More lenient - just check that style keywords exist
     assert len(first_prompt.get("style_keywords", [])) > 0, "Should have style keywords"
 
@@ -1457,7 +1457,7 @@ def test_image_prompt_agent_integration():
     # More lenient - just check visual direction has content
     assert len(vd_text) > 0, "Visual direction should have content"
 
-    print(f"\nOutput:")
+    print("\nOutput:")
     print(f"  status: {result.status} ✅")
     print(f"  campaign_name (from state): {state.campaign_name} ✅")
     print(f"  brand_name (from state): {state.brand_name} ✅")
@@ -1470,9 +1470,9 @@ def test_image_prompt_agent_integration():
               f"{style_kw} | "
               f"{len(prompt_obj['prompt'])} chars")
     print(f"  image_output length: {len(result.image_output)} chars ✅")
-    print(f"  output fields: 2 (visual_direction + image_prompts array) ✅")
-    print(f"  metadata (brand_name, brand_voice, etc.) read from state ✅")
-    print(f"\n✅ PASS: Full integration test successful")
+    print("  output fields: 2 (visual_direction + image_prompts array) ✅")
+    print("  metadata (brand_name, brand_voice, etc.) read from state ✅")
+    print("\n✅ PASS: Full integration test successful")
 
 
 # ==================== RUN ALL TESTS ====================
@@ -1546,39 +1546,39 @@ if __name__ == "__main__":
     print(f"Total Tests: {len(tests)}")
     print(f"✅ Passed: {passed}")
     print(f"❌ Failed: {failed}")
-    print(f"\nTest Coverage:")
-    print(f"  - Agent execution and output not empty ✓")
-    print(f"  - Valid JSON output ✓")
-    print(f"  - All top-level fields present (visual_direction + image_prompts) ✓")
-    print(f"  - image_prompts is non-empty list ✓")
-    print(f"  - All prompt sub-fields present (6 sub-fields per prompt) ✓")
-    print(f"  - DALL-E prompt minimum length (50+ chars) ✓")
-    print(f"  - Status updated to 'image_complete' ✓")
-    print(f"  - Brand name in prompt content (not top-level output) ✓")
-    print(f"  - Visual direction is non-empty string ✓")
-    print(f"  - Brand voice → visual style (all 4 voices) ✓")
-    print(f"  - Brand voice → color palette (all 4 voices) ✓")
-    print(f"  - Prompt count matches deliverables ✓")
-    print(f"  - Each prompt references its deliverable ✓")
-    print(f"  - Aspect ratio: email banner (16:9) ✓")
-    print(f"  - Aspect ratio: LinkedIn post (1:1) ✓")
-    print(f"  - Aspect ratio: Instagram story (9:16) ✓")
-    print(f"  - Text overlay uses copy headlines (not body copy) ✓")
-    print(f"  - Works without copy_output (fallback) ✓")
-    print(f"  - Raises on missing strategy_output ✓")
-    print(f"  - Industry influences prompt content (4 industries) ✓")
-    print(f"  - Positioning in visual direction ✓")
-    print(f"  - Market trends in visual direction ✓")
-    print(f"  - Pain points influence visual metaphors ✓")
-    print(f"  - Multi-brand prompt isolation ✓")
-    print(f"  - Fallback to channels when deliverables empty ✓")
-    print(f"  - No error field on success ✓")
-    print(f"  - Body copy excluded from text_overlay ✓")
-    print(f"  - Different deliverable types get unique prompts ✓")
-    print(f"  - Full integration test ✓")
+    print("\nTest Coverage:")
+    print("  - Agent execution and output not empty ✓")
+    print("  - Valid JSON output ✓")
+    print("  - All top-level fields present (visual_direction + image_prompts) ✓")
+    print("  - image_prompts is non-empty list ✓")
+    print("  - All prompt sub-fields present (6 sub-fields per prompt) ✓")
+    print("  - DALL-E prompt minimum length (50+ chars) ✓")
+    print("  - Status updated to 'image_complete' ✓")
+    print("  - Brand name in prompt content (not top-level output) ✓")
+    print("  - Visual direction is non-empty string ✓")
+    print("  - Brand voice → visual style (all 4 voices) ✓")
+    print("  - Brand voice → color palette (all 4 voices) ✓")
+    print("  - Prompt count matches deliverables ✓")
+    print("  - Each prompt references its deliverable ✓")
+    print("  - Aspect ratio: email banner (16:9) ✓")
+    print("  - Aspect ratio: LinkedIn post (1:1) ✓")
+    print("  - Aspect ratio: Instagram story (9:16) ✓")
+    print("  - Text overlay uses copy headlines (not body copy) ✓")
+    print("  - Works without copy_output (fallback) ✓")
+    print("  - Raises on missing strategy_output ✓")
+    print("  - Industry influences prompt content (4 industries) ✓")
+    print("  - Positioning in visual direction ✓")
+    print("  - Market trends in visual direction ✓")
+    print("  - Pain points influence visual metaphors ✓")
+    print("  - Multi-brand prompt isolation ✓")
+    print("  - Fallback to channels when deliverables empty ✓")
+    print("  - No error field on success ✓")
+    print("  - Body copy excluded from text_overlay ✓")
+    print("  - Different deliverable types get unique prompts ✓")
+    print("  - Full integration test ✓")
     print(f"  - Total: {len(tests)} image prompt tests")
-    print(f"  - Output fields: 2 (visual_direction + image_prompts array)")
-    print(f"  - Metadata (campaign_name, brand_name, etc.) read from state (not duplicated)")
+    print("  - Output fields: 2 (visual_direction + image_prompts array)")
+    print("  - Metadata (campaign_name, brand_name, etc.) read from state (not duplicated)")
 
     if failed == 0:
         print(f"\n🎉 ALL {len(tests)} TESTS PASSED!")

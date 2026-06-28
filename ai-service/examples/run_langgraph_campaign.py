@@ -113,14 +113,14 @@ def run_langgraph_campaign():
     print(f"📊 Next Step: {state_dict.get('next_step', 'N/A')}")
     
     # Revision counts
-    print(f"\n🔄 Revision Counts:")
+    print("\n🔄 Revision Counts:")
     print(f"   Research:  {state_dict.get('research_revision_count', 0)}/3")
     print(f"   Strategy:  {state_dict.get('strategy_revision_count', 0)}/3")
     print(f"   Copy:      {state_dict.get('copy_revision_count', 0)}/3")
     print(f"   Image:     {state_dict.get('image_revision_count', 0)}/3")
     
     # Agent outputs
-    print(f"\n📦 Agent Outputs:")
+    print("\n📦 Agent Outputs:")
     print(f"   ✅ Manager:    {'✓' if state_dict.get('manager_output') else '✗'} ({len(state_dict.get('manager_output', '')) if state_dict.get('manager_output') else 0} chars)")
     print(f"   ✅ Research:   {'✓' if state_dict.get('research_output') else '✗'} ({len(state_dict.get('research_output', '')) if state_dict.get('research_output') else 0} chars)")
     print(f"   ✅ Strategy:   {'✓' if state_dict.get('strategy_output') else '✗'} ({len(state_dict.get('strategy_output', '')) if state_dict.get('strategy_output') else 0} chars)")
@@ -137,7 +137,7 @@ def run_langgraph_campaign():
             quality_score = overall.get('quality_score', 0)
             status = review_data.get('status', 'N/A')
             
-            print(f"\n📈 Quality Review:")
+            print("\n📈 Quality Review:")
             print(f"   Score:  {quality_score}/100")
             print(f"   Status: {status}")
             
@@ -147,7 +147,7 @@ def run_langgraph_campaign():
             copy_score = review_data.get('copy_review', {}).get('score', 0)
             image_score = review_data.get('image_review', {}).get('score', 0)
             
-            print(f"\n📊 Individual Agent Scores:")
+            print("\n📊 Individual Agent Scores:")
             print(f"   Research:  {research_score}/100")
             print(f"   Strategy:  {strategy_score}/100")
             print(f"   Copy:      {copy_score}/100")

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
-from pydantic import BaseModel, Field, computed_field
-from typing import List, Dict, Optional, Literal, Union
+from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Literal
 
 
 # ==================== CHANNEL ENUM ====================
@@ -379,7 +379,7 @@ class CalendarActivity(BaseModel):
     day: str = Field(description="Day of week + date, e.g. 'Monday 2026-06-29'")
     channel: Channel
     content_type: str = Field(description="Format of content e.g. Reel, Story, Post, Ad, Email, Video")
-    description: str = Field(description="Specific task — action-oriented, 1-2 sentences")
+    description: str = Field(description="Detailed publishing instructions and execution directions (3-4 sentences). Explain exactly what the content contains, the visual setup, the key message, and step-by-step directions for the team.")
     caption_hook: str = Field(description="Opening line or hook for the content piece")
     effort: Literal["low", "medium", "high"]
     quick_win: bool = Field(description="True if task ships same day with no dependencies")

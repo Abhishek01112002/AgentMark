@@ -10,7 +10,6 @@ CAMPAIGN METADATA:
 - Brand Name: {brand_name}
 - Brand Voice: {brand_voice}
 - Campaign Brief: {brief}
-{human_feedback_section}
 
 STRATEGIC FOUNDATION:
 - Positioning Statement: {positioning}
@@ -256,3 +255,5 @@ QUALITY CHECKLIST:
 - segment_messaging entries have segment_name field
 - channel_messaging is an array, not a dict
 - Only campaign channels included
+
+{human_feedback_section}

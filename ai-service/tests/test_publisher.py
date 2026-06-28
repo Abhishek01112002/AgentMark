@@ -39,7 +39,7 @@ Run: pytest tests/test_publisher.py -v
 import sys
 from pathlib import Path
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -370,7 +370,7 @@ def test_publisher_output_is_valid_json():
     try:
         parsed = json.loads(result.publisher_output)
         assert isinstance(parsed, dict), "Parsed JSON should be a dictionary"
-        print(f"✅ PASS: publisher_output is valid JSON")
+        print("✅ PASS: publisher_output is valid JSON")
         print(f"   Keys: {list(parsed.keys())}")
     except json.JSONDecodeError as e:
         raise AssertionError(f"publisher_output is not valid JSON: {e}")
@@ -409,7 +409,7 @@ def test_all_top_level_fields_exist():
         assert field in parsed, f"Missing required field: '{field}'"
         assert parsed[field] is not None, f"Field '{field}' should not be None"
 
-    print(f"✅ PASS: All 7 top-level output fields exist")
+    print("✅ PASS: All 7 top-level output fields exist")
     for field in required_fields:
         print(f"   ✓ {field}")
 
@@ -436,8 +436,8 @@ def test_status_updated_to_completed():
     assert result.status == "completed", \
         f"Status should be 'completed', got: '{result.status}'"
 
-    print(f"✅ PASS: Status updated correctly")
-    print(f"   Before: review_complete")
+    print("✅ PASS: Status updated correctly")
+    print("   Before: review_complete")
     print(f"   After:  {result.status}")
 
 
@@ -461,7 +461,7 @@ def test_no_error_field_set_on_success():
     assert result.error is None, \
         f"error field should be None on success, got: '{result.error}'"
 
-    print(f"✅ PASS: No error field set")
+    print("✅ PASS: No error field set")
     print(f"   error: {result.error}")
 
 
@@ -492,7 +492,7 @@ def test_raises_when_manager_output_missing():
         except (ValueError, Exception):
             pass
 
-    print(f"✅ PASS: Raises correctly when manager_output is missing")
+    print("✅ PASS: Raises correctly when manager_output is missing")
 
 
 # ==================== TEST 8: Raises When strategy_output Missing ====================
@@ -522,7 +522,7 @@ def test_raises_when_strategy_output_missing():
         except (ValueError, Exception):
             pass
 
-    print(f"✅ PASS: Raises correctly when strategy_output is missing")
+    print("✅ PASS: Raises correctly when strategy_output is missing")
 
 
 # ==================== TEST 9: Score ≥80 → APPROVED_FOR_PUBLISHING ====================
@@ -546,8 +546,8 @@ def test_score_above_80_approved():
     assert parsed["publishing_decision"] == "APPROVED_FOR_PUBLISHING", \
         f"Score 87 should produce APPROVED_FOR_PUBLISHING, got: '{parsed['publishing_decision']}'"
 
-    print(f"✅ PASS: Score ≥80 correctly produces APPROVED_FOR_PUBLISHING")
-    print(f"   quality_score: 87/100")
+    print("✅ PASS: Score ≥80 correctly produces APPROVED_FOR_PUBLISHING")
+    print("   quality_score: 87/100")
     print(f"   publishing_decision: {parsed['publishing_decision']}")
 
 
@@ -572,8 +572,8 @@ def test_score_60_to_79_revisions_needed():
     assert parsed["publishing_decision"] == "REVISIONS_NEEDED", \
         f"Score 70 should produce REVISIONS_NEEDED, got: '{parsed['publishing_decision']}'"
 
-    print(f"✅ PASS: Score 60-79 correctly produces REVISIONS_NEEDED")
-    print(f"   quality_score: 70/100")
+    print("✅ PASS: Score 60-79 correctly produces REVISIONS_NEEDED")
+    print("   quality_score: 70/100")
     print(f"   publishing_decision: {parsed['publishing_decision']}")
 
 
@@ -598,8 +598,8 @@ def test_score_below_60_hold():
     assert parsed["publishing_decision"] == "HOLD", \
         f"Score 45 should produce HOLD, got: '{parsed['publishing_decision']}'"
 
-    print(f"✅ PASS: Score <60 correctly produces HOLD")
-    print(f"   quality_score: 45/100")
+    print("✅ PASS: Score <60 correctly produces HOLD")
+    print("   quality_score: 45/100")
     print(f"   publishing_decision: {parsed['publishing_decision']}")
 
 
@@ -625,7 +625,7 @@ def test_no_review_output_raises_error():
         print("❌ FAIL: Expected ValueError but no exception was raised")
         assert False, "publisher_agent should have raised ValueError"
     except ValueError as e:
-        print(f"✅ PASS: Missing review_output correctly raises ValueError")
+        print("✅ PASS: Missing review_output correctly raises ValueError")
         print(f"   Error: {str(e)[:80]}...")
 
     except Exception as e:
@@ -666,7 +666,7 @@ def test_decision_rationale_is_non_empty():
 
         print(f"   ✓ score={score}, decision={expected_decision}: rationale present ✓")
 
-    print(f"\n✅ PASS: decision_rationale is non-empty for all decision types")
+    print("\n✅ PASS: decision_rationale is non-empty for all decision types")
 
 
 # ==================== TEST 14: publishing_plan is Non-Empty List ====================
@@ -732,7 +732,7 @@ def test_each_channel_plan_has_required_subfields():
             assert channel_plan[subfield] is not None, \
                 f"Channel plan {i+1} field '{subfield}' should not be None"
 
-    print(f"✅ PASS: All channel plans have required sub-fields")
+    print("✅ PASS: All channel plans have required sub-fields")
     for cp in parsed["publishing_plan"]:
         print(f"   ✓ {cp['channel']}: priority={cp['priority']}, status={cp['status']}")
 
@@ -762,7 +762,7 @@ def test_publishing_plan_count_matches_channels():
     assert plan_count == expected_count, \
         f"Expected {expected_count} channel plans, got {plan_count}"
 
-    print(f"✅ PASS: Publishing plan count matches channels")
+    print("✅ PASS: Publishing plan count matches channels")
     print(f"   Channels: {custom_channels}")
     print(f"   Plans generated: {plan_count}")
 
@@ -796,7 +796,7 @@ def test_channel_priority_aligns_with_goal_lead_gen():
     assert plan_by_channel["email"]["priority"] == "HIGH", \
         f"Email should be HIGH priority for lead_gen, got: {plan_by_channel['email']['priority']}"
 
-    print(f"✅ PASS: Channel priorities correctly aligned for lead_gen goal")
+    print("✅ PASS: Channel priorities correctly aligned for lead_gen goal")
     for channel, cp in plan_by_channel.items():
         print(f"   {channel}: {cp['priority']}")
 
@@ -827,7 +827,7 @@ def test_channel_status_ready_when_copy_ready():
                 f"Channel '{channel}' should be READY when copy is ready, got: '{cp['status']}'"
             print(f"   ✓ {channel}: status=READY ✓")
 
-    print(f"\n✅ PASS: All channels with ready copy have status=READY")
+    print("\n✅ PASS: All channels with ready copy have status=READY")
 
 
 # ==================== TEST 19: Copy PENDING_ASSET Status When No copy_output ====================
@@ -858,7 +858,7 @@ def test_channel_status_pending_when_no_copy():
                 f"got: '{cp['status']}'"
             print(f"   ✓ {cp['channel']}: status=PENDING_ASSET ✓")
 
-    print(f"\n✅ PASS: Channels correctly marked PENDING_ASSET without copy_output")
+    print("\n✅ PASS: Channels correctly marked PENDING_ASSET without copy_output")
 
 
 # ==================== TEST 20: content_calendar Has Required Structure ====================
@@ -891,7 +891,7 @@ def test_content_calendar_has_required_structure():
     assert isinstance(calendar["weeks"], list), "weeks should be a list"
     assert len(calendar["weeks"]) >= 1, "weeks should have at least 1 entry"
 
-    print(f"✅ PASS: content_calendar has required structure")
+    print("✅ PASS: content_calendar has required structure")
     print(f"   total_weeks: {calendar['total_weeks']}")
     print(f"   campaign_start_date:  {calendar['campaign_start_date']}")
     print(f"   weeks count: {len(calendar['weeks'])}")
@@ -930,7 +930,7 @@ def test_each_calendar_week_has_required_subfields():
         assert len(week["activities"]) >= 1, \
             f"Week {i+1} should have at least one activity"
 
-    print(f"✅ PASS: All calendar weeks have required sub-fields")
+    print("✅ PASS: All calendar weeks have required sub-fields")
     for week in parsed["content_calendar"]["weeks"][:3]:
         print(f"   ✓ Week {i+1}: {week['week_label']} "
               f"({len(week['activities'])} activities)")
@@ -973,9 +973,9 @@ def test_calendar_weeks_count_matches_timeline():
     assert total_weeks == expected_weeks, \
         f"total_weeks should be {expected_weeks}, got: {total_weeks}"
 
-    print(f"✅ PASS: Calendar weeks correctly set to 4 (fixed)")
-    print(f"   Timeline phases: 4")
-    print(f"   Expected weeks: {expected_min_weeks}")
+    print("✅ PASS: Calendar weeks correctly set to 4 (fixed)")
+    print("   Timeline phases: 4")
+    print(f"   Expected weeks: {expected_weeks}")
     print(f"   Actual weeks: {total_weeks}")
 
 
@@ -1007,7 +1007,7 @@ def test_asset_checklist_has_required_structure():
     assert isinstance(checklist["visual_assets"], list), "visual_assets should be a list"
     assert isinstance(checklist["missing_assets"], list), "missing_assets should be a list"
 
-    print(f"✅ PASS: asset_checklist has required structure")
+    print("✅ PASS: asset_checklist has required structure")
     print(f"   copy_assets:    {len(checklist['copy_assets'])} items")
     print(f"   visual_assets:  {len(checklist['visual_assets'])} items")
     print(f"   missing_assets: {len(checklist['missing_assets'])} items")
@@ -1041,7 +1041,7 @@ def test_copy_assets_populated_from_copy_output():
         found = any(expected_channel in name for name in asset_names)
         assert found, f"copy_assets should include {expected_channel} copy"
 
-    print(f"✅ PASS: Copy assets correctly populated from copy_output")
+    print("✅ PASS: Copy assets correctly populated from copy_output")
     for asset in copy_assets:
         print(f"   ✓ {asset['asset']}: status={asset['status']}")
 
@@ -1085,7 +1085,7 @@ def test_visual_assets_populated_from_image_output():
         assert va["status"] == "READY", \
             f"Visual asset from image_output should be READY, got: '{va['status']}'"
 
-    print(f"✅ PASS: Visual assets correctly populated from image_output")
+    print("✅ PASS: Visual assets correctly populated from image_output")
     for va in visual_assets:
         print(f"   ✓ {va['asset']}: {va['aspect_ratio']}, status={va['status']}")
 
@@ -1116,8 +1116,8 @@ def test_visual_assets_empty_when_no_image_output():
     assert len(visual_assets) == 0, \
         f"visual_assets should be empty without image_output, got: {len(visual_assets)} items"
 
-    print(f"✅ PASS: visual_assets is empty when no image_output")
-    print(f"   visual_assets: [] ✓")
+    print("✅ PASS: visual_assets is empty when no image_output")
+    print("   visual_assets: [] ✓")
 
 
 # ==================== TEST 27: projected_metrics Has All Required Fields ====================
@@ -1156,7 +1156,7 @@ def test_projected_metrics_has_all_required_fields():
         assert isinstance(metrics[field], str) and len(metrics[field]) > 0, \
             f"projected_metrics.{field} should be a non-empty string"
 
-    print(f"✅ PASS: projected_metrics has all required fields")
+    print("✅ PASS: projected_metrics has all required fields")
     for field in required_fields:
         print(f"   ✓ {field}: {metrics[field]}")
 
@@ -1188,7 +1188,7 @@ def test_projected_metrics_vary_by_goal():
     assert len(unique_reach_values) > 1, \
         f"Different goals should produce different total_reach. Got: {metrics_by_goal}"
 
-    print(f"✅ PASS: Projected metrics vary by goal")
+    print("✅ PASS: Projected metrics vary by goal")
     for goal, reach in metrics_by_goal.items():
         print(f"   {goal}: total_reach='{reach}'")
 
@@ -1225,7 +1225,7 @@ def test_executive_summary_is_non_empty_and_contains_key_info():
     assert "Q3 Product Launch" in summary, \
         "executive_summary should mention the campaign name"
 
-    print(f"✅ PASS: executive_summary is non-empty and contains key info")
+    print("✅ PASS: executive_summary is non-empty and contains key info")
     print(f"   Length: {len(summary)} chars")
     print(f"   Preview: {summary[:120]}...")
 
@@ -1277,13 +1277,13 @@ def test_publisher_agent_integration():
         status="review_complete"
     )
 
-    print(f"Input:")
-    print(f"  campaign_name: Q3 Product Launch")
-    print(f"  brand_name:    AgentMark")
-    print(f"  industry:      saas")
-    print(f"  brand_voice:   professional")
-    print(f"  goal:          lead_gen")
-    print(f"  quality_score: 87/100")
+    print("Input:")
+    print("  campaign_name: Q3 Product Launch")
+    print("  brand_name:    AgentMark")
+    print("  industry:      saas")
+    print("  brand_voice:   professional")
+    print("  goal:          lead_gen")
+    print("  quality_score: 87/100")
     print(f"  channels:      {channels}")
     print(f"  deliverables:  {deliverables}")
 
@@ -1339,7 +1339,7 @@ def test_publisher_agent_integration():
     assert "AgentMark" in parsed["executive_summary"]
     assert "Q3 Product Launch" in parsed["executive_summary"]
 
-    print(f"\nOutput:")
+    print("\nOutput:")
     print(f"  status:              {result.status} ✅")
     print(f"  publishing_decision: {parsed['publishing_decision']} ✅")
     print(f"  publishing_plan:     {len(parsed['publishing_plan'])} channels ✅")
@@ -1353,7 +1353,7 @@ def test_publisher_agent_integration():
           f"ctr={metrics['estimated_ctr']} ✅")
     print(f"  executive_summary:   {len(parsed['executive_summary'])} chars ✅")
     print(f"  error:               {result.error} ✅")
-    print(f"\n✅ PASS: Full integration test successful")
+    print("\n✅ PASS: Full integration test successful")
 
 
 # ==================== RUN ALL TESTS ====================
@@ -1427,40 +1427,40 @@ if __name__ == "__main__":
     print(f"Total Tests: {len(tests)}")
     print(f"✅ Passed: {passed}")
     print(f"❌ Failed: {failed}")
-    print(f"\nTest Coverage:")
-    print(f"  - Agent execution and output not empty ✓")
-    print(f"  - Valid JSON output ✓")
-    print(f"  - All 7 top-level fields present ✓")
-    print(f"  - Status updated to 'completed' ✓")
-    print(f"  - No error field on success ✓")
-    print(f"  - Raises on missing manager_output ✓")
-    print(f"  - Raises on missing strategy_output ✓")
-    print(f"  - Score ≥80 → APPROVED_FOR_PUBLISHING ✓")
-    print(f"  - Score 60-79 → REVISIONS_NEEDED ✓")
-    print(f"  - Score <60 → HOLD ✓")
-    print(f"  - No review_output → default APPROVED ✓")
-    print(f"  - decision_rationale non-empty for all decisions ✓")
-    print(f"  - publishing_plan is non-empty list ✓")
-    print(f"  - Each channel plan has 8 required sub-fields ✓")
-    print(f"  - Plan count matches channels ✓")
-    print(f"  - Channel priority aligned with goal (lead_gen) ✓")
-    print(f"  - Status=READY when copy_readiness=True ✓")
-    print(f"  - Status=PENDING_ASSET without copy_output ✓")
-    print(f"  - content_calendar has total_weeks/campaign_start_date/weeks ✓")
-    print(f"  - Each calendar week has 3 required sub-fields ✓")
-    print(f"  - Calendar weeks fixed at 4 ✓")
-    print(f"  - asset_checklist has copy/visual/missing lists ✓")
-    print(f"  - Copy assets populated from copy_output ✓")
-    print(f"  - Visual assets populated from image_output ✓")
-    print(f"  - Visual assets empty without image_output ✓")
-    print(f"  - projected_metrics has all 6 required fields ✓")
-    print(f"  - Projected metrics vary by goal ✓")
-    print(f"  - executive_summary contains brand + campaign name ✓")
-    print(f"  - Full integration test ✓")
+    print("\nTest Coverage:")
+    print("  - Agent execution and output not empty ✓")
+    print("  - Valid JSON output ✓")
+    print("  - All 7 top-level fields present ✓")
+    print("  - Status updated to 'completed' ✓")
+    print("  - No error field on success ✓")
+    print("  - Raises on missing manager_output ✓")
+    print("  - Raises on missing strategy_output ✓")
+    print("  - Score ≥80 → APPROVED_FOR_PUBLISHING ✓")
+    print("  - Score 60-79 → REVISIONS_NEEDED ✓")
+    print("  - Score <60 → HOLD ✓")
+    print("  - No review_output → default APPROVED ✓")
+    print("  - decision_rationale non-empty for all decisions ✓")
+    print("  - publishing_plan is non-empty list ✓")
+    print("  - Each channel plan has 8 required sub-fields ✓")
+    print("  - Plan count matches channels ✓")
+    print("  - Channel priority aligned with goal (lead_gen) ✓")
+    print("  - Status=READY when copy_readiness=True ✓")
+    print("  - Status=PENDING_ASSET without copy_output ✓")
+    print("  - content_calendar has total_weeks/campaign_start_date/weeks ✓")
+    print("  - Each calendar week has 3 required sub-fields ✓")
+    print("  - Calendar weeks fixed at 4 ✓")
+    print("  - asset_checklist has copy/visual/missing lists ✓")
+    print("  - Copy assets populated from copy_output ✓")
+    print("  - Visual assets populated from image_output ✓")
+    print("  - Visual assets empty without image_output ✓")
+    print("  - projected_metrics has all 6 required fields ✓")
+    print("  - Projected metrics vary by goal ✓")
+    print("  - executive_summary contains brand + campaign name ✓")
+    print("  - Full integration test ✓")
     print(f"  - Total: {len(tests)} publisher tests")
-    print(f"  - Output fields: 7 (decision + rationale + plan + calendar + checklist + metrics + summary)")
-    print(f"  - Required inputs: manager_output + strategy_output")
-    print(f"  - Optional inputs: copy_output + image_output + review_output (safe defaults)")
+    print("  - Output fields: 7 (decision + rationale + plan + calendar + checklist + metrics + summary)")
+    print("  - Required inputs: manager_output + strategy_output")
+    print("  - Optional inputs: copy_output + image_output + review_output (safe defaults)")
 
     if failed == 0:
         print(f"\n🎉 ALL {len(tests)} TESTS PASSED!")

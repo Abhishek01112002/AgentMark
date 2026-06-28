@@ -17,6 +17,7 @@ import TopNav from '../../shared/topNav/TopNav';
 import DeleteCampaignModal from './DeleteCampaignModal';
 import api from '../../../services/api';
 import toast from 'react-hot-toast';
+import { formatDDMonYYYY } from '../../../utils/formatDate';
 
 type StatusTone = 'green' | 'neutral' | 'warning' | 'danger';
 type ScoreTone = 'green' | 'warning' | 'neutral';
@@ -120,8 +121,7 @@ const ProjectDetailContent: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return formatDDMonYYYY(new Date(dateString));
   };
 
   const getCampaignIcon = (status: string) => {

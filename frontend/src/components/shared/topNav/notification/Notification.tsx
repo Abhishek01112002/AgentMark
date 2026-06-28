@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
 import { Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { formatDDMonYYYY } from '../../../../utils/formatDate';
 
 const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
   success: { icon: 'task_alt', bg: 'bg-secondary-container/20', color: 'text-secondary' },
@@ -111,7 +112,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
                           {notification.title}
                         </p>
                         <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
-                          {new Date(notification.createdAt).toLocaleString()}
+                          {(() => {
+                            const d = new Date(notification.createdAt);
+                            return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                          })()}
                         </span>
                       </div>
                       <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">

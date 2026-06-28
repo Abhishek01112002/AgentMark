@@ -2,6 +2,9 @@
 OpenAI LLM Client Implementation
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import os
 import time
 from typing import Type, TypeVar
@@ -48,7 +51,6 @@ class OpenAIClient(BaseLLMClient):
 
     def generate_structured(self, prompt: str, response_model: Type[T], temperature: float = 0.7, max_tokens: int = 4000) -> T:
         max_retries = 3
-        base_delay = 2.0
 
         for attempt in range(max_retries):
             try:
@@ -78,12 +80,12 @@ class OpenAIClient(BaseLLMClient):
 
             except Exception as e:
                 error_msg = str(e)
-                print(f"\n❌ LLM Error (Attempt {attempt + 1}/{max_retries}): {error_msg[:100]}")
+                logger.info(f"\n❌ LLM Error (Attempt {attempt + 1}/{max_retries}): {error_msg[:100]}")
 
                 if attempt < max_retries - 1:
-                    print(f"🔄 Retrying with adjusted temperature...")
+                    logger.info("🔄 Retrying with adjusted temperature...")
                     temperature = max(0.1, temperature - 0.2)
                     time.sleep(2)
                 else:
-                    print(f"\n💥 All retries exhausted for OpenAI structured generation")
+                    logger.info("\n💥 All retries exhausted for OpenAI structured generation")
                     raise Exception(f"OpenAI structured generation failed after {max_retries} attempts: {error_msg}")

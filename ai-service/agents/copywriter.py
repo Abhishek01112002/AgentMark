@@ -48,6 +48,9 @@ Copywriter = LLM-Powered Creative Engine
 - Uses prompt template from utils/prompts/copywriter_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 import json
@@ -87,13 +90,13 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     6. Update state with copy_output and mark status as complete
     """
 
-    print("\n" + "=" * 80)
-    print("✍️  COPYWRITER AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✍️  COPYWRITER AGENT ACTIVATED")
+    logger.info("=" * 80)
 
     # ========== STEP 1: READ STRATEGY OUTPUT (PRIMARY INPUT) ==========
-    print("\n[STEP 1] Reading strategy output (PRIMARY copy source)...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading strategy output (PRIMARY copy source)...")
+    logger.info("-" * 80)
 
     if not state.strategy_output:
         raise ValueError("strategy_output is required - Copywriter needs Strategy insights")
@@ -116,36 +119,36 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     deliverables = execution.get("deliverables", [])
     channels = normalize_channel_list(execution.get("channels", []))
 
-    print(f"✓ Positioning: {positioning[:60]}...")
-    print(f"✓ Key Messages: {len(key_messages)} found")
-    print(f"✓ Content Pillars: {len(content_pillars)} defined")
-    print(f"✓ Audience Segments: {len(audience_segments)} identified")
-    print(f"✓ Timeline Phases: {len(timeline)}")
-    print(f"✓ Inferred Goal: {inferred_goal}")
-    print(f"✓ Deliverables: {deliverables}")
-    print(f"✓ Channels: {channels}")
+    logger.info(f"✓ Positioning: {positioning[:60]}...")
+    logger.info(f"✓ Key Messages: {len(key_messages)} found")
+    logger.info(f"✓ Content Pillars: {len(content_pillars)} defined")
+    logger.info(f"✓ Audience Segments: {len(audience_segments)} identified")
+    logger.info(f"✓ Timeline Phases: {len(timeline)}")
+    logger.info(f"✓ Inferred Goal: {inferred_goal}")
+    logger.info(f"✓ Deliverables: {deliverables}")
+    logger.info(f"✓ Channels: {channels}")
 
     # ========== STEP 2: READ STATE METADATA ==========
-    print("\n[STEP 2] Reading campaign metadata from state...")
-    print("-" * 80)
+    logger.info("\n[STEP 2] Reading campaign metadata from state...")
+    logger.info("-" * 80)
 
     campaign_name = state.campaign_name
     brand_name = state.brand_name
     brand_voice = state.brand_voice
     brief = state.brief or f"Marketing campaign for {brand_name}"
 
-    print(f"✓ Campaign: {campaign_name}")
-    print(f"✓ Brand: {brand_name}")
-    print(f"✓ Brand Voice: {brand_voice}")
-    print(f"✓ Brief: {brief[:60]}...")
+    logger.info(f"✓ Campaign: {campaign_name}")
+    logger.info(f"✓ Brand: {brand_name}")
+    logger.info(f"✓ Brand Voice: {brand_voice}")
+    logger.info(f"✓ Brief: {brief[:60]}...")
 
     # ========== STEP 3: EXTRACT RESEARCH INSIGHTS ==========
-    print("\n[STEP 3] Extracting research insights for copy context...")
-    print("-" * 80)
+    logger.info("\n[STEP 3] Extracting research insights for copy context...")
+    logger.info("-" * 80)
 
     market_analysis = research_foundation.get("market_analysis", {})
     audience_insights = research_foundation.get("audience_insights", {})
-    competitor_analysis = research_foundation.get("competitor_analysis", {})
+    research_foundation.get("competitor_analysis", {})
 
     pain_points = audience_insights.get("pain_points", [])
     motivations = audience_insights.get("motivations", [])
@@ -153,16 +156,16 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     growth_rate = market_analysis.get("growth_rate", "")
     competitive_advantage = competitive_differentiation.get("competitive_advantage", "")
 
-    print(f"✓ Pain Points ({len(pain_points)}): {pain_points[:2]}")
-    print(f"✓ Motivations ({len(motivations)}): {motivations[:2]}")
-    print(f"✓ Market Trends ({len(market_trends)}): {market_trends[:2]}")
-    print(f"✓ Growth Rate: {growth_rate}")
-    print(f"✓ Competitive Advantage: {competitive_advantage[:60]}...")
+    logger.info(f"✓ Pain Points ({len(pain_points)}): {pain_points[:2]}")
+    logger.info(f"✓ Motivations ({len(motivations)}): {motivations[:2]}")
+    logger.info(f"✓ Market Trends ({len(market_trends)}): {market_trends[:2]}")
+    logger.info(f"✓ Growth Rate: {growth_rate}")
+    logger.info(f"✓ Competitive Advantage: {competitive_advantage[:60]}...")
 
     # ========== STEP 4: GENERATE COPY WITH LLM ==========
-    print("\n[STEP 4] Generating copy with LLM...")
-    print("-" * 80)
-    print("✍️  AI Copywriter crafting channel-specific copy...")
+    logger.info("\n[STEP 4] Generating copy with LLM...")
+    logger.info("-" * 80)
+    logger.info("✍️  AI Copywriter crafting channel-specific copy...")
 
     # Initialize LLM client
     llm = get_llm_client()
@@ -183,9 +186,11 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         "bold": "challenge, disrupt, provocative, dare, game-changer",
         "luxury": "exclusive, premium, sophisticated, curated, elite",
         "casual": "simple, real, honest, straightforward, no-nonsense",
-        "authoritative": "leading, authoritative, definitive, trusted, expert"
+        "inspirational": "uplifting, vision, potential, inspire, future",
+        "empathetic": "understand, support, care, community, empathy",
+        "trustworthy": "reliable, secure, honest, transparent, verified"
     }
-    voice_keywords = voice_keywords_map.get(brand_voice, "clear, compelling, direct")
+    voice_keywords = voice_keywords_map.get(brand_voice, f"{brand_voice}, authentic, natural")
 
     # Format human revision feedback if copywriter is targeted for revision
     is_human_revision = bool(state.human_feedback and state.human_revision_target == "copywriter")
@@ -250,14 +255,14 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         deliverables_json=json.dumps(deliverables)
     )
 
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
     # Revision runs use lower temperature (less drift) and higher token budget
     # (feedback section adds extra tokens, need headroom for full output)
     revision_temperature = 0.3 if is_human_revision else 0.7
     revision_max_tokens = 6000 if is_human_revision else 4000
 
     if is_human_revision:
-        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
     # Get structured LLM response with error handling
     copy_output, state = safe_llm_call(
@@ -273,7 +278,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     # Even with surgical mode instructions, LLMs can occasionally drop a channel.
     # This layer detects dropped channels and restores them from the previous copy.
     if is_human_revision and state.copy_output:
-        print("\n[MERGE] Running post-revision safety check...")
+        logger.info("\n[MERGE] Running post-revision safety check...")
         try:
             previous = CopywriterOutput.model_validate_json(state.copy_output)
             restored = []
@@ -281,53 +286,53 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
                 if chan_enum in previous.copies and chan_enum not in copy_output.copies:
                     copy_output.copies[chan_enum] = previous.copies[chan_enum]
                     restored.append(chan_enum.value)
-                    print(f"   ⚠️  RESTORED '{chan_enum.value}' — LLM dropped it during revision, restoring from previous copy")
+                    logger.info(f"   ⚠️  RESTORED '{chan_enum.value}' — LLM dropped it during revision, restoring from previous copy")
             if not restored:
-                print("   ✅ All channels intact — no restoration needed")
+                logger.info("   ✅ All channels intact — no restoration needed")
             else:
-                print(f"   ✅ Restored {len(restored)} channel(s): {', '.join(restored)}")
+                logger.info(f"   ✅ Restored {len(restored)} channel(s): {', '.join(restored)}")
         except Exception as merge_err:
-            print(f"   ⚠️  Merge check failed (non-critical): {merge_err}")
+            logger.info(f"   ⚠️  Merge check failed (non-critical): {merge_err}")
 
     # ========== STEP 5: DISPLAY COPY SUMMARY ==========
-    print("\n[STEP 5] Copy generated!")
-    print("-" * 80)
-    print("✅ Copy generated by LLM!")
+    logger.info("\n[STEP 5] Copy generated!")
+    logger.info("-" * 80)
+    logger.info("✅ Copy generated by LLM!")
 
     # Display copy for each channel in the campaign
     for channel in channels:
         normalized = normalize_channel_name(channel)
         if normalized is None:
-            print(f"   ⚠️  Unknown channel '{channel}' — skipping")
+            logger.info(f"   ⚠️  Unknown channel '{channel}' — skipping")
             continue
         channel_enum = Channel(normalized)
         channel_copy = copy_output.copies.get(channel_enum)
         if channel_copy:
-            print(f"\n📝 {channel.title()} Copy:")
+            logger.info(f"\n📝 {channel.title()} Copy:")
             if hasattr(channel_copy, 'subject'):
-                print(f"   Subject: {channel_copy.subject}")
-            print(f"   Headline: {channel_copy.headline[:60]}...")
-            print(f"   CTAs: primary={channel_copy.ctas.primary}, secondary={channel_copy.ctas.secondary}")
+                logger.info(f"   Subject: {channel_copy.subject}")
+            logger.info(f"   Headline: {channel_copy.headline[:60]}...")
+            logger.info(f"   CTAs: primary={channel_copy.ctas.primary}, secondary={channel_copy.ctas.secondary}")
 
-    print("\n🏗️  Messaging Framework:")
+    logger.info("\n🏗️  Messaging Framework:")
     framework = copy_output.messaging_framework
-    print(f"   Brand Promise: {framework.brand_promise[:60]}...")
-    print(f"   Segment Messages: {len(framework.segment_messaging)}")
-    print(f"   Channel Messaging: {len(framework.channel_messaging)}")
+    logger.info(f"   Brand Promise: {framework.brand_promise[:60]}...")
+    logger.info(f"   Segment Messages: {len(framework.segment_messaging)}")
+    logger.info(f"   Channel Messaging: {len(framework.channel_messaging)}")
 
-    print("\n✅ Strategic Alignment:")
+    logger.info("\n✅ Strategic Alignment:")
     alignment = copy_output.strategic_alignment
-    print(f"   Positioning Used: {alignment.positioning_used[:50]}...")
-    print(f"   Key Messages Count: {alignment.key_messages_count}")
-    print(f"   Deliverables: {alignment.deliverables}")
+    logger.info(f"   Positioning Used: {alignment.positioning_used[:50]}...")
+    logger.info(f"   Key Messages Count: {alignment.key_messages_count}")
+    logger.info(f"   Deliverables: {alignment.deliverables}")
 
-    print("\n🚦 Copy Readiness:")
+    logger.info("\n🚦 Copy Readiness:")
     for channel, ready in copy_output.copy_readiness.items():
         status_icon = "✅" if ready else "❌"
-        print(f"   {status_icon} {channel}: {ready}")
+        logger.info(f"   {status_icon} {channel}: {ready}")
 
     # Validate all requested channels have copy
-    print("\n🔍 Validating channel coverage...")
+    logger.info("\n🔍 Validating channel coverage...")
     generated = set(copy_output.copies.keys())
     requested = set()
     for c in channels:
@@ -340,21 +345,21 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         raise ValueError(f"Copywriter failed to generate copy for: {missing_names}")
 
     # ========== STEP 6: WRITE TO STATE ==========
-    print("\n[STEP 6] Writing to state...")
-    print("-" * 80)
+    logger.info("\n[STEP 6] Writing to state...")
+    logger.info("-" * 80)
 
     copy_output_json = copy_output.model_dump_json(indent=2)
 
     state.copy_output = copy_output_json
     state.status = "copy_complete"
 
-    print("✅ State updated:")
-    print(f"   copy_output: {len(copy_output_json)} characters")
-    print(f"   status: {state.status}")
+    logger.info("✅ State updated:")
+    logger.info(f"   copy_output: {len(copy_output_json)} characters")
+    logger.info(f"   status: {state.status}")
 
-    print("\n" + "=" * 80)
-    print("✅ COPYWRITER AGENT COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ COPYWRITER AGENT COMPLETE")
+    logger.info("=" * 80)
 
     return state
 
@@ -362,8 +367,8 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Copywriter Agent, run: python examples/run_copywriter.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Copywriter Agent, run: python examples/run_copywriter.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("=" * 80)

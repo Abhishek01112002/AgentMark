@@ -106,7 +106,10 @@ const CampaignResultPage: React.FC = () => {
     };
 
     return {
-      copyData: getOutputField('copy_output') || getOutputField('copyOutput'),
+      copyData: (() => {
+        const rawCopy = getOutputField('copy_output') || getOutputField('copyOutput');
+        return rawCopy && rawCopy.copies ? { ...rawCopy, ...rawCopy.copies } : rawCopy;
+      })(),
       strategyData: getOutputField('strategy_output') || getOutputField('strategyOutput'),
       imageData: getOutputField('image_output') || getOutputField('imageOutput'),
       managerData: getOutputField('manager_output') || getOutputField('managerOutput'),

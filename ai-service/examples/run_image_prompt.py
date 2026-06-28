@@ -120,7 +120,7 @@ def main():
 
     image_output = json.loads(state.image_output)
 
-    print(f"\n✅ Image Prompt Agent Completed Successfully!")
+    print("\n✅ Image Prompt Agent Completed Successfully!")
     print(f"   Status: {state.status}")
     print(f"   Output Size: {len(state.image_output)} characters")
     print(f"   Total Prompts: {len(image_output.get('image_prompts', []))}")
@@ -148,7 +148,7 @@ def main():
         # Text overlay
         text_overlay = prompt_obj.get("text_overlay", {})
         if isinstance(text_overlay, dict):
-            print(f"\n  📝 Text Overlay:")
+            print("\n  📝 Text Overlay:")
             print(f"     Headline:  {text_overlay.get('headline', 'N/A')}")
             print(f"     CTA:       {text_overlay.get('cta', 'N/A')}")
             print(f"     Placement: {text_overlay.get('placement', 'N/A')}")
@@ -202,9 +202,9 @@ def main():
     print("\n" + "-" * 100)
     print("📊 PIPELINE SUMMARY")
     print("-" * 100)
-    print(f"\n   ✅ Manager:      Channels + Deliverables planned")
-    print(f"   ✅ Research:     Market intelligence gathered")
-    print(f"   ✅ Strategy:     Positioning + Key Messages defined")
+    print("\n   ✅ Manager:      Channels + Deliverables planned")
+    print("   ✅ Research:     Market intelligence gathered")
+    print("   ✅ Strategy:     Positioning + Key Messages defined")
     print(f"   ✅ Copywriter:   Channel copy generated for {len(copy_channels)} channels")
     print(f"   ✅ Image Prompt: {len(image_output['image_prompts'])} DALL-E 3 prompts generated")
     print(f"\n   Final Status:   {state.status}")

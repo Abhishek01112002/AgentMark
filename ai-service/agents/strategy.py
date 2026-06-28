@@ -42,6 +42,9 @@ Strategy = LLM-Powered Strategic Planning
 - Uses prompt template from utils/prompts/strategy_prompt.txt
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 import sys
 from pathlib import Path
 import json
@@ -82,13 +85,13 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     6. Update state with strategy output
     """
     
-    print("\n" + "=" * 80)
-    print("📋 STRATEGY AGENT ACTIVATED")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("📋 STRATEGY AGENT ACTIVATED")
+    logger.info("=" * 80)
     
     # ========== STEP 1: READ RESEARCH OUTPUT ==========
-    print("\n[STEP 1] Reading research output...")
-    print("-" * 80)
+    logger.info("\n[STEP 1] Reading research output...")
+    logger.info("-" * 80)
     
     if not state.research_output:
         raise ValueError("research_output is required")
@@ -104,16 +107,16 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     market_opportunities = research.get("market_opportunities", [])
     recommended_approach = research.get("recommended_approach", "")
     
-    print(f"✓ Market TAM: {market_analysis.get('total_addressable_market')}")
-    print(f"✓ Growth: {market_analysis.get('growth_rate')}")
-    print(f"✓ Competitors: {competitor_analysis.get('top_competitors')}")
-    print(f"✓ Differentiation: {competitor_analysis.get('differentiation_opportunity', '')[:50]}...")
-    print(f"✓ Audience Pain Points: {audience_insights.get('pain_points', [])[:2]}...")
-    print(f"✓ Recommended Approach: {recommended_approach[:60]}...")
+    logger.info(f"✓ Market TAM: {market_analysis.get('total_addressable_market')}")
+    logger.info(f"✓ Growth: {market_analysis.get('growth_rate')}")
+    logger.info(f"✓ Competitors: {competitor_analysis.get('top_competitors')}")
+    logger.info(f"✓ Differentiation: {competitor_analysis.get('differentiation_opportunity', '')[:50]}...")
+    logger.info(f"✓ Audience Pain Points: {audience_insights.get('pain_points', [])[:2]}...")
+    logger.info(f"✓ Recommended Approach: {recommended_approach[:60]}...")
     
     # ========== STEP 2: READ MANAGER OUTPUT ==========
-    print("\n[STEP 2] Reading manager output...")
-    print("-" * 80)
+    logger.info("\n[STEP 2] Reading manager output...")
+    logger.info("-" * 80)
     
     try:
         manager = json.loads(state.manager_output)
@@ -126,16 +129,16 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     deliverables = manager.get("deliverables", [])
     brief = state.brief or "No brief provided"
 
-    print(f"✓ Campaign: {campaign_name}")
-    print(f"✓ Brand: {brand_name}")
-    print(f"✓ Channels: {', '.join(channels)}")
-    print(f"✓ Deliverables: {', '.join(deliverables)}")
-    print(f"✓ Brief: {brief[:60]}...")
+    logger.info(f"✓ Campaign: {campaign_name}")
+    logger.info(f"✓ Brand: {brand_name}")
+    logger.info(f"✓ Channels: {', '.join(channels)}")
+    logger.info(f"✓ Deliverables: {', '.join(deliverables)}")
+    logger.info(f"✓ Brief: {brief[:60]}...")
     
     # ========== STEP 3: CREATE STRATEGY WITH LLM ==========
-    print("\n[STEP 3] Creating strategy with LLM...")
-    print("-" * 80)
-    print("🧠 Developing comprehensive marketing strategy with AI...")
+    logger.info("\n[STEP 3] Creating strategy with LLM...")
+    logger.info("-" * 80)
+    logger.info("🧠 Developing comprehensive marketing strategy with AI...")
     
     # Initialize LLM client
     llm = get_llm_client()
@@ -183,15 +186,15 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         human_feedback_section=human_feedback_section
     )
     
-    print("   Querying LLM with structured output...")
+    logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature prevents unnecessary field changes;
     # extra token budget handles the existing-strategy context
     revision_temperature = 0.3 if is_human_revision else 0.7
-    revision_max_tokens = 5000 if is_human_revision else 3000
+    revision_max_tokens = 8000
 
     if is_human_revision:
-        print(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
+        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
     # Get structured LLM response with error handling
     strategy_plan, state = safe_llm_call(
@@ -204,8 +207,8 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         return state  # Error already logged in state
     
     # ========== STEP 4: ENHANCE TIMELINE WITH DATES ==========
-    print("\n[STEP 4] Enhancing timeline with calculated dates...")
-    print("-" * 80)
+    logger.info("\n[STEP 4] Enhancing timeline with calculated dates...")
+    logger.info("-" * 80)
     
     today = datetime.now()
     
@@ -215,54 +218,53 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         
         # Get all phase keys from the timeline
         phase_keys = list(timeline.keys())
-        print(f"   Found {len(phase_keys)} phases: {phase_keys}")
+        logger.info(f"   Found {len(phase_keys)} phases: {phase_keys}")
         
         # Ensure we have exactly 4 phases
-        expected_phases = ["phase_1", "phase_2", "phase_3", "phase_4"]
         phase_count = 0
         
         # Phase 1
         if "phase_1" in timeline:
             if not timeline["phase_1"].start_date:
-                timeline["phase_1"].start_date = today.strftime("%Y-%m-%d")
+                timeline["phase_1"].start_date = today.strftime("%d-%B-%Y")
             if not timeline["phase_1"].end_date:
-                timeline["phase_1"].end_date = (today + timedelta(days=7)).strftime("%Y-%m-%d")
+                timeline["phase_1"].end_date = (today + timedelta(days=7)).strftime("%d-%B-%Y")
             phase_count += 1
         
         # Phase 2
         if "phase_2" in timeline:
             if not timeline["phase_2"].start_date:
-                timeline["phase_2"].start_date = (today + timedelta(days=7)).strftime("%Y-%m-%d")
+                timeline["phase_2"].start_date = (today + timedelta(days=7)).strftime("%d-%B-%Y")
             if not timeline["phase_2"].end_date:
-                timeline["phase_2"].end_date = (today + timedelta(days=21)).strftime("%Y-%m-%d")
+                timeline["phase_2"].end_date = (today + timedelta(days=14)).strftime("%d-%B-%Y")
             phase_count += 1
         
         # Phase 3
         if "phase_3" in timeline:
             if not timeline["phase_3"].start_date:
-                timeline["phase_3"].start_date = (today + timedelta(days=21)).strftime("%Y-%m-%d")
+                timeline["phase_3"].start_date = (today + timedelta(days=14)).strftime("%d-%B-%Y")
             if not timeline["phase_3"].end_date:
-                timeline["phase_3"].end_date = (today + timedelta(days=42)).strftime("%Y-%m-%d")
+                timeline["phase_3"].end_date = (today + timedelta(days=21)).strftime("%d-%B-%Y")
             phase_count += 1
         
         # Phase 4
         if "phase_4" in timeline:
             if not timeline["phase_4"].start_date:
-                timeline["phase_4"].start_date = (today + timedelta(days=42)).strftime("%Y-%m-%d")
+                timeline["phase_4"].start_date = (today + timedelta(days=21)).strftime("%d-%B-%Y")
             if not timeline["phase_4"].end_date:
-                timeline["phase_4"].end_date = "Ongoing"
+                timeline["phase_4"].end_date = (today + timedelta(days=28)).strftime("%d-%B-%Y")
             phase_count += 1
         
-        print(f"   ✓ Timeline dates set for {phase_count}/4 phases")
+        logger.info(f"   ✓ Timeline dates set for {phase_count}/4 phases")
         
         # Print dates for verification
         for phase_key in sorted(phase_keys):
             phase = timeline[phase_key]
-            print(f"     {phase_key}: {phase.start_date} to {phase.end_date}")
+            logger.info(f"     {phase_key}: {phase.start_date} to {phase.end_date}")
     
     # ========== STEP 4B: FIX BUDGET ALLOCATION ==========
-    print("\n[STEP 4B] Ensuring budget allocation is complete...")
-    print("-" * 80)
+    logger.info("\n[STEP 4B] Ensuring budget allocation is complete...")
+    logger.info("-" * 80)
     
     # Ensure execution and budget_allocation exist
     if strategy_plan.execution and strategy_plan.execution.budget_allocation:
@@ -278,54 +280,54 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         if not budget.community_management:
             budget.community_management = "10%"
         
-        print(f"   ✓ Budget allocation complete:")
-        print(f"     High Priority Channels: {budget.high_priority_channels}")
-        print(f"     Medium Priority Channels: {budget.medium_priority_channels}")
-        print(f"     Content Creation: {budget.content_creation}")
-        print(f"     Community Management: {budget.community_management}")
+        logger.info("   ✓ Budget allocation complete:")
+        logger.info(f"     High Priority Channels: {budget.high_priority_channels}")
+        logger.info(f"     Medium Priority Channels: {budget.medium_priority_channels}")
+        logger.info(f"     Content Creation: {budget.content_creation}")
+        logger.info(f"     Community Management: {budget.community_management}")
     
     # ========== STEP 5: DISPLAY STRATEGY SUMMARY ==========
-    print("\n[STEP 5] Strategy summary...")
-    print("-" * 80)
-    print("✅ Strategy created by LLM!")
+    logger.info("\n[STEP 5] Strategy summary...")
+    logger.info("-" * 80)
+    logger.info("✅ Strategy created by LLM!")
     
-    print(f"\n📍 Positioning:")
-    print(f"   {strategy_plan.positioning}")
+    logger.info("\n📍 Positioning:")
+    logger.info(f"   {strategy_plan.positioning}")
     
-    print(f"\n💬 Key Messages ({len(strategy_plan.key_messages)}):")
+    logger.info(f"\n💬 Key Messages ({len(strategy_plan.key_messages)}):")
     for i, msg in enumerate(strategy_plan.key_messages[:2], 1):
-        print(f"   {i}. {msg}")
+        logger.info(f"   {i}. {msg}")
     
-    print(f"\n🎯 Content Pillars ({len(strategy_plan.content_pillars)}):")
+    logger.info(f"\n🎯 Content Pillars ({len(strategy_plan.content_pillars)}):")
     for pillar in strategy_plan.content_pillars[:2]:
-        print(f"   • {pillar}")
+        logger.info(f"   • {pillar}")
     
-    print(f"\n📊 Channel Strategy:")
+    logger.info("\n📊 Channel Strategy:")
     for channel, details in list(strategy_plan.channel_strategy.items())[:2]:
-        print(f"   {channel}: {details.priority} priority - {details.rationale[:40]}...")
+        logger.info(f"   {channel}: {details.priority} priority - {details.rationale[:40]}...")
     
-    print(f"\n👥 Audience Segments ({len(strategy_plan.audience_segments)}):")
+    logger.info(f"\n👥 Audience Segments ({len(strategy_plan.audience_segments)}):")
     for seg in strategy_plan.audience_segments[:2]:
-        print(f"   • {seg.segment_name}")
+        logger.info(f"   • {seg.segment_name}")
     
-    print(f"\n🎯 Inferred Goal: {strategy_plan.inferred_goal}")
+    logger.info(f"\n🎯 Inferred Goal: {strategy_plan.inferred_goal}")
     
     # ========== STEP 6: WRITE TO STATE ==========
-    print("\n[STEP 6] Writing to state...")
-    print("-" * 80)
+    logger.info("\n[STEP 6] Writing to state...")
+    logger.info("-" * 80)
     
     strategy_output_json = strategy_plan.model_dump_json(indent=2)
     
     state.strategy_output = strategy_output_json
     state.status = "strategy_complete"
     
-    print("✅ State updated:")
-    print(f"   strategy_output: {len(strategy_output_json)} characters")
-    print(f"   status: {state.status}")
+    logger.info("✅ State updated:")
+    logger.info(f"   strategy_output: {len(strategy_output_json)} characters")
+    logger.info(f"   status: {state.status}")
     
-    print("\n" + "=" * 80)
-    print("✅ STRATEGY AGENT COMPLETE")
-    print("=" * 80)
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ STRATEGY AGENT COMPLETE")
+    logger.info("=" * 80)
     
     return state
 
@@ -333,8 +335,8 @@ def strategy_agent(state: CampaignState) -> CampaignState:
 # ==================== MAIN EXECUTION ====================
 
 if __name__ == "__main__":
-    print("\n" + "="*80)
-    print("⚠️  This is the agent module file.")
-    print("    To test the Strategy Agent, run: python examples/run_strategy.py")
-    print("    To customize input, edit: examples/inputs/campaign_input.json")
-    print("="*80)
+    logger.info("\n" + "="*80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Strategy Agent, run: python examples/run_strategy.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("="*80)

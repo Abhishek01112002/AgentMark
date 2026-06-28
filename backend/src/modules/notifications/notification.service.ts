@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import prisma from '../../db';
 
-export type NotificationType = 'success' | 'warning' | 'error' | 'info';
+type NotificationType = 'success' | 'warning' | 'error' | 'info';
 
 export type NotificationRow = {
   id: string;

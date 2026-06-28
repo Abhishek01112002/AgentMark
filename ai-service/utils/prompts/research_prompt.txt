@@ -17,7 +17,6 @@ CAMPAIGN CONTEXT:
 MANAGER'S STRATEGIC PLAN:
 - Recommended Channels: {channels}
 - Recommended Deliverables: {deliverables}
-{human_feedback_section}
 
 RESEARCH INSTRUCTIONS:
 Analyze the market landscape and provide insights across 5 key areas:
@@ -83,3 +82,5 @@ IMPORTANT GUIDELINES:
 - Make the recommended approach actionable and clear
 - Consider the brand voice when crafting the approach
 - Be data-driven and realistic in market estimates
+
+{human_feedback_section}
