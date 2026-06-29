@@ -154,8 +154,8 @@ def create_mock_copy_output(
         "copy_readiness": {
             "email_ready": all_ready,
             "linkedin_ready": all_ready,
-            "social_ready": all_ready,
-            "ads_ready": all_ready,
+            "facebook_ready": all_ready,
+            "google_ads_ready": all_ready,
             "messaging_framework_complete": all_ready
         },
         "email": {
@@ -567,13 +567,10 @@ def test_score_60_to_79_revisions_needed():
     print("=" * 80)
 
     state = create_full_state(quality_score=70)
-    result = publisher_agent(state)
-    parsed = json.loads(result.publisher_output)
+    with pytest.raises(ValueError, match="Publish blocked"):
+        publisher_agent(state)
 
-    assert parsed["publishing_decision"] == "REVISIONS_NEEDED", \
-        f"Score 70 should produce REVISIONS_NEEDED, got: '{parsed['publishing_decision']}'"
-
-    print("✅ PASS: Score 60-79 correctly produces REVISIONS_NEEDED")
+    print("✅ PASS: Score 60-79 correctly produces ValueError (Publish blocked)")
     print("   quality_score: 70/100")
     print(f"   publishing_decision: {parsed['publishing_decision']}")
 
