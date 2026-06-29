@@ -375,7 +375,7 @@ def test_email_copy_has_required_subfields():
     parsed = json.loads(result.copy_output)
     
     # Check if email exists
-    if "email" not in parsed or parsed["email"] is None:
+    if "email" not in parsed or parsed["copies"]["email"] is None:
         print("⚠️  SKIP: Email not in channels for this campaign")
         return
     
@@ -421,7 +421,7 @@ def test_linkedin_copy_has_required_subfields():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "linkedin" not in parsed or parsed["linkedin"] is None:
+    if "linkedin" not in parsed or parsed["copies"]["linkedin"] is None:
         print("⚠️  SKIP: LinkedIn not in channels for this campaign")
         return
         
@@ -461,7 +461,7 @@ def test_instagram_copy_has_required_subfields():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "instagram" not in parsed or parsed["instagram"] is None:
+    if "instagram" not in parsed or parsed["copies"]["instagram"] is None:
         print("⚠️  SKIP: Instagram not in channels for this campaign")
         return
         
@@ -500,7 +500,7 @@ def test_google_ads_copy_has_required_subfields():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "google_ads" not in parsed or parsed["google_ads"] is None:
+    if "google_ads" not in parsed or parsed["copies"]["google_ads"] is None:
         print("⚠️  SKIP: Google Ads not in channels for this campaign")
         return
         
@@ -616,13 +616,13 @@ def test_brand_name_appears_in_copy():
     # But verify brand name IS used in actual copy content (check any available channel)
     all_copy = ""
     if "email" in parsed.get("copies", {}) and parsed["copies"]["email"]:
-        all_copy += parsed["email"].get("subject", "") + " " + parsed["email"].get("body", "")
+        all_copy += parsed["copies"]["email"].get("subject", "") + " " + parsed["copies"]["email"].get("body", "")
     if "linkedin" in parsed.get("copies", {}) and parsed["copies"]["linkedin"]:
-        all_copy += " " + parsed["linkedin"].get("body", "")
+        all_copy += " " + parsed["copies"]["linkedin"].get("body", "")
     if "instagram" in parsed.get("copies", {}) and parsed["copies"]["instagram"]:
-        all_copy += " " + parsed["instagram"].get("body", "")
+        all_copy += " " + parsed["copies"]["instagram"].get("body", "")
     if "google_ads" in parsed.get("copies", {}) and parsed["copies"]["google_ads"]:
-        all_copy += " " + parsed["google_ads"].get("body", "")
+        all_copy += " " + parsed["copies"]["google_ads"].get("body", "")
 
     assert brand in all_copy, f"Brand name '{brand}' should appear in copy content"
 
@@ -648,11 +648,11 @@ def test_email_subject_line_length():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "email" not in parsed or parsed["email"] is None:
+    if "email" not in parsed or parsed["copies"]["email"] is None:
         print("⚠️  SKIP: Email not in channels for this campaign")
         return
     
-    subject = parsed["email"]["subject"]
+    subject = parsed["copies"]["email"]["subject"]
 
     assert len(subject) <= 60, f"Email subject should be <= 60 chars but got {len(subject)}: '{subject}'"
 
@@ -678,11 +678,11 @@ def test_instagram_headline_length():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "instagram" not in parsed or parsed["instagram"] is None:
+    if "instagram" not in parsed or parsed["copies"]["instagram"] is None:
         print("⚠️  SKIP: Instagram not in channels")
         return
         
-    headline = parsed["instagram"]["headline"]
+    headline = parsed["copies"]["instagram"]["headline"]
 
     assert len(headline) <= 150, f"Instagram headline should be <= 150 chars but got {len(headline)}"
 
@@ -708,11 +708,11 @@ def test_google_ads_headline_length():
     result = copywriter_agent(state)
     parsed = json.loads(result.copy_output)
     
-    if "google_ads" not in parsed or parsed["google_ads"] is None:
+    if "google_ads" not in parsed or parsed["copies"]["google_ads"] is None:
         print("⚠️  SKIP: Google Ads not in channels")
         return
         
-    headline = parsed["google_ads"]["headline"]
+    headline = parsed["copies"]["google_ads"]["headline"]
 
     assert len(headline) <= 60, f"Google Ads headline should be <= 60 chars but got {len(headline)}: '{headline}'"
 
@@ -798,11 +798,11 @@ def test_pain_points_appear_in_copy():
     # Pain points should show up in copy (check all available channels)
     combined = ""
     if "email" in parsed.get("copies", {}) and parsed["copies"]["email"]:
-        combined += parsed["email"].get("body", "").lower()
+        combined += parsed["copies"]["email"].get("body", "").lower()
     if "google_ads" in parsed.get("copies", {}) and parsed["copies"]["google_ads"]:
-        combined += " " + parsed["google_ads"].get("body", "").lower()
+        combined += " " + parsed["copies"]["google_ads"].get("body", "").lower()
     if "linkedin" in parsed.get("copies", {}) and parsed["copies"]["linkedin"]:
-        combined += " " + parsed["linkedin"].get("body", "").lower()
+        combined += " " + parsed["copies"]["linkedin"].get("body", "").lower()
 
     # The first pain point (or its words) should appear somewhere in copy
     pain_keywords = [w for w in unique_pain.lower().split() if len(w) > 4]
@@ -1055,7 +1055,7 @@ def test_different_goals_produce_different_email_subjects():
         parsed = json.loads(result.copy_output)
         
         if "email" in parsed.get("copies", {}) and parsed["copies"]["email"] is not None:
-            subjects[goal] = parsed["email"]["subject"]
+            subjects[goal] = parsed["copies"]["email"]["subject"]
 
     if len(subjects) < 2:
         print("⚠️  SKIP: Not enough email subjects generated across goals")
