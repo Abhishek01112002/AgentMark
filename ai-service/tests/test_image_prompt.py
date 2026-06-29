@@ -164,6 +164,23 @@ def create_mock_strategy_output(
                 "preferred_channels": ["LinkedIn", "Industry blogs", "Webinars"]
             }
         },
+                "content_calendar": {
+            "total_weeks": 4,
+            "weeks": [
+                {
+                    "week_number": 1,
+                    "theme": "Awareness",
+                    "posts": [
+                        {
+                            "channel": "linkedin",
+                            "content_type": "text",
+                            "topic": "Intro to AI",
+                            "objective": "engagement"
+                        }
+                    ]
+                }
+            ]
+        }
         "execution": {
             "channels": channels,
             "deliverables": deliverables,

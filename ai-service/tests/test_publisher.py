@@ -63,7 +63,7 @@ def create_mock_manager_output(
     Publisher reads: channels, deliverables.
     """
     if channels is None:
-        channels = ["linkedin", "email", "social", "ads"]
+        channels = ["linkedin", "email", "facebook", "google_ads"]
     if deliverables is None:
         deliverables = ["landing page", "webinar banner", "email series", "social ads"]
 
@@ -87,7 +87,7 @@ def create_mock_strategy_output(
     channel_strategy, execution.channels, execution.deliverables.
     """
     if channels is None:
-        channels = ["linkedin", "email", "social", "ads"]
+        channels = ["linkedin", "email", "facebook", "google_ads"]
     if deliverables is None:
         deliverables = ["landing page", "webinar banner", "email series", "social ads"]
     if timeline is None:
@@ -107,8 +107,8 @@ def create_mock_strategy_output(
         channel_strategy = {
             "linkedin": "thought leadership + lead magnets",
             "email": "drip nurture sequence",
-            "social": "engagement + retargeting",
-            "ads": "conversion campaigns"
+            "facebook": "engagement + retargeting",
+            "google_ads": "conversion campaigns"
         }
 
     return {
@@ -169,12 +169,12 @@ def create_mock_copy_output(
             "body": "LinkedIn body copy here...",
             "ctas": {"post_cta": "Tell us in the comments"}
         },
-        "social": {
+        "facebook": {
             "headline": "Unlock productivity with AgentMark",
             "body": "Social body copy here...",
             "ctas": {"twitter_cta": "Learn more →"}
         },
-        "ads": {
+        "google_ads": {
             "headline": "Get AgentMark free - results in 7 days",
             "body": "Ads body copy here...",
             "ctas": {"primary_cta": "Get Free Access"}
@@ -222,6 +222,7 @@ def create_mock_review_output(
         "overall_quality_score": overall_quality_score,
         "individual_threshold_met": True,
         "overall_threshold_met": overall_quality_score >= 80,
+        "can_publish": overall_quality_score >= 80,
         "research_review": {
             "approved": True,
             "issues": [],
@@ -272,7 +273,7 @@ def create_full_state(
     All upstream agents are simulated.
     """
     if channels is None:
-        channels = ["linkedin", "email", "social", "ads"]
+        channels = ["linkedin", "email", "facebook", "google_ads"]
     if deliverables is None:
         deliverables = ["landing page", "webinar banner", "email series", "social ads"]
 
@@ -751,7 +752,7 @@ def test_publishing_plan_count_matches_channels():
     print("TEST 16: Publishing Plan Count Matches Channels")
     print("=" * 80)
 
-    custom_channels = ["linkedin", "email", "social"]
+    custom_channels = ["linkedin", "email", "facebook"]
     state = create_full_state(channels=custom_channels)
     result = publisher_agent(state)
     parsed = json.loads(result.publisher_output)
@@ -783,7 +784,7 @@ def test_channel_priority_aligns_with_goal_lead_gen():
 
     state = create_full_state(
         inferred_goal="lead_gen",
-        channels=["linkedin", "email", "social", "ads"]
+        channels=["linkedin", "email", "facebook", "google_ads"]
     )
     result = publisher_agent(state)
     parsed = json.loads(result.publisher_output)
@@ -822,7 +823,7 @@ def test_channel_status_ready_when_copy_ready():
     for cp in parsed["publishing_plan"]:
         channel = cp["channel"]
         # Only check channels that have copy (email, linkedin, social, ads)
-        if channel in ["email", "linkedin", "social", "ads"]:
+        if channel in ["email", "linkedin", "facebook", "google_ads"]:
             assert cp["status"] == "READY", \
                 f"Channel '{channel}' should be READY when copy is ready, got: '{cp['status']}'"
             print(f"   ✓ {channel}: status=READY ✓")
@@ -850,7 +851,7 @@ def test_channel_status_pending_when_no_copy():
     result = publisher_agent(state)
     parsed = json.loads(result.publisher_output)
 
-    copy_channels = ["email", "linkedin", "social", "ads"]
+    copy_channels = ["email", "linkedin", "facebook", "google_ads"]
     for cp in parsed["publishing_plan"]:
         if cp["channel"] in copy_channels:
             assert cp["status"] == "PENDING_ASSET", \
@@ -1037,7 +1038,7 @@ def test_copy_assets_populated_from_copy_output():
         f"Should have at least 4 copy assets (email/linkedin/social/ads), got {len(copy_assets)}"
 
     asset_names = [a["asset"].lower() for a in copy_assets]
-    for expected_channel in ["email", "linkedin", "social", "ads"]:
+    for expected_channel in ["email", "linkedin", "facebook", "google_ads"]:
         found = any(expected_channel in name for name in asset_names)
         assert found, f"copy_assets should include {expected_channel} copy"
 
@@ -1245,7 +1246,7 @@ def test_publisher_agent_integration():
     print("TEST 30: Full Integration Test")
     print("=" * 80)
 
-    channels = ["linkedin", "email", "social", "ads"]
+    channels = ["linkedin", "email", "facebook", "google_ads"]
     deliverables = ["landing page", "webinar banner", "email series", "social ads"]
 
     manager_data = create_mock_manager_output(channels=channels, deliverables=deliverables)
