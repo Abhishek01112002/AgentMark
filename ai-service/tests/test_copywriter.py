@@ -189,6 +189,23 @@ def create_mock_strategy_output(
                 "content_creation": "15%",
                 "community_management": "5%"
             }
+        },
+        "content_calendar": {
+            "total_weeks": 4,
+            "weeks": [
+                {
+                    "week_number": 1,
+                    "theme": "Awareness",
+                    "posts": [
+                        {
+                            "channel": "linkedin",
+                            "content_type": "text",
+                            "topic": "Intro to AI",
+                            "objective": "engagement"
+                        }
+                    ]
+                }
+            ]
         }
     }
 
@@ -330,7 +347,7 @@ def test_all_top_level_fields_exist():
     
     # Check that at least one channel exists (dynamic channels)
     channel_fields = ["instagram", "facebook", "linkedin", "twitter", "tiktok", "youtube", "email", "google_ads"]
-    found_channels = [ch for ch in channel_fields if ch in parsed and parsed[ch] is not None]
+    found_channels = [ch for ch in channel_fields if ch in parsed.get("copies", {}) and parsed["copies"][ch] is not None]
     assert len(found_channels) > 0, "At least one channel should be present"
 
     print("✅ PASS: All top-level output fields exist")
@@ -362,7 +379,7 @@ def test_email_copy_has_required_subfields():
         print("⚠️  SKIP: Email not in channels for this campaign")
         return
     
-    email = parsed["email"]
+    email = parsed["copies"]["email"]
 
     required_subfields = ["subject", "headline", "body", "ctas"]
 
@@ -408,7 +425,7 @@ def test_linkedin_copy_has_required_subfields():
         print("⚠️  SKIP: LinkedIn not in channels for this campaign")
         return
         
-    linkedin = parsed["linkedin"]
+    linkedin = parsed["copies"]["linkedin"]
 
     required_subfields = ["headline", "body", "ctas"]
 
@@ -448,7 +465,7 @@ def test_instagram_copy_has_required_subfields():
         print("⚠️  SKIP: Instagram not in channels for this campaign")
         return
         
-    instagram = parsed["instagram"]
+    instagram = parsed["copies"]["instagram"]
 
     required_subfields = ["headline", "body", "ctas"]
 
@@ -487,7 +504,7 @@ def test_google_ads_copy_has_required_subfields():
         print("⚠️  SKIP: Google Ads not in channels for this campaign")
         return
         
-    google_ads = parsed["google_ads"]
+    google_ads = parsed["copies"]["google_ads"]
 
     required_subfields = ["headline", "body", "ctas"]
 
@@ -598,13 +615,13 @@ def test_brand_name_appears_in_copy():
 
     # But verify brand name IS used in actual copy content (check any available channel)
     all_copy = ""
-    if "email" in parsed and parsed["email"]:
+    if "email" in parsed.get("copies", {}) and parsed["copies"]["email"]:
         all_copy += parsed["email"].get("subject", "") + " " + parsed["email"].get("body", "")
-    if "linkedin" in parsed and parsed["linkedin"]:
+    if "linkedin" in parsed.get("copies", {}) and parsed["copies"]["linkedin"]:
         all_copy += " " + parsed["linkedin"].get("body", "")
-    if "instagram" in parsed and parsed["instagram"]:
+    if "instagram" in parsed.get("copies", {}) and parsed["copies"]["instagram"]:
         all_copy += " " + parsed["instagram"].get("body", "")
-    if "google_ads" in parsed and parsed["google_ads"]:
+    if "google_ads" in parsed.get("copies", {}) and parsed["copies"]["google_ads"]:
         all_copy += " " + parsed["google_ads"].get("body", "")
 
     assert brand in all_copy, f"Brand name '{brand}' should appear in copy content"
@@ -740,8 +757,8 @@ def test_inferred_goal_determines_cta_strategy():
         # Combine all CTA text across available channels
         all_ctas = ""
         for channel in ["email", "linkedin", "instagram", "google_ads"]:
-            if channel in parsed and parsed[channel]:
-                ctas = parsed[channel].get("ctas", {})
+            if channel in parsed.get("copies", {}) and parsed["copies"][channel]:
+                ctas = parsed["copies"][channel].get("ctas", {})
                 all_ctas += " ".join([str(ctas.get(k, "")) for k in ["primary", "secondary", "tertiary"]])
 
         if any(kw in all_ctas for kw in expected_keywords):
@@ -780,11 +797,11 @@ def test_pain_points_appear_in_copy():
 
     # Pain points should show up in copy (check all available channels)
     combined = ""
-    if "email" in parsed and parsed["email"]:
+    if "email" in parsed.get("copies", {}) and parsed["copies"]["email"]:
         combined += parsed["email"].get("body", "").lower()
-    if "google_ads" in parsed and parsed["google_ads"]:
+    if "google_ads" in parsed.get("copies", {}) and parsed["copies"]["google_ads"]:
         combined += " " + parsed["google_ads"].get("body", "").lower()
-    if "linkedin" in parsed and parsed["linkedin"]:
+    if "linkedin" in parsed.get("copies", {}) and parsed["copies"]["linkedin"]:
         combined += " " + parsed["linkedin"].get("body", "").lower()
 
     # The first pain point (or its words) should appear somewhere in copy
@@ -1002,7 +1019,7 @@ def test_copy_readiness_flags_all_channels():
 
     # Verify internal consistency: if readiness is True, copy must exist; if False, copy must be null
     for flag in channel_flags:
-        copy_field = parsed.get(flag)
+        copy_field = parsed.get("copies", {}).get(flag)
         if readiness[flag]:
             assert copy_field is not None, f"Copy should be generated for ready channel {flag}"
         else:
@@ -1037,7 +1054,7 @@ def test_different_goals_produce_different_email_subjects():
         result = copywriter_agent(state)
         parsed = json.loads(result.copy_output)
         
-        if "email" in parsed and parsed["email"] is not None:
+        if "email" in parsed.get("copies", {}) and parsed["copies"]["email"] is not None:
             subjects[goal] = parsed["email"]["subject"]
 
     if len(subjects) < 2:
