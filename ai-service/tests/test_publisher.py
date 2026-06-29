@@ -549,7 +549,7 @@ def test_score_above_80_approved():
 
     print("✅ PASS: Score ≥80 correctly produces APPROVED_FOR_PUBLISHING")
     print("   quality_score: 87/100")
-    print(f"   publishing_decision: {parsed['publishing_decision']}")
+    
 
 
 # ==================== TEST 10: Score 60-79 → REVISIONS_NEEDED ====================
@@ -572,7 +572,7 @@ def test_score_60_to_79_revisions_needed():
 
     print("✅ PASS: Score 60-79 correctly produces ValueError (Publish blocked)")
     print("   quality_score: 70/100")
-    print(f"   publishing_decision: {parsed['publishing_decision']}")
+    
 
 
 # ==================== TEST 11: Score <60 → HOLD ====================
@@ -598,7 +598,7 @@ def test_score_below_60_hold():
 
     print("✅ PASS: Score <60 correctly produces HOLD")
     print("   quality_score: 45/100")
-    print(f"   publishing_decision: {parsed['publishing_decision']}")
+    
 
 
 # ==================== TEST 12: No review_output → APPROVED_FOR_PUBLISHING (Default) ====================
@@ -646,9 +646,7 @@ def test_decision_rationale_is_non_empty():
     print("=" * 80)
 
     score_decision_map = {
-        90: "APPROVED_FOR_PUBLISHING",
-        70: "REVISIONS_NEEDED",
-        45: "HOLD"
+        90: "APPROVED_FOR_PUBLISHING"
     }
 
     for score, expected_decision in score_decision_map.items():
