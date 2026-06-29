@@ -333,6 +333,15 @@ const NewCampaignContent: React.FC = () => {
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
                 }}
+                onTouchStart={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
+                }}
+                onTouchEnd={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                }}
+                onTouchCancel={(e) => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                }}
               >
                 <Plus size={14} />
                 New
@@ -533,6 +542,9 @@ const NewCampaignContent: React.FC = () => {
             style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: '#6366F1', color: '#F1F1F3' }}
             onMouseEnter={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
             onMouseLeave={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
+            onTouchStart={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
+            onTouchEnd={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
+            onTouchCancel={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
           >
             {isCreating ? (
               <>

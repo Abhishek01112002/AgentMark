@@ -195,6 +195,19 @@ def research_agent(state: CampaignState) -> CampaignState:
             "\n".join(f"- {s}" for s in result_2.snippets)
         )
 
+    # Collect all sources for UI
+    all_sources = []
+    for result, qtype in [(result_1, "market"), (result_2, "competitor")]:
+        if result.success:
+            for src in result.sources:
+                all_sources.append({
+                    "url": src.url,
+                    "title": src.title,
+                    "domain": src.domain,
+                    "snippet": src.snippet,
+                    "query_type": qtype
+                })
+
     if context_parts:
         prompt += "\n\n" + "\n\n".join(context_parts)
     
@@ -217,6 +230,9 @@ def research_agent(state: CampaignState) -> CampaignState:
     
     if research_data is None:
         return state  # Error already logged in state
+
+    # Attach LiteRAG sources to the output
+    research_data.literas_sources = all_sources
     
     # ========== STEP 3: DISPLAY FINDINGS ==========
     logger.info("\n[STEP 3] Research insights generated!")

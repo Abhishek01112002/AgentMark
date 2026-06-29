@@ -98,6 +98,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Primary Goal: {primary_goal}")
     logger.info(f"✓ Target Audience: {target_audience}")
     logger.info(f"✓ Brand Voice: {brand_voice}")
+    logger.info(f"✓ Client Memory Context: {state.client_memory_context}")
     
     # ========== STEP 2: ANALYZE & PLAN USING LLM ==========
     logger.info("\n[STEP 2] Manager analyzing campaign parameters with LLM...")
@@ -115,7 +116,8 @@ def manager_agent(state: CampaignState) -> CampaignState:
         industry=industry,
         primary_goal=primary_goal,
         target_audience=target_audience,
-        brand_voice=brand_voice
+        brand_voice=brand_voice,
+        client_memory_context=state.client_memory_context or "None provided"
     )
     
     logger.info("   Querying LLM with structured output...")

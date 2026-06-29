@@ -132,6 +132,7 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         strategy_revision_count=payload.strategy_revision_count or 0,
         copy_revision_count=payload.copy_revision_count or 0,
         image_revision_count=payload.image_revision_count or 0,
+        client_memory_context=payload.client_memory_context,
     )
 
     # Retrieve the pre-built workflow from app.state (set at startup via lifespan)

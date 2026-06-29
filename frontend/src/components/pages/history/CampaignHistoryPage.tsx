@@ -293,7 +293,7 @@ const CampaignHistoryContent: React.FC = () => {
                 ) : (
                   <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse" style={{ minWidth: 700 }}>
+                      <table className="w-full text-left border-collapse" style={{ minWidth: 500 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
                             <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>

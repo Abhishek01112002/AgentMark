@@ -82,6 +82,12 @@ class CampaignState(BaseModel):
         description="Campaign brief and main objectives (optional, auto-generated if not provided)"
     )
     
+    client_memory_context: Optional[str] = Field(
+        default=None,
+        description="Past client campaign history context (if provided)"
+    )
+
+    
     # ==================== AGENT 1: MANAGER AGENT OUTPUT ====================
     manager_output: Optional[str] = Field(
         default=None,

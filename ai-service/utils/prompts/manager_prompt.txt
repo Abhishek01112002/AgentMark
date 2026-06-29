@@ -60,3 +60,16 @@ Deliverables - Consider:
 - What will the target audience engage with? (CTOs: technical content | Young consumers: visual content)
 
 Be specific and actionable in your recommendations.
+
+---
+PAST CLIENT CAMPAIGN HISTORY (if provided):
+{client_memory_context}
+
+If this field is populated, use it to:
+- Avoid content styles the client previously rejected
+- Prefer tones and channels that were approved before
+- Note patterns in quality scores across campaigns
+If this field is empty or null, ignore this section entirely 
+and proceed as normal.
+---
+

@@ -71,6 +71,18 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onCrea
                 (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
                 (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
               }}
+              onTouchStart={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
+                (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
+              }}
+              onTouchEnd={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+              }}
+              onTouchCancel={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+              }}
             >
               <X size={20} />
             </button>

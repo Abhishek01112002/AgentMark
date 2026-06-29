@@ -172,3 +172,25 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     totalReviewedCampaigns: totalCampaignsCount,
   });
 };
+
+export const getMemoryStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.userId! },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const count = await prisma.campaignMemorySnapshot.count({
+      where: { projectId: id },
+    });
+
+    res.json({ hasMemory: count > 0, campaignCount: count });
+  } catch (error) {
+    console.error('Memory status check failed:', error);
+    res.status(500).json({ error: 'Failed to check memory status' });
+  }
+};

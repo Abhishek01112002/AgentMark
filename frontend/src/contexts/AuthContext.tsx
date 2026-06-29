@@ -38,6 +38,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const initAuth = async () => {
       const token = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
@@ -46,12 +48,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           setUser(JSON.parse(storedUser));
           // Verify token is still valid and fetch fresh user details
-          const response = await api.get('/auth/me');
+          const response = await api.get('/auth/me', { signal: controller.signal });
           if (response.data?.user) {
             setUser(response.data.user);
             localStorage.setItem('user', JSON.stringify(response.data.user));
           }
-        } catch (error) {
+        } catch (error: any) {
+          if (error.name === 'AbortError' || error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
@@ -61,6 +64,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initAuth();
+
+    return () => controller.abort();
   }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = false) => {

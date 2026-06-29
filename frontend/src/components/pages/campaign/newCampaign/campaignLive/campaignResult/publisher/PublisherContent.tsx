@@ -78,7 +78,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       const isHold = publishingDecision === 'HOLD';
       const color = isApproved ? '#059669' : isHold ? '#DC2626' : '#D97706';
       const bg = isApproved ? '#ECFDF5' : isHold ? '#FEF2F2' : '#FFFBEB';
-      const label = isApproved ? '✅ Approved for Publishing' : isHold ? '🔴 Hold' : '⚠️ Revisions Needed';
+      const label = isApproved ? 'Approved for Publishing' : isHold ? 'Hold' : 'Revisions Needed';
       sections += `
         <div class="decision-banner" style="background:${bg};border-color:${color}44;color:${color}">
           <div class="decision-label">${label}</div>
@@ -110,7 +110,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       if (projectedMetrics.timeline_to_results) {
         sections = sections.replace('</div>\n      </div>', `
           <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:12px;color:#6B7280">
-            <span>📅</span><span>Timeline to Results: <strong>${escRaw(projectedMetrics.timeline_to_results)}</strong></span>
+            <span>Timeline to Results: <strong>${escRaw(projectedMetrics.timeline_to_results)}</strong></span>
           </div>
         </div>\n      </div>`);
       }
@@ -543,7 +543,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
                     {copyCount > 0 && (<span style={{ color: copyReady === copyCount ? '#6EE7B7' : '#C8C8D0' }}>{copyReady}/{copyCount} copy</span>)}
                     {copyCount > 0 && visualCount > 0 && <span className="mx-1" style={{ color: '#3A3A4E' }}>·</span>}
                     {visualCount > 0 && (<span style={{ color: visualReady === visualCount ? '#6EE7B7' : '#C8C8D0' }}>{visualReady}/{visualCount} visual</span>)}
-                    {missingCount > 0 && <span className="ml-1.5" style={{ color: '#FCA5A5' }}>⚠ {missingCount} missing</span>}
+                    {missingCount > 0 && <span className="ml-1.5" style={{ color: '#FCA5A5' }}>{missingCount} missing</span>}
                   </span>
                 );
               })()}

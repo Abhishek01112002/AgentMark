@@ -172,6 +172,7 @@ class ResearchOutput(BaseModel):
     audience_insights: AudienceInsights
     market_opportunities: List[str] = Field(description="Market growth opportunities")
     recommended_approach: str = Field(description="Recommended strategic approach")
+    literas_sources: list[dict] = Field(default_factory=list, description="LiteRAG web search sources")
 
 
 # ==================== STRATEGY OUTPUT SCHEMA ====================

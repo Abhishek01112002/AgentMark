@@ -116,7 +116,7 @@ def research_node(state: CampaignState) -> dict:
         return {}
     
     # Check if this agent is targeted for revision
-    is_targeted_for_revision = (state.human_revision_target == "research")
+    is_targeted_for_revision = (state.human_revision_target == "research") or (state.status == "research_revision_required")
     
     # Skip logic: Only run if targeted for revision OR first time
     if is_targeted_for_revision:
@@ -188,7 +188,7 @@ def strategy_node(state: CampaignState) -> dict:
         return {}
     
     # Check if this agent is targeted for revision
-    is_targeted_for_revision = (state.human_revision_target == "strategy")
+    is_targeted_for_revision = (state.human_revision_target == "strategy") or (state.status == "strategy_revision_required")
     
     # Skip logic
     if is_targeted_for_revision:
@@ -263,7 +263,7 @@ def copywriter_node(state: CampaignState) -> dict:
         return {}
     
     # Check if this agent is targeted for revision
-    is_targeted_for_revision = (state.human_revision_target == "copywriter")
+    is_targeted_for_revision = (state.human_revision_target == "copywriter") or (state.status == "copy_revision_required")
     
     # Skip logic
     if is_targeted_for_revision:
@@ -336,7 +336,7 @@ def image_prompt_node(state: CampaignState) -> dict:
         return {}
     
     # Check if this agent is targeted for revision
-    is_targeted_for_revision = (state.human_revision_target == "image_prompt")
+    is_targeted_for_revision = (state.human_revision_target == "image_prompt") or (state.status == "image_revision_required")
     
     # Skip logic
     if is_targeted_for_revision:

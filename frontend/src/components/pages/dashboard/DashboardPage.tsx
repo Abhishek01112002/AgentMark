@@ -362,7 +362,7 @@ function DashboardContent() {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" style={{ minWidth: 700 }}>
+                <table className="w-full text-left border-collapse" style={{ minWidth: 500 }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
                       <th

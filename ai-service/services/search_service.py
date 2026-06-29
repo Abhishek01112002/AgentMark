@@ -12,11 +12,19 @@ logger = logging.getLogger(__name__)
 
 DAILY_SEARCH_LIMIT = 100
 
+class SourceMeta(BaseModel):
+    url: str
+    title: str
+    domain: str
+    snippet: str
+
 class SearchResult(BaseModel):
     success: bool
     query: str
     snippets: list[str] = Field(default_factory=list)
     error_message: Optional[str] = None
+    sources: list[SourceMeta] = Field(default_factory=list)
+    query_type: str = ""
 
 # Initialize once at module level — not per call
 _tavily_client: Optional[TavilyClient] = None
@@ -54,7 +62,7 @@ def _get_redis_pool() -> redis.ConnectionPool:
 def _check_redis_rate_limit(redis_client) -> bool:
     """Returns True if search is allowed, False if limit exceeded."""
     try:
-        key = f"literag:search_count:{datetime.date.today().isoformat()}"
+        key = f"agentmark:literas:search_count:{datetime.date.today().isoformat()}"
         count = redis_client.incr(key)
         if count == 1:
             redis_client.expire(key, 86400)
@@ -110,12 +118,22 @@ def search_web(
             for r in response.get("results", [])
             if r.get("content", "").strip()
         ]
+        sources = [
+            SourceMeta(
+                url=r.get("url", ""),
+                title=r.get("title", ""),
+                domain=r.get("url", "").replace("https://","").replace("http://","").split("/")[0],
+                snippet=r.get("content", "")[:200].strip()
+            )
+            for r in response.get("results", [])
+            if r.get("url")
+        ]
         latency_ms = int((time.monotonic() - start) * 1000)
         logger.info(
             f"Search OK | query='{query[:50]}' | "
-            f"snippets={len(snippets)} | latency={latency_ms}ms"
+            f"snippets={len(snippets)} | sources={len(sources)} | latency={latency_ms}ms"
         )
-        return SearchResult(success=True, query=query, snippets=snippets)
+        return SearchResult(success=True, query=query, snippets=snippets, sources=sources)
 
     except Exception as e:
         latency_ms = int((time.monotonic() - start) * 1000)

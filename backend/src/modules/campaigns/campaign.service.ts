@@ -1,6 +1,7 @@
 import prisma from '../../db';
 import { AIAgentOutputs } from './campaign.types';
 import { notificationService } from '../notifications/notification.service';
+import { saveMemorySnapshot } from './campaign-memory.service';
 
 export const campaignService = {
   async create(projectId: string, data: {
@@ -109,6 +110,10 @@ export const campaignService = {
             ? `Campaign "${campaign.name}" completed successfully.`
             : `Campaign "${campaign.name}" failed during processing.`,
       });
+    }
+
+    if (status === 'completed') {
+      void saveMemorySnapshot(campaignId, campaign.projectId);
     }
 
     return campaign;

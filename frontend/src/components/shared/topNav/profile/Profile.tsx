@@ -21,6 +21,13 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
     logout();
   };
 
+  const onEnter = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+    if (!isOpen) ((e.currentTarget as HTMLElement).style.borderColor = '#6366F1');
+  };
+  const onLeave = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
+    if (!isOpen) ((e.currentTarget as HTMLElement).style.borderColor = '#2A2A38');
+  };
+
   return (
     <div className="relative flex-shrink-0">
       {/* Avatar Button */}
@@ -30,12 +37,11 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
           border: '1px solid #2A2A38',
           borderColor: isOpen ? '#6366F1' : '#2A2A38',
         }}
-        onMouseEnter={(e) => {
-          if (!isOpen) ((e.currentTarget as HTMLElement).style.borderColor = '#6366F1');
-        }}
-        onMouseLeave={(e) => {
-          if (!isOpen) ((e.currentTarget as HTMLElement).style.borderColor = '#2A2A38');
-        }}
+        onMouseEnter={onEnter}
+        onMouseLeave={onLeave}
+        onTouchStart={onEnter}
+        onTouchEnd={onLeave}
+        onTouchCancel={onLeave}
         onClick={onToggle}
       >
         {avatarUrl ? (
@@ -98,6 +104,9 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f')}
             onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
+            onTouchStart={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f')}
+            onTouchEnd={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
+            onTouchCancel={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
           >
             Logout
           </button>

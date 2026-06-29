@@ -78,6 +78,7 @@ class CampaignCreateRequest(BaseModel):
     strategy_revision_count: Optional[int] = Field(default=0)
     copy_revision_count: Optional[int] = Field(default=0)
     image_revision_count: Optional[int] = Field(default=0)
+    client_memory_context: Optional[str] = Field(default=None)
 
     model_config = {"use_enum_values": True}
 

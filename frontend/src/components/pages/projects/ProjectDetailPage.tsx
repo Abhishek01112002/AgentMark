@@ -260,6 +260,9 @@ const ProjectDetailContent: React.FC = () => {
               style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#F1F1F3')}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#8B8B9E')}
+              onTouchStart={(e) => (e.currentTarget.style.color = '#F1F1F3')}
+              onTouchEnd={(e) => (e.currentTarget.style.color = '#8B8B9E')}
+              onTouchCancel={(e) => (e.currentTarget.style.color = '#8B8B9E')}
             >
               <ArrowLeft size={16} />
               Back to Projects
@@ -309,6 +312,18 @@ const ProjectDetailContent: React.FC = () => {
                     (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
                     (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                   }}
+                  onTouchStart={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
+                  onTouchCancel={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
                 >
                   <Plus size={16} />
                   New Campaign
@@ -354,7 +369,7 @@ const ProjectDetailContent: React.FC = () => {
                   style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
                 >
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse" style={{ minWidth: 600 }}>
+                    <table className="w-full text-left border-collapse" style={{ minWidth: 480 }}>
                       <thead>
                         <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
                           <th

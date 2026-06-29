@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PenTool, Link, BookOpen, Copy, Check } from 'lucide-react';
+import { PenTool, Link, BookOpen, Copy, Check, Target } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
@@ -191,7 +191,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
                 <div className="mb-6 p-4 rounded-xl bg-[#0A0A0F] border border-[#2A2A38]/80 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-[#6366F1]" />
                   <div className="text-[10px] uppercase tracking-wider text-[#A0A0D2] font-semibold mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    🎯 Channel Strategy & Angle
+                    <Target size={12} className="inline-block mr-1 -mt-0.5" /> Channel Strategy & Angle
                   </div>
                   <p className="text-sm font-medium mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                     {activeChannelMessaging.approach}

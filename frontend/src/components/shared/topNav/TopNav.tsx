@@ -55,16 +55,18 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
     window.addEventListener('notifications-updated', handleUpdate);
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     return () => {
       window.removeEventListener('notifications-updated', handleUpdate);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, []);
 
@@ -177,6 +179,15 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
                 if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
               }}
               onMouseLeave={(e) => {
+                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
+              }}
+              onTouchStart={(e) => {
+                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
+              }}
+              onTouchEnd={(e) => {
+                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
+              }}
+              onTouchCancel={(e) => {
                 if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
               }}
               onClick={() => handleDropdownToggle('notification')}

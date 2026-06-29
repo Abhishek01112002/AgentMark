@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
-import { createProject, getProjects, getProject, deleteProject, getDashboardStats } from './project.controller';
+import { createProject, getProjects, getProject, deleteProject, getDashboardStats, getMemoryStatus } from './project.controller';
 
 const router = Router();
 
@@ -10,6 +10,7 @@ router.get('/stats/dashboard', getDashboardStats);
 router.post('/', createProject);
 router.get('/', getProjects);
 router.get('/:id', getProject);
+router.get('/:id/memory-status', getMemoryStatus);
 router.delete('/:id', deleteProject);
 
 export default router;

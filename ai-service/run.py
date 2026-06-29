@@ -4,6 +4,7 @@ Clears __pycache__ before launching to prevent stale compiled modules,
 then starts Uvicorn with auto-reload enabled for smooth development.
 """
 
+import utils.logger  # noqa: F401
 import logging
 logger = logging.getLogger(__name__)
 

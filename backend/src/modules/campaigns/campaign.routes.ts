@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights } from './campaign.controller';
 
 const router = Router();
 
@@ -11,6 +11,7 @@ router.post('/', campaignRateLimiter, createCampaign);
 router.post('/enhance-prompt', campaignRateLimiter, enhancePrompt);
 router.get('/', getCampaigns);
 router.get('/:id', getCampaign);
+router.get('/:id/memory-insights', getMemoryInsights);
 router.delete('/:id', deleteCampaign);
 router.post('/:id/approve', approveCampaign);
 

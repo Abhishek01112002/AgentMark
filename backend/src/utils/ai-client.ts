@@ -33,6 +33,7 @@ export interface AIServiceCampaignRequest {
   strategy_revision_count?: number;
   copy_revision_count?: number;
   image_revision_count?: number;
+  client_memory_context?: string | null;
 }
 
 interface AIServiceCampaignResponse {

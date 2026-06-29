@@ -11,6 +11,7 @@ import json
 load_dotenv()
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import utils.logger  # noqa: F401
 from agents.state import CampaignState
 from agents.manager import manager_agent
 from agents.research import research_agent

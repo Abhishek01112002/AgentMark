@@ -853,7 +853,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               )}
             </div>
             <div className="overflow-x-auto">
-              <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 640 }}>
+              <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 480 }}>
                 <thead>
                   <tr className="bg-[#1A1A24] border-b border-[#2A2A38]">
                     {['Week', 'Channel', 'Content Type', 'Topic / Asset', 'Status'].map((header, idx) => (

@@ -973,25 +973,49 @@ const CampaignResultPage: React.FC = () => {
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
                   className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]"
                   style={{
-                    fontFamily: 'JetBrains Mono, monospace',
-                    background: 'linear-gradient(135deg, #F43F5E 0%, #E11D48 100%)',
-                    boxShadow: '0 4px 15px rgba(244, 63, 94, 0.3)',
-                    color: '#FFFFFF',
-                    opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.4 : 1,
+                    fontFamily: 'Inter, sans-serif',
+                    background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))',
+                    color: '#FBBF24',
+                    border: '1px solid rgba(251,191,36,0.2)',
+                    boxShadow: '0 2px 12px rgba(251,191,36,0.08)',
+                    opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.3 : 1,
                     cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
                   }}
                   onMouseEnter={(e) => {
                     if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 22px rgba(244, 63, 94, 0.45)';
-                      (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.08)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.14))';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(251,191,36,0.18)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.35)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 15px rgba(244, 63, 94, 0.3)';
-                    (e.currentTarget as HTMLButtonElement).style.filter = 'none';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
+                  }}
+                  onTouchStart={(e) => {
+                    if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.14))';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(251,191,36,0.18)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.35)';
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
+                  }}
+                  onTouchCancel={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
                   }}
                 >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <polyline points="23 4 23 10 17 10" />
+                    <polyline points="1 20 1 14 7 14" />
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                  </svg>
                   Request Revision
                 </button>
               </div>
@@ -1011,6 +1035,9 @@ const CampaignResultPage: React.FC = () => {
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
+              onTouchStart={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
+              onTouchEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
+              onTouchCancel={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
             >
               <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Approve &amp; Publish Campaign

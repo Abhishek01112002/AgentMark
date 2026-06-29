@@ -4,6 +4,7 @@ AgentMark AI Service - FastAPI Server
 Multi-Agent Marketing Campaign Orchestration with LangGraph
 """
 
+import utils.logger  # noqa: F401
 import logging
 import os
 import sys

@@ -116,3 +116,14 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #464554;
 }
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"], [tabindex]:not([tabindex="-1"]) {
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.2);
+  }
+  button:active, a:active, [role="button"]:active, [tabindex]:not([tabindex="-1"]):active {
+    opacity: 0.85;
+    transition: opacity 0.05s;
+  }
+}

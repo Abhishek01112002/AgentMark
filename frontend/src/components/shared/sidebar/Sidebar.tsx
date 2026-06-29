@@ -169,6 +169,18 @@ const Sidebar: React.FC = () => {
             (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
             (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
           }}
+          onTouchStart={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
+            (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
+          }}
+          onTouchEnd={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+            (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
+          }}
+          onTouchCancel={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+            (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
+          }}
         >
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
@@ -228,14 +240,14 @@ const Sidebar: React.FC = () => {
             textAlign: 'left' as const,
           };
           
-          const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+          const handleMouseEnter = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
               (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
               (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
             }
           };
           
-          const handleMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+          const handleMouseLeave = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
               (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
               (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
@@ -251,6 +263,9 @@ const Sidebar: React.FC = () => {
                 style={style}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
+                onTouchStart={handleMouseEnter}
+                onTouchEnd={handleMouseLeave}
+                onTouchCancel={handleMouseLeave}
                 title={isCollapsed ? item.name : ''}
               >
                 {content}
@@ -259,6 +274,7 @@ const Sidebar: React.FC = () => {
           }
           return null;
         })}
+
       </div>
 
       {/* ── Footer Nav ── */}
@@ -296,14 +312,14 @@ const Sidebar: React.FC = () => {
             textAlign: 'left' as const,
           };
           
-          const handleMouseEnter = (e: React.MouseEvent<HTMLElement>) => {
+          const handleMouseEnter = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
               (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
               (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
             }
           };
           
-          const handleMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+          const handleMouseLeave = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
               (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
               (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
@@ -319,6 +335,9 @@ const Sidebar: React.FC = () => {
                 style={style}
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
+                onTouchStart={handleMouseEnter}
+                onTouchEnd={handleMouseLeave}
+                onTouchCancel={handleMouseLeave}
                 title={isCollapsed ? item.name : ''}
               >
                 {content}
@@ -348,6 +367,15 @@ const Sidebar: React.FC = () => {
             (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
           }}
           onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+          }}
+          onTouchStart={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
+          }}
+          onTouchEnd={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+          }}
+          onTouchCancel={(e) => {
             (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
           }}
           title={isCollapsed ? 'Logout' : ''}

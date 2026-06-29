@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { campaignService } from './campaign.service';
+import { getClientMemory } from './campaign-memory.service';
 import { aiServiceClient } from '../../utils/ai-client';
 import type { AIServiceCampaignRequest } from '../../utils/ai-client';
 import prisma from '../../db';
@@ -137,6 +138,7 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
     // `getIO()` returns the singleton socket.io Server set at startup in index.ts.
     const io = getIO();
     if (io) {
+      const memoryContext = await getClientMemory(projectId);
       void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
         brand_name: campaign.brandName || brandName,
@@ -147,6 +149,7 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
         brief: briefParts.length > 0 ? briefParts.join('. ') : undefined,
         llm_config: llmConfig,
         campaign_id: campaign.id,
+        client_memory_context: memoryContext?.formattedText ?? null,
       }, io);
     } else {
       // io not yet set (shouldn't happen in production — Redis init runs before any request)
@@ -323,6 +326,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
     const io = getIO();
     if (io) {
       const aiOutputs = campaign.aiOutputs ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) : {};
+      const memoryContext = await getClientMemory(campaign.projectId);
       
       void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
@@ -333,6 +337,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
         brand_voice: campaign.brandVoice,
         campaign_id: campaign.id,
         llm_config: llmConfig,
+        client_memory_context: memoryContext?.formattedText ?? null,
         // Pass existing outputs as strings
         manager_output: aiOutputs.manager_output ? JSON.stringify(aiOutputs.manager_output) : null,
         research_output: aiOutputs.research_output ? JSON.stringify(aiOutputs.research_output) : null,
@@ -385,6 +390,41 @@ export const enhancePrompt = async (req: AuthRequest, res: Response) => {
     }
     console.error('Prompt enhancement error:', error);
     res.status(500).json({ error: error.message || 'Failed to enhance prompt' });
+  }
+};
+
+export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
+  try {
+    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    const project = await prisma.project.findFirst({
+      where: { id: campaign.projectId, userId: req.userId! },
+    });
+    if (!project) return res.status(403).json({ error: 'Access denied' });
+
+    const snapshots = await prisma.campaignMemorySnapshot.findMany({
+      where: { projectId: campaign.projectId, campaignId: { not: campaign.id } },
+      orderBy: { completedAt: 'desc' },
+      take: 3,
+    });
+
+    const insights = snapshots.map(s => {
+      const rejectionReasons = s.rejectionReasons as Array<{ targetAgent: string; feedbackText: string }> | null;
+      return {
+        completedAt: s.completedAt,
+        score: s.finalReviewScore,
+        approvedOnFirstTry: s.humanApprovedOnFirstTry,
+        rejectionReasons: rejectionReasons ?? [],
+        approvedTone: s.finalApprovedTone,
+        channelsUsed: s.finalChannelsUsed,
+      };
+    });
+
+    res.json({ insights, count: snapshots.length });
+  } catch (error) {
+    console.error('Memory insights fetch failed:', error);
+    res.status(500).json({ error: 'Failed to fetch memory insights' });
   }
 };
 

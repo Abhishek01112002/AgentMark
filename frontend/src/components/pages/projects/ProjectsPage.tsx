@@ -138,17 +138,29 @@ const ProjectsContent: React.FC = () => {
                 onClick={() => setShowCreateModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
                 style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                  (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                }}
-              >
-                <Plus size={16} />
-                New Project
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
+                  onTouchStart={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
+                  onTouchCancel={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                  }}
+                >
+                  <Plus size={16} />
+                  New Project
               </button>
             </div>
 
@@ -170,6 +182,9 @@ const ProjectsContent: React.FC = () => {
                   style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
+                  onTouchStart={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
+                  onTouchEnd={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
+                  onTouchCancel={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
                 >
                   <Plus size={16} />
                   Create First Project
@@ -253,6 +268,15 @@ const ProjectsContent: React.FC = () => {
                         onMouseLeave={(e) => {
                           (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
                         }}
+                        onTouchStart={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
+                        }}
+                        onTouchEnd={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                        }}
+                        onTouchCancel={(e) => {
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                        }}
                       >
                         <Eye size={14} />
                         View
@@ -270,6 +294,21 @@ const ProjectsContent: React.FC = () => {
                           (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.3)';
                         }}
                         onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                        }}
+                        onTouchStart={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#F43F5E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(244,63,94,0.1)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.3)';
+                        }}
+                        onTouchEnd={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                        }}
+                        onTouchCancel={(e) => {
                           (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
                           (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
                           (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';

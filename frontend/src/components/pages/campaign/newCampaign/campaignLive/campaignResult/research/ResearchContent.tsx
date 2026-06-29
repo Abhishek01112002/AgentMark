@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, TrendingUp, ArrowUpRight, Compass, Users, Sparkles, Rocket, Workflow, AlertTriangle } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
   data?: any;
+}
+
+interface SourceMeta {
+  url: string;
+  title: string;
+  domain: string;
+  snippet: string;
+  query_type: "market" | "competitor";
 }
 
 const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
@@ -16,6 +24,12 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   const audienceInsights = data?.audience_insights || {};
   const marketOpportunities = data?.market_opportunities || [];
   const recommendedApproach = data?.recommended_approach || '';
+
+  const literasSources: SourceMeta[] = data?.literas_sources ?? [];
+  const marketSources = literasSources.filter(s => s.query_type === 'market');
+  const competitorSources = literasSources.filter(s => s.query_type === 'competitor');
+
+  const [activeFilter, setActiveFilter] = useState<"all"|"market"|"competitor">("all");
 
   const marketTrends = marketAnalysis?.market_trends || [];
   const tam = marketAnalysis?.total_addressable_market || '';
@@ -59,32 +73,34 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
       {(tam || growthRate) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {tam && (
-            <div className="card-elevate relative bg-[#111118] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#6366F1]/30 transition-colors shadow-lg group">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#6366F1]/40 via-[#6366F1] to-[#6366F1]/40" />
-              <div className="p-5 md:p-6">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+            <div className="group relative bg-gradient-to-br from-[#14141C] to-[#0E0E16] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#6366F1]/30 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] hover:scale-[1.015] transition-all duration-400 shadow-[0_0_20px_rgba(99,102,241,0.06)]">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'radial-gradient(600px circle at 50% -20%, rgba(99,102,241,0.08), transparent)' }} />
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#6366F1]/20 via-[#6366F1]/80 to-[#6366F1]/20" />
+              <div className="relative p-5 md:p-6">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="w-6 h-6 rounded-md bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center group-hover:bg-[#6366F1]/15 group-hover:scale-110 transition-all duration-300">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
                   </div>
-                  <span className="text-[10px] uppercase font-semibold tracking-[0.12em] text-[#6366F1]/70">TAM</span>
+                  <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#6366F1]/60">TAM</span>
                 </div>
-                <h4 className="text-xs font-medium text-[#8B8B9E] mb-1.5">Total Addressable Market</h4>
-                <p className="text-2xl md:text-3xl font-bold tracking-tight text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{tam}</p>
+                <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Total Addressable Market</h4>
+                <p className="text-xl md:text-2xl font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{tam}</p>
               </div>
             </div>
           )}
           {growthRate && (
-            <div className="card-elevate relative bg-[#111118] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#4edea3]/30 transition-colors shadow-lg group">
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#4edea3]/40 via-[#4edea3] to-[#4edea3]/40" />
-              <div className="p-5 md:p-6">
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/20 flex items-center justify-center">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4edea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            <div className="group relative bg-gradient-to-br from-[#14141C] to-[#0E0E16] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#4edea3]/30 hover:shadow-[0_0_30px_rgba(78,222,163,0.15)] hover:scale-[1.015] transition-all duration-400 shadow-[0_0_20px_rgba(78,222,163,0.06)]">
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'radial-gradient(600px circle at 50% -20%, rgba(78,222,163,0.08), transparent)' }} />
+              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#4edea3]/20 via-[#4edea3]/80 to-[#4edea3]/20" />
+              <div className="relative p-5 md:p-6">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="w-6 h-6 rounded-md bg-[#4edea3]/10 border border-[#4edea3]/20 flex items-center justify-center group-hover:bg-[#4edea3]/15 group-hover:scale-110 transition-all duration-300">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4edea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                   </div>
-                  <span className="text-[10px] uppercase font-semibold tracking-[0.12em] text-[#4edea3]/70">CAGR</span>
+                  <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#4edea3]/60">CAGR</span>
                 </div>
-                <h4 className="text-xs font-medium text-[#8B8B9E] mb-1.5">Market Growth Rate</h4>
-                <p className="text-2xl md:text-3xl font-bold tracking-tight text-white" style={{ fontFamily: 'Inter, sans-serif' }}>{growthRate}</p>
+                <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Market Growth Rate</h4>
+                <p className="text-xl md:text-2xl font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{growthRate}</p>
               </div>
             </div>
           )}
@@ -248,6 +264,111 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               <p className="text-sm md:text-base leading-relaxed text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
                 {recommendedApproach}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* LiteRAG Sources */}
+        {literasSources.length > 0 && (
+          <div className="lg:col-span-2" style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-4" style={{ background: '#111118', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#8B8B9E', marginBottom: '1rem' }}>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{literasSources.length}</strong> sources retrieved</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{marketSources.length}</strong> market</span>
+              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 9h6"/><path d="M9 13h6"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{competitorSources.length}</strong> competitor</span>
+              <span style={{ marginLeft: 'auto', color: '#5A5A6E', fontSize: '12px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Live</span>
+            </div>
+
+            <div className="flex gap-1.5" style={{ marginBottom: '1rem' }}>
+              {(["all", "market", "competitor"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setActiveFilter(f)}
+                  style={{
+                    fontSize: '12px', padding: '5px 14px', borderRadius: '20px',
+                    border: activeFilter === f ? '0.5px solid rgba(255,255,255,0.12)' : '0.5px solid rgba(255,255,255,0.06)',
+                    background: activeFilter === f ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                    color: activeFilter === f ? '#EDEDF5' : '#8B8B9E',
+                    cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {f === "all" ? "All sources" : f === "market" ? "Market trends" : "Competitors"}
+                </button>
+              ))}
+            </div>
+
+            <p style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#5A5A6E', marginBottom: '0.75rem', fontFamily: 'Inter, sans-serif' }}>
+              Real-time sources used
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {literasSources
+                .filter(s => activeFilter === "all" || s.query_type === activeFilter)
+                .map((src, i) => {
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        background: 'rgba(255,255,255,0.02)', border: '0.5px solid rgba(255,255,255,0.06)',
+                        borderRadius: '12px', padding: '14px 16px', fontFamily: 'Inter, sans-serif',
+                        transition: 'border-color 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'; }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${src.domain}&sz=32`}
+                          alt={src.domain}
+                          style={{ width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0, objectFit: 'contain' }}
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling;
+                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                          }}
+                        />
+                        <span
+                          style={{ display: 'none', width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0, background: '#1A1A24', border: '0.5px solid rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: '#8B8B9E' }}
+                        >
+                          {src.domain[0]?.toUpperCase()}
+                        </span>
+                        <div>
+                          <div style={{ fontSize: '12px', fontWeight: 500, color: '#EDEDF5' }}>{src.domain}</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#EDEDF5', lineHeight: 1.45, marginBottom: '8px' }}>{src.title}</div>
+                      <div style={{
+                        fontSize: '12px', color: '#8B8B9E', lineHeight: 1.55,
+                        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}>{src.snippet}</div>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        marginTop: '10px', paddingTop: '10px', borderTop: '0.5px solid rgba(255,255,255,0.06)',
+                      }}>
+                        <span style={{
+                          fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500,
+                          border: '0.5px solid',
+                          background: src.query_type === 'market' ? 'rgba(99,102,241,0.08)' : 'rgba(217,160,240,0.08)',
+                          color: src.query_type === 'market' ? '#818CF8' : '#D9A0F0',
+                          borderColor: src.query_type === 'market' ? 'rgba(129,140,248,0.15)' : 'rgba(217,160,240,0.15)',
+                        }}>
+                          {src.query_type === "market" ? "Market trend" : "Competitor"}
+                        </span>
+                        <a
+                          href={src.url} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: '12px', color: '#5A5A6E', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = '#818CF8'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = '#5A5A6E'; }}
+                        >
+                          Open
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ verticalAlign: 'middle' }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}

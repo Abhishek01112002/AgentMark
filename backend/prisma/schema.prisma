@@ -34,7 +34,8 @@ model Project {
   userId      String
   user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  campaigns   Campaign[]
+  campaigns       Campaign[]
+  memorySnapshots CampaignMemorySnapshot[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -72,8 +73,32 @@ model Campaign {
   projectId       String
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
+  memorySnapshot  CampaignMemorySnapshot?
+
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   @@map("campaigns")
+}
+
+model CampaignMemorySnapshot {
+  id                      String   @id @default(uuid())
+
+  projectId               String
+  project                 Project  @relation(fields: [projectId], references: [id])
+
+  campaignId              String   @unique
+  campaign                Campaign @relation(fields: [campaignId], references: [id])
+
+  finalReviewScore        Float?
+  humanApprovedOnFirstTry Boolean  @default(false)
+
+  rejectionReasons        Json?    // [{ targetAgent: string, feedbackText: string }]
+  finalApprovedTone       String[] // Postgres native array
+  finalChannelsUsed       String[]
+
+  completedAt             DateTime @default(now())
+
+  @@index([projectId, completedAt])
+  @@map("campaign_memory_snapshots")
 }
