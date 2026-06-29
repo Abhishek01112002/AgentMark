@@ -7,6 +7,8 @@ const redisClient = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
   lazyConnect: true,
+  enableOfflineQueue: false, // PREVENT HANGING if Redis is down
+  maxRetriesPerRequest: 1,
   retryStrategy: (times) => Math.min(times * 1000, 5000), // Max 5s retry delay
 });
 

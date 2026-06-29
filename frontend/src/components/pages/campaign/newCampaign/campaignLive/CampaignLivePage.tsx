@@ -497,7 +497,10 @@ const CampaignLivePage: React.FC = () => {
           description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
         }))
       );
-      setTimeout(() => navigate(`/campaign/${campaignId}/result?projectId=${projectIdRef.current}`), 2000);
+        setTimeout(() => {
+          const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
+          navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
+        }, 2000);
     });
 
     // ── Campaign failed ──────────────────────────────────────────────────────

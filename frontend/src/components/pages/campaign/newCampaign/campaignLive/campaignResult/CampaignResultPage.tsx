@@ -146,7 +146,8 @@ const CampaignResultPage: React.FC = () => {
       if (!campaignId) return;
       
       try {
-        const projectId = new URLSearchParams(window.location.search).get('projectId');
+        const rawProjectId = new URLSearchParams(window.location.search).get('projectId');
+        const projectId = (rawProjectId && rawProjectId !== 'undefined' && rawProjectId !== 'null') ? rawProjectId : null;
         const url = projectId ? `/campaigns/${campaignId}?projectId=${projectId}` : `/campaigns/${campaignId}`;
         const response = await api.get(url);
         const campaignData = response.data.campaign;

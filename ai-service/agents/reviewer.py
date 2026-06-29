@@ -268,7 +268,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     review_analysis, state = safe_llm_call(
         state,
         "Reviewer",
-        lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.3, max_tokens=2000)
+        lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.5, max_tokens=2000)
     )
     
     if review_analysis is None:
@@ -297,6 +297,23 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         strategy_data, copy_data, image_data,
         strategy_review, copy_review, image_review
     )
+
+    # ========== STEP 6.6: HYBRID SCORING ==========
+    # Blend LLM scores with objective content metrics for natural variation.
+    # This ensures different campaigns get genuinely different scores based on
+    # actual output completeness, depth, and quality.
+    research_score = _compute_hybrid_score(research_data, research_score, "research")
+    strategy_score = _compute_hybrid_score(strategy_data, strategy_score, "strategy")
+    copy_score = _compute_hybrid_score(copy_data, copy_score, "copy")
+    image_score = _compute_hybrid_score(image_data, image_score, "image")
+    # Recalculate overall score server-side using blended per-agent scores
+    overall_score = round(research_score * 0.25 + strategy_score * 0.30 + copy_score * 0.25 + image_score * 0.20)
+    # Sync back into the LLM output model so the nested field is accurate
+    review_analysis.overall.quality_score = overall_score
+    review_analysis.research_review.score = research_score
+    review_analysis.strategy_review.score = strategy_score
+    review_analysis.copy_review.score = copy_score
+    review_analysis.image_review.score = image_score
 
     # IMPORTANT: approved should be based on threshold, not LLM judgment
     # Override LLM's approved field with threshold-based logic
@@ -504,6 +521,155 @@ def _add_explicit_validation_checks(
             if not image_review.action_items:
                 image_review.action_items = []
             image_review.action_items.append("Create at least 3 image prompts for key campaign deliverables")
+
+
+def _compute_objective_score(agent_data: dict, agent_type: str) -> int:
+    """
+    Score agent output based on objective content metrics — field presence,
+    completeness, and depth.  This creates natural variation between campaigns
+    since outputs differ in actual field quality.
+
+    Returns an integer score 0-100 derived from the data itself, not LLM judgment.
+    """
+    if agent_type == "research":
+        ma = agent_data.get("market_analysis") or {}
+        if not ma:
+            return 50
+        tam = str(ma.get("total_addressable_market", ""))
+        deductions = 0
+        if len(tam.strip()) < 4:
+            deductions += 25
+        if not ma.get("growth_rate"):
+            deductions += 5
+        if len(ma.get("market_trends", [])) < 3:
+            deductions += 5
+
+        ca = agent_data.get("competitor_analysis") or {}
+        if not ca:
+            deductions += 25
+        else:
+            if len(ca.get("top_competitors", [])) < 2:
+                deductions += 15
+            if len(str(ca.get("differentiation_opportunity", ""))) < 20:
+                deductions += 5
+
+        ai = agent_data.get("audience_insights") or {}
+        if not ai:
+            deductions += 25
+        else:
+            if len(ai.get("pain_points", [])) < 3:
+                deductions += 10
+            if len(ai.get("motivations", [])) < 2:
+                deductions += 5
+            if len(ai.get("preferred_channels", [])) < 2:
+                deductions += 5
+
+        if len(agent_data.get("market_opportunities", [])) < 3:
+            deductions += 10
+        if len(str(agent_data.get("recommended_approach", ""))) < 50:
+            deductions += 5
+        return max(0, 100 - deductions)
+
+    if agent_type == "strategy":
+        present = 0
+        total = 13
+        if str(agent_data.get("positioning", "")).strip():
+            present += 1
+        if len(agent_data.get("key_messages", [])) >= 3:
+            present += 1
+        if len(agent_data.get("content_pillars", [])) >= 3:
+            present += 1
+        if agent_data.get("channel_strategy"):
+            present += 1
+        if len(agent_data.get("audience_segments", [])) >= 3:
+            present += 1
+        if agent_data.get("timeline"):
+            present += 1
+        if agent_data.get("success_metrics"):
+            present += 1
+        if agent_data.get("competitive_differentiation"):
+            present += 1
+        if agent_data.get("market_opportunities"):
+            present += 1
+        if len(str(agent_data.get("strategic_approach", ""))) >= 100:
+            present += 1
+        if agent_data.get("inferred_goal") in ("awareness", "lead_gen", "sales", "retention"):
+            present += 1
+        if agent_data.get("research_foundation"):
+            present += 1
+        ex = agent_data.get("execution") or {}
+        if ex.get("channels"):
+            present += 1
+        return round((present / total) * 100)
+
+    if agent_type == "copy":
+        present = 0
+        total = 5
+        if agent_data.get("inferred_goal"):
+            present += 1
+        channel_keys = [
+            k for k in agent_data
+            if k not in ("inferred_goal", "copies", "messaging_framework",
+                         "strategic_alignment", "copy_readiness")
+        ]
+        if channel_keys:
+            present += 1
+        if agent_data.get("messaging_framework"):
+            present += 1
+        if agent_data.get("strategic_alignment"):
+            present += 1
+        if agent_data.get("copy_readiness"):
+            present += 1
+        return round((present / total) * 100)
+
+    if agent_type == "image":
+        vd = agent_data.get("visual_direction")
+        if vd and isinstance(vd, dict):
+            vd_score = 50
+            if not vd.get("overall_style"):
+                vd_score -= 15
+            if not vd.get("color_palette"):
+                vd_score -= 15
+            if not vd.get("mood"):
+                vd_score -= 10
+            if not vd.get("key_visual_themes"):
+                vd_score -= 10
+        else:
+            vd_score = 20 if vd else 0
+
+        prompts = agent_data.get("image_prompts", [])
+        if prompts:
+            prompt_score = 50
+            incomplete = 0
+            for p in prompts:
+                if not p.get("deliverable_name"):
+                    incomplete += 1
+                elif len(str(p.get("prompt", ""))) < 80:
+                    incomplete += 1
+                elif len(str(p.get("rationale", ""))) < 50:
+                    incomplete += 1
+                elif len(p.get("visual_elements", [])) < 3:
+                    incomplete += 1
+                elif len(p.get("style_keywords", [])) < 4:
+                    incomplete += 1
+            prompt_score -= round((incomplete / len(prompts)) * 50)
+        else:
+            prompt_score = 0
+        return vd_score + max(0, prompt_score)
+
+    return 90
+
+
+def _compute_hybrid_score(agent_data: dict, llm_score: int, agent_type: str,
+                          llm_weight: float = 0.7, objective_weight: float = 0.3) -> int:
+    """
+    Blend the LLM's qualitative score with an objective score derived from
+    content metrics.  This prevents the "same score every time" problem by
+    introducing data-driven variation.
+    """
+    objective = _compute_objective_score(agent_data, agent_type)
+    blended = llm_score * llm_weight + objective * objective_weight
+    return max(0, min(100, round(blended)))
 
 
 def _determine_revision_target(
