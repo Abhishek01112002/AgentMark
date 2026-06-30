@@ -134,6 +134,19 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         return;
       }
 
+      // Ignore all messages for soft-deleted campaigns to prevent resurrecting/updating them
+      try {
+        const campaign = await prisma.campaign.findUnique({
+          where: { id: campaign_id },
+          select: { status: true },
+        });
+        if (!campaign || campaign.status === 'deleted') {
+          return;
+        }
+      } catch (err) {
+        console.error(`[Redis Subscriber] Failed to check campaign status for deletion:`, err);
+      }
+
       if (isDuplicateEvent(campaign_id, agent, status, timestamp)) {
         console.log(`[Redis Subscriber] Discarding duplicate event: ${campaign_id}:${agent}:${status}:${timestamp}`);
         return;
