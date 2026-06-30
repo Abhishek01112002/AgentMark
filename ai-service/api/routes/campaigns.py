@@ -226,12 +226,12 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         "image_revision_count": final_state.image_revision_count or 0,
     }
 
-    if final_state.status == "error":
+    if final_state.status == "error" or final_state.status == "cancelled":
         publish_agent_event(
             campaign_id=campaign_id,
             agent="system",
             status="failed",
-            error=final_state.error or "Workflow encountered an error",
+            error=final_state.error or "Campaign cancelled by user",
             extra={"outputs": outputs_dict},
         )
     elif final_state.awaiting_human_approval:

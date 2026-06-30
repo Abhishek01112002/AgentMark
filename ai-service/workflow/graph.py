@@ -57,6 +57,7 @@ from agents.publisher import publisher_agent
 from agents.human_approval import human_approval_node
 from workflow.routing import should_continue_after_reviewer, route_after_human_approval
 from utils.redis_publisher import publish_agent_event
+from utils.cancellation import is_campaign_cancelled
 
 
 # ==================== NODE WRAPPER FUNCTIONS ====================
@@ -563,6 +564,27 @@ def publisher_node(state: CampaignState) -> dict:
         }
 
 
+def check_cancellation(state: CampaignState) -> str:
+    """
+    Conditional edge function checked at agent boundaries.
+    Returns 'cancelled' to route to cancelled_node, or 'continue' to proceed.
+    """
+    if is_campaign_cancelled(state.campaign_id):
+        logger.info(f"Campaign {state.campaign_id} cancellation detected — routing to cancelled_node")
+        return "cancelled"
+    return "continue"
+
+
+def cancelled_node(state: CampaignState) -> dict:
+    """Terminal node representing campaign cancellation."""
+    logger.info(f"Campaign {state.campaign_id} pipeline halted — cancelled by user")
+    return {
+        "status": "cancelled",
+        "cancelled": True,
+        "error": "Campaign cancelled by user"
+    }
+
+
 # ==================== BUILD THE GRAPH ====================
 
 def create_campaign_graph():
@@ -594,7 +616,7 @@ def create_campaign_graph():
     # 1. Create StateGraph with CampaignState
     graph = StateGraph(CampaignState)
     
-    # 2. Add all 8 agent nodes (7 agents + human approval)
+    # 2. Add all agent nodes (including cancelled terminal node)
     graph.add_node("manager", manager_node)
     graph.add_node("research", research_node)
     graph.add_node("strategy", strategy_node)
@@ -603,14 +625,51 @@ def create_campaign_graph():
     graph.add_node("reviewer", reviewer_node)
     graph.add_node("human_approval", human_approval_wrapper)
     graph.add_node("publisher", publisher_node)
+    graph.add_node("cancelled_node", cancelled_node)
     
-    # 3. Add linear edges (sequential flow - FIRST TIME ONLY)
+    # 3. Add linear edges with cancellation checks (sequential flow)
     graph.add_edge(START, "manager")              # START → manager
-    graph.add_edge("manager", "research")         # manager → research
-    graph.add_edge("research", "strategy")        # research → strategy  
-    graph.add_edge("strategy", "copywriter")      # strategy → copywriter
-    graph.add_edge("copywriter", "image_prompt")  # copywriter → image_prompt
-    graph.add_edge("image_prompt", "reviewer")    # image_prompt → reviewer
+    
+    graph.add_conditional_edges(
+        "manager",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "research"
+        }
+    )
+    graph.add_conditional_edges(
+        "research",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "strategy"
+        }
+    )
+    graph.add_conditional_edges(
+        "strategy",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "copywriter"
+        }
+    )
+    graph.add_conditional_edges(
+        "copywriter",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "image_prompt"
+        }
+    )
+    graph.add_conditional_edges(
+        "image_prompt",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "reviewer"
+        }
+    )
     
     # 4. Add conditional edge after reviewer (AI DECISION POINT)
     # Routes based on AI review outcome
@@ -623,7 +682,8 @@ def create_campaign_graph():
             "revise_strategy": "strategy",       # If strategy needs revision → back to strategy
             "revise_copy": "copywriter",         # If copy needs revision → back to copywriter
             "revise_image": "image_prompt",      # If image needs revision → back to image_prompt
-            "end": END                           # If max revisions reached → END
+            "end": END,                           # If max revisions reached → END
+            "cancelled": "cancelled_node"        # If campaign cancelled
         }
     )
     
@@ -639,11 +699,13 @@ def create_campaign_graph():
             "revise_copy": "copywriter",         # If human wants copy revision → back to copywriter
             "revise_image": "image_prompt",      # If human wants image revision → back to image_prompt
             "end": END,                          # If awaiting human approval → END
+            "cancelled": "cancelled_node"        # If campaign cancelled
         }
     )
     
-    # 6. Add final edge
+    # 6. Add final edges
     graph.add_edge("publisher", END)              # publisher → END
+    graph.add_edge("cancelled_node", END)         # cancelled_node → END
     
     # 7. Compile the graph
     logger.info("✅ Graph with HITL compiled successfully with checkpointer!")

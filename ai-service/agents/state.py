@@ -196,6 +196,11 @@ class CampaignState(BaseModel):
         default=False,
         description="Flag indicating workflow has completely finished (set by Publisher)"
     )
+    
+    cancelled: bool = Field(
+        default=False,
+        description="Flag indicating if the campaign was cancelled by the user"
+    )
 
 
 # Module-level information

@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 import json
 from agents.state import CampaignState
+from utils.cancellation import is_campaign_cancelled
 
 # Maximum number of revisions allowed per agent
 MAX_REVISIONS = 3
@@ -54,11 +55,16 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
     - "revise_copy" → Send copywriter back for revision
     - "revise_image" → Send image_prompt back for revision
     - "end" → End workflow (max revisions reached or critical error)
+    - "cancelled" → Cancel campaign pipeline
     """
     
     logger.info("\n" + "="*80)
     logger.info("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
     logger.info("="*80)
+
+    if is_campaign_cancelled(state.campaign_id):
+        logger.info(f"Campaign {state.campaign_id} cancelled during Reviewer routing — halting graph")
+        return "cancelled"
     
     # If human already approved, route straight to human_approval node to proceed to publisher
     if state.human_approval_status == "approved":
@@ -187,6 +193,7 @@ def route_after_human_approval(state: CampaignState) -> str:
     - "revise_strategy" → Send strategy back for revision
     - "revise_copy" → Send copywriter back for revision
     - "revise_image" → Send image_prompt back for revision
+    - "cancelled" → Cancel campaign pipeline
     
     Note: If awaiting_human_approval=True, workflow will END and must be resumed later
     """
@@ -194,6 +201,10 @@ def route_after_human_approval(state: CampaignState) -> str:
     logger.info("\n" + "="*80)
     logger.info("🔀 ROUTING DECISION AFTER HUMAN APPROVAL")
     logger.info("="*80)
+
+    if is_campaign_cancelled(state.campaign_id):
+        logger.info(f"Campaign {state.campaign_id} cancelled during Human Approval routing — halting graph")
+        return "cancelled"
     
     # Check for upstream errors to prevent infinite loops
     if state.status == "error" or state.error:

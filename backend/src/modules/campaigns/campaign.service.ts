@@ -2,6 +2,7 @@ import prisma from '../../db';
 import { AIAgentOutputs } from './campaign.types';
 import { notificationService } from '../notifications/notification.service';
 import { saveMemorySnapshot } from './campaign-memory.service';
+import { redis } from '../../utils/redis';
 
 export const campaignService = {
   async create(projectId: string, data: {
@@ -78,8 +79,26 @@ export const campaignService = {
 
     const existing = await prisma.campaign.findUnique({
       where: { id: campaignId },
-      select: { aiOutputs: true },
+      select: { aiOutputs: true, status: true },
     });
+
+    if (existing?.status === 'deleted') {
+      // Clean up database records (hard-delete)
+      await prisma.campaignMemorySnapshot.deleteMany({
+        where: { campaignId }
+      });
+      await prisma.campaign.delete({ where: { id: campaignId } });
+      
+      // Clean up Redis cancellation flag
+      try {
+        await redis.del(`cancel:${campaignId}`);
+      } catch (err) {
+        console.error(`Failed to delete Redis cancel flag for ${campaignId}:`, err);
+      }
+      console.log(`[Campaign Service] Campaign ${campaignId} hard-deleted after pipeline confirmed stop`);
+      return existing as any;
+    }
+
     const currentOutputs = existing?.aiOutputs
       ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs) as Record<string, any>
       : {};
@@ -121,7 +140,10 @@ export const campaignService = {
 
   async getAll(projectId: string) {
     return prisma.campaign.findMany({
-      where: { projectId },
+      where: { 
+        projectId,
+        status: { not: 'deleted' }
+      },
       orderBy: { createdAt: 'desc' },
     });
   },
@@ -139,12 +161,30 @@ export const campaignService = {
 
     if (!campaign) return null;
 
-    // Delete memory snapshot if exists first to avoid foreign key violations
-    await prisma.campaignMemorySnapshot.deleteMany({
-      where: { campaignId: id }
-    });
+    // Set Redis cancellation flag
+    try {
+      await redis.set(`cancel:${id}`, "true", "EX", 3600);
+      console.log(`[Campaign Service] Set cancellation flag in Redis for campaign ${id}`);
+    } catch (error) {
+      console.error("Failed to set cancellation flag in Redis:", error);
+    }
 
-    await prisma.campaign.delete({ where: { id } });
+    if (campaign.status === 'completed' || campaign.status === 'failed') {
+      // Hard delete immediately since it is not running
+      await prisma.campaignMemorySnapshot.deleteMany({
+        where: { campaignId: id }
+      });
+      await prisma.campaign.delete({ where: { id } });
+      console.log(`[Campaign Service] Campaign ${id} hard-deleted immediately (not running)`);
+    } else {
+      // Soft-delete to hide from dashboard, python pipeline will hard-delete on exit
+      await prisma.campaign.update({
+        where: { id },
+        data: { status: 'deleted' }
+      });
+      console.log(`[Campaign Service] Campaign ${id} marked 'deleted' for pipeline cancellation`);
+    }
+
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (project) {
       await notificationService.create(project.userId, {
