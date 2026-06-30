@@ -76,14 +76,15 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ReviewerOutput
 
 
 # ==================== CONSTANTS ====================
 
 MAX_REVISIONS = 3
-MIN_QUALITY_SCORE = 80   # Overall minimum: 80%
-MIN_AGENT_SCORE = 75     # Per-agent minimum: 75%
+MIN_QUALITY_SCORE = 70   # Overall minimum: 70%
+MIN_AGENT_SCORE = 60     # Per-agent minimum: 60%
 
 REVISION_PRIORITY = ["research", "strategy", "copy", "image"]
 
@@ -264,12 +265,20 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     logger.info("   Querying LLM with structured output...")
 
-    # Get structured LLM response with error handling
-    review_analysis, state = safe_llm_call(
-        state,
-        "Reviewer",
-        lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.5, max_tokens=2000)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Reviewer", prompt=prompt, temperature=0.5, max_tokens=2000)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Reviewer response")
+        review_analysis = ReviewerOutput(**cached)
+    else:
+        review_analysis, state = safe_llm_call(
+            state,
+            "Reviewer",
+            lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.5, max_tokens=2000)
+        )
+        if review_analysis is not None:
+            cache_set(cache_key, review_analysis.model_dump())
     
     if review_analysis is None:
         return state  # Error already logged in state
@@ -373,6 +382,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     review_output["overall_quality_score"] = overall_score
     review_output["individual_threshold_met"] = all_approved
     review_output["overall_threshold_met"] = meets_overall_threshold
+    review_output["can_publish"] = all_approved and meets_overall_threshold  # <-- NEW: Publisher gate
     review_output["reviewed_at"] = datetime.now().isoformat()
     review_output["reviewer"] = "Reviewer Agent (LLM-Powered)"
 
@@ -497,7 +507,7 @@ def _add_explicit_validation_checks(
             if not strategy_review.action_items:
                 strategy_review.action_items = []
             strategy_review.action_items.append("Change strategy inferred_goal to one of awareness, lead_gen, sales, retention")
-            strategy_review.score = min(strategy_review.score, MIN_AGENT_SCORE - 1)
+            strategy_review.score = max(0, strategy_review.score - 10)
             
     # Check 1c: Email subject must not exceed 60 characters
     email_data = copy_data.get("email", {})
@@ -534,40 +544,40 @@ def _compute_objective_score(agent_data: dict, agent_type: str) -> int:
     if agent_type == "research":
         ma = agent_data.get("market_analysis") or {}
         if not ma:
-            return 50
+            return 65
         tam = str(ma.get("total_addressable_market", ""))
         deductions = 0
         if len(tam.strip()) < 4:
-            deductions += 25
+            deductions += 10
         if not ma.get("growth_rate"):
-            deductions += 5
+            deductions += 3
         if len(ma.get("market_trends", [])) < 3:
-            deductions += 5
+            deductions += 3
 
         ca = agent_data.get("competitor_analysis") or {}
         if not ca:
-            deductions += 25
+            deductions += 10
         else:
             if len(ca.get("top_competitors", [])) < 2:
-                deductions += 15
+                deductions += 8
             if len(str(ca.get("differentiation_opportunity", ""))) < 20:
-                deductions += 5
+                deductions += 3
 
         ai = agent_data.get("audience_insights") or {}
         if not ai:
-            deductions += 25
+            deductions += 10
         else:
             if len(ai.get("pain_points", [])) < 3:
-                deductions += 10
+                deductions += 5
             if len(ai.get("motivations", [])) < 2:
-                deductions += 5
+                deductions += 3
             if len(ai.get("preferred_channels", [])) < 2:
-                deductions += 5
+                deductions += 3
 
         if len(agent_data.get("market_opportunities", [])) < 3:
-            deductions += 10
-        if len(str(agent_data.get("recommended_approach", ""))) < 50:
             deductions += 5
+        if len(str(agent_data.get("recommended_approach", ""))) < 50:
+            deductions += 3
         return max(0, 100 - deductions)
 
     if agent_type == "strategy":

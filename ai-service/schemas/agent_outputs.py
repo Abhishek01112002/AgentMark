@@ -1,6 +1,6 @@
 from __future__ import annotations
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Literal
 
 
@@ -137,6 +137,66 @@ def normalize_channel_list(channels: list) -> list:
     return result
 
 
+def normalize_campaign_goal(raw) -> str:
+    """
+    Normalize LLM-friendly campaign goal wording to the strict schema enum.
+    This prevents harmless values like "sale" or "lead generation" from
+    triggering another expensive LLM call.
+    """
+    if raw is None:
+        return "awareness"
+
+    value = str(raw).lower().strip()
+    normalized = (
+        value.replace("-", "_")
+        .replace(" ", "_")
+        .replace("/", "_")
+        .replace("&", "_")
+    )
+    while "__" in normalized:
+        normalized = normalized.replace("__", "_")
+    normalized = normalized.strip("_")
+
+    exact_aliases = {
+        "awareness": "awareness",
+        "brand_awareness": "awareness",
+        "visibility": "awareness",
+        "reach": "awareness",
+        "lead": "lead_gen",
+        "leads": "lead_gen",
+        "lead_gen": "lead_gen",
+        "lead_generation": "lead_gen",
+        "demand_gen": "lead_gen",
+        "demand_generation": "lead_gen",
+        "signup": "lead_gen",
+        "signups": "lead_gen",
+        "sale": "sales",
+        "sales": "sales",
+        "conversion": "sales",
+        "conversions": "sales",
+        "revenue": "sales",
+        "purchase": "sales",
+        "purchases": "sales",
+        "retention": "retention",
+        "retain": "retention",
+        "loyalty": "retention",
+        "engagement": "retention",
+    }
+    if normalized in exact_aliases:
+        return exact_aliases[normalized]
+
+    if "lead" in normalized or "signup" in normalized or "demand" in normalized:
+        return "lead_gen"
+    if "sale" in normalized or "conversion" in normalized or "revenue" in normalized or "purchase" in normalized:
+        return "sales"
+    if "retain" in normalized or "retention" in normalized or "loyalty" in normalized:
+        return "retention"
+    if "aware" in normalized or "visibility" in normalized or "reach" in normalized:
+        return "awareness"
+
+    return normalized
+
+
 # ==================== MANAGER OUTPUT SCHEMA ====================
 
 class ManagerOutput(BaseModel):
@@ -173,6 +233,8 @@ class ResearchOutput(BaseModel):
     market_opportunities: List[str] = Field(description="Market growth opportunities")
     recommended_approach: str = Field(description="Recommended strategic approach")
     literas_sources: list[dict] = Field(default_factory=list, description="LiteRAG web search sources")
+    tavily_sources: list[dict] = Field(default_factory=list, description="Tavily web search sources")
+    search_status: dict = Field(default_factory=dict, description="Search success/failure diagnostics")
 
 
 # ==================== STRATEGY OUTPUT SCHEMA ====================
@@ -196,21 +258,21 @@ class TimelinePhase(BaseModel):
     end_date: Optional[str] = Field(default=None, description="Phase end date")
 
 class SuccessMetrics(BaseModel):
-    kpis: List[str] = Field(description="Key performance indicators")
-    targets: Dict[str, str] = Field(description="Target values for KPIs")
+    kpis: List[str] = Field(default_factory=list, description="Key performance indicators")
+    targets: Dict[str, str] = Field(default_factory=dict, description="Target values for KPIs")
 
 class CompetitiveDifferentiation(BaseModel):
-    competitors: List[str] = Field(description="List of main competitors")
-    primary_differentiation: str = Field(description="Primary differentiation strategy")
-    competitive_advantage: str = Field(description="Key competitive advantage")
-    unique_value_proposition: str = Field(description="Unique value proposition")
-    positioning_statement: str = Field(description="Market positioning")
+    competitors: List[str] = Field(default_factory=list, description="List of main competitors")
+    primary_differentiation: str = Field(default="", description="Primary differentiation strategy")
+    competitive_advantage: str = Field(default="", description="Key competitive advantage")
+    unique_value_proposition: str = Field(default="", description="Unique value proposition")
+    positioning_statement: str = Field(default="", description="Market positioning")
 
 class BudgetAllocation(BaseModel):
-    high_priority_channels: str = Field(description="Budget for high priority channels")
-    medium_priority_channels: str = Field(description="Budget for medium priority channels")
-    content_creation: str = Field(description="Budget for content creation")
-    community_management: str = Field(description="Budget for community management")
+    high_priority_channels: str = Field(default="", description="Budget for high priority channels")
+    medium_priority_channels: str = Field(default="", description="Budget for medium priority channels")
+    content_creation: str = Field(default="", description="Budget for content creation")
+    community_management: str = Field(default="", description="Budget for community management")
 
 class Execution(BaseModel):
     channels: List[str] = Field(description="Execution channels")
@@ -241,6 +303,11 @@ class StrategyOutput(BaseModel):
     inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(description="Campaign goal type: awareness, lead_gen, sales, or retention")
     research_foundation: ResearchFoundation
     execution: Execution
+
+    @field_validator("inferred_goal", mode="before")
+    @classmethod
+    def normalize_inferred_goal(cls, value):
+        return normalize_campaign_goal(value)
 
 
 # ==================== COPYWRITER OUTPUT SCHEMA ====================
@@ -288,6 +355,11 @@ class CopywriterOutput(BaseModel):
     messaging_framework: MessagingFramework
     strategic_alignment: StrategicAlignment
     copy_readiness: Dict[str, bool] = Field(description="Channel readiness flags")
+
+    @field_validator("inferred_goal", mode="before")
+    @classmethod
+    def normalize_inferred_goal(cls, value):
+        return normalize_campaign_goal(value)
 
 
 # ==================== IMAGE PROMPT OUTPUT SCHEMA ====================
@@ -379,7 +451,7 @@ class ChannelPublishingPlan(BaseModel):
 class CalendarActivity(BaseModel):
     day: str = Field(description="Day of week + date, e.g. 'Monday 2026-06-29'")
     channel: Channel
-    content_type: str = Field(description="Format of content e.g. Reel, Story, Post, Ad, Email, Video")
+    content_type: str = Field(default="Post", description="Format of content e.g. Reel, Story, Post, Ad, Email, Video")
     description: str = Field(description="Detailed publishing instructions and execution directions (3-4 sentences). Explain exactly what the content contains, the visual setup, the key message, and step-by-step directions for the team.")
     caption_hook: str = Field(description="Opening line or hook for the content piece")
     effort: Literal["low", "medium", "high"]

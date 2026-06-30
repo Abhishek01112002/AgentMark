@@ -201,7 +201,11 @@ const NewCampaignContent: React.FC = () => {
     }
 
     const keys = llmSettingsService.get();
-    const hasKeys = !!(keys.gemini.key.trim() || keys.groq.key.trim() || keys.openai.key.trim());
+    const hasKeys = !!(
+      keys.gemini.keys.some((k) => k.value.trim()) ||
+      keys.groq.keys.some((k) => k.value.trim()) ||
+      keys.openai.keys.some((k) => k.value.trim())
+    );
     if (!hasKeys) {
       const proceed = window.confirm(
         "You haven't configured any custom API keys in Settings > API Keys. The campaign will run using the server's default fallback keys. Do you want to proceed?"

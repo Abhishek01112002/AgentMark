@@ -32,9 +32,14 @@ KEY FEATURES:
 """
 
 import logging
+import time
 logger = logging.getLogger(__name__)
 
 from langgraph.graph import StateGraph, START, END
+from langgraph.checkpoint.memory import MemorySaver
+
+# LangGraph state checkpointer for HITL interrupts and resumption
+checkpointer = MemorySaver()
 import sys
 from pathlib import Path
 
@@ -85,6 +90,7 @@ def manager_node(state: CampaignState) -> dict:
     
     try:
         updated_state = manager_agent(state)
+        time.sleep(2)  # spacing between agent calls
         publish_agent_event(state.campaign_id, "manager", "completed", extra=_get_revision_counts_extra(updated_state))
         return {
             "manager_output": updated_state.manager_output,
@@ -141,6 +147,7 @@ def research_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = research_agent(state)
+        time.sleep(2)  # spacing between agent calls
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -215,6 +222,7 @@ def strategy_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = strategy_agent(state)
+        time.sleep(2)  # spacing between agent calls
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -289,6 +297,7 @@ def copywriter_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = copywriter_agent(state)
+        time.sleep(2)  # spacing between agent calls
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -361,6 +370,7 @@ def image_prompt_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = image_prompt_agent(state)
+        time.sleep(2)  # spacing between agent calls
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -417,6 +427,7 @@ def reviewer_node(state: CampaignState) -> dict:
     
     try:
         updated_state = reviewer_agent(state)
+        time.sleep(2)  # spacing between agent calls
         
         # Persist the targeted revision agent from the AI review status in human_revision_target
         if updated_state.review_output:
@@ -535,6 +546,7 @@ def publisher_node(state: CampaignState) -> dict:
     
     try:
         updated_state = publisher_agent(state)
+        time.sleep(2)  # spacing between agent calls
         publish_agent_event(state.campaign_id, "publisher", "completed", extra=_get_revision_counts_extra(updated_state))
         return {
             "publisher_output": updated_state.publisher_output,
@@ -634,8 +646,11 @@ def create_campaign_graph():
     graph.add_edge("publisher", END)              # publisher → END
     
     # 7. Compile the graph
-    logger.info("✅ Graph with HITL compiled successfully!")
-    compiled_graph = graph.compile()
+    logger.info("✅ Graph with HITL compiled successfully with checkpointer!")
+    compiled_graph = graph.compile(
+        checkpointer=checkpointer,
+        interrupt_before=["human_approval"]
+    )
     
     return compiled_graph
 

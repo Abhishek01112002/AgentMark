@@ -5,7 +5,7 @@ Request/response models and enums for campaign creation.
 """
 
 import json
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 # ── Request Model ─────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ class CampaignCreateRequest(BaseModel):
         description="Campaign brief (optional — auto-generated if omitted)",
         examples=["Drive 100 free trial signups in 30 days targeting Product Managers."],
     )
-    llm_config: Optional[Dict[str, Optional[str]]] = Field(
+    llm_config: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Provider API keys sent from the frontend",
     )

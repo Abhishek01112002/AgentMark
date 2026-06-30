@@ -17,6 +17,8 @@ export interface AIServiceCampaignRequest {
     gemini_api_key?: string | null;
     groq_api_key?: string | null;
     openai_api_key?: string | null;
+    tavily_api_key?: string | null;
+    provider_order?: string[];
   };
   campaign_id: string;
   manager_output?: string | null;
@@ -164,6 +166,38 @@ class AIServiceClient {
         throw new Error('AI Service health check timed out');
       }
       throw new Error('AI Service is unavailable');
+    }
+  }
+
+  /**
+   * Test an API key by making a minimal LLM call
+   */
+  async testKey(provider: string, apiKey: string): Promise<{ success: boolean; message: string }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const response = await fetch(`${this.baseUrl}/campaigns/test-key`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, api_key: apiKey }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
+        return { success: false, message: formatAiServiceError(errorData.detail, response.statusText) };
+      }
+
+      return await response.json() as { success: boolean; message: string };
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        return { success: false, message: 'Request timed out' };
+      }
+      return { success: false, message: error.message || 'Connection failed' };
     }
   }
 

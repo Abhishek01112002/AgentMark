@@ -52,15 +52,47 @@ def get_campaign_semaphore() -> asyncio.Semaphore:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-def _run_workflow(workflow, state: CampaignState) -> CampaignState:
+def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None) -> CampaignState:
     """Invoke LangGraph workflow synchronously (called via threadpool)."""
-    result = workflow.invoke(state, config={"recursion_limit": 60})
+    from llm.factory import set_llm_config
+    set_llm_config(llm_config)
+    
+    config = {
+        "configurable": {"thread_id": state.campaign_id},
+        "recursion_limit": 100
+    }
+    
+    current_state = workflow.get_state(config)
+    
+    if current_state.values:
+        logger.info("🔄 Resuming workflow from checkpoint thread_id=%s", state.campaign_id)
+        workflow.update_state(
+            config,
+            {
+                "human_approval_status": state.human_approval_status,
+                "human_feedback": state.human_feedback,
+                "human_revision_target": state.human_revision_target,
+                "awaiting_human_approval": False
+            },
+            as_node="human_approval"
+        )
+        result = workflow.invoke(None, config=config)
+    else:
+        logger.info("🚀 Initiating new campaign workflow run thread_id=%s", state.campaign_id)
+        result = workflow.invoke(state, config=config)
+        
+    next_nodes = workflow.get_state(config).next
+    
     if isinstance(result, dict):
+        if next_nodes and "human_approval" in next_nodes:
+            result["awaiting_human_approval"] = True
+            result["status"] = "awaiting_human_approval"
         return CampaignState(**result)
-    return result
-
-
+    else:
+        if next_nodes and "human_approval" in next_nodes:
+            result.awaiting_human_approval = True
+            result.status = "awaiting_human_approval"
+        return result
 # ── Route ─────────────────────────────────────────────────────────────────────
 
 @router.post(
@@ -151,10 +183,9 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         )
 
     try:
-        set_llm_config(payload.llm_config)
         # Run blocking LangGraph call in our dedicated campaign thread pool — never block the main event loop
         loop = asyncio.get_running_loop()
-        final_state = await loop.run_in_executor(campaign_executor, _run_workflow, workflow, state)
+        final_state = await loop.run_in_executor(campaign_executor, _run_workflow, workflow, state, payload.llm_config)
     except Exception as exc:
         logger.error("Workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
         # Publish failure event to Redis so Express can update DB status.
@@ -288,3 +319,52 @@ async def enhance_prompt_route(payload: EnhancePromptRequest):
         return EnhancePromptResponse(enhanced_prompt=result.strip())
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prompt enhancement failed: {str(e)}")
+
+
+class TestKeyRequest(BaseModel):
+    provider: str  # "gemini" | "groq" | "openai" | "tavily"
+    api_key: str
+
+
+class TestKeyResponse(BaseModel):
+    success: bool
+    message: str
+
+
+@router.post("/test-key", response_model=TestKeyResponse)
+async def test_key_route(payload: TestKeyRequest):
+    """
+    Test an API key by making a minimal LLM call.
+    """
+    from llm.factory import get_llm_client
+
+    try:
+        if payload.provider.lower() == "tavily":
+            from services.search_service import search_web
+            result = await run_in_threadpool(
+                search_web,
+                "AgentMark marketing automation market trends",
+                None,
+                1,
+                payload.api_key,
+            )
+            if result.success:
+                return TestKeyResponse(success=True, message="Tavily API key is valid")
+            return TestKeyResponse(success=False, message=result.error_message or "Tavily search failed")
+
+        config = {f"{payload.provider}_api_key": payload.api_key}
+        set_llm_config(config)
+        client = get_llm_client(payload.provider)
+        result = await run_in_threadpool(client.generate, "Reply with a single word: ok")
+        if result and result.strip():
+            return TestKeyResponse(success=True, message="API key is valid")
+        return TestKeyResponse(success=False, message="API returned empty response")
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "invalid" in error_msg or "unauthorized" in error_msg or "not found" in error_msg or "401" in error_msg or "key" in error_msg:
+            return TestKeyResponse(success=False, message="Invalid API key")
+        if "denied" in error_msg or "403" in error_msg:
+            return TestKeyResponse(success=False, message="Access denied — enable the API in your Google Cloud project")
+        if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
+            return TestKeyResponse(success=False, message="Rate limited — try again later")
+        return TestKeyResponse(success=False, message=f"Connection failed: {str(e)[:80]}")

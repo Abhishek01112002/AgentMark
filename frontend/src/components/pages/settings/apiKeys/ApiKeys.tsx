@@ -1,239 +1,489 @@
-import React, { useMemo, useState } from 'react';
-import { Eye, EyeOff, Lock, Info, List } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Plus, Trash2, RefreshCw, CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { llmSettingsService, LlmProviderId, LlmSettingsState } from '../../../../services/llm-settings.service';
+import api from '../../../../services/api';
+import { notificationsService } from '../../../../services/notifications.service';
+import {
+  llmSettingsService,
+  LlmProviderId,
+  LlmSettingsState,
+  validateKey,
+} from '../../../../services/llm-settings.service';
 
-interface ApiKeyConfig {
+interface ProviderMeta {
   id: LlmProviderId;
   name: string;
   description: string;
   placeholder: string;
   format: string;
   docs: string;
-  required: boolean;
+  tag: 'essential' | 'recommended' | 'optional';
   usage: string;
-  multiKey?: boolean;
+}
+
+const TAG_STYLES: Record<ProviderMeta['tag'], { label: string; bg: string; border: string; text: string }> = {
+  essential: {
+    label: 'ESSENTIAL',
+    bg: 'bg-danger/10',
+    border: 'border-danger/30',
+    text: 'text-danger',
+  },
+  recommended: {
+    label: 'RECOMMENDED',
+    bg: 'bg-secondary/10',
+    border: 'border-secondary/30',
+    text: 'text-secondary',
+  },
+  optional: {
+    label: 'OPTIONAL',
+    bg: 'bg-tertiary/10',
+    border: 'border-tertiary/30',
+    text: 'text-tertiary',
+  },
+};
+
+const PROVIDERS: ProviderMeta[] = [
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    description: "Google's LLM. Powers all 7 campaign agents (Manager → Publisher).",
+    placeholder: 'Paste your Gemini API key\u2026',
+    format: 'AIza... or AQ...',
+    docs: 'https://aistudio.google.com/app/apikey',
+    tag: 'optional',
+    usage: 'All 7 agents via SmartClient failover. Position #2 in default chain.',
+  },
+  {
+    id: 'groq',
+    name: 'Groq',
+    description: 'Meta LLaMA via Groq. Fast, cheap inference for all agents.',
+    placeholder: 'Paste your Groq API key\u2026',
+    format: 'gsk_...',
+    docs: 'https://console.groq.com',
+    tag: 'optional',
+    usage: 'All 7 agents. Aggressive rate limits — best as backup. Position #3.',
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    description: 'GPT-4o + DALL-E 3. Powers all 7 agents AND image generation.',
+    placeholder: 'Paste your OpenAI API key\u2026',
+    format: 'sk-...',
+    docs: 'https://platform.openai.com',
+    tag: 'recommended',
+    usage: 'All 7 agents + DALL-E 3 image generation. Tried first in failover chain.',
+  },
+  {
+    id: 'tavily',
+    name: 'Tavily',
+    description: 'AI web search. Powers ONLY the Research agent (not an LLM).',
+    placeholder: 'Paste your Tavily API key\u2026',
+    format: 'tvly-...',
+    docs: 'https://app.tavily.com',
+    tag: 'recommended',
+    usage: 'Research agent ONLY. Market trends, competitors, industry data. Does NOT generate campaign content.',
+  },
+];
+
+function DeleteConfirm({ label, onConfirm, onCancel }: { label: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-surface border border-border-base rounded-xl p-6 shadow-2xl max-w-sm mx-4">
+        <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">Delete {label}?</h3>
+        <p className="font-body-sm text-body-sm text-text-secondary mb-6">This cannot be undone. The key will be permanently removed.</p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm">Cancel</button>
+          <button onClick={onConfirm} className="px-4 py-2 bg-danger text-on-danger rounded-lg hover:opacity-90 transition-all text-sm">Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TestKeyButton({
+  status,
+  onClick,
+  disabled,
+}: {
+  status: 'idle' | 'testing' | 'passed' | 'failed';
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex items-center gap-1.5 px-3 py-1.5 border border-border-base rounded-lg text-xs text-text-secondary hover:bg-surface-container-high transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+      title={status === 'passed' ? 'Connection successful' : status === 'failed' ? 'Connection failed' : 'Test connection'}
+    >
+      {status === 'testing' ? <><RefreshCw size={12} className="animate-spin" /> Testing</>
+        : status === 'passed' ? <><CheckCircle2 size={12} className="text-secondary" /> Connected</>
+        : status === 'failed' ? <><XCircle size={12} className="text-danger" /> Failed</>
+        : <><RefreshCw size={12} /> Test</>}
+    </button>
+  );
+}
+
+function maskKey(key: string): string {
+  if (key.length <= 8) return '\u2022'.repeat(key.length);
+  return key.slice(0, 4) + '\u2022'.repeat(12) + key.slice(-4);
 }
 
 const ApiKeys: React.FC = () => {
   const [settings, setSettings] = useState<LlmSettingsState>(() => llmSettingsService.get());
-  const [showKeys, setShowKeys] = useState<Record<LlmProviderId, boolean>>({
-    gemini: false,
-    groq: false,
-    openai: false,
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const [newKeyValues, setNewKeyValues] = useState<Record<LlmProviderId, string>>({ gemini: '', groq: '', openai: '', tavily: '' });
+  const [formatErrors, setFormatErrors] = useState<Record<LlmProviderId, string>>({ gemini: '', groq: '', openai: '', tavily: '' });
+  const [hiddenKeys, setHiddenKeys] = useState<Record<string, boolean>>({});
+  const [testStatus, setTestStatus] = useState<Record<string, 'idle' | 'testing' | 'passed' | 'failed'>>({});
+  const [deleteTarget, setDeleteTarget] = useState<{ provider: LlmProviderId; index: number } | null>(null);
+  const [confirmSave, setConfirmSave] = useState<{ provider: LlmProviderId; value: string; testFirst: boolean } | null>(null);
+  const order = [...settings.providerOrder, 'tavily' as LlmProviderId].filter((id, index, arr) => arr.indexOf(id) === index);
 
-  const configs: ApiKeyConfig[] = [
-    {
-      id: 'gemini',
-      name: 'Gemini API Key',
-      description: 'Primary provider for all agents. Supports multiple keys for rate limit bypass.',
-      placeholder: 'AIza... (paste multiple keys separated by commas to multiply your RPM)',
-      format: 'AIza...',
-      docs: 'https://aistudio.google.com/app/apikey',
-      required: true,
-      usage: 'Used first for all AI calls. Add multiple keys (key1,key2,key3) to bypass the 15 RPM free-tier limit.',
-      multiKey: true,
-    },
-    {
-      id: 'groq',
-      name: 'Groq API Key',
-      description: 'Fast fallback provider for the full agent stack.',
-      placeholder: 'gsk_...',
-      format: 'gsk_...',
-      docs: 'https://console.groq.com',
-      required: false,
-      usage: 'Used when Gemini is missing.',
-      multiKey: false,
-    },
-    {
-      id: 'openai',
-      name: 'OpenAI API Key',
-      description: 'Final fallback provider for the full agent stack.',
-      placeholder: 'sk-...',
-      format: 'sk-...',
-      docs: 'https://platform.openai.com',
-      required: false,
-      usage: 'Used when Gemini and Groq are unavailable.',
-      multiKey: false,
-    },
-  ];
+  useEffect(() => {
+    for (const id of order) {
+      const keys = settings[id].keys;
+      for (let i = 0; i < keys.length; i++) {
+        const sk = `${id}-${i}`;
+        if (!(sk in hiddenKeys)) {
+          setHiddenKeys((prev) => ({ ...prev, [sk]: true }));
+        }
+      }
+    }
+  }, []);
 
-  const providerOrder: LlmProviderId[] = ['gemini', 'groq', 'openai'];
+  const testKey = useCallback(async (provider: LlmProviderId, keyValue: string, keyId: string) => {
+    if (!keyValue.trim()) return false;
+    setTestStatus((prev) => ({ ...prev, [keyId]: 'testing' }));
+    try {
+      const res = await api.post('/campaigns/test-key', { provider, apiKey: keyValue });
+      const data = res.data as { success: boolean; message: string };
+      if (data.success) {
+        setTestStatus((prev) => ({ ...prev, [keyId]: 'passed' }));
+        toast.success(`${PROVIDERS.find((p) => p.id === provider)?.name}: ${data.message}`);
+      } else {
+        setTestStatus((prev) => ({ ...prev, [keyId]: 'failed' }));
+        toast.error(`${PROVIDERS.find((p) => p.id === provider)?.name}: ${data.message}`);
+      }
+      return data.success;
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Connection failed';
+      setTestStatus((prev) => ({ ...prev, [keyId]: 'failed' }));
+      toast.error(`${PROVIDERS.find((p) => p.id === provider)?.name}: ${msg}`);
+      return false;
+    }
+  }, []);
 
-  const hasAtLeastOneKey = useMemo(
-    () => providerOrder.some((id) => settings[id].key.trim().length > 0),
-    [settings]
-  );
+  const deleteSingleKey = useCallback((provider: LlmProviderId, index: number) => {
+    const name = PROVIDERS.find((p) => p.id === provider)?.name || provider;
+    const keys = settings[provider].keys.filter((_, i) => i !== index);
+    const updated = { ...settings, [provider]: { keys } };
+    llmSettingsService.save(updated);
+    setSettings(updated);
+    toast.success(`${name} key removed`);
+    setDeleteTarget(null);
+    notificationsService.create({
+      type: 'warning',
+      title: 'API key deleted',
+      message: `A ${name} API key was removed from your workspace.`,
+    }).catch(() => {});
+  }, [settings]);
 
-  const updateProvider = (id: LlmProviderId, patch: Partial<LlmSettingsState[LlmProviderId]>) => {
-    setSettings((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        ...patch,
-      },
-    }));
-  };
+  const doSaveKey = useCallback(async (provider: LlmProviderId, keyValue: string) => {
+    const name = PROVIDERS.find((p) => p.id === provider)?.name || provider;
+    const existing = settings[provider].keys;
+    const updated = { ...settings, [provider]: { keys: [...existing, { value: keyValue }] } };
+    llmSettingsService.save(updated);
+    setSettings(updated);
+    setNewKeyValues((prev) => ({ ...prev, [provider]: '' }));
+    setConfirmSave(null);
+    toast.success(`${name} API key saved`);
+    await notificationsService.create({
+      type: 'success',
+      title: 'API key saved',
+      message: `${name} API key added successfully.`,
+    });
+  }, [settings]);
 
-  const handleSave = async () => {
-    if (!hasAtLeastOneKey) {
-      toast.error('Add at least one API key before saving');
+  const handleSaveNewKey = useCallback((provider: LlmProviderId, skipTest = false) => {
+    const val = newKeyValues[provider].trim();
+    if (!val) { toast.error('Enter an API key first'); return; }
+
+    // Tavily: no test confirmation, save directly
+    if (provider === 'tavily') {
+      doSaveKey(provider, val);
       return;
     }
 
-    setIsSaving(true);
-    try {
-      llmSettingsService.save(settings);
-      toast.success('API keys saved locally');
-    } catch {
-      toast.error('Failed to save API keys');
-    } finally {
-      setIsSaving(false);
+    if (!skipTest && confirmSave?.provider !== provider) {
+      setConfirmSave({ provider, value: val, testFirst: true });
+      return;
     }
-  };
 
-  const handleDelete = (id: LlmProviderId) => {
-    updateProvider(id, { key: '' });
-    toast.success(`${id.charAt(0).toUpperCase() + id.slice(1)} key removed`);
-  };
+    if (!skipTest) {
+      testKey(provider, val, `${provider}-new`).then((passed) => {
+        if (passed) {
+          doSaveKey(provider, val);
+        } else {
+          setConfirmSave({ provider, value: val, testFirst: false });
+        }
+      });
+    } else {
+      doSaveKey(provider, val);
+    }
+  }, [newKeyValues, confirmSave, testKey, doSaveKey]);
+
+  const addEmptyKey = useCallback((provider: LlmProviderId) => {
+    const lastKey = settings[provider].keys.length;
+    const sk = `${provider}-add-${lastKey}`;
+    setHiddenKeys((prev) => ({ ...prev, [sk]: false }));
+    setNewKeyValues((prev) => ({ ...prev, [provider]: '' }));
+    document.getElementById(`new-key-input-${provider}`)?.focus();
+  }, [settings]);
 
   return (
     <div className="space-y-6">
+      {deleteTarget && (
+        <DeleteConfirm
+          label={`${PROVIDERS.find((p) => p.id === deleteTarget.provider)?.name} key #${deleteTarget.index + 1}`}
+          onConfirm={() => deleteSingleKey(deleteTarget.provider, deleteTarget.index)}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {confirmSave && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-surface border border-border-base rounded-xl p-6 shadow-2xl max-w-sm mx-4">
+            {confirmSave.testFirst ? (
+              <>
+                <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">
+                  {testStatus[`${confirmSave.provider}-new`] === 'testing' ? 'Testing connection...' : 'Test this key first?'}
+                </h3>
+                <p className="font-body-sm text-body-sm text-text-secondary mb-6">
+                  {testStatus[`${confirmSave.provider}-new`] === 'testing'
+                    ? 'Making a test API call to verify the key works before saving. This may take a few seconds...'
+                    : "We'll make a test API call to verify the key is working before saving."}
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
+                    onClick={() => { setConfirmSave(null); }}
+                    className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
+                    onClick={() => handleSaveNewKey(confirmSave.provider, false)}
+                    className="px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-all text-sm flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    {testStatus[`${confirmSave.provider}-new`] === 'testing' ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        Testing...
+                      </>
+                    ) : (
+                      'Test & Save'
+                    )}
+                  </button>
+                  <button
+                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
+                    onClick={() => handleSaveNewKey(confirmSave.provider, true)}
+                    className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm disabled:opacity-50"
+                  >
+                    Save Anyway
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">Test failed</h3>
+                <p className="font-body-sm text-body-sm text-text-secondary mb-6">The API key test failed. Do you still want to save it?</p>
+                <div className="flex gap-3 justify-end">
+                  <button onClick={() => { setConfirmSave(null); }} className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm">Cancel</button>
+                  <button onClick={() => handleSaveNewKey(confirmSave.provider, true)} className="px-4 py-2 bg-danger text-on-danger rounded-lg hover:opacity-90 transition-all text-sm">Save Anyway</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface border border-border-base rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-border-base bg-surface-container-lowest">
+        <div className="p-6 border-b border-border-base">
           <h2 className="font-headline-md text-headline-md text-text-primary">API Keys</h2>
-          <p className="font-body-sm text-body-sm text-text-secondary mt-1">
-            Add your provider keys in priority order: Gemini, Groq, then OpenAI.
-          </p>
+          <p className="font-body-sm text-body-sm text-text-secondary mt-1">Add your provider API keys.</p>
         </div>
 
         <div className="divide-y divide-border-base">
-          {configs.map((config) => {
-            const provider = settings[config.id];
-            const hasKey = provider.key.trim().length > 0;
+          {order.map((id) => {
+            const meta = PROVIDERS.find((p) => p.id === id);
+            if (!meta) return null; // Defensive: skip unknown providers to prevent crash
+            const savedKeys = settings[id].keys;
+            const newVal = newKeyValues[id];
+            const isDuplicate = newVal.trim().length > 0 && savedKeys.some((k) => k.value === newVal.trim());
 
             return (
-              <div key={config.id} className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-headline-sm text-headline-sm text-text-primary">{config.name}</h3>
-                      {config.required ? (
-                        <span className="px-2 py-0.5 bg-danger/10 border border-danger/30 rounded text-danger font-label-xs text-label-xs">
-                          REQUIRED
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-tertiary/10 border border-tertiary/30 rounded text-tertiary font-label-xs text-label-xs">
-                          OPTIONAL
-                        </span>
-                      )}
-                      <div className={`w-2 h-2 rounded-full ${hasKey ? 'bg-secondary' : 'bg-on-surface-variant'}`} />
-                      <span className="font-label-sm text-label-sm text-text-secondary">
-                        {hasKey ? 'Connected' : 'Not set'}
+              <div key={id} className="p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <h3 className="font-headline-sm text-headline-sm text-text-primary">{meta.name}</h3>
+                  {(() => {
+                    const style = TAG_STYLES[meta.tag];
+                    return (
+                      <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-xs text-label-xs`}>
+                        {style.label}
                       </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-text-secondary mt-1">{config.description}</p>
-                  </div>
+                    );
+                  })()}
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="flex-1 relative">
-                      {config.multiKey ? (
-                        <textarea
-                          rows={3}
-                          placeholder={config.placeholder}
-                          value={provider.key}
-                          onChange={(e) => updateProvider(config.id, { key: e.target.value })}
-                          className="w-full bg-surface-container-lowest border border-border-base rounded-lg px-4 py-3 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none resize-none font-mono text-sm"
-                        />
-                      ) : (
-                        <input
-                          type={showKeys[config.id] ? 'text' : 'password'}
-                          placeholder={config.placeholder}
-                          value={provider.key}
-                          onChange={(e) => updateProvider(config.id, { key: e.target.value })}
-                          className="w-full bg-surface-container-lowest border border-border-base rounded-lg px-4 py-3 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none"
-                        />
-                      )}
-                      {!config.multiKey && (
-                        <button
-                          onClick={() => setShowKeys((prev) => ({ ...prev, [config.id]: !prev[config.id] }))}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
-                          aria-label={showKeys[config.id] ? 'Hide key' : 'Show key'}
-                        >
-                          {showKeys[config.id] ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
-                      )}
+                {/* Saved keys */}
+                {savedKeys.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    <div className="text-label-xs text-text-muted font-medium uppercase tracking-wider">
+                      Saved keys ({savedKeys.length})
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => void handleSave()}
-                        disabled={!provider.key || isSaving}
-                        className="px-4 py-3 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                      >
-                        {isSaving ? 'Saving...' : 'Save'}
-                      </button>
-                      {provider.key && (
-                        <button
-                          onClick={() => handleDelete(config.id)}
-                          className="px-4 py-3 border border-error text-error hover:bg-error/10 rounded-lg font-label-md text-label-md transition-all active:scale-95"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
+                    {savedKeys.map((keyEntry, idx) => {
+                      const keyId = `${id}-${idx}`;
+                      const isVisible = !hiddenKeys[keyId];
+                      const tStatus = testStatus[keyId] || 'idle';
+                      return (
+                        <div key={keyId} className="flex items-center gap-2 py-1.5 px-3 bg-surface-container-low rounded-lg border border-border-base group">
+                          <div className="flex-1 font-mono text-sm text-text-primary truncate">
+                            {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
+                          </div>
+                          <button
+                            onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
+                            className="text-text-muted hover:text-text-primary transition-colors"
+                            aria-label="Toggle key visibility"
+                          >
+                            {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                          {id !== 'tavily' && (
+                            <TestKeyButton
+                              status={tStatus}
+                              onClick={() => testKey(id, keyEntry.value, keyId)}
+                              disabled={tStatus === 'testing'}
+                            />
+                          )}
+                          <button
+                            onClick={() => setDeleteTarget({ provider: id, index: idx })}
+                            className="p-1.5 text-text-muted hover:text-danger transition-colors"
+                            title={`Delete key #${idx + 1}`}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
 
-                  <div className="p-3 bg-surface-container-low rounded-lg border border-border-base">
-                    <p className="font-body-sm text-body-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">Powers:</span> {config.usage}
+                {/* New key input */}
+                <div>
+                  <div className="flex items-center gap-2 py-2 px-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base">
+                    <input
+                      id={`new-key-input-${id}`}
+                      type={hiddenKeys[`${id}-new-input`] ? 'password' : 'text'}
+                      placeholder={meta.placeholder}
+                      value={newVal}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewKeyValues((prev) => ({ ...prev, [id]: val }));
+                        setTestStatus((prev) => {
+                          const k = `${id}-new`;
+                          return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
+                        });
+                        // Real-time format validation for all providers
+                        if (val.trim()) {
+                          const isValid = validateKey(id, val);
+                          setFormatErrors((prev) => ({
+                            ...prev,
+                            [id]: isValid ? '' : `Invalid format. Expected: ${meta.format}`,
+                          }));
+                        } else {
+                          setFormatErrors((prev) => ({ ...prev, [id]: '' }));
+                        }
+                      }}
+                      className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none font-mono"
+                    />
+                    <button
+                      onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
+                      className="text-text-muted hover:text-text-primary transition-colors"
+                      aria-label="Toggle key visibility"
+                    >
+                      {hiddenKeys[`${id}-new-input`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    {id !== 'tavily' && (
+                      <TestKeyButton
+                        status={testStatus[`${id}-new`] || 'idle'}
+                        onClick={() => testKey(id, newVal, `${id}-new`)}
+                        disabled={testStatus[`${id}-new`] === 'testing' || !newVal.trim()}
+                      />
+                    )}
+                    <button
+                      onClick={() => handleSaveNewKey(id)}
+                      disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
+                      className="px-4 py-1.5 bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      Save
+                    </button>
+                  </div>
+                  {isDuplicate && (
+                    <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
+                      <AlertCircle size={12} />
+                      This API key is already saved. Add a different key instead.
                     </p>
-                  </div>
+                  )}
+                  {formatErrors[id] && !isDuplicate && (
+                    <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
+                      <AlertCircle size={12} />
+                      {formatErrors[id]}
+                    </p>
+                  )}
+                </div>
 
-                  <div className="flex items-start gap-2 text-sm">
-                    <Info size={16} className="text-text-muted mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-body-sm text-body-sm text-text-secondary">
-                        Format: <code className="bg-surface-container-low px-1.5 py-0.5 rounded font-mono text-label-sm">{config.format}</code>
-                      </p>
-                      <a
-                        href={config.docs}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-label-sm text-label-sm text-primary hover:underline transition-all mt-1 inline-block"
-                      >
-                        Get your key →
-                      </a>
-                    </div>
+                {/* Add another key */}
+                <button
+                  onClick={() => addEmptyKey(id)}
+                  className="mt-2 flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
+                >
+                  <Plus size={13} />
+                  Add another {meta.name} key
+                </button>
+
+                {/* Provider meta footer */}
+                <div className="flex items-center justify-between mt-4 text-xs text-text-secondary">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-text-primary font-medium">Powers:</span>
+                      <span className="text-text-secondary">{meta.usage}</span>
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="text-text-primary font-medium">Format:</span>
+                      <code className="bg-surface-container-low px-1.5 py-0.5 rounded font-mono text-[10px] text-text-primary border border-border-base">
+                        {meta.format}
+                      </code>
+                    </span>
                   </div>
+                  <a
+                    href={meta.docs}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-primary hover:text-primary/80 transition-all hover:underline"
+                  >
+                    Get key
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17L17 7M17 7H7M17 7V17" />
+                    </svg>
+                  </a>
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="p-6 bg-surface-container-lowest border-t border-border-base space-y-3">
-          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-            <p className="font-body-sm text-body-sm text-text-primary">
-              <span className="font-semibold flex items-center gap-2"><Lock size={16} className="text-primary" /> Security:</span>
-              <span className="mt-2 block">API keys are stored locally in your browser so you can keep all provider setup in the frontend.</span>
-            </p>
-          </div>
-
-          <div className="p-4 bg-secondary/5 border border-secondary/20 rounded-lg space-y-2">
-            <p className="font-body-sm text-body-sm text-text-primary flex items-center gap-2">
-              <List size={16} className="text-secondary flex-shrink-0" />
-              <span className="font-semibold">Quick Reference:</span>
-            </p>
-            <ul className="font-body-sm text-body-sm text-text-secondary space-y-1 ml-4 list-disc">
-              <li><span className="font-semibold text-text-primary">Gemini:</span> Primary provider. Add multiple keys to multiply your 15 RPM free-tier limit (e.g., 3 keys = 45 RPM).</li>
-              <li><span className="font-semibold text-text-primary">Groq:</span> Fallback provider when Gemini is unavailable.</li>
-              <li><span className="font-semibold text-text-primary">OpenAI:</span> Final fallback provider.</li>
-            </ul>
-          </div>
+        <div className="bg-surface-container-low px-6 py-4 flex items-center gap-3 text-xs text-text-muted">
+          <span>Keys stored locally in your browser. Sent per-request via headers.</span>
         </div>
       </div>
     </div>

@@ -79,6 +79,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import PublisherOutput, normalize_channel_list
 
 
@@ -357,8 +358,13 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
 
-    # Gate on explicit can_publish flag, not score
-    can_publish = review_data.get("can_publish", False)
+    # Gate on explicit can_publish flag, or fall back to legacy status check
+    can_publish = review_data.get("can_publish")
+    if can_publish is None:
+        # Legacy: Reviewer output doesn't have can_publish field
+        # Use status field as the publishing gate
+        can_publish = review_data.get("status", "revision_required") == "approved"
+
     if not can_publish:
         raise ValueError(
             f"Publish blocked. Status: {review_data.get('status', 'unknown')}. "
@@ -420,12 +426,20 @@ def publisher_agent(state: CampaignState) -> CampaignState:
 
     logger.info("   Querying LLM with structured output...")
 
-    # Get structured LLM response with error handling
-    publisher_output, state = safe_llm_call(
-        state,
-        "Publisher",
-        lambda: llm.generate_structured(prompt, PublisherOutput, temperature=0.5, max_tokens=4000)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Publisher", prompt=prompt, temperature=0.5, max_tokens=4000)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Publisher response")
+        publisher_output = PublisherOutput(**cached)
+    else:
+        publisher_output, state = safe_llm_call(
+            state,
+            "Publisher",
+            lambda: llm.generate_structured(prompt, PublisherOutput, temperature=0.5, max_tokens=4000)
+        )
+        if publisher_output is not None:
+            cache_set(cache_key, publisher_output.model_dump())
     
     if publisher_output is None:
         return state  # Error already logged in state

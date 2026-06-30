@@ -1,36 +1,113 @@
-export type LlmProviderId = 'gemini' | 'groq' | 'openai';
+export type LlmProviderId = 'gemini' | 'groq' | 'openai' | 'tavily';
+
+export interface LlmKeyEntry {
+  value: string;
+  label?: string;
+}
 
 export interface LlmProviderState {
-  key: string;
+  keys: LlmKeyEntry[];
 }
 
 export interface LlmSettingsState {
   gemini: LlmProviderState;
   groq: LlmProviderState;
   openai: LlmProviderState;
+  tavily: LlmProviderState;
+  providerOrder: LlmProviderId[];
 }
 
 const STORAGE_KEY = 'agentmark_llm_config';
 
 const defaultProvider = (): LlmProviderState => ({
-  key: '',
+  keys: [],
 });
+
+export const KEY_PATTERNS: Record<LlmProviderId, RegExp> = {
+  gemini: /^(AIza|AQ\.)[0-9A-Za-z_-]{30,}$/,
+  groq: /^gsk_[0-9A-Za-z_-]{40,}$/,
+  openai: /^sk-[0-9A-Za-z]{32,}$/,
+  tavily: /^tvly-[A-Za-z0-9_-]+$/,
+};
+
+export const PROVIDER_RPM: Record<LlmProviderId, number> = {
+  gemini: 15,
+  groq: 30,
+  openai: 200,
+  tavily: 100,
+};
+
+const DEFAULT_ORDER: LlmProviderId[] = ['openai', 'gemini', 'groq', 'tavily'];
+
+export function validateKey(id: LlmProviderId, value: string): boolean {
+  if (!value || !value.trim()) return false;
+  const pattern = KEY_PATTERNS[id];
+  if (!pattern) return false;
+  return pattern.test(value.trim());
+}
+
+export function formatKeyPreview(value: string): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= 12) return trimmed;
+  return `${trimmed.slice(0, 8)}...${trimmed.slice(-4)}`;
+}
+
+export function estimateTotalRpm(state: LlmSettingsState): number {
+  let total = 0;
+  for (const id of state.providerOrder) {
+    const count = state[id].keys.filter((k) => validateKey(id, k.value)).length;
+    total += count * (PROVIDER_RPM[id] || 15);
+  }
+  return total;
+}
+
+function fromLegacyFormat(raw: Record<string, unknown>): LlmSettingsState {
+  const state: LlmSettingsState = {
+    gemini: defaultProvider(),
+    groq: defaultProvider(),
+    openai: defaultProvider(),
+    tavily: defaultProvider(),
+    providerOrder: [...DEFAULT_ORDER],
+  };
+
+  for (const id of DEFAULT_ORDER) {
+    const entry = raw[id];
+    if (entry && typeof entry === 'object' && 'keys' in (entry as Record<string, unknown>)) {
+      state[id] = entry as LlmProviderState;
+    } else if (entry && typeof entry === 'object' && 'key' in (entry as Record<string, unknown>)) {
+      const oldKey = (entry as Record<string, unknown>).key as string | undefined;
+      if (oldKey && oldKey.trim()) {
+        const parts = oldKey.split(',').map((k) => k.trim()).filter(Boolean);
+        state[id].keys = parts.map((value) => ({ value }));
+      }
+    }
+  }
+
+  const migrateOrder = (raw as Record<string, unknown>).providerOrder as LlmProviderId[] | undefined;
+  if (migrateOrder && migrateOrder.length === DEFAULT_ORDER.length) {
+    state.providerOrder = migrateOrder;
+  }
+
+  return state;
+}
 
 export const llmSettingsService = {
   get(): LlmSettingsState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        return JSON.parse(raw) as LlmSettingsState;
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        return fromLegacyFormat(parsed);
       } catch {
-        // fall through to defaults
+        // fall through
       }
     }
-
     return this.normalize({
       gemini: defaultProvider(),
       groq: defaultProvider(),
       openai: defaultProvider(),
+      tavily: defaultProvider(),
+      providerOrder: [...DEFAULT_ORDER],
     });
   },
 
@@ -44,31 +121,50 @@ export const llmSettingsService = {
 
   toHeaderPayload(state: LlmSettingsState) {
     return {
-      gemini_api_key: state.gemini.key || null,
-      groq_api_key: state.groq.key || null,
-      openai_api_key: state.openai.key || null,
-    };
-  },
-
-  normalize(state: LlmSettingsState): LlmSettingsState {
-    return {
-      gemini: {
-        ...defaultProvider(),
-        ...state.gemini,
-      },
-      groq: {
-        ...defaultProvider(),
-        ...state.groq,
-      },
-      openai: {
-        ...defaultProvider(),
-        ...state.openai,
-      },
+      gemini_api_key: state.gemini.keys.map((k) => k.value).join(',') || null,
+      groq_api_key: state.groq.keys.map((k) => k.value).join(',') || null,
+      openai_api_key: state.openai.keys.map((k) => k.value).join(',') || null,
+      tavily_api_key: state.tavily.keys.map((k) => k.value).join(',') || null,
+      provider_order: state.providerOrder,
     };
   },
 
   getPreferredProvider(state: LlmSettingsState): LlmProviderId | null {
-    const order: LlmProviderId[] = ['gemini', 'groq', 'openai'];
-    return order.find((id) => state[id].key.trim()) || null;
+    return state.providerOrder.find((id) => state[id].keys.some((k) => k.value.trim())) || null;
+  },
+
+  countValidKeys(state: LlmSettingsState, id: LlmProviderId): number {
+    return state[id].keys.filter((k) => validateKey(id, k.value)).length;
+  },
+
+  normalize(state: LlmSettingsState | Record<string, unknown>): LlmSettingsState {
+    const raw = state as Record<string, unknown>;
+    const hasLegacy = DEFAULT_ORDER.some(
+      (id) => raw[id] && typeof raw[id] === 'object' && 'key' in (raw[id] as Record<string, unknown>),
+    );
+    if (hasLegacy) {
+      return fromLegacyFormat(raw);
+    }
+    const s = state as LlmSettingsState;
+    return {
+      gemini: {
+        keys: s.gemini?.keys?.filter((k) => k.value.trim()) || [],
+      },
+      groq: {
+        keys: s.groq?.keys?.filter((k) => k.value.trim()) || [],
+      },
+      openai: {
+        keys: s.openai?.keys?.filter((k) => k.value.trim()) || [],
+      },
+      tavily: {
+        keys: s.tavily?.keys?.filter((k) => k.value.trim()) || [],
+      },
+      providerOrder: (() => {
+        const order = s.providerOrder?.length ? [...s.providerOrder] : [...DEFAULT_ORDER];
+        // Ensure all default providers are present; append missing ones at the end
+        const missing = DEFAULT_ORDER.filter((id) => !order.includes(id));
+        return [...order, ...missing];
+      })(),
+    };
   },
 };

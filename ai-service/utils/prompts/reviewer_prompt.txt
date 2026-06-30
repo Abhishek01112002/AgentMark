@@ -293,6 +293,7 @@ Respond ONLY with valid JSON matching the ReviewerOutput schema exactly:
 
 {{
   "status": "approved",
+  "can_publish": true,
   "research_review": {{
     "score": <research_score>,
     "approved": true,
@@ -356,6 +357,8 @@ Respond ONLY with valid JSON matching the ReviewerOutput schema exactly:
 
 IMPORTANT:
 - status must be "approved" or "revision_required"
+- can_publish must be true ONLY if status = "approved" (all agents pass, overall score ≥ threshold)
+- can_publish = false if status = "revision_required"
 - status = "approved" ONLY if ALL four agents have approved=true
 - status = "revision_required" if ANY agent has approved=false
 - Each agent approved=true ONLY if score >= {min_agent_score}

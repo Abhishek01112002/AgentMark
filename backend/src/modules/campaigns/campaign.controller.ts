@@ -428,3 +428,17 @@ export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const testKey = async (req: AuthRequest, res: Response) => {
+  try {
+    const { provider, apiKey } = req.body;
+    if (!provider || !apiKey) {
+      return res.status(400).json({ success: false, message: 'Provider and apiKey are required' });
+    }
+    const result = await aiServiceClient.testKey(provider, apiKey);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Test key error:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to test API key' });
+  }
+};
+

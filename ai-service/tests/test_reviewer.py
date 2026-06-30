@@ -989,11 +989,7 @@ def test_revision_priority_copy_over_image():
     print("=" * 80)
 
     bad_copy = {
-        "inferred_goal": "wrong",
-        "email": {"subject": "", "headline": "", "body": "", "ctas": {}},
-        "linkedin": {"headline": "", "body": "", "ctas": {}},
-        "social": {"headline": "", "body": "", "ctas": {}},
-        "ads": {"headline": "", "body": "", "ctas": {}},
+        "inferred_goal": "",
         "messaging_framework": {},
         "strategic_alignment": {},
         "copy_readiness": {}

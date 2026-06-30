@@ -13,6 +13,7 @@ import CopywriterContent from './copywriter/CopywriterContent';
 import VisualsContent from './visuals/VisualsContent';
 import ReviewContent from './review/ReviewContent';
 import PublisherContent from './publisher/PublisherContent';
+import MemoryInsightsCard from './MemoryInsightsCard';
 
 type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'images' | 'review' | 'published';
 
@@ -61,6 +62,8 @@ const CampaignResultPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memoryInsights, setMemoryInsights] = useState<any[]>([]);
+  const [memoryCount, setMemoryCount] = useState<number>(0);
 
   // HITL Modal State
   const [showHumanReview, setShowHumanReview] = useState(false);
@@ -83,28 +86,30 @@ const CampaignResultPage: React.FC = () => {
   const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
   const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
 
+  // Helper to extract and automatically parse JSON string fields from aiOutputs
+  const getOutputField = React.useCallback((field: string) => {
+    if (!campaign) return null;
+    const outputs = campaign.aiOutputs || {};
+    const val = outputs[field];
+    if (val) {
+      if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return val; }
+      }
+      return val;
+    }
+    const directVal = (campaign as any)[field];
+    if (directVal) {
+      if (typeof directVal === 'string') {
+        try { return JSON.parse(directVal); } catch { return directVal; }
+      }
+      return directVal;
+    }
+    return null;
+  }, [campaign]);
+
   // Memoize parsed campaign outputs to avoid redundant JSON.parse calls in render path
   const parsedCampaignOutputs = React.useMemo(() => {
     if (!campaign) return null;
-    const getOutputField = (field: string) => {
-      const outputs = campaign.aiOutputs || {};
-      const val = outputs[field];
-      if (val) {
-        if (typeof val === 'string') {
-          try { return JSON.parse(val); } catch { return val; }
-        }
-        return val;
-      }
-      const directVal = (campaign as any)[field];
-      if (directVal) {
-        if (typeof directVal === 'string') {
-          try { return JSON.parse(directVal); } catch { return directVal; }
-        }
-        return directVal;
-      }
-      return null;
-    };
-
     return {
       copyData: (() => {
         const rawCopy = getOutputField('copy_output') || getOutputField('copyOutput');
@@ -114,13 +119,15 @@ const CampaignResultPage: React.FC = () => {
       imageData: getOutputField('image_output') || getOutputField('imageOutput'),
       managerData: getOutputField('manager_output') || getOutputField('managerOutput'),
     };
-  }, [campaign]);
+  }, [campaign, getOutputField]);
 
   // Memoize strategyData including flat content calendar to preserve referential identity for React.memo
   const memoizedStrategyData = React.useMemo(() => {
-    const aiOutputs = campaign?.aiOutputs || {};
-    if (!aiOutputs.strategy_output) return null;
-    const rawCalendar = aiOutputs.publisher_output?.content_calendar || {};
+    const strategyData = getOutputField('strategy_output') || getOutputField('strategyOutput');
+    if (!strategyData) return null;
+    
+    const publisherData = getOutputField('publisher_output') || getOutputField('publisherOutput');
+    const rawCalendar = publisherData?.content_calendar || {};
     const weeks = rawCalendar.weeks || [];
     const flatCalendar: any[] = [];
     weeks.forEach((w: any) => {
@@ -136,10 +143,10 @@ const CampaignResultPage: React.FC = () => {
       });
     });
     return {
-      ...aiOutputs.strategy_output,
+      ...strategyData,
       content_calendar: flatCalendar
     };
-  }, [campaign?.aiOutputs]);
+  }, [getOutputField]);
 
   useEffect(() => {
     const fetchCampaign = async () => {
@@ -194,8 +201,20 @@ const CampaignResultPage: React.FC = () => {
         setLoading(false);
       }
     };
+
+    const fetchMemoryInsights = async () => {
+      if (!campaignId) return;
+      try {
+        const res = await api.get(`/campaigns/${campaignId}/memory-insights`);
+        setMemoryInsights(res.data.insights || []);
+        setMemoryCount(res.data.count || 0);
+      } catch (err) {
+        console.error('Failed to fetch memory insights:', err);
+      }
+    };
     
     fetchCampaign();
+    fetchMemoryInsights();
   }, [campaignId]);
 
   const handleApprove = async () => {
@@ -239,24 +258,22 @@ const CampaignResultPage: React.FC = () => {
   const renderTabContent = () => {
     if (!campaign) return null;
     
-    const aiOutputs = campaign.aiOutputs || {};
-    
     switch (activeTab) {
       case 'overview':
-        return <OverviewContent data={aiOutputs.manager_output} campaign={campaign} />;
+        return <OverviewContent data={getOutputField('manager_output') || getOutputField('managerOutput')} campaign={campaign} />;
       case 'research':
-        return <ResearchContent data={aiOutputs.research_output} />;
+        return <ResearchContent data={getOutputField('research_output') || getOutputField('researchOutput')} />;
       case 'strategy': {
         return <StrategyContent data={memoizedStrategyData} campaign={campaign} />;
       }
       case 'copy':
-        return <CopywriterContent data={aiOutputs.copy_output} />;
+        return <CopywriterContent data={getOutputField('copy_output') || getOutputField('copyOutput')} />;
       case 'images':
-        return <VisualsContent data={aiOutputs.image_output} campaignId={campaignId} />;
+        return <VisualsContent data={getOutputField('image_output') || getOutputField('imageOutput')} campaignId={campaignId} />;
       case 'review':
-        return <ReviewContent data={aiOutputs.review_output} reviewScore={campaign.reviewScore} />;
+        return <ReviewContent data={getOutputField('review_output') || getOutputField('reviewOutput')} reviewScore={campaign.reviewScore} />;
       case 'published':
-        return <PublisherContent data={aiOutputs.publisher_output} campaignName={campaign.name} />;
+        return <PublisherContent data={getOutputField('publisher_output') || getOutputField('publisherOutput')} campaignName={campaign.name} />;
     }
   };
 
@@ -474,6 +491,15 @@ const CampaignResultPage: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Memory Insights Card */}
+              {memoryCount > 0 && (
+                <MemoryInsightsCard
+                  insights={memoryInsights}
+                  count={memoryCount}
+                  projectId={campaign.projectId}
+                />
+              )}
 
               {/* Tab Navigation */}
               <div className="rounded-2xl border border-[#2A2A38] bg-[#111118]/80 backdrop-blur p-2 overflow-x-auto">

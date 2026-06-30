@@ -5,6 +5,7 @@ import {
   getUnreadCount,
   markAllNotificationsRead,
   markNotificationRead,
+  createNotification,
   deleteNotification,
   deleteNotificationsBatch,
 } from './notification.controller';
@@ -14,6 +15,7 @@ const router = Router();
 router.use(authMiddleware);
 router.get('/', getNotifications);
 router.get('/unread-count', getUnreadCount);
+router.post('/', createNotification);
 router.put('/read', markNotificationRead);
 router.put('/read-all', markAllNotificationsRead);
 router.delete('/:id', deleteNotification);

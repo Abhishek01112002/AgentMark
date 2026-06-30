@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 import sys
 from pathlib import Path
 import json
+import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -55,8 +56,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from agents.state import CampaignState
 from llm import get_llm_client
+from llm.factory import get_current_llm_config
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ResearchOutput
 from services.search_service import search_web
 import datetime
@@ -124,6 +127,8 @@ def research_agent(state: CampaignState) -> CampaignState:
     
     # Initialize LLM client
     llm = get_llm_client()
+    llm_config = get_current_llm_config()
+    tavily_api_key = (llm_config.get("tavily_api_key") or "").strip() or None
     
     # Format human revision feedback if research is targeted for revision
     is_human_revision = bool(state.human_feedback and state.human_revision_target == "research")
@@ -174,11 +179,15 @@ def research_agent(state: CampaignState) -> CampaignState:
     query_2 = f"{product_name} top competitors market analysis"
 
     # Pass None as redis_client to let search_web automatically use the shared pool
-    result_1 = search_web(query_1, redis_client=None)
-    result_2 = search_web(query_2, redis_client=None)
+    result_1 = search_web(query_1, redis_client=None, api_key=tavily_api_key)
+    result_2 = search_web(query_2, redis_client=None, api_key=tavily_api_key)
 
     total_snippets = len(result_1.snippets) + len(result_2.snippets)
     logger.info(f"   LiteRAG retrieved {total_snippets} total snippets for campaign")
+    if not result_1.success:
+        logger.warning(f"   Market search failed: {result_1.error_message}")
+    if not result_2.success:
+        logger.warning(f"   Competitor search failed: {result_2.error_message}")
 
     # Build context — ONLY inject if snippets actually exist
     context_parts = []
@@ -221,18 +230,51 @@ def research_agent(state: CampaignState) -> CampaignState:
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
-    # Get structured LLM response with error handling
-    research_data, state = safe_llm_call(
-        state,
-        "Research",
-        lambda: llm.generate_structured(prompt, ResearchOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Research", prompt=prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Research response")
+        research_data = ResearchOutput(**cached)
+    else:
+        research_data, state = safe_llm_call(
+            state,
+            "Research",
+            lambda: llm.generate_structured(prompt, ResearchOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+        )
+        if research_data is not None:
+            cache_set(cache_key, research_data.model_dump())
     
     if research_data is None:
         return state  # Error already logged in state
 
     # Attach LiteRAG sources to the output
     research_data.literas_sources = all_sources
+    research_data.tavily_sources = all_sources
+    research_data.search_status = {
+        "provider": "tavily",
+        "enabled": bool(tavily_api_key or os.getenv("TAVILY_API_KEY")),
+        "total_sources": len(all_sources),
+        "total_snippets": total_snippets,
+        "queries": [
+            {
+                "query_type": "market",
+                "query": result_1.query,
+                "success": result_1.success,
+                "sources": len(result_1.sources),
+                "snippets": len(result_1.snippets),
+                "error": result_1.error_message,
+            },
+            {
+                "query_type": "competitor",
+                "query": result_2.query,
+                "success": result_2.success,
+                "sources": len(result_2.sources),
+                "snippets": len(result_2.snippets),
+                "error": result_2.error_message,
+            },
+        ],
+    }
     
     # ========== STEP 3: DISPLAY FINDINGS ==========
     logger.info("\n[STEP 3] Research insights generated!")

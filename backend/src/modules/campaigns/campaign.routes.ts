@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, testKey } from './campaign.controller';
 
 const router = Router();
 
 router.use(authMiddleware);
 
 router.post('/', campaignRateLimiter, createCampaign);
+router.post('/test-key', testKey);
 router.post('/enhance-prompt', campaignRateLimiter, enhancePrompt);
 router.get('/', getCampaigns);
 router.get('/:id', getCampaign);

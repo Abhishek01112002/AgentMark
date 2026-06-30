@@ -47,6 +47,12 @@ export const notificationsService = {
     triggerUpdate();
   },
 
+  async create(data: { type: NotificationType; title: string; message: string }) {
+    const response = await api.post<{ notification: Notification }>('/notifications', data);
+    triggerUpdate();
+    return response.data.notification;
+  },
+
   async deleteBatch(ids: string[]) {
     await api.post('/notifications/delete-batch', { ids });
     triggerUpdate();

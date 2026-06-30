@@ -61,6 +61,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import StrategyOutput, normalize_channel_list
 
 
@@ -191,17 +192,25 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     # Revision runs: lower temperature prevents unnecessary field changes;
     # extra token budget handles the existing-strategy context
     revision_temperature = 0.3 if is_human_revision else 0.7
-    revision_max_tokens = 8000
+    revision_max_tokens = 6500 if is_human_revision else 5000
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
-    # Get structured LLM response with error handling
-    strategy_plan, state = safe_llm_call(
-        state,
-        "Strategy",
-        lambda: llm.generate_structured(prompt, StrategyOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Strategy", prompt=prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Strategy response")
+        strategy_plan = StrategyOutput(**cached)
+    else:
+        strategy_plan, state = safe_llm_call(
+            state,
+            "Strategy",
+            lambda: llm.generate_structured(prompt, StrategyOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+        )
+        if strategy_plan is not None:
+            cache_set(cache_key, strategy_plan.model_dump())
     
     if strategy_plan is None:
         return state  # Error already logged in state

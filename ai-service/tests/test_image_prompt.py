@@ -114,39 +114,41 @@ def create_mock_strategy_output(
         "audience_segments": [
             {
                 "segment_name": "High-Intent Enterprise",
-                "pain_point": "Integration complexity",
-                "motivation": "Save time and money",
-                "channels": ["linkedin", "tech blogs"]
+                "demographics": "Enterprise IT Decision Makers",
+                "psychographics": "Risk-averse, cost-conscious, value-driven",
+                "key_message": "Enterprise AI without complexity"
             }
         ],
         "channel_strategy": {
             "linkedin": {
                 "priority": "HIGH",
                 "rationale": "Audience prefers LinkedIn",
-                "frequency": "4-5 posts per week"
+                "tactics": ["Thought leadership posts", "Sponsored content"]
             }
         },
         "timeline": {
             "phase_1": {
-                "name": "Planning & Setup",
+                "phase_name": "Planning & Setup",
                 "duration": "Week 1",
-                "focus": "Campaign setup"
+                "activities": ["Campaign setup", "Asset production"]
             }
         },
         "success_metrics": {
-            "primary": ["Lead volume", "Conversion rate"],
+            "kpis": ["Lead volume", "Conversion rate"],
             "targets": {"leads": "500+", "conversion": "3-5%"}
         },
         "competitive_differentiation": {
-            "primary_differentiation": "Enterprise AI without the complexity",
             "competitors": competitors,
-            "competitive_advantage": competitive_advantage
+            "primary_differentiation": "Enterprise AI without the complexity",
+            "competitive_advantage": competitive_advantage,
+            "unique_value_proposition": "Simple, reliable enterprise AI",
+            "positioning_statement": "The leader in low-complexity enterprise AI"
         },
         "market_opportunities": [
-            {"opportunity_1": "Vertical SaaS expansion"},
-            {"opportunity_2": "AI-powered automation"}
+            "Vertical SaaS expansion",
+            "AI-powered automation"
         ],
-        "strategic_approach": strategic_approach,
+        "strategic_approach": strategic_approach if strategic_approach else "Create gated content and lead magnets to build qualified lead pipeline",
         "inferred_goal": inferred_goal,
         "research_foundation": {
             "market_analysis": {
@@ -162,32 +164,40 @@ def create_mock_strategy_output(
                 "pain_points": pain_points,
                 "motivations": motivations,
                 "preferred_channels": ["LinkedIn", "Industry blogs", "Webinars"]
-            }
+            },
+            "market_opportunities": ["Vertical SaaS expansion", "AI-powered automation"],
+            "recommended_approach": strategic_approach if strategic_approach else "Create gated content and lead magnets to build qualified lead pipeline"
         },
-                "content_calendar": {
-            "total_weeks": 4,
-            "weeks": [
-                {
-                    "week_number": 1,
-                    "theme": "Awareness",
-                    "posts": [
-                        {
-                            "channel": "linkedin",
-                            "content_type": "text",
-                            "topic": "Intro to AI",
-                            "objective": "engagement"
-                        }
-                    ]
-                }
-            ]
-        }
         "execution": {
             "channels": channels,
             "deliverables": deliverables,
             "budget_allocation": {
                 "high_priority_channels": "50%",
-                "content_creation": "30%"
+                "medium_priority_channels": "30%",
+                "content_creation": "15%",
+                "community_management": "5%"
             }
+        },
+        "content_calendar": {
+            "total_weeks": 4,
+            "weeks": [
+                {
+                    "week_number": 1,
+                    "week_label": "Week 1",
+                    "week_start_date": "2026-06-29",
+                    "theme": "Awareness",
+                    "activities": [
+                        {
+                            "day": "Monday",
+                            "channel": "linkedin",
+                            "content_type": "text",
+                            "topic": "Intro to AI",
+                            "objective": "engagement",
+                            "description": "Introduction to low-complexity enterprise AI workflows"
+                        }
+                    ]
+                }
+            ]
         }
     }
 

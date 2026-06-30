@@ -60,6 +60,11 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
     logger.info("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
     logger.info("="*80)
     
+    # If human already approved, route straight to human_approval node to proceed to publisher
+    if state.human_approval_status == "approved":
+        logger.info("✅ Human already approved, routing directly to human_approval node")
+        return "human_approval"
+        
     # Check for upstream errors to prevent infinite loops
     if state.status == "error" or state.error:
         logger.info("💥 Upstream error detected - ending workflow")

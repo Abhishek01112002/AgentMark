@@ -1,4 +1,3 @@
-import React from 'react';
 
 export function Skeleton({ width = '100%', height = '20px' }: { width?: string, height?: string }) {
   return (

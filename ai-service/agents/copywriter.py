@@ -66,6 +66,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import CopywriterOutput, normalize_channel_list, normalize_channel_name, Channel
 
 
@@ -264,12 +265,20 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
-    # Get structured LLM response with error handling
-    copy_output, state = safe_llm_call(
-        state,
-        "Copywriter",
-        lambda: llm.generate_structured(prompt, CopywriterOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Copywriter", prompt=prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Copywriter response")
+        copy_output = CopywriterOutput(**cached)
+    else:
+        copy_output, state = safe_llm_call(
+            state,
+            "Copywriter",
+            lambda: llm.generate_structured(prompt, CopywriterOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+        )
+        if copy_output is not None:
+            cache_set(cache_key, copy_output.model_dump())
     
     if copy_output is None:
         return state  # Error already logged in state

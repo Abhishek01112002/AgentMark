@@ -12,6 +12,37 @@ import threading
 from abc import ABC, abstractmethod
 
 
+class NonRetryableLLMError(RuntimeError):
+    """Raised when retrying the same provider cannot fix the request."""
+
+
+class RateLimitedLLMError(RuntimeError):
+    """Raised when a provider/key is rate limited and the pool should fail over."""
+
+
+def is_payload_too_large_error(error: Exception) -> bool:
+    error_str = str(error).lower()
+    return (
+        "413" in error_str
+        or "payload too large" in error_str
+        or "request too large" in error_str
+        or "context_length_exceeded" in error_str
+        or "maximum context length" in error_str
+    )
+
+
+def is_rate_limit_error(error: Exception) -> bool:
+    error_str = str(error).lower()
+    return (
+        "429" in error_str
+        or "rate_limit" in error_str
+        or "rate limit" in error_str
+        or "rate limited" in error_str
+        or "quota" in error_str
+        or "too many requests" in error_str
+    )
+
+
 class TokenBucket:
     """
     Token bucket rate limiter — FAANG-grade.
@@ -75,8 +106,9 @@ class CircuitBreaker:
 
 class ProviderPool:
     """
-    Round-robin provider pool with automatic fallback.
-    If primary is rate-limited, falls back to secondary.
+    Provider pool with automatic fallback and key rotation.
+    When one key hits rate limit, tries the next key automatically.
+    Skips clients with open circuit breakers.
     """
     def __init__(self, providers: list):
         self.providers = providers
@@ -85,16 +117,54 @@ class ProviderPool:
 
     def get(self):
         with self._lock:
+            for _ in range(len(self.providers)):
+                p = self.providers[self._idx]
+                self._idx = (self._idx + 1) % len(self.providers)
+                if not p[1].circuit_breaker.is_open():
+                    return p
             p = self.providers[self._idx]
             self._idx = (self._idx + 1) % len(self.providers)
             return p
 
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+        attempts = len(self.providers)
+        last_error = None
+        for _ in range(attempts):
+            name, client = self.get()
+            if client.circuit_breaker.is_open():
+                continue
+            try:
+                result = client.generate(prompt, temperature, max_tokens)
+                client.circuit_breaker.record_success()
+                return result
+            except Exception as e:
+                client.circuit_breaker.record_failure()
+                last_error = e
+                logger.warning(f"⚠️ {name} key failed ({str(e)[:60]}), trying next...")
+        raise last_error or RuntimeError("All providers/keys exhausted")
 
-# Global shared instances — all agents share these
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
+        attempts = len(self.providers)
+        last_error = None
+        for _ in range(attempts):
+            name, client = self.get()
+            if client.circuit_breaker.is_open():
+                continue
+            try:
+                result = client.generate_structured(prompt, response_model, temperature, max_tokens)
+                client.circuit_breaker.record_success()
+                return result
+            except Exception as e:
+                client.circuit_breaker.record_failure()
+                last_error = e
+                logger.warning(f"⚠️ {name} key failed ({str(e)[:60]}), trying next...")
+        raise last_error or RuntimeError("All providers/keys exhausted")
+
+
+# Global shared rate limiter — aggregate safety net across all providers
 # Gemini free tier: 15 RPM = 1 request every 4 seconds (0.25 req/sec)
 # capacity=3 allows a small burst for sequential agent calls without hammering the API
-GLOBAL_RATE_LIMITER = TokenBucket(capacity=3, refill_rate=0.25)  # 15 RPM safe throttle
-GLOBAL_CIRCUIT_BREAKER = CircuitBreaker(threshold=5, cooldown=60.0)
+GLOBAL_RATE_LIMITER = TokenBucket(capacity=3, refill_rate=0.25)
 
 
 class BaseLLMClient(ABC):
@@ -102,7 +172,7 @@ class BaseLLMClient(ABC):
 
     def __init__(self):
         self.rate_limiter = GLOBAL_RATE_LIMITER
-        self.circuit_breaker = GLOBAL_CIRCUIT_BREAKER
+        self.circuit_breaker = CircuitBreaker(threshold=5, cooldown=60.0)  # per-instance
 
     def _wait_for_rate_limit(self, timeout: float = 60.0):
         if self.circuit_breaker.is_open():
@@ -144,3 +214,15 @@ class BaseLLMClient(ABC):
     @abstractmethod
     def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
         pass
+
+
+class PoolClient(BaseLLMClient):
+    """Wraps a ProviderPool to act as a single BaseLLMClient for callers."""
+    def __init__(self, pool: ProviderPool):
+        self._pool = pool
+
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+        return self._pool.generate(prompt, temperature, max_tokens)
+
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
+        return self._pool.generate_structured(prompt, response_model, temperature, max_tokens)

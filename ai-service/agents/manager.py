@@ -53,6 +53,7 @@ from agents.state import CampaignState
 from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ManagerOutput
 
 
@@ -122,12 +123,20 @@ def manager_agent(state: CampaignState) -> CampaignState:
     
     logger.info("   Querying LLM with structured output...")
     
-    # Get structured LLM response with error handling
-    plan, state = safe_llm_call(
-        state,
-        "Manager",
-        lambda: llm.generate_structured(prompt, ManagerOutput, temperature=0.7, max_tokens=500)
-    )
+    # Cache-aware LLM call
+    cache_key = make_key("Manager", prompt=prompt, temperature=0.7, max_tokens=500)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Manager response")
+        plan = ManagerOutput(**cached)
+    else:
+        plan, state = safe_llm_call(
+            state,
+            "Manager",
+            lambda: llm.generate_structured(prompt, ManagerOutput, temperature=0.7, max_tokens=500)
+        )
+        if plan is not None:
+            cache_set(cache_key, plan.model_dump())
     
     if plan is None:
         return state  # Error already logged in state

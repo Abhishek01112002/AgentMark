@@ -79,6 +79,7 @@ Based on the research insights above, develop a comprehensive strategy covering:
    Each activity must have:
    - day: Day of week + date, e.g. "Monday 2026-06-29"
    - channel: One of: instagram, facebook, linkedin, twitter, tiktok, youtube, email, google_ads
+   - content_type: Specific format, e.g. Reel, Story, Post, Carousel, Ad, Email, Video
    - description: Specific action-oriented task (1-2 sentences)
    - caption_hook: Opening line the audience reads first
    - effort: Exactly "low", "medium", or "high"
@@ -210,6 +211,7 @@ EXACT JSON STRUCTURE:
           {{
             "day": "Monday 2026-06-29",
             "channel": "google_ads",
+            "content_type": "Ad",
             "description": "Specific action-oriented task description.",
             "caption_hook": "Opening line the audience reads first.",
             "effort": "medium",

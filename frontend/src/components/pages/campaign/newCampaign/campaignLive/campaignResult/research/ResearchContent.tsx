@@ -25,7 +25,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   const marketOpportunities = data?.market_opportunities || [];
   const recommendedApproach = data?.recommended_approach || '';
 
-  const literasSources: SourceMeta[] = data?.literas_sources ?? [];
+  const literasSources: SourceMeta[] = data?.literas_sources ?? data?.tavily_sources ?? [];
+  const searchStatus = data?.search_status;
   const marketSources = literasSources.filter(s => s.query_type === 'market');
   const competitorSources = literasSources.filter(s => s.query_type === 'competitor');
 
@@ -268,7 +269,26 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
           </div>
         )}
 
-        {/* LiteRAG Sources */}
+        {/* Tavily/LiteRAG Sources */}
+        {hasRealData && literasSources.length === 0 && searchStatus && (
+          <div className="lg:col-span-2 rounded-xl p-4 md:p-5" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-[#F59E0B] mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-[#F1F1F3] mb-1" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  Tavily sources unavailable
+                </h3>
+                <p className="text-sm text-[#8B8B9E]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {searchStatus.enabled
+                    ? (searchStatus.queries?.find((q: any) => q.error)?.error || 'Search completed but returned no source URLs.')
+                    : 'TAVILY_API_KEY is not configured for the AI service.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tavily/LiteRAG Sources */}
         {literasSources.length > 0 && (
           <div className="lg:col-span-2" style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
             <div className="flex items-center gap-4" style={{ background: '#111118', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#8B8B9E', marginBottom: '1rem' }}>
