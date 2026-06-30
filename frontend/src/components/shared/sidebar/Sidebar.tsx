@@ -5,6 +5,7 @@ import {
   LayoutDashboard, FolderOpen, Plus, History,
   Settings, HelpCircle, LogOut,
   ChevronLeft, ChevronRight, X,
+  Cpu, RefreshCw, AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
@@ -301,16 +302,16 @@ const Sidebar: React.FC = () => {
         {activeCampaigns.length > 0 && (
           <div className="mt-6 pt-4 animate-fadeIn" style={{ borderTop: '1px solid #2A2A38' }}>
             {!isCollapsed && (
-              <div className="flex items-center justify-between px-2 mb-2">
+              <div className="flex items-center justify-between px-3 mb-2">
                 <span
-                  className="text-xs uppercase tracking-wider flex items-center gap-1.5"
+                  className="text-xs uppercase tracking-wider flex items-center gap-2"
                   style={{
                     fontFamily: 'JetBrains Mono, monospace',
                     color: '#4A4A5E',
                     fontWeight: 500,
                   }}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
+                  <Cpu size={12} className="text-[#4edea3]" />
                   Active Runs
                 </span>
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/20 font-bold font-mono">
@@ -318,7 +319,7 @@ const Sidebar: React.FC = () => {
                 </span>
               </div>
             )}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {activeCampaigns.map((c) => {
                 const active = location.pathname === `/campaign/${c.id}/live`;
                 const isAwaitingReview = c.status === 'awaiting_human_approval';
@@ -327,41 +328,51 @@ const Sidebar: React.FC = () => {
                   <Link
                     key={c.id}
                     to={`/campaign/${c.id}/live?projectId=${c.projectId}`}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
-                      isCollapsed ? 'justify-center animate-pulse' : ''
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      isCollapsed ? 'justify-center' : ''
                     }`}
                     style={{
                       fontFamily: 'JetBrains Mono, monospace',
                       fontSize: '13px',
-                      backgroundColor: active ? 'rgba(128,131,255,0.08)' : 'transparent',
-                      color: active ? '#8083ff' : '#8B8B9E',
-                      border: active ? '0.5px solid rgba(128,131,255,0.2)' : '0.5px solid transparent',
+                      letterSpacing: '0.02em',
+                      backgroundColor: active ? '#8083ff' : 'transparent',
+                      color: active ? '#0d0096' : '#c7c4d7',
+                      fontWeight: active ? 700 : 500,
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = '#16151c';
+                        (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
                         (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
                         (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                        (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                        (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
                       }
                     }}
                     title={c.name}
                   >
                     {isCollapsed ? (
-                      <div className="relative">
-                        <span className={`w-2.5 h-2.5 rounded-full block ${isAwaitingReview ? 'bg-[#F59E0B]' : 'bg-[#8083ff]'}`} />
-                      </div>
+                      isAwaitingReview ? (
+                        <AlertCircle size={20} className="text-[#F59E0B]" />
+                      ) : (
+                        <RefreshCw size={20} className="text-[#8083ff] animate-spin" />
+                      )
                     ) : (
                       <>
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate text-xs font-semibold text-[#F1F1F3]">{c.name}</p>
-                          <p className="text-[10px] text-[#4A4A5E] mt-0.5 truncate flex items-center gap-1">
-                            <span className={`w-1 h-1 rounded-full inline-block ${isAwaitingReview ? 'bg-[#F59E0B]' : 'bg-[#8083ff]'} ${!isAwaitingReview && 'animate-ping'}`} />
-                            {isAwaitingReview ? 'Awaiting Approval' : 'Processing...'}
+                        {isAwaitingReview ? (
+                          <AlertCircle size={16} className="text-[#F59E0B] flex-shrink-0" />
+                        ) : (
+                          <RefreshCw size={16} className="text-[#8083ff] animate-spin flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <p className="truncate text-xs" style={{ color: active ? '#0d0096' : '#e4e1e9' }}>{c.name}</p>
+                          <p 
+                            className="text-[9px] mt-0.5 truncate uppercase tracking-wider" 
+                            style={{ color: active ? 'rgba(13,0,150,0.7)' : isAwaitingReview ? '#F59E0B' : '#8083ff' }}
+                          >
+                            {isAwaitingReview ? 'Awaiting Review' : 'Processing'}
                           </p>
                         </div>
                       </>
