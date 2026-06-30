@@ -57,11 +57,16 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       channels.push(...strategyOutput.channels);
     }
 
+    const totalRevisions = (campaign.researchRevisionCount || 0) +
+                           (campaign.strategyRevisionCount || 0) +
+                           (campaign.copyRevisionCount || 0) +
+                           (campaign.imageRevisionCount || 0);
+
     const data: any = {
       projectId,
       campaignId,
       finalReviewScore: campaign.reviewScore ?? null,
-      humanApprovedOnFirstTry: !campaign.humanRevisionTarget && !(campaign.humanFeedback && campaign.humanFeedback.trim().length > 0),
+      humanApprovedOnFirstTry: totalRevisions === 0,
       finalApprovedTone: campaign.brandVoice ? [campaign.brandVoice] : [],
       finalChannelsUsed: channels,
     };

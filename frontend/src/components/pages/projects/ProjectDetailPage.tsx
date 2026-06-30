@@ -169,15 +169,16 @@ const ProjectDetailContent: React.FC = () => {
 
   const handleRenameConfirm = async (newName: string) => {
     if (!id) return;
+    const toastId = toast.loading('Renaming project...');
     try {
       const response = await api.patch(`/projects/${id}`, { name: newName });
       setProject(response.data.project);
       setShowRenameModal(false);
       window.dispatchEvent(new CustomEvent('notifications-updated'));
-      toast.success('Project renamed successfully');
+      toast.success('Project renamed successfully', { id: toastId });
     } catch (error: any) {
       console.error('Failed to rename project:', error);
-      toast.error(error.response?.data?.error || 'Failed to rename project');
+      toast.error(error.response?.data?.error || 'Failed to rename project', { id: toastId });
     }
   };
 

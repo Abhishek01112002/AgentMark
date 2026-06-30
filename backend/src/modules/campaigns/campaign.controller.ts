@@ -313,8 +313,10 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       data: {
         status: 'processing',
         humanApprovalStatus: action === 'approve' ? 'approved' : 'rejected',
-        humanFeedback: feedback || null,
-        humanRevisionTarget: action === 'reject' ? revisionTarget : null,
+        ...(action === 'reject' ? {
+          humanFeedback: feedback || null,
+          humanRevisionTarget: revisionTarget || null,
+        } : {}),
         aiOutputs: currentOutputs as any,
       },
     });
