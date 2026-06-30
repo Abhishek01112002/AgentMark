@@ -195,6 +195,43 @@ const CampaignLivePage: React.FC = () => {
             setCampaignFailed(true);
             setFailedError(campaign.aiError || 'Campaign failed during processing.');
             setShowHumanReview(false);
+            
+            // Restore pipeline progress and mark active agent as failed
+            const outputs = campaign.aiOutputs 
+              ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs)
+              : {};
+            const completedAgents = outputs.completed_agents || [];
+            const activeAgentKey = outputs.active_agent || 'manager'; // Default to manager if none specified
+
+            setAgents((prev) =>
+              prev.map((a) => {
+                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+                const activeIdx = pipelineKeys.indexOf(activeAgentKey);
+                const currentIdx = pipelineKeys.indexOf(a.key);
+
+                if (a.key === activeAgentKey) {
+                  return {
+                    ...a,
+                    status: 'failed' as AgentStatus,
+                    description: campaign.aiError || 'Failed during processing',
+                  };
+                }
+
+                if (completedAgents.includes(a.key) || (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx)) {
+                  return {
+                    ...a,
+                    status: 'completed' as AgentStatus,
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
+
+                return {
+                  ...a,
+                  status: 'pending' as AgentStatus,
+                  description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
+                };
+              })
+            );
           } else if (campaign.status === 'awaiting_human_approval') {
             setShowHumanReview(true);
             setRevisionCounts({
