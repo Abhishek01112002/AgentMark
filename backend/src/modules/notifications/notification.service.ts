@@ -29,6 +29,11 @@ export const notificationService = {
         FOREIGN KEY ("userId") REFERENCES "users"(id) ON DELETE CASCADE
       )
     `);
+
+    // Ensure database indexes exist for performance optimization
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications("userId")');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications("createdAt" DESC)');
+    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_userId_isRead ON notifications("userId", "isRead")');
   },
 
   async create(userId: string, data: Omit<NotificationRow, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'isRead'> & { isRead?: boolean }) {

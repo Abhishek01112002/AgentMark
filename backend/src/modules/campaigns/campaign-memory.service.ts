@@ -75,7 +75,11 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       data.rejectionReasons = [{ targetAgent: campaign.humanRevisionTarget, feedbackText: campaign.humanFeedback }];
     }
 
-    await prisma.campaignMemorySnapshot.create({ data });
+    await prisma.campaignMemorySnapshot.upsert({
+      where: { campaignId },
+      create: data,
+      update: data,
+    });
   } catch (error) {
     console.error("Memory snapshot save failed:", error);
   }

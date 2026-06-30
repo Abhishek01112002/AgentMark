@@ -202,15 +202,13 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
             </button>
 
             {/* Notification Dropdown */}
-            {openDropdown === 'notification' && (
-              <div
-                className="absolute top-full right-0 mt-2 rounded-xl shadow-xl"
-                style={{ zIndex: 60 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <NotificationPanel onChangeUnreadCount={setUnreadCount} />
-              </div>
-            )}
+            <div
+              className="absolute top-full right-0 mt-2 rounded-xl shadow-xl"
+              style={{ zIndex: 60, display: openDropdown === 'notification' ? 'block' : 'none' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <NotificationPanel onChangeUnreadCount={setUnreadCount} />
+            </div>
           </div>
 
           {/* Profile */}
