@@ -351,7 +351,7 @@ class StrategicAlignment(BaseModel):
 
 class CopywriterOutput(BaseModel):
     inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(description="Campaign goal: awareness, lead_gen, sales, or retention")
-    copies: Dict[Channel, ChannelCopy] = Field(default_factory=dict, description="Channel-specific copy keyed by Channel enum")
+    copies: Dict[Channel, Optional[ChannelCopy]] = Field(default_factory=dict, description="Channel-specific copy keyed by Channel enum")
     messaging_framework: MessagingFramework
     strategic_alignment: StrategicAlignment
     copy_readiness: Dict[str, bool] = Field(description="Channel readiness flags")

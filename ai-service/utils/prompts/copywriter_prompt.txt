@@ -141,76 +141,78 @@ GOAL-SPECIFIC CTA STRATEGY FOR "{inferred_goal}":
 
 RESPONSE FORMAT:
 You MUST return valid JSON matching the CopywriterOutput schema.
-CRITICAL: If a channel is NOT listed in {channels}, you MUST set its field to null (e.g. "linkedin": null) and set its flag in copy_readiness to false.
+CRITICAL: If a channel is NOT listed in {channels}, you MUST set its key inside the "copies" dictionary to null (e.g. "copies": {{ "linkedin": null }}) and set its flag in copy_readiness to false.
 
 {{
   "inferred_goal": "{inferred_goal}",
-  "instagram": {{
-    "headline": "Hook under 125 characters",
-    "body": "Instagram caption",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Soft action CTA",
-      "tertiary": "Optional fallback CTA"
-    }}
-  }},
-  "tiktok": {{
-    "headline": "Hook under 100 characters",
-    "body": "TikTok caption",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Engagement prompt",
-      "tertiary": null
-    }}
-  }},
-  "facebook": {{
-    "headline": "Hook under 120 characters",
-    "body": "Facebook post",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Soft CTA"
-    }}
-  }},
-  "twitter": {{
-    "headline": "Hook under 280 characters",
-    "body": "Tweet copy",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Engagement CTA"
-    }}
-  }},
-  "linkedin": {{
-    "headline": "Professional hook under 100 characters",
-    "body": "LinkedIn post",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Discussion starter"
-    }}
-  }},
-  "youtube": {{
-    "headline": "Video title under 100 characters",
-    "body": "Video description",
-    "ctas": {{
-      "primary": "Main CTA with goal keyword",
-      "secondary": "Subscribe CTA"
-    }}
-  }},
-  "email": {{
-    "subject": "Subject under 60 characters",
-    "headline": "Email hero headline",
-    "body": "Email body copy",
-    "ctas": {{
-      "primary": "Primary CTA with goal keyword",
-      "secondary": "Soft action CTA",
-      "tertiary": "Footer CTA"
-    }}
-  }},
-  "google_ads": {{
-    "headline": "Ad headline under 60 characters",
-    "body": "Ad copy",
-    "ctas": {{
-      "primary": "Conversion CTA with goal keyword",
-      "secondary": "Fallback CTA"
+  "copies": {{
+    "instagram": {{
+      "headline": "Hook under 125 characters",
+      "body": "Instagram caption",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Soft action CTA",
+        "tertiary": "Optional fallback CTA"
+      }}
+    }},
+    "tiktok": {{
+      "headline": "Hook under 100 characters",
+      "body": "TikTok caption",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Engagement prompt",
+        "tertiary": null
+      }}
+    }},
+    "facebook": {{
+      "headline": "Hook under 120 characters",
+      "body": "Facebook post",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Soft CTA"
+      }}
+    }},
+    "twitter": {{
+      "headline": "Hook under 280 characters",
+      "body": "Tweet copy",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Engagement CTA"
+      }}
+    }},
+    "linkedin": {{
+      "headline": "Professional hook under 100 characters",
+      "body": "LinkedIn post",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Discussion starter"
+      }}
+    }},
+    "youtube": {{
+      "headline": "Video title under 100 characters",
+      "body": "Video description",
+      "ctas": {{
+        "primary": "Main CTA with goal keyword",
+        "secondary": "Subscribe CTA"
+      }}
+    }},
+    "email": {{
+      "subject": "Subject under 60 characters",
+      "headline": "Email hero headline",
+      "body": "Email body copy",
+      "ctas": {{
+        "primary": "Primary CTA with goal keyword",
+        "secondary": "Soft action CTA",
+        "tertiary": "Footer CTA"
+      }}
+    }},
+    "google_ads": {{
+      "headline": "Ad headline under 60 characters",
+      "body": "Ad copy",
+      "ctas": {{
+        "primary": "Conversion CTA with goal keyword",
+        "secondary": "Fallback CTA"
+      }}
     }}
   }},
   "messaging_framework": {{
