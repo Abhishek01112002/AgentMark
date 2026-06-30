@@ -1412,39 +1412,34 @@ const CampaignLivePage: React.FC = () => {
                   className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
                     fontFamily: 'Inter, sans-serif',
-                    background: 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))',
-                    color: '#EF4444',
-                    border: '1px solid rgba(220,38,38,0.25)',
-                    boxShadow: '0 2px 12px rgba(220,38,38,0.1)',
+                    background: '#DC2626',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    boxShadow: '0 4px 24px rgba(220,38,38,0.4)',
                   }}
                   onMouseEnter={(e) => {
                     if ((revisionCounts[selectedAgent as keyof typeof revisionCounts] || 0) < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.25), rgba(185,28,28,0.14))';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(220,38,38,0.2)';
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.4)';
+                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
+                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
                   }}
                   onTouchStart={(e) => {
                     if ((revisionCounts[selectedAgent as keyof typeof revisionCounts] || 0) < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.25), rgba(185,28,28,0.14))';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(220,38,38,0.2)';
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.4)';
+                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
                     }
                   }}
                   onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
+                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
                   }}
                   onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
+                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
                   }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
