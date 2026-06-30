@@ -216,9 +216,10 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
           f"Segments: {len(strategy_data.get('audience_segments', []))}")
 
     # Copy summary
+    copies_dict = copy_data.get("copies", {}) or {}
     copy_channels = [
-        k for k in copy_data.keys()
-        if k not in ("inferred_goal", "messaging_framework", "strategic_alignment", "copy_readiness")
+        k for k, v in copies_dict.items()
+        if v is not None
     ]
     logger.info(f"✓ Copy — Channels: {', '.join(copy_channels)} | "
           f"Goal: {copy_data.get('inferred_goal', 'N/A')}")
@@ -542,7 +543,7 @@ def _add_explicit_validation_checks(
             strategy_review.score = max(0, strategy_review.score - 10)
             
     # Check 1c: Email subject must not exceed 60 characters
-    email_data = copy_data.get("email", {})
+    email_data = (copy_data.get("copies", {}) or {}).get("email") or copy_data.get("email") or {}
     if email_data and isinstance(email_data, dict):
         subject = email_data.get("subject", "")
         if subject and len(subject) > 60:
@@ -649,10 +650,10 @@ def _compute_objective_score(agent_data: dict, agent_type: str) -> int:
         total = 5
         if agent_data.get("inferred_goal"):
             present += 1
+        copies_dict = agent_data.get("copies", {}) or {}
         channel_keys = [
-            k for k in agent_data
-            if k not in ("inferred_goal", "copies", "messaging_framework",
-                         "strategic_alignment", "copy_readiness")
+            k for k, v in copies_dict.items()
+            if v is not None
         ]
         if channel_keys:
             present += 1

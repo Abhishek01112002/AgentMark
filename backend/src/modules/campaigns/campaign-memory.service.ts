@@ -55,6 +55,8 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
     const channels: string[] = [];
     if (strategyOutput?.channels && Array.isArray(strategyOutput.channels)) {
       channels.push(...strategyOutput.channels);
+    } else if (strategyOutput?.execution?.channels && Array.isArray(strategyOutput.execution.channels)) {
+      channels.push(...strategyOutput.execution.channels);
     }
 
     const totalRevisions = (campaign.researchRevisionCount || 0) +

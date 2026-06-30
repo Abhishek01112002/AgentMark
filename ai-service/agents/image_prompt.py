@@ -94,13 +94,15 @@ def _extract_copy_context(state: CampaignState) -> dict:
             "social", "ads"
         ]
 
+        copies_dict = copy_data.get("copies", {}) or {}
         for channel in known_channels:
-            channel_data = copy_data.get(channel, {})
-            if not channel_data:
+            # Fall back to root-level key for backward compatibility
+            channel_data = copies_dict.get(channel) or copy_data.get(channel)
+            if not channel_data or not isinstance(channel_data, dict):
                 continue
 
             headline = channel_data.get("headline", "") or channel_data.get("subject", "")
-            ctas = channel_data.get("ctas", {})
+            ctas = channel_data.get("ctas", {}) or {}
 
             # Pick the most prominent CTA for text overlay
             primary_cta = (
@@ -109,7 +111,7 @@ def _extract_copy_context(state: CampaignState) -> dict:
                 ctas.get("post_cta") or
                 ctas.get("video_cta") or
                 ctas.get("tweet_cta") or
-                next(iter(ctas.values()), "")
+                next(iter(ctas.values()), "") if isinstance(ctas, dict) and ctas else ""
             )
 
             if headline or primary_cta:
