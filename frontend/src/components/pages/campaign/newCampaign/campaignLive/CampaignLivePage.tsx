@@ -129,7 +129,7 @@ const CampaignLivePage: React.FC = () => {
     try {
       await api.delete(`/campaigns/${campaignId}?projectId=${projectId}`);
       toast.success("Campaign cancelled and removed successfully.");
-      navigate(`/project/${projectId}`);
+      navigate(`/projects/${projectId}`);
     } catch (err: any) {
       console.error("Failed to cancel campaign:", err);
       toast.error(err.response?.data?.error || "Failed to cancel campaign.");
