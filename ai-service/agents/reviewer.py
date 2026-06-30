@@ -247,6 +247,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         primary_goal=primary_goal,
         brief=brief,
         channels=channels,
+        # Human overrides/feedback context
+        human_feedback=state.human_feedback or "None (No active human overrides)",
         # Quality thresholds
         min_agent_score=MIN_AGENT_SCORE,
         min_quality_score=MIN_QUALITY_SCORE,

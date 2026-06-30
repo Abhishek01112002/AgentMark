@@ -13,10 +13,15 @@ CAMPAIGN CONTEXT (What the outputs should align with):
 - Primary Goal: {primary_goal}
 - Campaign Brief: {brief}
 - Manager-Defined Channels: {channels}
+- Active Human Overrides / Feedback: {human_feedback}
+
+⚠️ CRITICAL RULE FOR HUMAN OVERRIDES:
+The 'Active Human Overrides / Feedback' section represents direct instructions from the human user. If the user explicitly asks an agent to deviate from any constraint (e.g., write copy for additional channels not in the manager list, change the brand voice, write longer/shorter content, target a different demographic, etc.), the agent MUST comply. You must NOT penalize any agent for successfully implementing a change that the human explicitly requested, even if it goes against the manager-defined settings or the original brief. These human overrides take absolute priority over any standard rule.
 
 ⚠️ CAMPAIGN ALIGNMENT AUDIT — MANDATORY:
 Before scoring, you MUST check if ALL downstream agents respected the Manager's constraints:
 1. CHANNEL DRIFT: Did Strategy or Copywriter generate output for channels NOT in {channels}? (e.g., LinkedIn when only Facebook/Email were selected) → If YES, this is a CRITICAL ISSUE. Deduct 20 points from that agent's score and set passed=false.
+   EXCEPTION: If the human has explicitly requested or approved adding new channels in the 'Active Human Overrides / Feedback' section, these channels are officially allowed and must NOT be flagged as drift.
 2. BRAND NAME DRIFT: Does any copy use a different brand name instead of "{brand_name}"? (e.g., calling the brand 'Velocity' when the actual brand name is different) → If YES, this is a CRITICAL ISSUE. Deduct 20 points from copywriter score.
 3. AUDIENCE MISMATCH: Does the copy/strategy target a completely different audience than specified in the brief? → If YES, deduct 15 points.
 Document ALL drift issues clearly in your feedback with specific examples from the agent outputs.
