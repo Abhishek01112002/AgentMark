@@ -184,6 +184,29 @@ export const getCampaigns = async (req: AuthRequest, res: Response) => {
   res.json({ campaigns });
 };
 
+export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
+  try {
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        project: { userId: req.userId! },
+        status: { in: ['processing', 'awaiting_human_approval'] }
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        projectId: true,
+        updatedAt: true
+      },
+      orderBy: { updatedAt: 'desc' }
+    });
+    res.json({ campaigns });
+  } catch (error) {
+    console.error('Failed to fetch active campaigns:', error);
+    res.status(500).json({ error: 'Failed to fetch active campaigns' });
+  }
+};
+
 export const getCampaign = async (req: AuthRequest, res: Response) => {
   const { projectId } = req.query;
 
