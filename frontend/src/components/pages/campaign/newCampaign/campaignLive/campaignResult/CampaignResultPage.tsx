@@ -1001,41 +1001,41 @@ const CampaignResultPage: React.FC = () => {
                   className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]"
                   style={{
                     fontFamily: 'Inter, sans-serif',
-                    background: 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))',
-                    color: '#FBBF24',
-                    border: '1px solid rgba(251,191,36,0.2)',
-                    boxShadow: '0 2px 12px rgba(251,191,36,0.08)',
+                    background: 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))',
+                    color: '#EF4444',
+                    border: '1px solid rgba(220,38,38,0.25)',
+                    boxShadow: '0 2px 12px rgba(220,38,38,0.1)',
                     opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.3 : 1,
                     cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
                   }}
                   onMouseEnter={(e) => {
                     if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.14))';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(251,191,36,0.18)';
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.35)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.25), rgba(185,28,28,0.14))';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(220,38,38,0.2)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.4)';
                     }
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
                   }}
                   onTouchStart={(e) => {
                     if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.14))';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(251,191,36,0.18)';
-                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.35)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.25), rgba(185,28,28,0.14))';
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(220,38,38,0.2)';
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.4)';
                     }
                   }}
                   onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
                   }}
                   onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(251,191,36,0.08)';
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(251,191,36,0.2)';
+                    (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(220,38,38,0.15), rgba(185,28,28,0.08))';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 2px 12px rgba(220,38,38,0.1)';
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)';
                   }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -1050,6 +1050,7 @@ const CampaignResultPage: React.FC = () => {
           </div>
 
           {/* Sticky Footer — Approve & Publish */}
+          {drawerTab !== 'revise' && (
           <div className="px-6 py-4" style={{ borderTop: '1px solid #1e1e2b', background: '#0d0d14' }}>
             <button
               onClick={handleApprove}
@@ -1073,6 +1074,7 @@ const CampaignResultPage: React.FC = () => {
               This will trigger the Publisher Agent to finalize all deliverables.
             </p>
           </div>
+          )}
         </div>
       </div>
     </>
