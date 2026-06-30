@@ -5,16 +5,19 @@ import {
   Plus,
   Eye,
   Trash2,
+  Edit3,
   FolderOpen,
   LayoutDashboard,
   MessageSquare,
   TrendingUp,
   Star,
   StarHalf,
+  Brain,
 } from 'lucide-react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import DeleteCampaignModal from './DeleteCampaignModal';
+import RenameProjectModal from './RenameProjectModal';
 import api from '../../../services/api';
 import toast from 'react-hot-toast';
 import { formatDDMonYYYY } from '../../../utils/formatDate';
@@ -58,6 +61,7 @@ const ProjectDetailContent: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; campaign: Campaign | null }>({ show: false, campaign: null });
+  const [showRenameModal, setShowRenameModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const didFetchRef = useRef(false);
@@ -160,6 +164,20 @@ const ProjectDetailContent: React.FC = () => {
         console.error('Failed to delete campaign:', error);
         toast.error(error.response?.data?.message || 'Failed to delete campaign');
       }
+    }
+  };
+
+  const handleRenameConfirm = async (newName: string) => {
+    if (!id) return;
+    try {
+      const response = await api.patch(`/projects/${id}`, { name: newName });
+      setProject(response.data.project);
+      setShowRenameModal(false);
+      window.dispatchEvent(new CustomEvent('notifications-updated'));
+      toast.success('Project renamed successfully');
+    } catch (error: any) {
+      console.error('Failed to rename project:', error);
+      toast.error(error.response?.data?.error || 'Failed to rename project');
     }
   };
 
@@ -273,7 +291,7 @@ const ProjectDetailContent: React.FC = () => {
               style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
             >
               <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-4 group">
                   <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
@@ -281,9 +299,26 @@ const ProjectDetailContent: React.FC = () => {
                     <FolderOpen size={32} style={{ color: '#6366F1' }} />
                   </div>
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: '#F1F1F3' }}>
-                      {project.name}
-                    </h1>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#F1F1F3' }}>
+                        {project.name}
+                      </h1>
+                      <button
+                        onClick={() => setShowRenameModal(true)}
+                        className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        style={{ color: '#8B8B9E' }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        <Edit3 size={16} />
+                      </button>
+                    </div>
                     <p className="text-sm mb-3" style={{ color: '#8B8B9E' }}>
                       {project.description || 'No description provided'}
                     </p>
@@ -295,39 +330,61 @@ const ProjectDetailContent: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => navigate(`/campaign/new?projectId=${id}`)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
-                  style={{
-                    backgroundColor: '#6366F1',
-                    color: '#F1F1F3',
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '14px',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                  onTouchStart={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                  }}
-                  onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                  onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                >
-                  <Plus size={16} />
-                  New Campaign
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigate(`/projects/${id}/memory`)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
+                    style={{
+                      backgroundColor: '#1A1A24',
+                      color: '#c0c1ff',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: '14px',
+                      border: '1px solid #2A2A38',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#2A2A38';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
+                    }}
+                  >
+                    <Brain size={16} />
+                    Memory Hub
+                  </button>
+                  <button
+                    onClick={() => navigate(`/campaign/new?projectId=${id}`)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
+                    style={{
+                      backgroundColor: '#6366F1',
+                      color: '#F1F1F3',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: '14px',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                      (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                    }}
+                    onTouchStart={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                      (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
+                    }}
+                    onTouchEnd={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                    }}
+                    onTouchCancel={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                    }}
+                  >
+                    <Plus size={16} />
+                    New Campaign
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -703,6 +760,14 @@ const ProjectDetailContent: React.FC = () => {
           campaignName={deleteModal.campaign.name}
           onClose={() => setDeleteModal({ show: false, campaign: null })}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {showRenameModal && project && (
+        <RenameProjectModal
+          currentName={project.name}
+          onClose={() => setShowRenameModal(false)}
+          onConfirm={handleRenameConfirm}
         />
       )}
     </>

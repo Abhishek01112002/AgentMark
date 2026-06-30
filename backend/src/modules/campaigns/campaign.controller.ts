@@ -428,6 +428,90 @@ export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getProjectMemoryHub = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: req.userId! },
+    });
+    if (!project) return res.status(403).json({ error: 'Access denied' });
+
+    const snapshots = await prisma.campaignMemorySnapshot.findMany({
+      where: { projectId },
+      orderBy: { completedAt: 'desc' },
+      take: 10,
+      include: { campaign: { select: { name: true, brandVoice: true, industry: true } } },
+    });
+
+    if (snapshots.length === 0) {
+      return res.json({ snapshots: [], count: 0, aggregated: null });
+    }
+
+    const formatted = snapshots.map((s) => ({
+      id: s.id,
+      campaignId: s.campaignId,
+      campaignName: s.campaign.name,
+      brandVoice: s.campaign.brandVoice,
+      completedAt: s.completedAt,
+      score: s.finalReviewScore,
+      approvedOnFirstTry: s.humanApprovedOnFirstTry,
+      rejectionReasons: (s.rejectionReasons ?? []) as Array<{ targetAgent: string; feedbackText: string }>,
+      approvedTone: s.finalApprovedTone,
+      channelsUsed: s.finalChannelsUsed,
+    }));
+
+    const allTones = snapshots.flatMap((s) => s.finalApprovedTone);
+    const toneCounts: Record<string, number> = {};
+    allTones.forEach((t) => { toneCounts[t] = (toneCounts[t] || 0) + 1; });
+    const preferredTones = Object.entries(toneCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tone]) => tone);
+
+    const allChannels = snapshots.flatMap((s) => s.finalChannelsUsed);
+    const channelCounts: Record<string, number> = {};
+    allChannels.forEach((c) => { channelCounts[c] = (channelCounts[c] || 0) + 1; });
+    const preferredChannels = Object.entries(channelCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([ch]) => ch);
+
+    const totalScore = snapshots.reduce((sum, s) => sum + (s.finalReviewScore ?? 0), 0);
+    const avgScore = snapshots.length > 0 ? Math.round((totalScore / snapshots.length) * 10) / 10 : 0;
+
+    const approvedFirstTry = snapshots.filter((s) => s.humanApprovedOnFirstTry).length;
+    const firstTryRate = snapshots.length > 0 ? Math.round((approvedFirstTry / snapshots.length) * 100) : 0;
+
+    const allRejections = snapshots.flatMap(
+      (s) => (s.rejectionReasons ?? []) as Array<{ targetAgent: string; feedbackText: string }>
+    );
+    const rejectionAgentCounts: Record<string, number> = {};
+    allRejections.forEach((r) => {
+      const agent = r.targetAgent || 'unknown';
+      rejectionAgentCounts[agent] = (rejectionAgentCounts[agent] || 0) + 1;
+    });
+    const mostRejectedAgent = Object.entries(rejectionAgentCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 1)
+      .map(([agent]) => agent)[0] || null;
+
+    const aggregated = {
+      totalCampaigns: snapshots.length,
+      avgScore,
+      firstTryRate,
+      preferredTones,
+      preferredChannels,
+      mostRejectedAgent,
+      rejectionCount: allRejections.length,
+    };
+
+    res.json({ snapshots: formatted, count: snapshots.length, aggregated });
+  } catch (error) {
+    console.error('Project memory hub fetch failed:', error);
+    res.status(500).json({ error: 'Failed to fetch memory hub data' });
+  }
+};
+
 export const testKey = async (req: AuthRequest, res: Response) => {
   try {
     const { provider, apiKey } = req.body;

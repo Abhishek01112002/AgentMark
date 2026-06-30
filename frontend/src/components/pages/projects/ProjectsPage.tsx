@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Loader2 } from 'lucide-react';
+import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -7,6 +7,7 @@ import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import CreateProjectModal from './CreateProjectModal';
 import DeleteProjectModal from './DeleteProjectModal';
+import RenameProjectModal from './RenameProjectModal';
 import { formatDDMonYYYY } from '../../../utils/formatDate';
 
 interface Project {
@@ -26,6 +27,7 @@ const ProjectsContent: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
+  const [renameModal, setRenameModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
   const [visibleCount, setVisibleCount] = useState(15);
   const didFetchRef = useRef(false);
 
@@ -81,6 +83,27 @@ const ProjectsContent: React.FC = () => {
       } catch (error: any) {
         console.error('Failed to delete project:', error);
         toast.error(error.response?.data?.error || 'Failed to delete project');
+      }
+    }
+  };
+
+  const handleRenameClick = (project: Project) => {
+    setRenameModal({ show: true, project });
+  };
+
+  const handleRenameConfirm = async (newName: string) => {
+    if (renameModal.project) {
+      try {
+        const response = await api.patch(`/projects/${renameModal.project.id}`, { name: newName });
+        setProjects(projects.map((p) =>
+          p.id === renameModal.project!.id ? { ...p, name: response.data.project.name } : p
+        ));
+        setRenameModal({ show: false, project: null });
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
+        toast.success('Project renamed successfully');
+      } catch (error: any) {
+        console.error('Failed to rename project:', error);
+        toast.error(error.response?.data?.error || 'Failed to rename project');
       }
     }
   };
@@ -284,6 +307,41 @@ const ProjectsContent: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          handleRenameClick(project);
+                        }}
+                        className="p-2 rounded-lg transition-all"
+                        style={{ color: '#8B8B9E', border: '1px solid #2A2A38' }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                        }}
+                        onTouchStart={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
+                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)';
+                        }}
+                        onTouchEnd={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                        }}
+                        onTouchCancel={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
+                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                        }}
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleDeleteClick(project);
                         }}
                         className="p-2 rounded-lg transition-all"
@@ -363,6 +421,14 @@ const ProjectsContent: React.FC = () => {
           projectName={deleteModal.project.name}
           onClose={() => setDeleteModal({ show: false, project: null })}
           onConfirm={handleDeleteConfirm}
+        />
+      )}
+
+      {renameModal.show && renameModal.project && (
+        <RenameProjectModal
+          currentName={renameModal.project.name}
+          onClose={() => setRenameModal({ show: false, project: null })}
+          onConfirm={handleRenameConfirm}
         />
       )}
     </>

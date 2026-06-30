@@ -11,6 +11,7 @@ import NewCampaignPage from './components/pages/campaign/newCampaign/NewCampaign
 import CampaignLivePage from './components/pages/campaign/newCampaign/campaignLive/CampaignLivePage';
 import CampaignResultPage from './components/pages/campaign/newCampaign/campaignLive/campaignResult/CampaignResultPage';
 import CampaignHistoryPage from './components/pages/history/CampaignHistoryPage';
+import MemoryHubPage from './components/pages/memoryHub/MemoryHubPage';
 import Settings from './components/pages/settings/Settings';
 import Support from './components/pages/support/Support';
 
@@ -118,6 +119,14 @@ const App: React.FC = () => {
         element={
           <ProtectedRoute>
             <CampaignHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/:projectId/memory"
+        element={
+          <ProtectedRoute>
+            <MemoryHubPage />
           </ProtectedRoute>
         }
       />

@@ -67,6 +67,28 @@ export const projectService = {
     });
   },
 
+  async update(id: string, userId: string, data: { name?: string; description?: string }) {
+    const project = await prisma.project.findFirst({
+      where: { id, userId },
+    });
+    if (!project) return null;
+
+    const updated = await prisma.project.update({
+      where: { id },
+      data,
+    });
+
+    if (data.name && data.name !== project.name) {
+      await notificationService.create(userId, {
+        type: 'info',
+        title: 'Project renamed',
+        message: `Project "${project.name}" was renamed to "${data.name}".`,
+      });
+    }
+
+    return updated;
+  },
+
   async delete(id: string, userId: string) {
     const project = await prisma.project.findFirst({
       where: { id, userId },

@@ -65,6 +65,24 @@ export const getProject = async (req: AuthRequest, res: Response) => {
   res.json({ project });
 };
 
+export const updateProject = async (req: AuthRequest, res: Response) => {
+  try {
+    const data = createProjectSchema.partial().parse(req.body);
+    const project = await projectService.update(req.params.id, req.userId!, data);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ project });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    throw error;
+  }
+};
+
 export const deleteProject = async (req: AuthRequest, res: Response) => {
   const project = await projectService.delete(req.params.id, req.userId!);
   

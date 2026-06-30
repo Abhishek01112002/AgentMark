@@ -139,6 +139,11 @@ export const campaignService = {
 
     if (!campaign) return null;
 
+    // Delete memory snapshot if exists first to avoid foreign key violations
+    await prisma.campaignMemorySnapshot.deleteMany({
+      where: { campaignId: id }
+    });
+
     await prisma.campaign.delete({ where: { id } });
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (project) {
