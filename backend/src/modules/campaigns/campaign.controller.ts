@@ -406,7 +406,11 @@ export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
     if (!project) return res.status(403).json({ error: 'Access denied' });
 
     const snapshots = await prisma.campaignMemorySnapshot.findMany({
-      where: { projectId: campaign.projectId, campaignId: { not: campaign.id } },
+      where: { 
+        projectId: campaign.projectId, 
+        campaignId: { not: campaign.id },
+        completedAt: { lt: campaign.createdAt }
+      },
       orderBy: { completedAt: 'desc' },
       take: 3,
     });
