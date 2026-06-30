@@ -403,6 +403,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         state.status = "review_complete"
         state.next_step = "proceed_to_publisher"
         state.review_feedback = None
+        state.human_feedback = None
+        state.human_revision_target = None
 
     else:
         # ⚠️ REVISION REQUIRED
@@ -427,6 +429,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             state.status = "review_complete"
             state.next_step = "proceed_to_publisher"
             state.review_feedback = None
+            state.human_feedback = None
+            state.human_revision_target = None
 
         else:
             # Send back for revision
@@ -456,6 +460,23 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             state.status = revision_target["status"]
             state.review_feedback = json.dumps(review_feedback, indent=2)
             state.next_step = revision_target["next_step"]
+
+            # Bridge AI Reviewer -> Agent feedback gap
+            issues_str = "\n".join(f"- {issue}" for issue in revision_target.get("issues", []))
+            actions_str = "\n".join(f"- {action}" for action in revision_target.get("action_items", []))
+            state.human_feedback = (
+                f"AI Reviewer Feedback:\n"
+                f"Reason: {revision_target.get('reason', '')}\n\n"
+                f"Issues to fix:\n{issues_str}\n\n"
+                f"Recommended Actions:\n{actions_str}"
+            )
+            target_map = {
+                "research": "research",
+                "strategy": "strategy",
+                "copy": "copywriter",
+                "image": "image_prompt"
+            }
+            state.human_revision_target = target_map.get(agent_key, agent_key)
 
     logger.info("\n✅ State updated:")
     logger.info(f"   status:    {state.status}")
@@ -487,8 +508,17 @@ def _add_explicit_validation_checks(
     """
     
     # Check 1: Copy inferred_goal must match Strategy inferred_goal
+    goal_map = {
+        "brand_awareness": "awareness", "lead generation": "lead_gen", 
+        "sales_conversion": "sales", "customer_retention": "retention"
+    }
     strategy_goal = strategy_data.get("inferred_goal", "")
+    if isinstance(strategy_goal, str):
+        strategy_goal = goal_map.get(strategy_goal.lower(), strategy_goal)
+        
     copy_goal = copy_data.get("inferred_goal", "")
+    if isinstance(copy_goal, str):
+        copy_goal = goal_map.get(copy_goal.lower(), copy_goal)
     
     if strategy_goal and copy_goal and strategy_goal != copy_goal:
         issue = f"Copy inferred_goal '{copy_goal}' doesn't match strategy inferred_goal '{strategy_goal}'"
