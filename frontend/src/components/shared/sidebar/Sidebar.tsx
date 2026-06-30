@@ -5,7 +5,6 @@ import {
   LayoutDashboard, FolderOpen, Plus, History,
   Settings, HelpCircle, LogOut,
   ChevronLeft, ChevronRight, X,
-  Cpu, RefreshCw, AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../services/api';
@@ -300,21 +299,21 @@ const Sidebar: React.FC = () => {
 
         {/* Active Campaigns list */}
         {activeCampaigns.length > 0 && (
-          <div className="mt-6 pt-4 animate-fadeIn" style={{ borderTop: '1px solid #2A2A38' }}>
+          <div className="mt-6 pt-4 animate-fadeIn" style={{ borderTop: '1px solid #1c1b22' }}>
             {!isCollapsed && (
-              <div className="flex items-center justify-between px-3 mb-2">
+              <div className="flex items-center justify-between px-3 mb-2.5">
                 <span
-                  className="text-xs uppercase tracking-wider flex items-center gap-2"
+                  className="text-[10px] uppercase tracking-wider flex items-center gap-2"
                   style={{
                     fontFamily: 'JetBrains Mono, monospace',
                     color: '#4A4A5E',
-                    fontWeight: 500,
+                    fontWeight: 600,
                   }}
                 >
-                  <Cpu size={12} className="text-[#4edea3]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
                   Active Runs
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#4edea3]/10 text-[#4edea3] border border-[#4edea3]/20 font-bold font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#4edea3]/5 text-[#4edea3] border border-[#4edea3]/10 font-bold font-mono">
                   {activeCampaigns.length}
                 </span>
               </div>
@@ -328,51 +327,46 @@ const Sidebar: React.FC = () => {
                   <Link
                     key={c.id}
                     to={`/campaign/${c.id}/live?projectId=${c.projectId}`}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                    className={`flex items-center gap-3 px-3 py-2 transition-all ${
                       isCollapsed ? 'justify-center' : ''
                     }`}
                     style={{
-                      fontFamily: 'JetBrains Mono, monospace',
-                      fontSize: '13px',
-                      letterSpacing: '0.02em',
-                      backgroundColor: active ? '#8083ff' : 'transparent',
-                      color: active ? '#0d0096' : '#c7c4d7',
-                      fontWeight: active ? 700 : 500,
+                      fontFamily: 'Inter, sans-serif',
+                      backgroundColor: active ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+                      borderLeft: active 
+                        ? `2.5px solid ${isAwaitingReview ? '#F59E0B' : '#8083ff'}` 
+                        : '2.5px solid transparent',
+                      paddingLeft: isCollapsed ? '12px' : active ? '10px' : '10px',
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-                        (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+                        (e.currentTarget as HTMLElement).style.borderLeftColor = isAwaitingReview ? '#F59E0B' : '#8083ff';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
                         (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                        (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
+                        (e.currentTarget as HTMLElement).style.borderLeftColor = 'transparent';
                       }
                     }}
                     title={c.name}
                   >
                     {isCollapsed ? (
-                      isAwaitingReview ? (
-                        <AlertCircle size={20} className="text-[#F59E0B]" />
-                      ) : (
-                        <RefreshCw size={20} className="text-[#8083ff] animate-spin" />
-                      )
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <span className={`absolute w-3 h-3 rounded-full ${isAwaitingReview ? 'bg-[#F59E0B]/20' : 'bg-[#8083ff]/20'} animate-ping`} />
+                        <span className={`relative w-2 h-2 rounded-full ${isAwaitingReview ? 'bg-[#F59E0B]' : 'bg-[#8083ff]'}`} />
+                      </div>
                     ) : (
                       <>
-                        {isAwaitingReview ? (
-                          <AlertCircle size={16} className="text-[#F59E0B] flex-shrink-0" />
-                        ) : (
-                          <RefreshCw size={16} className="text-[#8083ff] animate-spin flex-shrink-0" />
-                        )}
+                        <div className="relative flex items-center justify-center w-3 h-3 flex-shrink-0">
+                          <span className={`absolute w-3.5 h-3.5 rounded-full ${isAwaitingReview ? 'bg-[#F59E0B]/10' : 'bg-[#8083ff]/10'} ${!isAwaitingReview && 'animate-ping'}`} />
+                          <span className={`relative w-1.5 h-1.5 rounded-full ${isAwaitingReview ? 'bg-[#F59E0B]' : 'bg-[#8083ff]'}`} />
+                        </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
-                          <p className="truncate text-xs" style={{ color: active ? '#0d0096' : '#e4e1e9' }}>{c.name}</p>
-                          <p 
-                            className="text-[9px] mt-0.5 truncate uppercase tracking-wider" 
-                            style={{ color: active ? 'rgba(13,0,150,0.7)' : isAwaitingReview ? '#F59E0B' : '#8083ff' }}
-                          >
-                            {isAwaitingReview ? 'Awaiting Review' : 'Processing'}
+                          <p className="truncate text-xs font-semibold text-[#F1F1F3]">{c.name}</p>
+                          <p className="text-[9px] mt-0.5 truncate flex items-center gap-1 font-mono text-[#8B8B9E] uppercase tracking-wider">
+                            {isAwaitingReview ? 'Awaiting Approval' : 'Processing'}
                           </p>
                         </div>
                       </>

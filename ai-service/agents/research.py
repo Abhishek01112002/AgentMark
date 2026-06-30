@@ -179,8 +179,14 @@ def research_agent(state: CampaignState) -> CampaignState:
     logger.info("   Executing LiteRAG real-time web search...")
     current_year = datetime.date.today().year
     product_name = getattr(state, 'product_name', brand_name) or brand_name
-    query_1 = f"{product_name} industry trends {target_audience} {current_year}"
-    query_2 = f"{product_name} top competitors market analysis"
+    
+    # Enrich search term with industry to prevent collisions with common words (e.g. "Bingo" the game vs "Bingo" the snack brand)
+    query_brand = product_name
+    if industry and industry.lower() != 'other':
+        query_brand = f"{product_name} {industry}"
+        
+    query_1 = f"{query_brand} industry trends {target_audience} {current_year}"
+    query_2 = f"{query_brand} top competitors market analysis"
 
     # Pass None as redis_client to let search_web automatically use the shared pool
     result_1 = search_web(query_1, redis_client=None, api_key=tavily_api_key)

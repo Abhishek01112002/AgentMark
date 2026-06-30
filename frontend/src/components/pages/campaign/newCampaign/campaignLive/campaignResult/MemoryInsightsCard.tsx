@@ -3,11 +3,11 @@ import { Brain, AlertTriangle, BarChart2, CheckCircle2 } from 'lucide-react';
 
 interface Insight {
   completedAt: string;
-  score: number | null;
+  finalReviewScore: number | null;
   approvedOnFirstTry: boolean;
-  rejectionReasons: Array<{ targetAgent: string; feedbackText: string }>;
-  approvedTone: string[];
-  channelsUsed: string[];
+  rejectionReasons: Array<{ targetAgent: string; feedbackText: string }> | null;
+  finalApprovedTone: string[];
+  finalChannelsUsed: string[];
 }
 
 interface MemoryInsightsCardProps {
@@ -19,7 +19,7 @@ interface MemoryInsightsCardProps {
 const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count, projectId }) => {
   const [open, setOpen] = useState(true);
 
-  if (!insights.length) return null;
+  if (!insights?.length) return null;
 
   return (
     <div
@@ -64,7 +64,7 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
         <div className="px-5 pb-5 space-y-3 animate-fadeIn">
           {insights.map((s, idx) => (
             <div key={idx}>
-              {s.rejectionReasons.length > 0 && s.rejectionReasons.map((r, ri) => (
+              {s.rejectionReasons?.map((r, ri) => (
                 <div
                   key={ri}
                   className="flex items-start gap-2.5"
@@ -105,16 +105,16 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
                     <span className="text-xs font-medium" style={{ color: '#4edea3', fontFamily: 'Inter, sans-serif' }}>
                       Approved on first try
                     </span>
-                    {s.score !== null && (
+                    {s.finalReviewScore !== null && (
                       <p className="text-xs mt-0.5" style={{ color: '#8B8B9E', fontFamily: 'Inter, sans-serif' }}>
-                        Scored {s.score}/100 with tone: {s.approvedTone.join(', ') || 'N/A'}
+                        Scored {s.finalReviewScore}/100 with tone: {s.finalApprovedTone?.join(', ') || 'N/A'}
                       </p>
                     )}
                   </div>
                 </div>
               )}
 
-              {s.channelsUsed.length > 0 && (
+              {s.finalChannelsUsed?.length > 0 && (
                 <div
                   className="flex items-start gap-2.5"
                   style={{
@@ -130,7 +130,7 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
                       Channels used in past campaign
                     </span>
                     <p className="text-xs mt-0.5" style={{ color: '#8B8B9E', fontFamily: 'Inter, sans-serif' }}>
-                      {s.channelsUsed.join(', ')}
+                      {s.finalChannelsUsed?.join(', ')}
                     </p>
                   </div>
                 </div>
