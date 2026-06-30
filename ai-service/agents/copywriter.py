@@ -193,8 +193,10 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     }
     voice_keywords = voice_keywords_map.get(brand_voice, f"{brand_voice}, authentic, natural")
 
-    # Format human revision feedback if copywriter is targeted for revision
-    is_human_revision = bool(state.human_feedback and state.human_revision_target == "copywriter")
+    is_human_revision = bool(
+        (state.human_feedback and state.human_revision_target == "copywriter") or
+        (state.status == "copy_revision_required")
+    )
     human_feedback_section = ""
     if is_human_revision:
         existing_copy_section = ""
@@ -205,6 +207,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
                 f"{state.copy_output}\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             )
+        feedback_text = state.human_feedback or "AI Reviewer requested revision."
         human_feedback_section = (
             "\n" + "="*80 + "\n"
             "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
@@ -212,10 +215,10 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which field(s)/channel(s) need changing.\n"
             "  2. ONLY modify the specific field(s) the user mentioned. Nothing else.\n"
-            "  3. ALL other channels and fields MUST be copied character-for-character from EXISTING COPY above.\n"
+            "  3. ALL other channels and fields MUST be copied character-for-character, word-for-word, from EXISTING COPY above. Do not alter a single character of the unchanged channels.\n"
             "  4. Do NOT regenerate, rewrite, or improve unchanged channels — copy them exactly.\n"
             "  5. Do NOT add or remove any channels — keep the same set as EXISTING COPY.\n"
-            f"User Feedback: \"{state.human_feedback}\"\n"
+            f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_copy_section
         )

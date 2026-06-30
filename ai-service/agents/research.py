@@ -131,7 +131,10 @@ def research_agent(state: CampaignState) -> CampaignState:
     tavily_api_key = (llm_config.get("tavily_api_key") or "").strip() or None
     
     # Format human revision feedback if research is targeted for revision
-    is_human_revision = bool(state.human_feedback and state.human_revision_target == "research")
+    is_human_revision = bool(
+        (state.human_feedback and state.human_revision_target == "research") or
+        (state.status == "research_revision_required")
+    )
     human_feedback_section = ""
     if is_human_revision:
         existing_research_section = ""
@@ -142,6 +145,7 @@ def research_agent(state: CampaignState) -> CampaignState:
                 f"{state.research_output}\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             )
+        feedback_text = state.human_feedback or "AI Reviewer requested revision."
         human_feedback_section = (
             "\n" + "="*80 + "\n"
             "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
@@ -149,9 +153,9 @@ def research_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which field(s) need changing.\n"
             "  2. ONLY modify what the user explicitly asked for. Nothing else.\n"
-            "  3. ALL other fields MUST be copied exactly from EXISTING RESEARCH above.\n"
+            "  3. ALL other fields MUST be copied exactly, word-for-word, from EXISTING RESEARCH above. Do not alter a single character of the unchanged fields.\n"
             "  4. Do NOT regenerate, expand, or improve unchanged fields.\n"
-            f"User Feedback: \"{state.human_feedback}\"\n"
+            f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_research_section
         )

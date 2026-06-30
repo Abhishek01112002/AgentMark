@@ -145,7 +145,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     llm = get_llm_client()
     
     # Format human revision feedback if strategy is targeted for revision
-    is_human_revision = bool(state.human_feedback and state.human_revision_target == "strategy")
+    is_human_revision = bool(
+        (state.human_feedback and state.human_revision_target == "strategy") or
+        (state.status == "strategy_revision_required")
+    )
     human_feedback_section = ""
     if is_human_revision:
         existing_strategy_section = ""
@@ -156,6 +159,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
                 f"{state.strategy_output}\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             )
+        feedback_text = state.human_feedback or "AI Reviewer requested revision."
         human_feedback_section = (
             "\n" + "="*80 + "\n"
             "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
@@ -163,10 +167,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which field(s) need changing.\n"
             "  2. ONLY modify the specific field(s) the user mentioned. Nothing else.\n"
-            "  3. ALL other strategy fields MUST be copied exactly from EXISTING STRATEGY above.\n"
+            "  3. ALL other strategy fields MUST be copied exactly, word-for-word, from EXISTING STRATEGY above. Do not alter a single character of the unchanged fields.\n"
             "  4. Do NOT regenerate, rewrite, or improve unchanged fields.\n"
             "  5. Channels list must remain exactly the same as in EXISTING STRATEGY.\n"
-            f"User Feedback: \"{state.human_feedback}\"\n"
+            f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_strategy_section
         )

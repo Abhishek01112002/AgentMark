@@ -336,7 +336,10 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             copy_overlay_context = "\n".join(overlay_lines)
 
     # Format human revision feedback if image_prompt is targeted for revision
-    is_human_revision = bool(state.human_feedback and state.human_revision_target == "image_prompt")
+    is_human_revision = bool(
+        (state.human_feedback and state.human_revision_target == "image_prompt") or
+        (state.status == "image_revision_required")
+    )
     human_feedback_section = ""
     if is_human_revision:
         existing_image_section = ""
@@ -347,6 +350,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
                 f"{state.image_output}\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             )
+        feedback_text = state.human_feedback or "AI Reviewer requested revision."
         human_feedback_section = (
             "\n" + "="*80 + "\n"
             "⚠️ HUMAN REVISION FEEDBACK — SURGICAL EDIT MODE:\n"
@@ -354,10 +358,10 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which image(s)/field(s) need changing.\n"
             "  2. ONLY modify the specific image prompt(s) or visual direction the user mentioned.\n"
-            "  3. ALL other image prompts MUST be copied exactly from EXISTING IMAGE PROMPTS above.\n"
+            "  3. ALL other image prompts MUST be copied exactly, word-for-word, from EXISTING IMAGE PROMPTS above. Do not alter a single character of the unchanged deliverables.\n"
             "  4. Do NOT regenerate, restyle, or rewrite unchanged prompts.\n"
             "  5. Keep exactly the same number of image prompts as in EXISTING IMAGE PROMPTS.\n"
-            f"User Feedback: \"{state.human_feedback}\"\n"
+            f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_image_section
         )
