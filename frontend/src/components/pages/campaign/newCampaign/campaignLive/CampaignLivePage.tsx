@@ -1248,20 +1248,21 @@ const CampaignLivePage: React.FC = () => {
                     return normalized;
                   };
                   const selectedChannels = (managerData?.channels || []).map(normalizeChannelName);
-                  const copyChannels = copyData
-                    ? Object.keys(copyData).filter(k => !['inferred_goal', 'messaging_framework', 'strategic_alignment', 'copy_readiness'].includes(k))
-                    : [];
-                  const activeChannels = selectedChannels.length > 0 ? selectedChannels : copyChannels;
-
-                  // Copy preview (shows all active channels with explicit missing alerts)
-                  if (copyData && activeChannels.length > 0) {
-                    sections.push({
-                      label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
-                      content: (
-                        <div className="space-y-3">
-                          {activeChannels.map((ch: string) => {
-                            const ch_data = copyData[ch];
-                            const hasCopy = !!ch_data;
+                   const flatCopyData = copyData?.copies ? { ...copyData, ...copyData.copies } : copyData;
+                   const copyChannels = flatCopyData
+                     ? Object.keys(flatCopyData).filter(k => !['inferred_goal', 'copies', 'messaging_framework', 'strategic_alignment', 'copy_readiness'].includes(k))
+                     : [];
+                   const activeChannels = selectedChannels.length > 0 ? selectedChannels : copyChannels;
+ 
+                   // Copy preview (shows all active channels with explicit missing alerts)
+                   if (flatCopyData && activeChannels.length > 0) {
+                     sections.push({
+                       label: 'Ad Copy', icon: 'edit_note', color: '#4edea3',
+                       content: (
+                         <div className="space-y-3">
+                           {activeChannels.map((ch: string) => {
+                             const ch_data = flatCopyData[ch];
+                             const hasCopy = !!ch_data;
                             const headline = ch_data?.headline || ch_data?.subject || '';
                             const body = ch_data?.body || ch_data?.caption || ch_data?.post || '';
                             

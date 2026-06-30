@@ -16,6 +16,7 @@ const platforms = [
   { id: 'youtube', label: 'YouTube' },
   { id: 'email', label: 'Email' },
   { id: 'google_ads', label: 'Google Ads' },
+  { id: 'general', label: 'General' },
 ];
 
 const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
