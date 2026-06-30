@@ -14,7 +14,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CheckCircle, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Trash } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../shared/topNav/TopNav';
@@ -115,6 +115,26 @@ const CampaignLivePage: React.FC = () => {
   const [failedError, setFailedError] = useState<string>('');
   const [socketAuthError, setSocketAuthError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
+
+  const handleCancelCampaign = async () => {
+    const confirmCancel = window.confirm("Are you sure you want to cancel and delete this campaign pipeline?");
+    if (!confirmCancel) return;
+
+    const projectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
+    if (!projectId) {
+      toast.error("Could not find project context.");
+      return;
+    }
+
+    try {
+      await api.delete(`/campaigns/${campaignId}?projectId=${projectId}`);
+      toast.success("Campaign cancelled and removed successfully.");
+      navigate(`/project/${projectId}`);
+    } catch (err: any) {
+      console.error("Failed to cancel campaign:", err);
+      toast.error(err.response?.data?.error || "Failed to cancel campaign.");
+    }
+  };
   
   // HITL Modal State
   const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');
@@ -777,8 +797,22 @@ const CampaignLivePage: React.FC = () => {
                   </h1>
                 </div>
                 <div className="flex gap-3">
+                  {/* Cancel/Delete Button */}
+                  {!campaignFailed && (
+                    <button
+                      onClick={handleCancelCampaign}
+                      className="px-4 py-2 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-sm font-medium transition-colors hover:border-red-500/30 flex items-center gap-2"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      <Trash size={14} />
+                      Cancel Campaign
+                    </button>
+                  )}
                   <button
-                    onClick={() => navigate(`/campaign/${campaignId}/result`)}
+                    onClick={() => {
+                      const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
+                      navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
+                    }}
                     className="px-4 py-2 rounded border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1f1f25] flex items-center gap-2"
                     style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}
                   >
