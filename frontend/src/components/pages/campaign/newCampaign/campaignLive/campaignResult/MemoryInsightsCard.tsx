@@ -105,7 +105,7 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
                     <span className="text-xs font-medium" style={{ color: '#4edea3', fontFamily: 'Inter, sans-serif' }}>
                       Approved on first try
                     </span>
-                    {s.finalReviewScore !== null && (
+                    {s.finalReviewScore != null && (
                       <p className="text-xs mt-0.5" style={{ color: '#8B8B9E', fontFamily: 'Inter, sans-serif' }}>
                         Scored {s.finalReviewScore}/100 with tone: {s.finalApprovedTone?.join(', ') || 'N/A'}
                       </p>

@@ -217,6 +217,7 @@ const NewCampaignContent: React.FC = () => {
 
     const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
     const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
+    const finalBrandVoice = formData.brandVoice === 'other' ? formData.customBrandVoice : formData.brandVoice;
 
     const normalize = (v: any) => (v == null ? '' : String(v)).toLowerCase().trim();
     const hasDuplicate = projectCampaigns.some((c: any) => 
@@ -225,7 +226,7 @@ const NewCampaignContent: React.FC = () => {
       normalize(c.industry) === normalize(finalIndustry) &&
       normalize(c.primaryGoal) === normalize(finalGoal) &&
       normalize(c.targetAudience) === normalize(formData.targetAudience) &&
-      normalize(c.brandVoice) === normalize(formData.brandVoice)
+      normalize(c.brandVoice) === normalize(finalBrandVoice)
     );
 
     if (hasDuplicate) {
