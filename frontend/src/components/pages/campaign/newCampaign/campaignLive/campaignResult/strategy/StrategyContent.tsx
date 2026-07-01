@@ -30,30 +30,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const hasRealData = data && Object.keys(data).length > 0;
 
-  const [timelineStatuses, setTimelineStatuses] = React.useState<Record<string, 'planned' | 'in_progress' | 'completed'>>(() => {
-    try {
-      const saved = localStorage.getItem(`timeline_status_${campaign?.id}`);
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
 
-  const toggleStatus = React.useCallback((idx: number) => {
-    const key = String(idx);
-    const current = timelineStatuses[key] || 'planned';
-    let next: 'planned' | 'in_progress' | 'completed' = 'planned';
-    if (current === 'planned') next = 'in_progress';
-    else if (current === 'in_progress') next = 'completed';
-    
-    const updated = { ...timelineStatuses, [key]: next };
-    setTimelineStatuses(updated);
-    try {
-      localStorage.setItem(`timeline_status_${campaign?.id}`, JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [timelineStatuses, campaign?.id]);
 
 
   // Extract data from AI output
@@ -227,29 +204,23 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
       ));
     }
 
-    const calRows = (displayCalendar as any[]).slice(0, 12).map((row: any, idx: number) => {
+    const calRows = (displayCalendar as any[]).slice(0, 12).map((row: any) => {
       const chName = getChannelDisplayName(row.channel || row.platform || 'N/A');
       const typeText = (row.type || row.content_type || 'Content').replace(/_/g, ' ');
       const formattedType = typeText.charAt(0).toUpperCase() + typeText.slice(1);
-      const statusColors: Record<string, string> = { ready: '#059669', review: '#D97706', drafting: '#6366F1', planned: '#6B7280', in_progress: '#6366F1', completed: '#10B981' };
-      
-      const currentStatus = timelineStatuses[String(idx)] || row.status || 'planned';
-      const color = statusColors[currentStatus] || '#6B7280';
-      const label = currentStatus === 'in_progress' ? 'In Progress' : currentStatus === 'completed' ? 'Completed' : 'Planned';
       
       return `<tr>
         <td>${esc(row.week || row.timeframe || '')}</td>
         <td>${esc(chName)}</td>
         <td><span class="badge" style="white-space:nowrap">${esc(formattedType)}</span></td>
         <td>${esc(row.topic || row.title || row.asset || '')}</td>
-        <td><span style="color:${color};font-weight:600">${esc(label)}</span></td>
       </tr>`;
     }).join('');
 
     if (calRows.length > 0) {
       sections += sectionWrap('Content Rollout Calendar', `
         <table>
-          <thead><tr><th>Week</th><th>Channel</th><th>Content Type</th><th>Topic / Asset</th><th>Status</th></tr></thead>
+          <thead><tr><th>Week</th><th>Channel</th><th>Content Type</th><th>Topic / Asset</th></tr></thead>
           <tbody>${calRows}</tbody>
         </table>
       `);
@@ -880,8 +851,8 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               <table className="pdf-table w-full text-left border-collapse" style={{ minWidth: 480 }}>
                 <thead>
                   <tr className="bg-[#1A1A24] border-b border-[#2A2A38]">
-                    {['Week', 'Channel', 'Content Type', 'Topic / Asset', 'Status'].map((header, idx) => (
-                      <th key={idx} className={`py-3 px-4 md:px-6 text-xs uppercase tracking-wider ${idx === 4 ? 'text-right' : ''}`} style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, color: '#A0A0D2' }}>{header}</th>
+                    {['Week', 'Channel', 'Content Type', 'Topic / Asset'].map((header, idx) => (
+                      <th key={idx} className="py-3 px-4 md:px-6 text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 500, color: '#A0A0D2' }}>{header}</th>
                     ))}
                   </tr>
                 </thead>
@@ -909,15 +880,6 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                     
                     const typeStyle = getContentTypeStyle(row.type || row.content_type || 'Content');
                     
-                    const statusColors: Record<string, { bg: string; text: string; dotBg: string; label: string }> = {
-                      planned: { bg: 'rgba(107, 114, 128, 0.1)', text: '#9CA3AF', dotBg: '#6B7280', label: 'Planned' },
-                      in_progress: { bg: 'rgba(99, 102, 241, 0.1)', text: '#818CF8', dotBg: '#6366F1', label: 'In Progress' },
-                      completed: { bg: 'rgba(52, 211, 153, 0.1)', text: '#34D399', dotBg: '#10B981', label: 'Completed' }
-                    };
-                    
-                    const currentStatus = timelineStatuses[String(idx)] || row.status || 'planned';
-                    const statusStyle = statusColors[currentStatus] || statusColors.planned;
-                    
                     return (
                       <tr key={idx} className="hover:bg-[#111118]/40 transition-colors">
                         <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
@@ -942,23 +904,6 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                           </span>
                         </td>
                         <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
-                        <td className="py-4 px-4 md:px-6 text-right">
-                          <button
-                            onClick={() => toggleStatus(idx)}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs hover:opacity-85 active:scale-95 transition-all border border-transparent pdf-tag"
-                            style={{ 
-                              fontFamily: 'JetBrains Mono, monospace', 
-                              backgroundColor: statusStyle.bg, 
-                              color: statusStyle.text, 
-                              fontWeight: 500,
-                              cursor: 'pointer'
-                            }}
-                            title="Click to change status"
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${currentStatus === 'in_progress' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
-                            {statusStyle.label}
-                          </button>
-                        </td>
                       </tr>
                     );
                   })}
