@@ -90,8 +90,26 @@ For EACH deliverable in the campaign, generate a complete prompt object:
    MANDATORY 7-PART PROMPT STRUCTURE — follow this exact order for every prompt:
 
    1. SUBJECT + FROZEN MOMENT (most critical — first sentence):
-      Describe a specific person doing a specific thing at a specific micro-moment.
-      This is a photograph, not a concept. Not "visualization of efficiency" — a person, a moment.
+      This MUST be a photographable frozen micro-moment. Not a concept, not a role, not a stock image description.
+      MANDATORY: include the person's approximate age + a specific action at a specific second in time.
+
+      FORBIDDEN stock-photo patterns (never write these):
+      ✗ "A professional [role] stands in a [generic setting]..."
+      ✗ "A [job title] gestures towards a digital projection..."
+      ✗ "A businessman smiles at the camera in a studio..."
+      ✗ "A [role] looks at a screen/chart/graph..."
+      These are generic casting descriptions, not frozen moments.
+
+      REQUIRED pattern (always write like this):
+      ✓ "A [specific age] [specific ethnicity/persona descriptor] [role] is at the exact moment of [specific micro-action] —
+         [precise emotional state from that micro-action], [what their hands/body/face are doing at that second]"
+
+      BAD:  "A professional financial advisor stands in a studio gesturing at a projection"
+      GOOD: "A 44-year-old South Asian wealth manager leans across a glass desk, pointing
+             at a single line in a printed portfolio statement, the exact moment his client
+             realizes her retirement timeline has moved up by three years — her hand covers
+             her mouth, his expression is controlled satisfaction"
+
       BAD:  "abstract visualization of AI-powered growth and efficiency"
       GOOD: "A 38-year-old South Asian CMO stands at floor-to-ceiling windows at dusk,
              expression shifting from concentration to quiet confidence as she reviews
@@ -292,7 +310,11 @@ QUALITY CHECKLIST (verify all are true before responding):
 - visual_direction is an OBJECT with: overall_style, color_palette (array), mood, key_visual_themes (array)
 - Every image_prompt has ALL required fields: deliverable_name, prompt, rationale, visual_elements (array), style_keywords (array), style, color_palette, text_overlay (object), aspect_ratio
 - Color palette is specific and consistent with brand_voice "{brand_voice}" and industry "{industry}"
-- Each deliverable has a UNIQUE, DISTINCT prompt — no two prompts should share the same opening sentence
+- UNIQUENESS IS NON-NEGOTIABLE: Every single prompt MUST depict a COMPLETELY DIFFERENT SCENE.
+  This means: different person OR different location OR different moment in time — never the same scene reframed.
+  A LinkedIn post and an email banner CANNOT show the same person in the same room at the same moment.
+  If you find yourself writing the same opening sentence twice, STOP and choose a different scene entirely.
+  VIOLATION: First prompt shows "advisor in studio" → Last prompt also shows "advisor in studio" ← THIS IS WRONG.
 - Aspect ratio matches the deliverable type (16:9 for banners, 1:1 for posts, 9:16 for stories)
 - Text overlay uses copy context where available, otherwise derived from positioning: "{positioning}"
 - Visual metaphors connect to at least one pain point or market trend from research
