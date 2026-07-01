@@ -51,12 +51,12 @@ const createRedisStore = (name: string) => new RedisStore({
 });
 
 /**
- * Global Rate Limiter: 200 requests per 15 minutes per IP.
+ * Global Rate Limiter: 1000 requests per 15 minutes per IP.
  * Gracefully falls back to MemoryStore if Redis is offline.
  */
 export const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 200,
+  limit: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   store: createRedisStore('global'),
@@ -67,12 +67,12 @@ export const globalRateLimiter = rateLimit({
 });
 
 /**
- * Auth Rate Limiter: 10 requests per 15 minutes per IP (Login, Signup).
+ * Auth Rate Limiter: 30 requests per 15 minutes per IP (Login, Signup).
  * Prevents brute-force attacks.
  */
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10,
+  limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
   store: createRedisStore('auth'),
@@ -83,12 +83,12 @@ export const authRateLimiter = rateLimit({
 });
 
 /**
- * Campaign Rate Limiter: 15 requests per 15 minutes per IP.
+ * Campaign Rate Limiter: 50 requests per 15 minutes per IP.
  * Prevents spamming the expensive AI generation service.
  */
 export const campaignRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 15,
+  limit: 50,
   standardHeaders: true,
   legacyHeaders: false,
   store: createRedisStore('campaign'),

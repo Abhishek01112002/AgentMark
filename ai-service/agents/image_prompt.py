@@ -431,6 +431,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     cached = cache_get(cache_key)
     if cached is not None:
         logger.info("📦 Cache hit — using cached ImagePrompt response")
+        # pyrefly: ignore [bad-unpacking]
         image_output = ImagePromptOutput(**cached)
     else:
         image_output, state = safe_llm_call(
