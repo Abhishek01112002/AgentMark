@@ -30,6 +30,31 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const hasRealData = data && Object.keys(data).length > 0;
 
+  const [timelineStatuses, setTimelineStatuses] = React.useState<Record<string, 'planned' | 'in_progress' | 'completed'>>(() => {
+    try {
+      const saved = localStorage.getItem(`timeline_status_${campaign?.id}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleStatus = React.useCallback((idx: number) => {
+    const key = String(idx);
+    const current = timelineStatuses[key] || 'planned';
+    let next: 'planned' | 'in_progress' | 'completed' = 'planned';
+    if (current === 'planned') next = 'in_progress';
+    else if (current === 'in_progress') next = 'completed';
+    
+    const updated = { ...timelineStatuses, [key]: next };
+    setTimelineStatuses(updated);
+    try {
+      localStorage.setItem(`timeline_status_${campaign?.id}`, JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [timelineStatuses, campaign?.id]);
+
 
   // Extract data from AI output
   const positioning = data?.positioning || '';
@@ -53,15 +78,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   const displayCalendar = Array.isArray(contentCalendar) && contentCalendar.length > 0 ? contentCalendar : [];
   const displayChannels = Array.isArray(channels) && channels.length > 0 ? channels : [];
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'ready': return { bg: 'rgba(78, 222, 163, 0.1)', text: '#4edea3', dotBg: '#4edea3' };
-      case 'review': return { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', dotBg: '#F59E0B' };
-      case 'drafting': return { bg: '#1A1A24', text: '#A0A0D2', dotBg: '#A0A0D2' };
-      case 'planned': return { bg: '#1A1A24', text: '#A0A0D2', dotBg: '#A0A0D2' };
-      default: return { bg: '#1A1A24', text: '#8B8B9E', dotBg: '#8B8B9E' };
-    }
-  };
+
 
   // ─── Build self-contained print HTML in a new popup ───────────────────────
   const buildPrintHTML = (): string => {
@@ -210,15 +227,22 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
       ));
     }
 
-    const calRows = (displayCalendar as any[]).slice(0, 12).map((row: any) => {
-      const statusColors: Record<string, string> = { ready: '#059669', review: '#D97706', drafting: '#6366F1', planned: '#6B7280' };
-      const color = statusColors[row.status] || '#6B7280';
+    const calRows = (displayCalendar as any[]).slice(0, 12).map((row: any, idx: number) => {
+      const chName = getChannelDisplayName(row.channel || row.platform || 'N/A');
+      const typeText = (row.type || row.content_type || 'Content').replace(/_/g, ' ');
+      const formattedType = typeText.charAt(0).toUpperCase() + typeText.slice(1);
+      const statusColors: Record<string, string> = { ready: '#059669', review: '#D97706', drafting: '#6366F1', planned: '#6B7280', in_progress: '#6366F1', completed: '#10B981' };
+      
+      const currentStatus = timelineStatuses[String(idx)] || row.status || 'planned';
+      const color = statusColors[currentStatus] || '#6B7280';
+      const label = currentStatus === 'in_progress' ? 'In Progress' : currentStatus === 'completed' ? 'Completed' : 'Planned';
+      
       return `<tr>
         <td>${esc(row.week || row.timeframe || '')}</td>
-        <td>${esc(row.channel || row.platform || '')}</td>
-        <td><span class="badge">${esc(row.type || row.content_type || 'Content')}</span></td>
+        <td>${esc(chName)}</td>
+        <td><span class="badge" style="white-space:nowrap">${esc(formattedType)}</span></td>
         <td>${esc(row.topic || row.title || row.asset || '')}</td>
-        <td><span style="color:${color};font-weight:600">${esc(row.statusLabel || row.status || 'Planned')}</span></td>
+        <td><span style="color:${color};font-weight:600">${esc(label)}</span></td>
       </tr>`;
     }).join('');
 
@@ -863,20 +887,77 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                 </thead>
                 <tbody className="text-sm divide-y divide-[#2A2A38]/50">
                   {(isTimelineExpanded ? displayCalendar : displayCalendar.slice(0, 10)).map((row: any, idx: number) => {
-                    const statusStyle = getStatusStyle(row.status || 'planned');
+                    const typeText = (row.type || row.content_type || 'Content').replace(/_/g, ' ');
+                    const formattedType = typeText.charAt(0).toUpperCase() + typeText.slice(1);
+                    
+                    const getContentTypeStyle = (typeStr: string) => {
+                      const t = typeStr.toLowerCase();
+                      if (t.includes('ad') || t.includes('ads') || t.includes('setup')) {
+                        return { bg: 'rgba(99, 102, 241, 0.1)', text: '#818CF8', border: 'rgba(99, 102, 241, 0.2)' };
+                      }
+                      if (t.includes('video') || t.includes('reel') || t.includes('shorts')) {
+                        return { bg: 'rgba(52, 211, 153, 0.1)', text: '#34D399', border: 'rgba(52, 211, 153, 0.2)' };
+                      }
+                      if (t.includes('blog') || t.includes('article') || t.includes('newsletter') || t.includes('email')) {
+                        return { bg: 'rgba(167, 139, 250, 0.1)', text: '#A78BFA', border: 'rgba(167, 139, 250, 0.2)' };
+                      }
+                      if (t.includes('poll') || t.includes('post') || t.includes('social')) {
+                        return { bg: 'rgba(251, 191, 36, 0.1)', text: '#FBBF24', border: 'rgba(251, 191, 36, 0.2)' };
+                      }
+                      return { bg: '#1A1A24', text: '#A0A0D2', border: '#2A2A38' };
+                    };
+                    
+                    const typeStyle = getContentTypeStyle(row.type || row.content_type || 'Content');
+                    
+                    const statusColors: Record<string, { bg: string; text: string; dotBg: string; label: string }> = {
+                      planned: { bg: 'rgba(107, 114, 128, 0.1)', text: '#9CA3AF', dotBg: '#6B7280', label: 'Planned' },
+                      in_progress: { bg: 'rgba(99, 102, 241, 0.1)', text: '#818CF8', dotBg: '#6366F1', label: 'In Progress' },
+                      completed: { bg: 'rgba(52, 211, 153, 0.1)', text: '#34D399', dotBg: '#10B981', label: 'Completed' }
+                    };
+                    
+                    const currentStatus = timelineStatuses[String(idx)] || row.status || 'planned';
+                    const statusStyle = statusColors[currentStatus] || statusColors.planned;
+                    
                     return (
-                      <tr key={idx} className="hover:bg-[#111118] transition-colors">
+                      <tr key={idx} className="hover:bg-[#111118]/40 transition-colors">
                         <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
-                        <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.channel || row.platform || 'N/A'}</td>
                         <td className="py-4 px-4 md:px-6">
-                          <span className="px-2 py-1 bg-[#1A1A24] rounded text-xs border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{row.type || row.content_type || 'Content'}</span>
+                          <div className="flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                            <ChannelIcon channel={row.channel || row.platform || ''} size={14} className="text-[#8B8B9E] shrink-0" />
+                            <span className="font-medium" style={{ color: '#F1F1F3' }}>{getChannelDisplayName(row.channel || row.platform || 'N/A')}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 md:px-6">
+                          <span 
+                            className="px-2 py-1 rounded text-xs border whitespace-nowrap" 
+                            style={{ 
+                              fontFamily: 'JetBrains Mono, monospace', 
+                              backgroundColor: typeStyle.bg, 
+                              color: typeStyle.text, 
+                              borderColor: typeStyle.border,
+                              fontWeight: 500 
+                            }}
+                          >
+                            {formattedType}
+                          </span>
                         </td>
                         <td className="py-4 px-4 md:px-6" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.topic || row.title || row.asset || 'Untitled'}</td>
                         <td className="py-4 px-4 md:px-6 text-right">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs pdf-tag" style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: statusStyle.bg, color: statusStyle.text, fontWeight: 500 }}>
-                            <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${row.status === 'review' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
-                            {row.statusLabel || row.status || 'Planned'}
-                          </span>
+                          <button
+                            onClick={() => toggleStatus(idx)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs hover:opacity-85 active:scale-95 transition-all border border-transparent pdf-tag"
+                            style={{ 
+                              fontFamily: 'JetBrains Mono, monospace', 
+                              backgroundColor: statusStyle.bg, 
+                              color: statusStyle.text, 
+                              fontWeight: 500,
+                              cursor: 'pointer'
+                            }}
+                            title="Click to change status"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full pdf-no-print ${currentStatus === 'in_progress' ? 'pulse-dot' : ''}`} style={{ backgroundColor: statusStyle.dotBg }} />
+                            {statusStyle.label}
+                          </button>
                         </td>
                       </tr>
                     );
