@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, FolderOpen, Plus, Loader2, AlertTriangle, Sparkles, Heart, ShieldCheck, PlusCircle } from 'lucide-react';
+import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, FolderOpen, Plus, Loader2, AlertTriangle, Sparkles, Heart, ShieldCheck, PlusCircle, AlignLeft } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../../services/api';
@@ -55,6 +55,7 @@ const NewCampaignContent: React.FC = () => {
     targetAudience: '',
     brandVoice: 'professional',
     customBrandVoice: '',
+    additionalInfo: '',
   });
 
   const customIndustryRef = useRef<HTMLInputElement>(null);
@@ -165,6 +166,7 @@ const NewCampaignContent: React.FC = () => {
         primaryGoal: finalGoal,
         targetAudience: formData.targetAudience,
         brandVoice: formData.brandVoice === 'other' ? formData.customBrandVoice : formData.brandVoice,
+        additionalInfo: formData.additionalInfo || undefined,
       });
 
       const { campaign } = response.data;
@@ -480,6 +482,30 @@ const NewCampaignContent: React.FC = () => {
               className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all"
               placeholder="Describe your ideal customer..."
               rows={3}
+              style={{ fontFamily: 'Sora, sans-serif' }}
+            />
+          </div>
+        </section>
+
+        <section className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <AlignLeft size={16} className="text-[#c0c1ff]" />
+            <div>
+              <h3 className="text-lg font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                Additional Context
+              </h3>
+              <p className="text-xs" style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}>
+                Optional — any extra details or custom rules for the AI
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <textarea
+              value={formData.additionalInfo}
+              onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
+              className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all"
+              placeholder="e.g. We are launching in India first. Avoid competitor X. Focus on Gen Z tone."
+              rows={4}
               style={{ fontFamily: 'Sora, sans-serif' }}
             />
           </div>

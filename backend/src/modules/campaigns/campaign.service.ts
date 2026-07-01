@@ -12,8 +12,9 @@ export const campaignService = {
     primaryGoal: string;
     targetAudience: string;
     brandVoice: string;
+    additionalInfo?: string;
   }) {
-    const { name, brandName, industry, primaryGoal, targetAudience, brandVoice } = data;
+    const { name, brandName, industry, primaryGoal, targetAudience, brandVoice, additionalInfo } = data;
 
     const campaign = await prisma.campaign.create({
       data: { 
@@ -23,6 +24,7 @@ export const campaignService = {
         primaryGoal,
         targetAudience,
         brandVoice,
+        additionalInfo: additionalInfo ?? null,
         projectId,
         status: 'processing' // Set to processing initially
       },

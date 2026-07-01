@@ -24,6 +24,7 @@ const createCampaignSchema = z.object({
   primaryGoal: z.string().min(1),
   targetAudience: z.string().min(1),
   brandVoice: z.string().min(1),
+  additionalInfo: z.string().optional(),
 });
 
 const approveCampaignSchema = z.object({
@@ -120,6 +121,11 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
     }
     if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(campaignData.primaryGoal.trim().toLowerCase())) {
       briefParts.push(`Custom goal: ${campaignData.primaryGoal}`);
+    }
+    if (campaignData.additionalInfo?.trim()) {
+      briefParts.push(
+        `Additional Context: ${campaignData.additionalInfo.trim()}`
+      );
     }
 
     // ── Step 1: Create DB record (status: "processing") ──────────────────────

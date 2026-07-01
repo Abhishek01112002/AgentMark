@@ -70,6 +70,8 @@ model Campaign {
   humanFeedback          String?  @db.Text
   humanRevisionTarget    String?  // 'research', 'strategy', 'copywriter', 'image_prompt'
   
+  additionalInfo  String?  @db.Text
+  
   projectId       String
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   

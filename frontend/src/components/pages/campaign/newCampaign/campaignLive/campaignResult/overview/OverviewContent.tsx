@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Milestone, Users, Fingerprint, Network, Package, AlertTriangle } from 'lucide-react';
+import { Compass, Milestone, Users, Fingerprint, Network, Package, AlertTriangle, AlignLeft } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface OverviewContentProps {
@@ -144,6 +144,19 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           </h3>
           <p className="text-base leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
             {targetAudience}
+          </p>
+        </div>
+      )}
+
+      {/* Additional Context */}
+      {campaign.additionalInfo && (
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+            <AlignLeft size={20} className="text-[#6366F1]" />
+            Additional Context
+          </h3>
+          <p className="text-base leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+            {campaign.additionalInfo}
           </p>
         </div>
       )}
