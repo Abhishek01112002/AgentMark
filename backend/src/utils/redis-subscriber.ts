@@ -180,6 +180,11 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               }
               currentOutputs.active_agent = status === 'running' ? data.agent : null;
 
+              // Merge intermediate outputs as they complete
+              if (status === 'completed' && outputs && typeof outputs === 'object') {
+                Object.assign(currentOutputs, outputs);
+              }
+
               const updateData: any = {
                 aiOutputs: currentOutputs as any,
               };

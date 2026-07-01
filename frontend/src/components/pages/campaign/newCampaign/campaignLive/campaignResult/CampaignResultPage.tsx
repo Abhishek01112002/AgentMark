@@ -223,6 +223,7 @@ const CampaignResultPage: React.FC = () => {
       await api.post(`/campaigns/${campaignId}/approve`, {
         action: 'approve',
       });
+      window.dispatchEvent(new Event('campaign_status_changed'));
       toast.success('Campaign approved! Resuming publisher...');
       navigate(`/campaign/${campaignId}/live`);
     } catch (error) {
@@ -244,6 +245,7 @@ const CampaignResultPage: React.FC = () => {
         revisionTarget: selectedAgent,
         feedback: revisionFeedback,
       });
+      window.dispatchEvent(new Event('campaign_status_changed'));
       
       toast.success('Revision requested successfully!');
       setRevisionFeedback('');

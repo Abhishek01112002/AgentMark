@@ -538,6 +538,7 @@ const CampaignLivePage: React.FC = () => {
             }
           }
           setCampaignPreviewData(campaign);
+          window.dispatchEvent(new Event('campaign_status_changed'));
         }
       } catch (error) {
         console.error('Failed to fetch revision counts:', error);
@@ -554,6 +555,7 @@ const CampaignLivePage: React.FC = () => {
           description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
         }))
       );
+      window.dispatchEvent(new Event('campaign_status_changed'));
         setTimeout(() => {
           const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
           navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
@@ -566,6 +568,7 @@ const CampaignLivePage: React.FC = () => {
       setCampaignFailed(true);
       setFailedError(data.error ?? 'An unexpected error occurred.');
       setShowHumanReview(false);
+      window.dispatchEvent(new Event('campaign_status_changed'));
     });
 
     return () => {
@@ -589,6 +592,7 @@ const CampaignLivePage: React.FC = () => {
       await api.post(`/campaigns/${campaignId}/approve`, {
         action: 'approve',
       });
+      window.dispatchEvent(new Event('campaign_status_changed'));
       toast.success('Campaign approved! Resuming publisher...');
     } catch (error) {
       console.error('Failed to submit approval:', error);
@@ -636,6 +640,7 @@ const CampaignLivePage: React.FC = () => {
         revisionTarget: selectedAgent,
         feedback: revisionFeedback,
       });
+      window.dispatchEvent(new Event('campaign_status_changed'));
       
       toast.success(`Revision requested! ${agentsToReRun.length} agent${agentsToReRun.length > 1 ? 's' : ''} will re-run.`);
       setRevisionFeedback('');

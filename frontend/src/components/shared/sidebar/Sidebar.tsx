@@ -83,8 +83,15 @@ const Sidebar: React.FC = () => {
       }
     };
     fetchActive();
+
+    // Listen to custom window events for immediate update
+    window.addEventListener('campaign_status_changed', fetchActive);
+
     const interval = setInterval(fetchActive, 10000); // Poll every 10 seconds
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('campaign_status_changed', fetchActive);
+    };
   }, []);
 
   const isActive = (path: string) => {

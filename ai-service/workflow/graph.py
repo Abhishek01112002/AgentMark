@@ -58,6 +58,17 @@ from agents.human_approval import human_approval_node
 from workflow.routing import should_continue_after_reviewer, route_after_human_approval
 from utils.redis_publisher import publish_agent_event
 from utils.cancellation import is_campaign_cancelled
+import json
+
+def _try_parse_json(val):
+    if not val:
+        return None
+    if isinstance(val, dict) or isinstance(val, list):
+        return val
+    try:
+        return json.loads(val)
+    except Exception:
+        return val
 
 
 # ==================== NODE WRAPPER FUNCTIONS ====================
@@ -92,7 +103,7 @@ def manager_node(state: CampaignState) -> dict:
     try:
         updated_state = manager_agent(state)
         time.sleep(2)  # spacing between agent calls
-        publish_agent_event(state.campaign_id, "manager", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "manager", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"manager_output": _try_parse_json(updated_state.manager_output)}})
         return {
             "manager_output": updated_state.manager_output,
             "status": updated_state.status,
@@ -159,7 +170,7 @@ def research_node(state: CampaignState) -> dict:
             logger.info("Clearing human_revision_target (research revision complete)")
             updated_state.human_revision_target = None
         
-        publish_agent_event(state.campaign_id, "research", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "research", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"research_output": _try_parse_json(updated_state.research_output)}})
         return {
             "research_output": updated_state.research_output,
             "strategy_output": updated_state.strategy_output,
@@ -237,7 +248,7 @@ def strategy_node(state: CampaignState) -> dict:
             # Don't increment for downstream re-runs
             logger.info(f"\nStrategy revision count: {updated_state.strategy_revision_count or 0}/3 (no increment - downstream re-run)")
         
-        publish_agent_event(state.campaign_id, "strategy", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "strategy", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"strategy_output": _try_parse_json(updated_state.strategy_output)}})
         return {
             "strategy_output": updated_state.strategy_output,
             "copy_output": updated_state.copy_output,
@@ -312,7 +323,7 @@ def copywriter_node(state: CampaignState) -> dict:
             # Don't increment for downstream re-runs
             logger.info(f"\nCopywriter revision count: {updated_state.copy_revision_count or 0}/3 (no increment - downstream re-run)")
         
-        publish_agent_event(state.campaign_id, "copywriter", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "copywriter", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"copy_output": _try_parse_json(updated_state.copy_output)}})
         return {
             "copy_output": updated_state.copy_output,
             "image_output": updated_state.image_output,
@@ -385,7 +396,7 @@ def image_prompt_node(state: CampaignState) -> dict:
             # Don't increment for downstream re-runs
             logger.info(f"\nImage revision count: {updated_state.image_revision_count or 0}/3 (no increment - downstream re-run)")
         
-        publish_agent_event(state.campaign_id, "image_prompt", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "image_prompt", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"image_output": _try_parse_json(updated_state.image_output)}})
         return {
             "image_output": updated_state.image_output,
             "review_output": updated_state.review_output,
@@ -468,7 +479,7 @@ def reviewer_node(state: CampaignState) -> dict:
             except Exception as parse_err:
                 logger.info(f"Error parsing review output in reviewer_node: {parse_err}")
                 
-        publish_agent_event(state.campaign_id, "reviewer", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "reviewer", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"review_output": _try_parse_json(updated_state.review_output)}})
         return {
             "review_output": updated_state.review_output,
             "human_revision_target": updated_state.human_revision_target,
@@ -548,7 +559,7 @@ def publisher_node(state: CampaignState) -> dict:
     try:
         updated_state = publisher_agent(state)
         time.sleep(2)  # spacing between agent calls
-        publish_agent_event(state.campaign_id, "publisher", "completed", extra=_get_revision_counts_extra(updated_state))
+        publish_agent_event(state.campaign_id, "publisher", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"publisher_output": _try_parse_json(updated_state.publisher_output)}})
         return {
             "publisher_output": updated_state.publisher_output,
             "workflow_finished": updated_state.workflow_finished,
