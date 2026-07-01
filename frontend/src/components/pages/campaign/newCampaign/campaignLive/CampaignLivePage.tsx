@@ -63,35 +63,35 @@ interface AgentUpdatePayload {
 // ── Initial agent pipeline definition ─────────────────────────────────────────
 
 const INITIAL_AGENTS: Agent[] = [
-  { id: 1, key: 'manager',     name: 'Manager Agent',      status: 'running',  description: 'Orchestrating campaign sequence...' },
-  { id: 2, key: 'research',    name: 'Research Agent',     status: 'pending',  description: 'Awaiting Manager...' },
-  { id: 3, key: 'strategy',    name: 'Strategy Agent',     status: 'pending',  description: 'Awaiting Research...' },
-  { id: 4, key: 'copywriter',  name: 'Copywriter Agent',   status: 'pending',  description: 'Awaiting Strategy...' },
-  { id: 5, key: 'image_prompt',name: 'Image Prompt Agent', status: 'pending',  description: 'Awaiting Copywriter...' },
-  { id: 6, key: 'reviewer',    name: 'Reviewer Agent',     status: 'pending',  description: 'Awaiting Image Prompt...' },
-  { id: 7, key: 'publisher',   name: 'Publisher Agent',    status: 'pending',  description: 'Awaiting Human Approval' },
+  { id: 1, key: 'manager',     name: 'Manager Agent',      status: 'running',  description: 'Coordinating multi-agent pipeline execution...' },
+  { id: 2, key: 'research',    name: 'Research Agent',     status: 'pending',  description: 'Waiting for Manager signal...' },
+  { id: 3, key: 'strategy',    name: 'Strategy Agent',     status: 'pending',  description: 'Waiting for Research output...' },
+  { id: 4, key: 'copywriter',  name: 'Copywriter Agent',   status: 'pending',  description: 'Waiting for Strategy output...' },
+  { id: 5, key: 'image_prompt',name: 'Image Prompt Agent', status: 'pending',  description: 'Waiting for Copywriter output...' },
+  { id: 6, key: 'reviewer',    name: 'Reviewer Agent',     status: 'pending',  description: 'Waiting for Image Prompt output...' },
+  { id: 7, key: 'publisher',   name: 'Publisher Agent',    status: 'pending',  description: 'Awaiting human approval' },
 ];
 
 /** Description shown when an agent transitions to "running" */
 const RUNNING_DESCRIPTIONS: Record<string, string> = {
-  manager:      'Orchestrating campaign sequence...',
-  research:     'Analysing market and competitors...',
-  strategy:     'Defining angles and hooks...',
-  copywriter:   'Drafting ad copy variants...',
-  image_prompt: 'Generating visual prompts...',
-  reviewer:     'Evaluating content quality...',
-  publisher:    'Publishing final deliverables...',
+  manager:      'Coordinating multi-agent pipeline execution...',
+  research:     'Performing market intelligence & competitor analysis...',
+  strategy:     'Developing strategic angles and positioning...',
+  copywriter:   'Crafting high-conversion ad copy variants...',
+  image_prompt: 'Generating visual creatives and imagery...',
+  reviewer:     'Running quality assurance and compliance checks...',
+  publisher:    'Finalising and publishing campaign deliverables...',
 };
 
 /** Description shown when an agent transitions to "completed" */
 const DONE_DESCRIPTIONS: Record<string, string> = {
-  manager:      'Orchestration complete',
-  research:     'Competitor analysis done',
-  strategy:     'Angles and hooks defined',
-  copywriter:   'Content drafts completed',
-  image_prompt: 'Visual prompts generated',
-  reviewer:     'Quality evaluation done',
-  publisher:    'Campaign published',
+  manager:      'Pipeline orchestration completed',
+  research:     'Market intelligence gathered',
+  strategy:     'Strategic framework established',
+  copywriter:   'Ad copy variants generated',
+  image_prompt: 'Visual creatives produced',
+  reviewer:     'Quality checks passed',
+  publisher:    'Campaign deliverables finalised',
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -942,7 +942,7 @@ const CampaignLivePage: React.FC = () => {
                     </div>
 
                     {/* Terminal content */}
-                    <div className="flex-1 p-6 text-xs font-mono overflow-y-auto space-y-4 bg-[#0A0A0F]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+                    <div className="flex-1 p-5 overflow-y-auto space-y-3 bg-[#0A0A0F]" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
                       <div style={{ color: '#4A4A5E' }}>System: Initialising multi-agent pipeline...</div>
                       <div style={{ color: '#4A4A5E' }}>System: Redis Pub/Sub channel active — {campaignId}</div>
                       <div style={{ color: '#4edea3' }}>&gt; Socket.io connected. Receiving real-time updates.</div>
