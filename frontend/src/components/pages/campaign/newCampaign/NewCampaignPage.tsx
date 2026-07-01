@@ -487,27 +487,32 @@ const NewCampaignContent: React.FC = () => {
           </div>
         </section>
 
-        <section className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <AlignLeft size={16} className="text-[#c0c1ff]" />
-            <div>
-              <h3 className="text-lg font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                Additional Context
-              </h3>
-              <p className="text-xs" style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}>
-                Optional — any extra details or custom rules for the AI
-              </p>
+        <section className="bg-[#111118]/60 border border-dashed border-[#3A3A4A] rounded-xl p-5 md:p-6 transition-all hover:bg-[#111118] hover:border-[#4A4A5A]">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AlignLeft size={16} className="text-[#A0A0D2]" />
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                  Additional Context
+                </h3>
+                <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#252538] text-[#A0A0D2] border border-[#35354F]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  Optional
+                </span>
+              </div>
             </div>
           </div>
           <div className="space-y-2">
             <textarea
               value={formData.additionalInfo}
               onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-              className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all"
+              className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all focus:border-[#c0c1ff] bg-[#0C0C12]"
               placeholder="e.g. We are launching in India first. Avoid competitor X. Focus on Gen Z tone."
               rows={4}
-              style={{ fontFamily: 'Sora, sans-serif' }}
+              style={{ fontFamily: 'Sora, sans-serif', borderColor: '#2A2A38', color: '#F1F1F3' }}
             />
+            <p className="text-xs" style={{ color: '#6B6B7F', fontFamily: 'JetBrains Mono, monospace' }}>
+              Add custom details, rules, or product facts you want the AI agents to prioritize.
+            </p>
           </div>
         </section>
 
