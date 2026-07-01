@@ -447,7 +447,76 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         logger.info(f"   • DALL-E Prompt ({len(prompt_obj.prompt)} chars):")
         logger.info(f"     {prompt_obj.prompt[:100]}...")
 
+    # ========== STEP 6.5: PROMPT QUALITY VALIDATION ==========
+    # Purely diagnostic — logs warnings only, NEVER raises exceptions or blocks the pipeline.
+    # Catches common prompt quality failures so they show up in logs for monitoring.
+
+    def _validate_prompt_quality(prompt_obj) -> list[str]:
+        """
+        Validates a single generated DALL-E prompt against quality rules.
+
+        Checks performed:
+          1. [CONTEXT] block leak  — metadata that confuses DALL-E 3
+          2. Too-short prompt      — likely generic / low-quality output
+          3. Missing camera specs  — missing photography technical language
+          4. Missing safety tail   — 'no text' instruction must close every prompt
+
+        Returns a list of warning strings (empty list = all checks passed).
+        Never raises; designed to be called in a fire-and-forget loop.
+        """
+        warnings: list[str] = []
+        text = prompt_obj.prompt or ""
+        name = prompt_obj.deliverable_name or "unknown"
+
+        # Check 1: Context block leaked into output
+        if "[CONTEXT" in text or "DO NOT RENDER" in text or "USE FOR GENERATION INSIGHTS" in text:
+            warnings.append(
+                f"⚠️  [{name}] [CONTEXT] block leaked into DALL-E prompt — "
+                "LLM ignored the output-only rule. Prompt will confuse DALL-E 3."
+            )
+
+        # Check 2: Prompt too short — likely a generic placeholder
+        if len(text) < 300:
+            warnings.append(
+                f"⚠️  [{name}] Prompt suspiciously short ({len(text)} chars). "
+                "Expected 450-900 chars for a rich DALL-E 3 prompt."
+            )
+
+        # Check 3: No photography / camera technical language
+        camera_terms = ["mm", "f/", "aperture", "shot on", "lens", "depth of field",
+                        "bokeh", "shallow focus", "wide angle", "portrait lens"]
+        if not any(term in text.lower() for term in camera_terms):
+            warnings.append(
+                f"⚠️  [{name}] Missing camera/lens technical specs. "
+                "Add focal length, aperture, or depth-of-field language."
+            )
+
+        # Check 4: Safety tail missing
+        if "no text" not in text.lower():
+            warnings.append(
+                f"⚠️  [{name}] Missing 'no text' safety instruction at end of prompt. "
+                "DALL-E 3 may render gibberish text on the image."
+            )
+
+        return warnings
+
+    validation_issues_found = 0
+    for prompt_obj in image_output.image_prompts:
+        quality_warnings = _validate_prompt_quality(prompt_obj)
+        for warning in quality_warnings:
+            logger.warning(warning)
+            validation_issues_found += 1
+
+    if validation_issues_found == 0:
+        logger.info("✅ Prompt quality validation passed — all prompts are clean DALL-E 3 format")
+    else:
+        logger.warning(
+            f"⚠️  Prompt quality validation found {validation_issues_found} issue(s) — "
+            "review warnings above. Pipeline continues unaffected."
+        )
+
     # ========== STEP 7: WRITE TO STATE ==========
+
     logger.info("\n[STEP 7] Writing to state...")
     logger.info("-" * 80)
 

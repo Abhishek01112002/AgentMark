@@ -78,24 +78,21 @@ For EACH deliverable in the campaign, generate a complete prompt object:
 
    PROMPT ENGINEERING RULES (must follow for every prompt):
    - Write deep, rich, hyper-detailed storytelling prompts. Do NOT use simple, generic descriptions.
-   - Target length: 450-900 characters for DALL-E 3 quality.
-   - Structure every prompt with three distinct parts:
-     1. CONTEXT INJECTION PREFIX: Start the prompt with a structured markdown block inside square brackets `[CONTEXT - DO NOT RENDER TEXT FROM THIS BLOCK. USE FOR GENERATION INSIGHTS ONLY]`:
-        - Campaign Name: {campaign_name}
-        - Brand Name: {brand_name}
-        - Target Audience: {target_audience}
-        - Brand Voice: {brand_voice}
-        - Strategy: Briefly summarize the positioning statement and key messages used.
-        - Research Findings (Pain Point & Motivation): Mention the customer pain point and motivation this visual represents.
-        - Copywrite Overlay Alignment: List the headline and CTA overlay message that will be placed on this image.
-        - Instruction: "Use this context to guide the visual tone, emotional resonance, and composition. Do NOT draw or write any of these words on the image."
-     2. VISUAL SCENE SPECIFICATION (Narrative Storytelling Style):
-        - Every prompt must tell a visual story or capture a narrative moment (a slice of life, a moment of action, or visual metaphor) representing the campaign's core value.
-        - Weave the customer pain points (struggle/complication) or core motivations (relief/success) directly into the scene.
-        - Describe the subject in detail (specific age, clothing, expression, and emotional state) capturing a genuine human emotion.
-        - Describe the environment, textures, and ambient background details (matte textures, plants, office structure, home setting).
-        - Describe lighting and style: photorealistic editorial photography or raytraced 3D render, light direction, camera angle, and lens depth.
-     3. DALL-E 3 SAFETY: End every single prompt with "no text, no words, no letters, no labels, clean composition" to ensure no gibberish text is generated on the image.
+   - INTERNAL REASONING (DO NOT INCLUDE IN OUTPUT): Before writing each prompt, reason through the following questions internally but do NOT write them in the "prompt" field:
+         * Which specific customer pain point or aspiration does this visual represent?
+         * What single frozen moment in time captures the emotional peak of that pain or aspiration?
+         * What is the one most important visual element — subject, object, or scene?
+         * What headline copy will overlay this image, and how does the composition frame space for it?
+         Use these answers to craft the final prompt. Do NOT write any of these answers in the output.
+
+   - PROMPT OUTPUT RULES — THE "prompt" FIELD MUST:
+      1. Contain ONLY pure visual scene description text — no headers, no labels, no [CONTEXT] blocks, no markdown, no structured prefixes of any kind. The text goes directly to DALL-E 3 which cannot interpret metadata.
+      2. Tell a visual story: describe a specific frozen moment in time — a person mid-action, a scene at a precise second — not an abstract concept or category.
+      3. Describe the SUBJECT in detail: specific age, ethnicity if relevant, clothing, expression, emotional state, body language.
+      4. Describe the ENVIRONMENT: specific location, time of day, architectural or natural elements, foreground and background details.
+      5. Describe LIGHTING precisely: direction, quality, color temperature, any practical light sources.
+      6. Describe CAMERA & LENS: photography style, focal length feel (intimate 85mm portrait vs. wide establishing shot), depth of field.
+      7. End EVERY prompt with this exact safety tail: "no text, no words, no letters, no logos, no labels, no watermarks, clean composition"
 
    TEXT OVERLAY GUIDE (what copy to suggest over the image):
    - Use copy context provided above if available for that channel
@@ -129,7 +126,7 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
   "image_prompts": [
     {{
       "deliverable_name": "exact deliverable name from the list",
-      "prompt": "Full DALL-E 3 prompt containing: [CONTEXT - DO NOT RENDER TEXT FROM THIS BLOCK. USE FOR GENERATION INSIGHTS ONLY. Campaign: {campaign_name}. Brand: {brand_name}. Target Audience: {target_audience}. Brand Voice: {brand_voice}. Strategy: positioning and key message. Research: pain point and motivation being visualized. Copywrite Overlay: headline and CTA. Instruction: Use this context to guide visual tone and composition. Do NOT draw or write any of these words.] VISUAL SCENE SPECIFICATION: [Detailed narrative scene description with subject, environment, lighting, camera angle, and emotional tone — all tailored to the pain point or motivation being visualized]. no text, no words, no letters, no labels, clean composition",
+      "prompt": "Pure DALL-E 3 visual scene description only — no headers, no [CONTEXT] blocks, no labels. Start directly with the subject and moment. Example structure: 'A [age] [role] [doing specific action] in [specific location] at [time of day], [emotional expression and body language detail]. [Environment details — textures, background, foreground elements]. [Lighting setup — direction, quality, color temperature]. [Photography style and lens feel]. [Color grade and tonal mood]. no text, no words, no letters, no logos, no labels, no watermarks, clean composition'",
       "rationale": "Strategic reasoning: why this visual approach serves the brand positioning and resonates with the target audience's pain points or motivations",
       "visual_elements": [
         "Key visual element 1 (e.g., confident professional at modern workstation)",
@@ -155,8 +152,9 @@ Respond ONLY with valid JSON matching the exact structure below. No markdown, no
 
 QUALITY CHECKLIST (ensure all are true before responding):
 - Exactly {deliverables_count} prompt objects in image_prompts array (one per deliverable)
-- Every prompt contains the [CONTEXT - DO NOT RENDER TEXT...] block AND the visual scene specification
-- Every prompt ends with "no text, no words, no letters, no labels, clean composition"
+- Every "prompt" field contains ONLY pure visual scene text — NO [CONTEXT] blocks, NO headers, NO labels, NO markdown prefixes of any kind
+- Every "prompt" field ends with exactly: "no text, no words, no letters, no logos, no labels, no watermarks, clean composition"
+- Every "prompt" field describes a specific frozen visual moment (subject + action + environment + lighting + camera) — NOT an abstract concept
 - visual_direction is an OBJECT with: overall_style, color_palette (array), mood, key_visual_themes (array)
 - Every image_prompt has ALL required fields: deliverable_name, prompt, rationale, visual_elements (array), style_keywords (array), style, color_palette, text_overlay (object), aspect_ratio
 - Color palette is specific and consistent with brand_voice "{brand_voice}" and industry "{industry}"
