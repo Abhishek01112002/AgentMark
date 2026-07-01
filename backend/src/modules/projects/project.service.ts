@@ -25,35 +25,40 @@ export const projectService = {
       },
     });
 
-    // Auto-update project status based on campaign activity
-    const updatedProjects = await Promise.all(
-      projects.map(async (project) => {
-        const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
-        
-        let newStatus = 'idle';
-        if (hasProcessingCampaigns) {
-          newStatus = 'active';
-        }
+    // Auto-update project status in the database ONLY if it has actually changed, avoiding N+1 write operations on every call
+    const projectsToUpdate = projects.filter(project => {
+      const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
+      const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
+      return project.status !== newStatus;
+    });
 
-        // Update project status in database if it changed
-        if (project.status !== newStatus) {
-          await prisma.project.update({
+    if (projectsToUpdate.length > 0) {
+      await Promise.all(
+        projectsToUpdate.map(project => {
+          const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
+          const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
+          return prisma.project.update({
             where: { id: project.id },
             data: { status: newStatus },
           });
-        }
+        })
+      );
+    }
 
-        return {
-          id: project.id,
-          name: project.name,
-          description: project.description,
-          status: newStatus,
-          updatedAt: project.updatedAt,
-          createdAt: project.createdAt,
-          campaignCount: project.campaigns.length,
-        };
-      })
-    );
+    const updatedProjects = projects.map(project => {
+      const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
+      const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
+
+      return {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        status: newStatus,
+        updatedAt: project.updatedAt,
+        createdAt: project.createdAt,
+        campaignCount: project.campaigns.length,
+      };
+    });
 
     return updatedProjects;
   },

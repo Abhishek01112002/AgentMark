@@ -41,6 +41,7 @@ model Project {
   updatedAt   DateTime @updatedAt
 
   @@map("projects")
+  @@index([userId])
 }
 
 model Campaign {
@@ -81,6 +82,7 @@ model Campaign {
   updatedAt       DateTime @updatedAt
 
   @@map("campaigns")
+  @@index([projectId])
 }
 
 model CampaignMemorySnapshot {

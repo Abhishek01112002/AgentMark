@@ -138,6 +138,24 @@ function StatCard(props: {
   );
 }
 
+const dashboardStyles = (
+  <style>{`
+    .dashboard-main {
+      margin-left: 0;
+      transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
+    }
+    @media (min-width: 768px) {
+      .dashboard-main {
+        margin-left: var(--sidebar-w, 240px);
+      }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .5; transform: scale(1.1); }
+    }
+  `}</style>
+);
+
 function DashboardContent() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
@@ -198,21 +216,7 @@ function DashboardContent() {
 
   return (
     <>
-      <style>{`
-        .dashboard-main {
-          margin-left: 0;
-          transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
-        }
-        @media (min-width: 768px) {
-          .dashboard-main {
-            margin-left: var(--sidebar-w, 240px);
-          }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50%       { opacity: .5; transform: scale(1.1); }
-        }
-      `}</style>
+      {dashboardStyles}
 
       <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
         <Sidebar />

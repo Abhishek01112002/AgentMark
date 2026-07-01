@@ -7,6 +7,26 @@ import {
 import toast from 'react-hot-toast';
 import { useAuth } from '../../../contexts/AuthContext';
 
+const loginStyles = (
+  <style>{`
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-left  { animation: slideInLeft  0.5s ease forwards; }
+    .animate-slide-right { animation: slideInRight 0.5s ease forwards; }
+    .animate-fade-up     { animation: fadeUp       0.4s ease forwards; }
+  `}</style>
+);
+
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -59,23 +79,7 @@ const Login = () => {
 
   return (
     <>
-      <style>{`
-        @keyframes slideInLeft {
-          from { opacity: 0; transform: translateX(-40px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(40px); }
-          to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-left  { animation: slideInLeft  0.5s ease forwards; }
-        .animate-slide-right { animation: slideInRight 0.5s ease forwards; }
-        .animate-fade-up     { animation: fadeUp       0.4s ease forwards; }
-      `}</style>
+      {loginStyles}
 
       <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
         {/* LEFT — Brand panel (desktop) */}

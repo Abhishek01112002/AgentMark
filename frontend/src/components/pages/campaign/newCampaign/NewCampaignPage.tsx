@@ -684,4 +684,4 @@ const NewCampaignPage: React.FC = () => {
   );
 };
 
-export default NewCampaignPage;
+export default React.memo(NewCampaignPage);
