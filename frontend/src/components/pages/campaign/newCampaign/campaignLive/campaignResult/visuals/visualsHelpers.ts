@@ -105,7 +105,7 @@ export const scorePrompt = (prompt: string): { score: number; checks: CheckItem[
     {
       label: 'Render engine / style tag',
       checkKey: 'render',
-      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration|painting|drawing|sketch|watercolor|oil painting|anime|cartoon|vector|flat design|3d|maya|zbrush|cinema 4d|concept art|matte painting)\b/i.test(p),
+      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration|painting|drawing|sketch|watercolor|oil painting|anime|cartoon|vector|flat design|3d|maya|zbrush|cinema 4d|concept art|matte painting|advertising photography|commercial campaign|professional studio|professional production)\b/i.test(p),
       points: 5,
     },
     // ── LIGHTING ─────────────────────────────────────────────────
