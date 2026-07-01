@@ -195,7 +195,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
 
     # Revision runs: lower temperature prevents unnecessary field changes;
     # extra token budget handles the existing-strategy context
-    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_temperature = 0.1 if is_human_revision else 0.7
     revision_max_tokens = 6500 if is_human_revision else 5000
 
     if is_human_revision:

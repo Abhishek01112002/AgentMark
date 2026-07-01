@@ -404,7 +404,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
 
     # Revision runs: lower temperature reduces visual drift on unchanged prompts;
     # extra token budget covers the existing-output context in the prompt
-    revision_temperature = 0.3 if is_human_revision else 0.7
+    revision_temperature = 0.1 if is_human_revision else 0.7
     revision_max_tokens = 5000 if is_human_revision else 3000
 
     if is_human_revision:

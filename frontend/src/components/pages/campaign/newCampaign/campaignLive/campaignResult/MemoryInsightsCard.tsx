@@ -17,7 +17,7 @@ interface MemoryInsightsCardProps {
 }
 
 const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count, projectId }) => {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   if (!insights?.length) return null;
 
