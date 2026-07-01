@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { notificationService } from './notification.service';
@@ -13,16 +13,24 @@ const createSchema = z.object({
   message: z.string().min(1).max(1000),
 });
 
-export const getNotifications = async (req: AuthRequest, res: Response) => {
-  const unreadOnly = req.query.unreadOnly === 'true';
-  const limit = req.query.limit ? Number(req.query.limit) : undefined;
-  const notifications = await notificationService.list(req.userId!, limit, unreadOnly);
-  res.json({ notifications });
+export const getNotifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const unreadOnly = req.query.unreadOnly === 'true';
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const notifications = await notificationService.list(req.userId!, limit, unreadOnly);
+    res.json({ notifications });
+  } catch (error) {
+    next(error);
+  }
 };
 
-export const getUnreadCount = async (req: AuthRequest, res: Response) => {
-  const unreadCount = await notificationService.unreadCount(req.userId!);
-  res.json({ unreadCount });
+export const getUnreadCount = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const unreadCount = await notificationService.unreadCount(req.userId!);
+    res.json({ unreadCount });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const markNotificationRead = async (req: AuthRequest, res: Response) => {
@@ -41,9 +49,13 @@ export const markNotificationRead = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const markAllNotificationsRead = async (req: AuthRequest, res: Response) => {
-  await notificationService.markAllAsRead(req.userId!);
-  res.json({ message: 'Notifications marked as read' });
+export const markAllNotificationsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    await notificationService.markAllAsRead(req.userId!);
+    res.json({ message: 'Notifications marked as read' });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const deleteNotification = async (req: AuthRequest, res: Response) => {

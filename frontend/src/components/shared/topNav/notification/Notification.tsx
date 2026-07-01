@@ -36,10 +36,10 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   useEffect(() => {
-    void loadNotifications();
+    loadNotifications().catch(console.error);
 
     const handleUpdate = () => {
-      void loadNotifications();
+      loadNotifications().catch(console.error);
     };
 
     window.addEventListener('notifications-updated', handleUpdate);

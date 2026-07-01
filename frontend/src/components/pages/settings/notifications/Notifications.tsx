@@ -37,10 +37,10 @@ const Notifications: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadNotifications();
+    loadNotifications().catch(console.error);
 
     const handleUpdate = () => {
-      void loadNotifications();
+      loadNotifications().catch(console.error);
     };
 
     window.addEventListener('notifications-updated', handleUpdate);
@@ -83,10 +83,15 @@ const Notifications: React.FC = () => {
       title: 'Delete Notification',
       message: 'Are you sure you want to delete this notification? This action cannot be undone.',
       onConfirm: async () => {
-        await notificationsService.delete(id);
-        setSelectedIds(prev => prev.filter(item => item !== id));
-        await loadNotifications();
-        setConfirmModal(null);
+        try {
+          await notificationsService.delete(id);
+          setSelectedIds(prev => prev.filter(item => item !== id));
+          await loadNotifications();
+        } catch (error) {
+          console.error('Failed to delete notification:', error);
+        } finally {
+          setConfirmModal(null);
+        }
       }
     });
   };
@@ -98,10 +103,15 @@ const Notifications: React.FC = () => {
       title: 'Delete Selected Notifications',
       message: `Are you sure you want to delete the ${selectedIds.length} selected notifications? This action cannot be undone.`,
       onConfirm: async () => {
-        await notificationsService.deleteBatch(selectedIds);
-        setSelectedIds([]);
-        await loadNotifications();
-        setConfirmModal(null);
+        try {
+          await notificationsService.deleteBatch(selectedIds);
+          setSelectedIds([]);
+          await loadNotifications();
+        } catch (error) {
+          console.error('Failed to delete selected notifications:', error);
+        } finally {
+          setConfirmModal(null);
+        }
       }
     });
   };
@@ -124,7 +134,7 @@ const Notifications: React.FC = () => {
           <p className="font-body-sm text-body-sm text-text-secondary mt-1">View and manage your account notifications.</p>
         </div>
         <button
-          onClick={() => void markAllRead()}
+          onClick={() => { markAllRead().catch(console.error); }}
           className="px-4 py-2 rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors text-sm"
         >
           Mark all read
@@ -146,7 +156,7 @@ const Notifications: React.FC = () => {
           </div>
           {selectedIds.length > 0 && (
             <button
-              onClick={() => void deleteSelected()}
+              onClick={() => { deleteSelected(); }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors text-xs font-semibold"
             >
               <Trash2 size={14} />
@@ -193,7 +203,7 @@ const Notifications: React.FC = () => {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {!notification.isRead ? (
                     <button
-                      onClick={() => void markOneRead(notification.id)}
+                      onClick={() => { markOneRead(notification.id).catch(console.error); }}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold"
                     >
                       <Check size={14} />
@@ -203,7 +213,7 @@ const Notifications: React.FC = () => {
                     <span className="text-xs text-text-muted px-2">Read</span>
                   )}
                   <button
-                    onClick={() => void deleteOne(notification.id)}
+                    onClick={() => { deleteOne(notification.id); }}
                     className="inline-flex items-center justify-center p-2 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
                     title="Delete notification"
                   >

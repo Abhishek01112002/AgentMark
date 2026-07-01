@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
@@ -89,7 +89,7 @@ async function runAIWorkflowBackground(
   }
 }
 
-export const createCampaign = async (req: AuthRequest, res: Response) => {
+export const createCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = createCampaignSchema.parse(req.body);
     // LLM config comes from the x-llm-config request header.
@@ -162,32 +162,36 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
       console.warn(`[Campaign] Socket.io not initialised — background runner will not emit socket events | campaign=${campaign.id}`);
     }
 
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error('Campaign creation error:', error);
+      next(error);
     }
-    console.error('Campaign creation error:', error);
-    throw error;
+  };
+
+export const getCampaigns = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { projectId } = req.query;
+
+    if (!projectId || typeof projectId !== 'string') {
+      return res.status(400).json({ error: 'projectId is required' });
+    }
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: req.userId! },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const campaigns = await campaignService.getAll(projectId);
+    res.json({ campaigns });
+  } catch (error) {
+    next(error);
   }
-};
-
-export const getCampaigns = async (req: AuthRequest, res: Response) => {
-  const { projectId } = req.query;
-
-  if (!projectId || typeof projectId !== 'string') {
-    return res.status(400).json({ error: 'projectId is required' });
-  }
-
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId: req.userId! },
-  });
-
-  if (!project) {
-    return res.status(404).json({ error: 'Project not found' });
-  }
-
-  const campaigns = await campaignService.getAll(projectId);
-  res.json({ campaigns });
 };
 
 export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
@@ -213,55 +217,63 @@ export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getCampaign = async (req: AuthRequest, res: Response) => {
-  const { projectId } = req.query;
+export const getCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { projectId } = req.query;
 
-  const campaign = await prisma.campaign.findUnique({
-    where: { id: req.params.id },
-  });
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: req.params.id },
+    });
 
-  if (!campaign) {
-    return res.status(404).json({ error: 'Campaign not found' });
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    if (projectId && typeof projectId === 'string' && campaign.projectId !== projectId) {
+      return res.status(400).json({ error: 'Campaign does not belong to the specified project' });
+    }
+
+    // Verify project ownership
+    const project = await prisma.project.findFirst({
+      where: { id: campaign.projectId, userId: req.userId! },
+    });
+
+    if (!project) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({ campaign });
+  } catch (error) {
+    next(error);
   }
-
-  if (projectId && typeof projectId === 'string' && campaign.projectId !== projectId) {
-    return res.status(400).json({ error: 'Campaign does not belong to the specified project' });
-  }
-
-  // Verify project ownership
-  const project = await prisma.project.findFirst({
-    where: { id: campaign.projectId, userId: req.userId! },
-  });
-
-  if (!project) {
-    return res.status(403).json({ error: 'Access denied' });
-  }
-
-  res.json({ campaign });
 };
 
-export const deleteCampaign = async (req: AuthRequest, res: Response) => {
-  const { projectId } = req.query;
+export const deleteCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { projectId } = req.query;
 
-  if (!projectId || typeof projectId !== 'string') {
-    return res.status(400).json({ error: 'projectId is required' });
+    if (!projectId || typeof projectId !== 'string') {
+      return res.status(400).json({ error: 'projectId is required' });
+    }
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: req.userId! },
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const campaign = await campaignService.delete(req.params.id, projectId);
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    res.json({ message: 'Campaign deleted successfully' });
+  } catch (error) {
+    next(error);
   }
-
-  const project = await prisma.project.findFirst({
-    where: { id: projectId, userId: req.userId! },
-  });
-
-  if (!project) {
-    return res.status(404).json({ error: 'Project not found' });
-  }
-
-  const campaign = await campaignService.delete(req.params.id, projectId);
-
-  if (!campaign) {
-    return res.status(404).json({ error: 'Campaign not found' });
-  }
-
-  res.json({ message: 'Campaign deleted successfully' });
 };
 
 export const approveCampaign = async (req: AuthRequest, res: Response) => {

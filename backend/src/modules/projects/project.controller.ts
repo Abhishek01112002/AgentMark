@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { projectService } from './project.service';
@@ -9,7 +9,7 @@ const createProjectSchema = z.object({
   description: z.string().optional(),
 });
 
-export const createProject = async (req: AuthRequest, res: Response) => {
+export const createProject = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = createProjectSchema.parse(req.body);
     const project = await projectService.create(req.userId!, data);
@@ -18,54 +18,62 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    throw error;
+    next(error);
   }
 };
 
-export const getProjects = async (req: AuthRequest, res: Response) => {
-  const projects = await prisma.project.findMany({
-    where: { userId: req.userId! },
-    include: {
-      campaigns: {
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          status: true,
-          updatedAt: true,
+export const getProjects = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const projects = await prisma.project.findMany({
+      where: { userId: req.userId! },
+      include: {
+        campaigns: {
+          orderBy: { updatedAt: 'desc' },
+          select: {
+            status: true,
+            updatedAt: true,
+          },
         },
       },
-    },
-    orderBy: { updatedAt: 'desc' },
-  });
+      orderBy: { updatedAt: 'desc' },
+    });
 
-  const projectsWithMostRecentCampaignStatus = projects.map(project => {
-    const mostRecentCampaign = project.campaigns[0];
-    const campaignCount = project.campaigns.length;
-    
-    return {
-      id: project.id,
-      name: project.name,
-      description: project.description,
-      campaignCount,
-      mostRecentCampaignStatus: mostRecentCampaign?.status || null,
-      updatedAt: mostRecentCampaign?.updatedAt || project.updatedAt,
-      createdAt: project.createdAt,
-    };
-  });
+    const projectsWithMostRecentCampaignStatus = projects.map(project => {
+      const mostRecentCampaign = project.campaigns[0];
+      const campaignCount = project.campaigns.length;
+      
+      return {
+        id: project.id,
+        name: project.name,
+        description: project.description,
+        campaignCount,
+        mostRecentCampaignStatus: mostRecentCampaign?.status || null,
+        updatedAt: mostRecentCampaign?.updatedAt || project.updatedAt,
+        createdAt: project.createdAt,
+      };
+    });
 
-  res.json({ projects: projectsWithMostRecentCampaignStatus });
-};
-
-export const getProject = async (req: AuthRequest, res: Response) => {
-  const project = await projectService.getById(req.params.id, req.userId!);
-  
-  if (!project) {
-    return res.status(404).json({ error: 'Project not found' });
+    res.json({ projects: projectsWithMostRecentCampaignStatus });
+  } catch (error) {
+    next(error);
   }
-  
-  res.json({ project });
 };
 
-export const updateProject = async (req: AuthRequest, res: Response) => {
+export const getProject = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const project = await projectService.getById(req.params.id, req.userId!);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ project });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProject = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = createProjectSchema.partial().parse(req.body);
     const project = await projectService.update(req.params.id, req.userId!, data);
@@ -79,25 +87,30 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    throw error;
+    next(error);
   }
 };
 
-export const deleteProject = async (req: AuthRequest, res: Response) => {
-  const project = await projectService.delete(req.params.id, req.userId!);
-  
-  if (!project) {
-    return res.status(404).json({ error: 'Project not found' });
+export const deleteProject = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const project = await projectService.delete(req.params.id, req.userId!);
+    
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    res.json({ message: 'Project deleted successfully' });
+  } catch (error) {
+    next(error);
   }
-  
-  res.json({ message: 'Project deleted successfully' });
 };
 
-export const getDashboardStats = async (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-
-  // Get all projects with campaigns
-  const projects = await prisma.project.findMany({
+export const getDashboardStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.userId!;
+  
+    // Get all projects with campaigns
+    const projects = await prisma.project.findMany({
     where: { userId },
     include: {
       campaigns: {
@@ -181,14 +194,17 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     ? Math.round((completedCampaigns / totalAttemptedCampaigns) * 100)
     : 0;
 
-  res.json({
-    totalProjects,
-    completedCampaigns,
-    runningCampaigns,
-    avgReviewScore,
-    completionRate,
-    totalReviewedCampaigns: totalCampaignsCount,
-  });
+    res.json({
+      totalProjects,
+      completedCampaigns,
+      runningCampaigns,
+      avgReviewScore,
+      completionRate,
+      totalReviewedCampaigns: totalCampaignsCount,
+    });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const getMemoryStatus = async (req: AuthRequest, res: Response) => {
