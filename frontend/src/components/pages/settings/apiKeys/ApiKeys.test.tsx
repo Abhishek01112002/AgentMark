@@ -35,7 +35,7 @@ describe('ApiKeys Component', () => {
 
     // Click Save — triggers confirmation dialog
     const saveButtons = screen.getAllByRole('button', { name: /^save$/i });
-    fireEvent.click(saveButtons[0]);
+    fireEvent.click(saveButtons[1]);
 
     // Dialog asks "Test this key first?" — click "Save Anyway"
     const saveAnyway = screen.getByRole('button', { name: /save anyway/i });

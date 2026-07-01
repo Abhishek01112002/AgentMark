@@ -197,10 +197,12 @@ const ApiKeys: React.FC = () => {
     setNewKeyValues((prev) => ({ ...prev, [provider]: '' }));
     setConfirmSave(null);
     toast.success(`${name} API key saved`);
-    await notificationsService.create({
+    notificationsService.create({
       type: 'success',
       title: 'API key saved',
       message: `${name} API key added successfully.`,
+    }).catch((err) => {
+      console.warn('Failed to create notification for key save:', err);
     });
   }, [settings]);
 
