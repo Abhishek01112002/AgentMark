@@ -113,6 +113,28 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
     }
   };
 
+  const handleSingleCtaCopy = (text: string) => {
+    if (!text.trim()) return;
+    try {
+      navigator.clipboard.writeText(text);
+      toast.success(`Copied CTA: "${text}"`, { id: `cta-copy-${text.slice(0, 10)}` });
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast.success(`Copied CTA: "${text}"`, { id: `cta-copy-${text.slice(0, 10)}` });
+      } catch {
+        toast.error('Failed to copy CTA');
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
@@ -244,13 +266,37 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data }) => {
                   <label className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Call to Actions</label>
                   <div className="flex flex-wrap gap-2">
                     {ctas.primary && (
-                      <span className="px-4 py-2 bg-[#6366F1] rounded-lg text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{ctas.primary}</span>
+                      <button
+                        onClick={() => handleSingleCtaCopy(ctas.primary)}
+                        className="group inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#6366F1]/15 hover:bg-[#6366F1]/25 active:scale-95 transition-all rounded-lg text-xs font-semibold border border-[#6366F1]/30"
+                        style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8', cursor: 'pointer' }}
+                        title="Click to copy CTA"
+                      >
+                        <span>{ctas.primary}</span>
+                        <Copy size={11} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     )}
                     {ctas.secondary && (
-                      <span className="px-4 py-2 bg-[#1A1A24] border border-[#2A2A38] rounded-lg text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{ctas.secondary}</span>
+                      <button
+                        onClick={() => handleSingleCtaCopy(ctas.secondary)}
+                        className="group inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1A1A24] border border-[#2A2A38] hover:bg-[#1C1C28] active:scale-95 transition-all rounded-lg text-xs font-semibold"
+                        style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3', cursor: 'pointer' }}
+                        title="Click to copy CTA"
+                      >
+                        <span>{ctas.secondary}</span>
+                        <Copy size={11} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     )}
                     {ctas.tertiary && (
-                      <span className="px-4 py-2 bg-[#1A1A24] border border-[#2A2A38] rounded-lg text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{ctas.tertiary}</span>
+                      <button
+                        onClick={() => handleSingleCtaCopy(ctas.tertiary)}
+                        className="group inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1A1A24] border border-[#2A2A38] hover:bg-[#1C1C28] active:scale-95 transition-all rounded-lg text-xs font-semibold"
+                        style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E', cursor: 'pointer' }}
+                        title="Click to copy CTA"
+                      >
+                        <span>{ctas.tertiary}</span>
+                        <Copy size={11} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </button>
                     )}
                   </div>
                 </div>
