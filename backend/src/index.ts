@@ -26,7 +26,10 @@ const PORT = process.env.PORT || 5001;
 
 // Helmet secures Express by setting various HTTP headers
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+}));
 // Apply global rate limiting to all requests
 app.use(globalRateLimiter);
 
@@ -53,7 +56,7 @@ const httpServer = http.createServer(app);
 
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || '*',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
 });
