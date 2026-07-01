@@ -382,12 +382,10 @@ const CampaignLivePage: React.FC = () => {
       setIsConnected(true);
       setSocketAuthError('');
       socket.emit('join_campaign', campaignId);
-      console.log('[Socket.io] Connected | campaign=', campaignId);
     });
 
     socket.on('disconnect', () => {
       setIsConnected(false);
-      console.log('[Socket.io] Disconnected');
     });
 
     // Server-side auth rejection (invalid token / wrong user)
@@ -403,7 +401,6 @@ const CampaignLivePage: React.FC = () => {
     // ── Agent progress tick ──────────────────────────────────────────────────
     socket.on('agent_update', (data: AgentUpdatePayload) => {
       const { agent: agentKey, status } = data;
-      console.log('[Socket.io] agent_update | agent=', agentKey, '| status=', status);
 
       // Extract and update revision counts from socket message
       if (data && typeof data === 'object') {
@@ -547,7 +544,6 @@ const CampaignLivePage: React.FC = () => {
 
     // ── Campaign complete ────────────────────────────────────────────────────
     socket.on('campaign_complete', () => {
-      console.log('[Socket.io] Campaign complete — navigating to result');
       setAgents((prev) =>
         prev.map((a) => ({
           ...a,
