@@ -136,6 +136,96 @@ For EACH deliverable in the campaign, generate a complete prompt object:
    7. NEGATIVE CONSTRAINTS (always last — never skip):
       "no text, no words, no letters, no logos, no watermarks, no labels, clean composition"
 
+   PHOTOGRAPHY DNA — TECHNICAL SELECTION GUIDE:
+   Use this table to select the EXACT technical specs for parts 3, 4, and 5 of the 7-part structure.
+   Cross-reference deliverable type + brand voice to get the right combination.
+
+   ── LENS PERSPECTIVE (Part 4) — choose by deliverable type ──────────────────────────────────
+   Hero / flagship (email banner, landing page hero, whitepaper cover, youtube thumbnail):
+     → "medium telephoto compression, shallow depth of field, subject eyes in sharp focus,
+        background environment dissolved into smooth bokeh, subject positioned left-third"
+
+   Social posts — intimate (instagram post, facebook post, linkedin post):
+     → "medium portrait perspective, shallow depth of field, subject fills 60% of frame,
+        warm background blur, tight framing that creates personal connection with viewer"
+
+   Social posts — environmental (twitter post, linkedin article cover):
+     → "wide environmental perspective, 35mm equivalent natural view, subject embedded
+        in context, slight environmental distortion, foreground element grounds the scene"
+
+   Story formats (instagram story, tiktok cover, facebook story):
+     → "portrait orientation, medium close-up, subject centered or upper-third,
+        background compressed and softened, intimate vertical composition"
+
+   Product / ecommerce (product showcase, podcast cover):
+     → "macro detail perspective, pin-sharp product focus, extreme shallow depth of field,
+        background dissolved into abstract color wash, product fills 70% of frame"
+
+   Wide establishing (webinar banner, blog header, google display ad):
+     → "wide dramatic perspective, strong foreground element anchors composition,
+        environmental context fills the full width, atmospheric depth layers visible"
+
+   ── LIGHTING SETUP (Part 3) — choose by brand voice ────────────────────────────────────────
+   professional / authoritative:
+     → "single large diffused key light camera-left, precise Rembrandt-pattern shadow
+        geometry on face, shadow fills right side, warm practical light sources in
+        background create depth layers"
+
+   friendly / approachable:
+     → "large softbox camera-left, warm golden fill from camera-right, even soft shadow
+        transitions, approachable even exposure, no harsh contrast, welcoming light quality"
+
+   bold / startup:
+     → "split lighting — hard key light from one side, strong rim backlight separating
+        subject from background, deep shadow fills 40% of frame, high contrast ratio"
+
+   luxury / premium:
+     → "low-key setup, deep shadows filling 60% of frame, single precise highlight on
+        the most important element, all other areas fall into controlled darkness"
+
+   casual / authentic:
+     → "natural available light — golden hour window light streaming from one side,
+        or overcast outdoor diffused light, no artificial light sources visible,
+        honest unmanipulated quality"
+
+   humorous / playful:
+     → "bright even lighting, slightly elevated key, minimal shadows, clean open light,
+        energetic exposure, colors appear vivid and saturated"
+
+   ── COLOR GRADE (Part 5) — choose by brand voice + industry ────────────────────────────────
+   professional + saas/tech/b2b:
+     → "cool desaturated shadows, electric blue accent highlights on screens and edges,
+        crisp controlled whites, minimal warm tones, teal-shifted midtones"
+
+   bold + any industry:
+     → "high contrast throughout, lifted blacks above pure black, punchy saturated
+        midtones, vivid accent color pops, strong separation between light and dark"
+
+   luxury + any industry:
+     → "rich deep shadows with texture visible, warm amber midtones, low overall saturation,
+        precise clean highlights only on focal points, premium restrained tonal range"
+
+   friendly + ecommerce/consumer:
+     → "warm natural skin tones, soft diffused highlights, slightly lifted shadows
+        (never crushed black), honest natural palette, welcoming overall exposure"
+
+   authoritative + finance/healthcare/legal:
+     → "near-monochrome color treatment, controlled muted palette where color is minimal,
+        institutional visual weight, deep but not aggressive contrast"
+
+   casual + lifestyle/food/snacks:
+     → "natural honest color palette, warm skin tones, no heavy color treatment,
+        slightly warm overall cast, film-print warmth without artificial filter feel"
+
+   humorous + any:
+     → "vivid saturated colors, bright cheerful palette, lifted midtones,
+        energetic color contrast, nothing desaturated or somber"
+
+   ────────────────────────────────────────────────────────────────────────────────────────────
+   NOTE: These specs describe VISUAL EFFECTS only — no camera brand names, no film stock names.
+   They work identically across Midjourney, Stable Diffusion, Flux, DALL-E, Firefly, and all
+   other professional image generators.
+
    TEXT OVERLAY GUIDE (what copy to suggest over the image):
    - Use copy context provided above if available for that channel
    - If no copy context available, derive from positioning and key messages
