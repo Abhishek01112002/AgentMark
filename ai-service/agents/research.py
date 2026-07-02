@@ -234,7 +234,7 @@ def research_agent(state: CampaignState) -> CampaignState:
 
     # Revision runs: lower temperature avoids regenerating unchanged fields;
     # higher token budget compensates for the extra existing-output context
-    revision_temperature = 0.1 if is_human_revision else 0.7
+    revision_temperature = 0.0 if is_human_revision else 0.7
     revision_max_tokens = 2500 if is_human_revision else 1500
 
     if is_human_revision:

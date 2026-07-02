@@ -262,7 +262,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
     # Revision runs use lower temperature (less drift) and higher token budget
     # (feedback section adds extra tokens, need headroom for full output)
-    revision_temperature = 0.1 if is_human_revision else 0.7
+    revision_temperature = 0.0 if is_human_revision else 0.7
     revision_max_tokens = 6000 if is_human_revision else 4000
 
     if is_human_revision:
