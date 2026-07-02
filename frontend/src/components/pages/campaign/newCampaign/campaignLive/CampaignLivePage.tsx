@@ -13,7 +13,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle, Trash } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
@@ -99,8 +99,43 @@ const DONE_DESCRIPTIONS: Record<string, string> = {
 const CampaignLivePage: React.FC = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
+  const location = useLocation();
 
-  const [agents, setAgents] = useState<Agent[]>(INITIAL_AGENTS);
+  const [agents, setAgents] = useState<Agent[]>(() => {
+    const initialActiveAgent = location.state?.initialActiveAgent;
+    if (initialActiveAgent) {
+      const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+      const activeIdx = pipelineKeys.indexOf(initialActiveAgent);
+      return INITIAL_AGENTS.map((a) => {
+        const currentIdx = pipelineKeys.indexOf(a.key);
+        if (a.key === initialActiveAgent) {
+          return {
+            ...a,
+            status: 'running' as AgentStatus,
+            description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
+          };
+        }
+        if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
+          return {
+            ...a,
+            status: 'completed' as AgentStatus,
+            description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+          };
+        }
+        return {
+          ...a,
+          status: 'pending' as AgentStatus,
+          description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
+        };
+      });
+    }
+    return INITIAL_AGENTS;
+  });
+
+  const [isInitialLoading, setIsInitialLoading] = useState(() => {
+    return !location.state?.initialActiveAgent;
+  });
+
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -349,6 +384,8 @@ const CampaignLivePage: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to fetch campaign status on mount:', error);
+      } finally {
+        setIsInitialLoading(false);
       }
     };
 
@@ -682,6 +719,19 @@ const CampaignLivePage: React.FC = () => {
   }, [typewriterText, isDeleting, currentStringIndex, activeAgent]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#09090D]">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-[#c0c1ff]" />
+          <p className="text-sm font-medium animate-pulse" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+            Syncing pipeline state...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

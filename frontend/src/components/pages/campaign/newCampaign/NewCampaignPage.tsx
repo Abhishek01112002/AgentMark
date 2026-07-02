@@ -176,7 +176,7 @@ const NewCampaignContent: React.FC = () => {
       } else {
         toast.success('Campaign launched! Agents are running...');
       }
-      navigate(`/campaign/${campaign.id}/live`);
+      navigate(`/campaign/${campaign.id}/live`, { state: { initialActiveAgent: 'manager' } });
     } catch (error: any) {
       console.error('Failed to create campaign:', error);
       toast.error(error.response?.data?.error || 'Failed to create campaign');

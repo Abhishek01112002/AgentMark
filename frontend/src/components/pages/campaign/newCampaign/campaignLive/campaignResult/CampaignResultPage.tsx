@@ -225,7 +225,7 @@ const CampaignResultPage: React.FC = () => {
       });
       window.dispatchEvent(new Event('campaign_status_changed'));
       toast.success('Campaign approved! Resuming publisher...');
-      navigate(`/campaign/${campaignId}/live`);
+      navigate(`/campaign/${campaignId}/live`, { state: { initialActiveAgent: 'publisher' } });
     } catch (error) {
       console.error('Failed to submit approval:', error);
       toast.error('Failed to submit approval decision');
@@ -249,7 +249,7 @@ const CampaignResultPage: React.FC = () => {
       
       toast.success('Revision requested successfully!');
       setRevisionFeedback('');
-      navigate(`/campaign/${campaignId}/live`);
+      navigate(`/campaign/${campaignId}/live`, { state: { initialActiveAgent: selectedAgent } });
     } catch (error: any) {
       console.error('Failed to request revision:', error);
       toast.error(error.response?.data?.error || 'Failed to submit revision request');
