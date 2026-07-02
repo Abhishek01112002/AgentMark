@@ -211,7 +211,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
       
       return `<tr>
         <td>${esc(row.week || row.timeframe || '')}</td>
-        <td>${esc(chName)}</td>
+        <td style="white-space:nowrap">${esc(chName)}</td>
         <td><span class="badge" style="white-space:nowrap">${esc(formattedType)}</span></td>
         <td>${esc(row.topic || row.title || row.asset || '')}</td>
       </tr>`;
@@ -883,10 +883,10 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                     return (
                       <tr key={idx} className="hover:bg-[#111118]/40 transition-colors">
                         <td className="py-4 px-4 md:px-6 font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{row.week || row.timeframe || `Week ${idx + 1}`}</td>
-                        <td className="py-4 px-4 md:px-6">
-                          <div className="flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                        <td className="py-4 px-4 md:px-6 whitespace-nowrap">
+                          <div className="flex items-center gap-2 whitespace-nowrap" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
                             <ChannelIcon channel={row.channel || row.platform || ''} size={14} className="text-[#8B8B9E] shrink-0" />
-                            <span className="font-medium" style={{ color: '#F1F1F3' }}>{getChannelDisplayName(row.channel || row.platform || 'N/A')}</span>
+                            <span className="font-medium whitespace-nowrap" style={{ color: '#F1F1F3' }}>{getChannelDisplayName(row.channel || row.platform || 'N/A')}</span>
                           </div>
                         </td>
                         <td className="py-4 px-4 md:px-6">
