@@ -295,9 +295,17 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
     th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B7280;border-bottom:2px solid #e5e7eb}
     td{padding:9px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
     tbody tr:nth-child(even) td{background:#fafafa}
+    tr{page-break-inside:avoid;break-inside:avoid}
+    .section-title{font-size:13px;font-weight:700;color:#111;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid #6366F1;letter-spacing:.02em;page-break-after:avoid;break-after:avoid}
     .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
-    @page{size:A4;margin:12mm 12mm}
-    @media print{body{background:white}.page{padding:0}.section{box-shadow:none}}
+    @page{size:A4;margin:15mm 15mm}
+    @media print{
+      body{background:white}
+      .page{padding:0}
+      .section{box-shadow:none}
+      .grid-2, .grid-4{display:block !important}
+      .card, .positioning-block{margin-bottom:12px !important}
+    }
   </style>
 </head>
 <body>
