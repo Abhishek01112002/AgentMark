@@ -653,7 +653,7 @@ const CampaignResultPage: React.FC = () => {
         )}
 
         {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-        {showHumanReview && (
+        {showHumanReview && (!isMinimized || campaign.status !== 'awaiting_human_approval') && (
           <div
             onClick={() => {
               if (isMinimized) {
