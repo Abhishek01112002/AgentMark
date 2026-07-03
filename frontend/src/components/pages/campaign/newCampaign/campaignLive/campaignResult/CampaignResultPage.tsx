@@ -257,6 +257,28 @@ const CampaignResultPage: React.FC = () => {
     }
   };
 
+  const isTabCompleted = React.useCallback((tabId: TabId) => {
+    if (!campaign) return false;
+    switch (tabId) {
+      case 'overview':
+        return true;
+      case 'research':
+        return !!(getOutputField('research_output') || getOutputField('researchOutput'));
+      case 'strategy':
+        return !!(getOutputField('strategy_output') || getOutputField('strategyOutput'));
+      case 'copy':
+        return !!(getOutputField('copy_output') || getOutputField('copyOutput'));
+      case 'images':
+        return !!(getOutputField('image_output') || getOutputField('imageOutput'));
+      case 'review':
+        return !!(getOutputField('review_output') || getOutputField('reviewOutput'));
+      case 'published':
+        return !!(getOutputField('publisher_output') || getOutputField('publisherOutput') || campaign.status === 'completed');
+      default:
+        return false;
+    }
+  }, [campaign, getOutputField]);
+
   const renderTabContent = () => {
     if (!campaign) return null;
     
@@ -466,9 +488,17 @@ const CampaignResultPage: React.FC = () => {
               <div className="rounded-2xl border border-[#2A2A38] bg-[#111118]/90 backdrop-blur p-5 md:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                   <div className="space-y-3">
+                    <button
+                      onClick={() => navigate(`/projects/${campaign.projectId}`)}
+                      className="inline-flex items-center gap-1.5 text-xs text-[#8B8B9E] hover:text-[#6366F1] transition-colors mb-1 font-medium cursor-pointer"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      ← Back to Project
+                    </button>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className="px-2 py-0.5 rounded-full border text-xs"
+                        className="px-2 py-0.5 rounded-full border text-xs cursor-help"
+                        title={`Campaign ID: ${campaignId}`}
                         style={{
                           fontFamily: 'JetBrains Mono, monospace',
                           backgroundColor: statusStyle.bg,
@@ -477,9 +507,6 @@ const CampaignResultPage: React.FC = () => {
                         }}
                       >
                         {statusStyle.label}
-                      </span>
-                      <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>
-                        Campaign ID: {campaignId}
                       </span>
                     </div>
                     <div>
@@ -509,6 +536,7 @@ const CampaignResultPage: React.FC = () => {
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
+                    const isCompleted = isTabCompleted(tab.id);
                     return (
                       <button
                         key={tab.id}
@@ -533,6 +561,11 @@ const CampaignResultPage: React.FC = () => {
                       >
                         <Icon size={16} />
                         {tab.label}
+                        <span 
+                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
+                            isCompleted ? 'bg-[#4edea3] shadow-[0_0_8px_rgba(78,222,163,0.4)]' : 'bg-[#4A4A5E]'
+                          }`} 
+                        />
                       </button>
                     );
                   })}

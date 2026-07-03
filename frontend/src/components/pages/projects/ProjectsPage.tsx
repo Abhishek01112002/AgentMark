@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3, Loader2 } from 'lucide-react';
+import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -115,9 +115,57 @@ const ProjectsContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
-        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
-      </div>
+      <>
+        <style>{`
+          .projects-main {
+            margin-left: 0;
+            transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
+          }
+          @media (min-width: 768px) {
+            .projects-main {
+              margin-left: var(--sidebar-w, 240px);
+            }
+          }
+          @keyframes skeleton-shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+          }
+          .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
+        `}</style>
+        <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
+          <Sidebar />
+          <TopNav title="Projects" stats={[]} />
+          <main className="projects-main pt-14" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6">
+              {/* Header skeleton */}
+              <div className="flex justify-between items-start gap-4">
+                <div className="space-y-2">
+                  <div className="sk h-9 w-44 rounded-lg" />
+                  <div className="sk h-4 w-72 rounded" />
+                </div>
+                <div className="sk h-10 w-32 rounded-lg" />
+              </div>
+              {/* Grid skeleton — 6 cards matching 1/2/3 col grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-xl p-6" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="sk h-5 w-36 rounded" />
+                      <div className="sk h-5 w-14 rounded-full" />
+                    </div>
+                    <div className="sk h-3.5 w-full rounded mb-2" />
+                    <div className="sk h-3.5 w-3/4 rounded mb-6" />
+                    <div className="flex justify-between items-center pt-4" style={{ borderTop: '1px solid #2A2A38' }}>
+                      <div className="sk h-3 w-24 rounded" />
+                      <div className="sk h-3 w-20 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 

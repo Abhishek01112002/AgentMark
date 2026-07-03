@@ -7,7 +7,6 @@ import {
   Plus,
   ArrowRight,
   TrendingUp,
-  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -208,9 +207,70 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
-        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
-      </div>
+      <>
+        {dashboardStyles}
+        <style>{`
+          @keyframes skeleton-shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+          }
+          .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
+        `}</style>
+        <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
+          <Sidebar />
+          <TopNav title="Dashboard" stats={[]} />
+          <main className="dashboard-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8">
+              {/* 4 stat card skeletons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="rounded-xl p-5" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="space-y-2">
+                        <div className="sk h-3 w-24 rounded" />
+                        <div className="sk h-8 w-16 rounded" />
+                      </div>
+                      <div className="sk w-10 h-10 rounded-lg" />
+                    </div>
+                    <div className="sk h-3 w-32 rounded" />
+                  </div>
+                ))}
+              </div>
+              {/* CTA banner skeleton */}
+              <div className="rounded-xl p-8" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                <div className="sk h-6 w-64 rounded mb-3" />
+                <div className="sk h-4 w-80 rounded mb-6" />
+                <div className="flex gap-3">
+                  <div className="sk h-10 w-36 rounded-lg" />
+                  <div className="sk h-10 w-32 rounded-lg" />
+                </div>
+              </div>
+              {/* Recent Projects table skeleton */}
+              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                <div className="px-5 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid #2A2A38' }}>
+                  <div className="sk h-5 w-36 rounded" />
+                  <div className="sk h-4 w-20 rounded" />
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <tbody>
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #1b1b20' }}>
+                          <td className="px-5 py-4"><div className="sk h-4 w-36 rounded" /></td>
+                          <td className="px-5 py-4"><div className="sk h-4 w-20 rounded-full" /></td>
+                          <td className="px-5 py-4"><div className="sk h-4 w-24 rounded" /></td>
+                          <td className="px-5 py-4"><div className="sk h-4 w-20 rounded" /></td>
+                          <td className="px-5 py-4 text-right"><div className="sk h-7 w-16 rounded-lg ml-auto" /></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 
@@ -256,7 +316,7 @@ function DashboardContent() {
               <StatCard
                 icon={Star}
                 label="Avg Review Score"
-                value={metrics.avgReviewScore > 0 ? `${metrics.avgReviewScore}/100` : '0'}
+                value={metrics.avgReviewScore && metrics.avgReviewScore > 0 ? `${metrics.avgReviewScore}/100` : '—'}
                 trendLabel={metrics.totalReviewedCampaigns ? `out of ${metrics.totalReviewedCampaigns} campaigns` : 'No reviews yet'}
                 iconBg="rgba(245,158,11,0.12)"
                 iconColor="#F59E0B"
@@ -305,31 +365,62 @@ function DashboardContent() {
                   Create a project first, then group campaigns underneath it for clearer ownership and reporting.
                 </p>
               </div>
-              <button
-                onClick={() => navigate('/projects')}
-                className="relative z-10 flex-shrink-0 flex items-center gap-2 transition-all hover:opacity-90"
-                style={{
-                  backgroundColor: '#6366F1',
-                  color: '#F1F1F3',
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: '14px',
-                  letterSpacing: '0.02em',
-                  fontWeight: 500,
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                }}
-              >
-                <FolderOpen size={18} />
-                View Projects
-              </button>
+              <div className="relative z-10 flex-shrink-0 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => navigate('/projects')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                    color: '#F1F1F3',
+                    border: '1px solid #2A2A38',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '14px',
+                    letterSpacing: '0.02em',
+                    fontWeight: 500,
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(192, 193, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                    (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                  }}
+                >
+                  <FolderOpen size={18} />
+                  View Projects
+                </button>
+                
+                <button
+                  onClick={() => navigate('/campaign/new')}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all text-white font-medium"
+                  style={{
+                    backgroundColor: '#6366F1',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '14px',
+                    letterSpacing: '0.02em',
+                    fontWeight: 500,
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.4)';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
+                  }}
+                >
+                  <Plus size={18} />
+                  Launch Campaign
+                </button>
+              </div>
             </div>
 
             <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
@@ -448,120 +539,141 @@ function DashboardContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentProjects.map((row) => {
-                      const timeAgo = formatDDMonYYYY(new Date(row.updatedAt));
-                      return (
-                        <tr
-                          key={row.id}
-                          className="group transition-colors"
-                          style={{ borderBottom: '1px solid #2A2A38' }}
-                          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
-                          onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
-                        >
-                          <td style={{ padding: '16px 20px' }}>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', color: '#F1F1F3' }}
-                              >
-                                <FolderOpen size={16} />
-                              </div>
-                              <div className="min-w-0">
-                                <span
-                                  className="truncate block"
-                                  style={{
-                                    fontFamily: 'Sora, sans-serif',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    color: '#F1F1F3',
-                                  }}
-                                >
-                                  {row.name}
-                                </span>
-                                <span
-                                  className="truncate block"
-                                  style={{
-                                    fontFamily: 'Sora, sans-serif',
-                                    fontSize: '12px',
-                                    color: '#A0A0D2',
-                                    marginTop: '2px',
-                                  }}
-                                >
-                                  {row.description || 'No description'}
-                                </span>
-                              </div>
+                    {recentProjects.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '40px 20px' }}>
+                          <div className="flex flex-col items-center justify-center text-center">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                              style={{ backgroundColor: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}
+                            >
+                              <FolderOpen size={20} className="text-[#6366F1]" />
                             </div>
-                          </td>
-
-                          <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                            {row.campaignCount || 0}
-                          </td>
-
-                          <td style={{ padding: '16px 20px' }}>
-                            {row.mostRecentCampaignStatus ? (
-                              <span
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                                style={{
-                                  backgroundColor: '#1A1A24',
-                                  border: '1px solid #2A2A38',
-                                  color: statusPill[row.mostRecentCampaignStatus]?.text || '#A0A0D2',
-                                  fontFamily: 'JetBrains Mono, monospace',
-                                  fontSize: '12px',
-                                  letterSpacing: '0.05em',
-                                }}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusPill[row.mostRecentCampaignStatus]?.dot || '#8B8B9E' }} />
-                                {row.mostRecentCampaignStatus.charAt(0).toUpperCase() + row.mostRecentCampaignStatus.slice(1)}
-                              </span>
-                            ) : (
-                              <span
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                                style={{
-                                  backgroundColor: '#1A1A24',
-                                  border: '1px solid #2A2A38',
-                                  color: '#A0A0D2',
-                                  fontFamily: 'JetBrains Mono, monospace',
-                                  fontSize: '12px',
-                                  letterSpacing: '0.05em',
-                                }}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#8B8B9E' }} />
-                                No Campaigns
-                              </span>
-                            )}
-                          </td>
-
-                          <td
-                            className="whitespace-nowrap"
-                            style={{
-                              padding: '16px 20px',
-                              fontFamily: 'Sora, sans-serif',
-                              fontSize: '13px',
-                              color: '#A0A0D2',
-                            }}
+                            <h4 className="text-sm font-semibold mb-1" style={{ color: '#F1F1F3' }}>
+                              No recent projects
+                            </h4>
+                            <p className="text-xs max-w-[280px]" style={{ color: '#8B8B9E', lineHeight: '18px' }}>
+                              Create a project to start launching agent-led campaigns.
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      recentProjects.map((row) => {
+                        const timeAgo = formatDDMonYYYY(new Date(row.updatedAt));
+                        return (
+                          <tr
+                            key={row.id}
+                            className="group transition-colors"
+                            style={{ borderBottom: '1px solid #2A2A38' }}
+                            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
+                            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
                           >
-                            {timeAgo}
-                          </td>
+                            <td style={{ padding: '16px 20px' }}>
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div
+                                  className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
+                                  style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', color: '#F1F1F3' }}
+                                >
+                                  <FolderOpen size={16} />
+                                </div>
+                                <div className="min-w-0">
+                                  <span
+                                    className="truncate block"
+                                    style={{
+                                      fontFamily: 'Sora, sans-serif',
+                                      fontSize: '14px',
+                                      fontWeight: 500,
+                                      color: '#F1F1F3',
+                                    }}
+                                  >
+                                    {row.name}
+                                  </span>
+                                  <span
+                                    className="truncate block"
+                                    style={{
+                                      fontFamily: 'Sora, sans-serif',
+                                      fontSize: '12px',
+                                      color: '#A0A0D2',
+                                      marginTop: '2px',
+                                    }}
+                                  >
+                                    {row.description || 'No description'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
 
-                          <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                            <button
-                              onClick={() => navigate(`/projects/${row.id}`)}
-                              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                            <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
+                              {row.campaignCount || 0}
+                            </td>
+
+                            <td style={{ padding: '16px 20px' }}>
+                              {row.mostRecentCampaignStatus ? (
+                                <span
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                  style={{
+                                    backgroundColor: '#1A1A24',
+                                    border: '1px solid #2A2A38',
+                                    color: statusPill[row.mostRecentCampaignStatus]?.text || '#A0A0D2',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    fontSize: '12px',
+                                    letterSpacing: '0.05em',
+                                  }}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusPill[row.mostRecentCampaignStatus]?.dot || '#8B8B9E' }} />
+                                  {row.mostRecentCampaignStatus.charAt(0).toUpperCase() + row.mostRecentCampaignStatus.slice(1)}
+                                </span>
+                              ) : (
+                                <span
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                  style={{
+                                    backgroundColor: '#1A1A24',
+                                    border: '1px solid #2A2A38',
+                                    color: '#A0A0D2',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    fontSize: '12px',
+                                    letterSpacing: '0.05em',
+                                  }}
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#8B8B9E' }} />
+                                  No Campaigns
+                                </span>
+                              )}
+                            </td>
+
+                            <td
+                              className="whitespace-nowrap"
                               style={{
-                                backgroundColor: '#1A1A24',
-                                color: '#F1F1F3',
-                                border: '1px solid #2A2A38',
-                                fontFamily: 'JetBrains Mono, monospace',
-                                fontSize: '12px',
+                                padding: '16px 20px',
+                                fontFamily: 'Sora, sans-serif',
+                                fontSize: '13px',
+                                color: '#A0A0D2',
                               }}
                             >
-                              Open
-                              <ArrowRight size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                              {timeAgo}
+                            </td>
+
+                            <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                              <button
+                                onClick={() => navigate(`/projects/${row.id}`)}
+                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                                style={{
+                                  backgroundColor: '#1A1A24',
+                                  color: '#F1F1F3',
+                                  border: '1px solid #2A2A38',
+                                  fontFamily: 'JetBrains Mono, monospace',
+                                  fontSize: '12px',
+                                }}
+                              >
+                                Open
+                                <ArrowRight size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

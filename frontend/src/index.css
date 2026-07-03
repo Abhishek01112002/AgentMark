@@ -12,7 +12,26 @@
   body {
     @apply bg-background text-on-background font-body-md antialiased;
   }
+  /* ── Cursor fix ──────────────────────────────────────────────────────────
+     Browser UA stylesheet forces cursor:text on every text node regardless
+     of what body says. Setting cursor on * overrides UA and cascades properly.
+  */
+  * {
+    cursor: default;
+  }
+  input, textarea, select, [contenteditable="true"] {
+    cursor: text;
+  }
+  button, a, [role="button"], label[for], [tabindex]:not([tabindex="-1"]) {
+    cursor: pointer;
+  }
+  /* Keyboard navigation focus ring — invisible to mouse, critical for WCAG AA */
+  :focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+  }
 }
+
 
 @layer utilities {
   .pulse-dot {

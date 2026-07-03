@@ -16,6 +16,7 @@ const Profile: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl || null);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
 
   useEffect(() => {
     setFormData({
@@ -123,7 +124,6 @@ const Profile: React.FC = () => {
       
       setAvatarUrl(null);
       updateUser(response.data.user);
-      toast.success('Photo removed');
     } catch (error: any) {
       const message = error.response?.data?.error || error.message || 'Failed to remove photo';
       toast.error(`Could not remove photo: ${message}`);
@@ -146,7 +146,8 @@ const Profile: React.FC = () => {
       });
 
       updateUser(response.data.user);
-      toast.success('Profile updated successfully');
+      setShowSavedIndicator(true);
+      setTimeout(() => setShowSavedIndicator(false), 2000);
     } catch (error: any) {
       const message = error.response?.data?.error || error.message || 'Failed to update profile';
       toast.error(`Could not save profile: ${message}`);
@@ -271,7 +272,22 @@ const Profile: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-surface-container-low px-6 py-4 flex justify-end">
+        <div className="bg-surface-container-low px-6 py-4 flex justify-end items-center gap-3">
+          <style>{`
+            @keyframes fadeOutText {
+              0% { opacity: 1; transform: translateY(0); }
+              80% { opacity: 1; transform: translateY(0); }
+              100% { opacity: 0; transform: translateY(-4px); }
+            }
+            .animate-saved {
+              animation: fadeOutText 2s forwards ease-in-out;
+            }
+          `}</style>
+          {showSavedIndicator && (
+            <span className="text-xs font-semibold text-[#4edea3] flex items-center gap-1 animate-saved" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              ✓ Saved
+            </span>
+          )}
           <button
             onClick={handleSaveChanges}
             disabled={isLoading || isUploading}

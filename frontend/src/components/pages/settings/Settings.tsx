@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { User, Bell, Key } from 'lucide-react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import Profile from './profile/Profile';
@@ -19,9 +20,9 @@ const SettingsContent: React.FC = () => {
   }, [location.state]);
 
   const tabs = [
-    { id: 'profile' as const, icon: 'person', label: 'Profile' },
-    { id: 'notifications' as const, icon: 'notifications', label: 'Notifications' },
-    { id: 'api' as const, icon: 'vpn_key', label: 'API Keys' },
+    { id: 'profile' as const, icon: User, label: 'Profile' },
+    { id: 'notifications' as const, icon: Bell, label: 'Notifications' },
+    { id: 'api' as const, icon: Key, label: 'API Keys' },
   ];
 
   return (
@@ -57,24 +58,27 @@ const SettingsContent: React.FC = () => {
 
               {/* Tabs */}
               <div className="flex gap-2 border-b border-[#2A2A38] overflow-x-auto">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all relative whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? 'text-[#c0c1ff]'
-                        : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
-                    }`}
-                    style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                  >
-                    <span className="material-symbols-outlined text-[20px]">{tab.icon}</span>
-                    <span>{tab.label}</span>
-                    {activeTab === tab.id && (
-                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#c0c1ff]" />
-                    )}
-                  </button>
-                ))}
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all relative whitespace-nowrap ${
+                        activeTab === tab.id
+                          ? 'text-[#c0c1ff]'
+                          : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                      }`}
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      <Icon size={16} />
+                      <span>{tab.label}</span>
+                      {activeTab === tab.id && (
+                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#c0c1ff]" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Tab Content */}

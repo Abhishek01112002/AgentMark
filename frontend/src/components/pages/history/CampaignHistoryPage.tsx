@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
@@ -74,25 +74,15 @@ const CampaignHistoryContent: React.FC = () => {
 
     const fetchCampaigns = async () => {
       try {
-        const projectsResponse = await api.get('/projects');
+        const [projectsResponse, campaignsResponse] = await Promise.all([
+          api.get('/projects'),
+          api.get('/campaigns/all')
+        ]);
+        
         const projectsData = projectsResponse.data.projects || [];
         setProjects(projectsData);
-        
-        // Fetch campaigns for each project
-        const allCampaigns: Campaign[] = [];
-        for (const project of projectsData) {
-          try {
-            const campaignsResponse = await api.get(`/campaigns?projectId=${project.id}`);
-            const projectCampaigns = campaignsResponse.data.campaigns || [];
-            allCampaigns.push(...projectCampaigns);
-          } catch (error) {
-            console.error(`Failed to fetch campaigns for project ${project.id}:`, error);
-          }
-        }
-        // Sort campaigns globally by creation date (latest campaigns first)
-        allCampaigns.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+
+        const allCampaigns = campaignsResponse.data.campaigns || [];
         setCampaigns(allCampaigns);
       } catch (error: any) {
         console.error('Failed to fetch campaigns:', error);
@@ -170,9 +160,80 @@ const CampaignHistoryContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
-        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
-      </div>
+      <>
+        <style>{`
+          .history-main {
+            margin-left: 0;
+            transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
+          }
+          @media (min-width: 768px) {
+            .history-main {
+              margin-left: var(--sidebar-w, 240px);
+            }
+          }
+          @keyframes skeleton-shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+          }
+          .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
+        `}</style>
+        <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F' }}>
+          <Sidebar />
+          <TopNav title="Campaign History" />
+          <main className="history-main pt-14">
+            <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
+              <div className="space-y-8">
+                {/* Page header skeleton */}
+                <header>
+                  <div className="sk h-9 w-72 rounded-lg mb-3" />
+                  <div className="sk h-4 w-96 rounded" />
+                </header>
+                <div className="space-y-6">
+                  {/* Search + filter bar skeleton */}
+                  <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
+                    <div className="sk h-10 flex-1 rounded-lg" />
+                    <div className="flex gap-2">
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="sk h-9 w-24 rounded-lg" />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Table skeleton */}
+                  <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr style={{ backgroundColor: '#1b1b20', borderBottom: '1px solid #2A2A38' }}>
+                            {['w-32', 'w-24', 'w-20', 'w-24', 'w-20', 'w-14', 'w-24', 'w-16'].map((w, i) => (
+                              <th key={i} className="px-4 py-3 text-left">
+                                <div className={`sk h-3 ${w} rounded`} />
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid #1b1b20' }}>
+                              <td className="px-4 py-4"><div className="sk h-4 w-36 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-4 w-24 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-4 w-16 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-4 w-28 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-5 w-20 rounded-full" /></td>
+                              <td className="px-4 py-4"><div className="sk h-4 w-12 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-4 w-20 rounded" /></td>
+                              <td className="px-4 py-4"><div className="sk h-7 w-14 rounded-lg ml-auto" /></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </>
     );
   }
 

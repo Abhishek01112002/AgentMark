@@ -44,6 +44,7 @@ const NewCampaignContent: React.FC = () => {
   const didFetchConstantsRef = useRef(false);
   const [projectCampaigns, setProjectCampaigns] = useState<any[]>([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [showApiKeysModal, setShowApiKeysModal] = useState(false);
   const [formData, setFormData] = useState({
     projectId: searchParams.get('projectId') || '',
     campaignName: '',
@@ -61,6 +62,34 @@ const NewCampaignContent: React.FC = () => {
   const customIndustryRef = useRef<HTMLInputElement>(null);
   const customGoalRef = useRef<HTMLInputElement>(null);
   const customBrandVoiceRef = useRef<HTMLInputElement>(null);
+
+  const isFormValid = () => {
+    const {
+      projectId,
+      campaignName,
+      brandName,
+      industry,
+      customIndustry,
+      goal,
+      customGoal,
+      targetAudience,
+      brandVoice,
+      customBrandVoice,
+    } = formData;
+
+    if (!projectId) return false;
+    if (!campaignName.trim()) return false;
+    if (!brandName.trim()) return false;
+    if (!industry) return false;
+    if (industry === 'other' && !customIndustry.trim()) return false;
+    if (!goal) return false;
+    if (goal === 'other' && !customGoal.trim()) return false;
+    if (!targetAudience.trim()) return false;
+    if (!brandVoice) return false;
+    if (brandVoice === 'other' && !customBrandVoice.trim()) return false;
+
+    return true;
+  };
 
   useEffect(() => {
     if (formData.industry === 'other') {
@@ -209,14 +238,19 @@ const NewCampaignContent: React.FC = () => {
       keys.openai.keys.some((k) => k.value.trim())
     );
     if (!hasKeys) {
-      const proceed = window.confirm(
-        "You haven't configured any custom API keys in Settings > API Keys. The campaign will run using the server's default fallback keys. Do you want to proceed?"
-      );
-      if (!proceed) {
-        return;
-      }
+      setShowApiKeysModal(true);
+      return;
     }
 
+    await checkDuplicateAndSubmit();
+  };
+
+  const handleProceedWithoutKeys = async () => {
+    setShowApiKeysModal(false);
+    await checkDuplicateAndSubmit();
+  };
+
+  const checkDuplicateAndSubmit = async () => {
     const finalIndustry = formData.industry === 'other' ? formData.customIndustry : formData.industry;
     const finalGoal = formData.goal === 'other' ? formData.customGoal : formData.goal;
     const finalBrandVoice = formData.brandVoice === 'other' ? formData.customBrandVoice : formData.brandVoice;
@@ -475,15 +509,24 @@ const NewCampaignContent: React.FC = () => {
             <label className="block text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
               Target Audience
             </label>
-            <textarea
-              required
-              value={formData.targetAudience}
-              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-              className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all"
-              placeholder="Describe your ideal customer..."
-              rows={3}
-              style={{ fontFamily: 'Sora, sans-serif' }}
-            />
+            <div className="relative">
+              <textarea
+                required
+                value={formData.targetAudience}
+                onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                className="w-full rounded-lg px-3 py-2 pb-8 text-sm border resize-y transition-all animate-fadeIn"
+                placeholder="Describe your ideal customer..."
+                rows={3}
+                maxLength={500}
+                style={{ fontFamily: 'Sora, sans-serif' }}
+              />
+              <div 
+                className="absolute bottom-2.5 right-3 text-[10px] font-mono select-none pointer-events-none"
+                style={{ color: formData.targetAudience.length >= 450 ? '#FFB020' : '#4A4A5E' }}
+              >
+                {formData.targetAudience.length}/500
+              </div>
+            </div>
           </div>
         </section>
 
@@ -502,14 +545,23 @@ const NewCampaignContent: React.FC = () => {
             </div>
           </div>
           <div className="space-y-2">
-            <textarea
-              value={formData.additionalInfo}
-              onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
-              className="w-full rounded-lg px-3 py-2 text-sm border resize-y transition-all focus:border-[#c0c1ff] bg-[#0C0C12]"
-              placeholder="e.g. We are launching in India first. Avoid competitor X. Focus on Gen Z tone."
-              rows={4}
-              style={{ fontFamily: 'Sora, sans-serif', borderColor: '#2A2A38', color: '#F1F1F3' }}
-            />
+            <div className="relative">
+              <textarea
+                value={formData.additionalInfo}
+                onChange={(e) => setFormData({ ...formData, additionalInfo: e.target.value })}
+                className="w-full rounded-lg px-3 py-2 pb-8 text-sm border resize-y transition-all focus:border-[#c0c1ff] bg-[#0C0C12]"
+                placeholder="e.g. We are launching in India first. Avoid competitor X. Focus on Gen Z tone."
+                rows={4}
+                maxLength={1000}
+                style={{ fontFamily: 'Sora, sans-serif', borderColor: '#2A2A38', color: '#F1F1F3' }}
+              />
+              <div 
+                className="absolute bottom-2.5 right-3 text-[10px] font-mono select-none pointer-events-none"
+                style={{ color: formData.additionalInfo.length >= 900 ? '#FFB020' : '#4A4A5E' }}
+              >
+                {formData.additionalInfo.length}/1000
+              </div>
+            </div>
             <p className="text-xs" style={{ color: '#6B6B7F', fontFamily: 'JetBrains Mono, monospace' }}>
               Add custom details, rules, or product facts you want the AI agents to prioritize.
             </p>
@@ -567,9 +619,9 @@ const NewCampaignContent: React.FC = () => {
 
         <div className="flex items-center justify-between pt-4 border-t border-[#2A2A38]">
           <div className="flex items-center gap-2 bg-[#111118] border border-[#2A2A38] px-3 py-1.5 rounded-full">
-            <div className="w-2 h-2 rounded-full bg-[#4edea3] animate-pulse" />
-            <span className="text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
-              7 Agents Ready
+            <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isFormValid() ? 'bg-[#4edea3]' : 'bg-[#FFA500] animate-pulse'}`} />
+            <span className="text-xs uppercase tracking-wider font-mono" style={{ color: '#8B8B9E' }}>
+              {isFormValid() ? '✓ Ready to Launch' : 'Waiting for required fields'}
             </span>
           </div>
           <button
@@ -646,6 +698,49 @@ const NewCampaignContent: React.FC = () => {
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5355D1] hover:to-[#7A4DD6] text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-[#6366F1]/20 flex items-center justify-center"
               >
                 Yes, Relaunch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showApiKeysModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowApiKeysModal(false)}
+          />
+          <div
+            className="relative bg-[#111116] border border-[#2B2B36] p-8 rounded-2xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in-95"
+            style={{
+              background: 'linear-gradient(180deg, #16161D 0%, #111116 100%)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.05)'
+            }}
+          >
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="h-16 w-16 bg-[#FFB020]/10 rounded-full flex items-center justify-center mb-4 ring-8 ring-[#FFB020]/5">
+                <AlertTriangle className="text-[#FFB020]" size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">API Keys Config Missing</h3>
+              <p className="text-[#A1A1AA] text-sm leading-relaxed">
+                You haven't configured any custom API keys in Settings &gt; API Keys. The campaign will run using the server's default fallback keys. Do you want to proceed?
+              </p>
+            </div>
+            
+            <div className="flex space-x-3 w-full mt-8">
+              <button
+                type="button"
+                onClick={() => setShowApiKeysModal(false)}
+                className="flex-1 px-4 py-3 bg-[#1C1C24] hover:bg-[#252530] text-[#E4E4E7] font-medium rounded-xl transition-all duration-200 border border-[#2B2B36] hover:border-[#3F3F4E]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleProceedWithoutKeys}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5355D1] hover:to-[#7A4DD6] text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-[#6366F1]/20 flex items-center justify-center"
+              >
+                Yes, Proceed
               </button>
             </div>
           </div>

@@ -217,6 +217,20 @@ export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getAllCampaigns = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        project: { userId: req.userId! }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({ campaigns });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.query;

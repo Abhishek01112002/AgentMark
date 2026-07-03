@@ -42,18 +42,10 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ projectName, on
                 Delete Project
               </h2>
             </div>
+            {/* Close button — hover via Tailwind, no JS handlers */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg transition-colors"
-              style={{ color: '#8B8B9E' }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-              }}
+              className="p-1.5 rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
             >
               <X size={20} />
             </button>
@@ -71,42 +63,25 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ projectName, on
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            {/* Cancel button — hover via Tailwind */}
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
               style={{
                 backgroundColor: 'transparent',
                 border: '1px solid #2A2A38',
-                color: '#8B8B9E',
                 fontFamily: 'JetBrains Mono, monospace',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
               }}
             >
               Cancel
             </button>
+            {/* Delete button — hover via Tailwind + CSS shadow transition */}
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#F1F1F3] bg-[#F43F5E] hover:bg-[#E11D48] hover:shadow-[0_0_20px_rgba(244,63,94,0.3)]"
               style={{
-                backgroundColor: '#F43F5E',
-                color: '#F1F1F3',
                 fontFamily: 'JetBrains Mono, monospace',
                 border: 'none',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#E11D48';
-                (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(244,63,94,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = '#F43F5E';
-                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
               }}
             >
               Delete Project
