@@ -86,6 +86,34 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
     let sections = '';
 
+    const brandName = campaign?.brandName || campaign?.brand_name || '';
+    const industry = campaign?.industry || '';
+    
+    sections += `
+      <div class="section" style="border-left: 4px solid #6366F1">
+        <div class="section-title">Campaign Briefing</div>
+        <div class="grid-2">
+          <div class="card" style="border: none; background: transparent; padding: 0">
+            <div class="card-label">Brand Name</div>
+            <div class="card-body" style="font-size: 13px; font-weight: 600; color: #111">${esc(brandName || 'Not specified')}</div>
+          </div>
+          <div class="card" style="border: none; background: transparent; padding: 0">
+            <div class="card-label">Industry Sector</div>
+            <div class="card-body" style="font-size: 13px; font-weight: 600; color: #111">${esc(industry || 'Not specified')}</div>
+          </div>
+        </div>
+        ${campaign?.targetAudience ? `
+        <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #f3f4f6">
+          <div class="card-label">Target Audience</div>
+          <div class="card-body" style="font-size: 12px; color: #4b5563">${esc(campaign.targetAudience)}</div>
+        </div>` : ''}
+        ${campaign?.primaryGoal ? `
+        <div style="margin-top: 10px">
+          <div class="card-label">Primary Goal</div>
+          <div class="card-body" style="font-size: 12px; color: #4b5563; text-transform: capitalize">${esc(campaign.primaryGoal.replace(/_/g, ' '))}</div>
+        </div>` : ''}
+      </div>`;
+
     if (positioning) {
       sections += `
         <div class="positioning-block">
@@ -277,8 +305,8 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   <div class="cover">
     <div>
       <div class="cover-logo">AgentMark AI</div>
-      <div class="cover-title">Campaign Strategy Report</div>
-      <div class="cover-sub">AI-generated strategic framework</div>
+      <div class="cover-title">${esc(campaign?.name || 'Campaign Strategy Report')}</div>
+      <div class="cover-sub">${esc(brandName ? `${brandName} — AI-generated strategic framework` : 'AI-generated strategic framework')}</div>
     </div>
     <div class="cover-right">
       <div class="cover-date">${today}</div>
