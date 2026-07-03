@@ -175,12 +175,32 @@ const CampaignResultPage: React.FC = () => {
               const reviewData = typeof campaignData.reviewOutput === 'string'
                 ? JSON.parse(campaignData.reviewOutput)
                 : campaignData.reviewOutput;
+              
+              const scores = {
+                research: reviewData.research_review?.score ?? null,
+                strategy: reviewData.strategy_review?.score ?? null,
+                copywriter: reviewData.copy_review?.score ?? null,
+                image_prompt: reviewData.image_review?.score ?? null,
+              };
+
               setAgentScores({
-                research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
-                strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
-                copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
-                image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
+                research: scores.research ? scores.research / 10 : null,
+                strategy: scores.strategy ? scores.strategy / 10 : null,
+                copywriter: scores.copywriter ? scores.copywriter / 10 : null,
+                image_prompt: scores.image_prompt ? scores.image_prompt / 10 : null,
               });
+
+              // Find lowest scoring agent to pre-select by default
+              let lowestAgent = 'copywriter';
+              let lowestScore = 999;
+              Object.entries(scores).forEach(([agent, val]) => {
+                if (val !== null && val < lowestScore) {
+                  lowestScore = val;
+                  lowestAgent = agent;
+                }
+              });
+              setSelectedAgent(lowestAgent);
+
               const overallReview = reviewData.overall || {};
               setReviewerNotes({
                 feedback: overallReview.summary || reviewData.copy_review?.feedback || '',
@@ -481,7 +501,7 @@ const CampaignResultPage: React.FC = () => {
         <Sidebar />
         <TopNav title="Campaign Results" />
 
-        <main className="result-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <main className={`result-main pt-14 min-h-screen ${campaign.status === 'awaiting_human_approval' ? 'pb-28' : 'pb-8'}`} style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div className="w-full space-y-6">
               {/* Header */}
@@ -578,6 +598,48 @@ const CampaignResultPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Persistent Floating Approval Actions Bar */}
+          {campaign.status === 'awaiting_human_approval' && (
+            <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0F0F15]/90 backdrop-blur-md border-t border-[#2A2A38] p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:pl-[272px] pr-8">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] animate-pulse flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-[#F1F1F3]">Human Review Required</p>
+                  <p className="text-xs text-[#8B8B9E]">AI agents have generated campaign drafts. Inspect metrics or request changes.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                <button
+                  onClick={() => {
+                    setIsMinimized(false);
+                    setDrawerTab('scores');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold hover:bg-surface hover:border-[#6366F1]/50 text-[#F1F1F3] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Inspect Scores
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMinimized(false);
+                    setDrawerTab('revise');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/30 text-xs font-semibold hover:bg-[#DC2626]/20 text-[#EF4444] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Request Revision
+                </button>
+                <button
+                  onClick={handleApprove}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#4edea3] hover:bg-[#3ce595] text-[#0e0e13] transition-all cursor-pointer shadow-[0_0_15px_rgba(78,222,163,0.3)] whitespace-nowrap active:scale-[0.98]"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                >
+                  Approve &amp; Publish
+                </button>
+              </div>
+            </div>
+          )}
         </main>
 
         {/* ── Human Review Inspector Drawer ─────────────────────────────────── */}
@@ -1016,7 +1078,7 @@ const CampaignResultPage: React.FC = () => {
                   <textarea
                     value={revisionFeedback}
                     onChange={(e) => setRevisionFeedback(e.target.value)}
-                    placeholder="Be specific — what should be changed, improved, or rewritten?"
+                    placeholder="e.g., The copywriting tone is too formal. Please make it more casual and conversational for Gen Z."
                     rows={5}
                     className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none focus:ring-2"
                     style={{
