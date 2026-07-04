@@ -58,7 +58,7 @@ const Profile: React.FC<ProfileProps> = ({ isOpen, onToggle }) => {
       {/* Dropdown - positioned below */}
       {isOpen && (
         <div
-          className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-xl"
+          className="absolute right-0 top-full mt-2 w-52 rounded-xl shadow-xl dropdown-enter"
           style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', zIndex: 60 }}
           onClick={(e) => e.stopPropagation()}
         >

@@ -204,7 +204,7 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
             {/* Notification Dropdown */}
             {openDropdown === 'notification' && (
               <div
-                className="absolute top-full right-0 mt-2 rounded-xl shadow-xl"
+                className="absolute top-full right-0 mt-2 rounded-xl shadow-xl dropdown-enter"
                 style={{ zIndex: 60 }}
                 onClick={(e) => e.stopPropagation()}
               >

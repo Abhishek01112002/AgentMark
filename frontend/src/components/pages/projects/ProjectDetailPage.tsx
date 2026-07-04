@@ -289,7 +289,7 @@ const ProjectDetailContent: React.FC = () => {
           stats={[{ label: 'campaigns', value: campaigns.length, color: '#6366F1' }]}
         />
 
-        <main className="project-detail-main pt-14" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <main className="project-detail-main pt-14 fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6">
             
             <button
@@ -373,7 +373,7 @@ const ProjectDetailContent: React.FC = () => {
                   </button>
                   <button
                     onClick={() => navigate(`/campaign/new?projectId=${id}`)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all btn-press"
                     style={{
                       backgroundColor: '#6366F1',
                       color: '#F1F1F3',

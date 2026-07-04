@@ -180,7 +180,7 @@ const CampaignHistoryContent: React.FC = () => {
         <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F' }}>
           <Sidebar />
           <TopNav title="Campaign History" />
-          <main className="history-main pt-14">
+        <main className="history-main pt-14 fade-in">
             <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
               <div className="space-y-8">
                 {/* Page header skeleton */}
@@ -410,7 +410,7 @@ const CampaignHistoryContent: React.FC = () => {
                             return (
                               <tr
                                 key={campaign.id}
-                                className="transition-colors"
+                                className="transition-colors stagger-enter"
                                 style={{ borderBottom: '1px solid rgba(42,42,56,0.5)' }}
                                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(27,27,32,0.3)')}
                                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}

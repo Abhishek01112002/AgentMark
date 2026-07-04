@@ -336,10 +336,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
       .bullet { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #475569; margin-bottom: 4px; }
       .dot { width: 5px; height: 5px; border-radius: 50%; background: #4f46e5; flex-shrink: 0; margin-top: 5px; }
 
-      @page { size: A4; margin: 15mm 15mm; }
+      @page { size: A4; margin: 0; }
       @media print {
         body { background: white; }
-        .page { padding: 0; }
+        .page { padding: 15mm 15mm; max-width: 100%; margin: 0; }
         .section { box-shadow: none; border-color: #e2e8f0; }
         .grid-2, .grid-4 { display: block !important; }
         .card, .placement-card, .week-block { margin-bottom: 10px !important; }

@@ -517,7 +517,7 @@ const CampaignResultPage: React.FC = () => {
         <Sidebar />
         <TopNav title="Campaign Results" />
 
-        <main className={`result-main pt-14 min-h-screen ${campaign.status === 'awaiting_human_approval' ? 'pb-28' : 'pb-8'}`} style={{ fontFamily: 'Sora, sans-serif' }}>
+        <main className={`result-main pt-14 min-h-screen fade-in ${campaign.status === 'awaiting_human_approval' ? 'pb-28' : 'pb-8'}`} style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div className="w-full space-y-6">
               {/* Header */}
@@ -568,7 +568,7 @@ const CampaignResultPage: React.FC = () => {
 
               {/* Tab Navigation */}
               <div className="rounded-2xl border border-[#2A2A38] bg-[#111118]/80 backdrop-blur p-2 overflow-x-auto">
-                <div className="flex gap-2 min-w-max w-full">
+                <div className="flex gap-2 min-w-max w-full stagger-enter">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;

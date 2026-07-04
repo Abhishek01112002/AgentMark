@@ -854,7 +854,7 @@ const CampaignLivePage: React.FC = () => {
         <Sidebar />
         <TopNav title="Campaign Live" />
 
-        <main className="campaign-live-main pt-14 flex-1 overflow-hidden" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <main className="campaign-live-main pt-14 flex-1 overflow-hidden fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="h-full overflow-y-auto px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div>
               {/* Page Header */}

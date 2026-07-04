@@ -43,7 +43,7 @@ const SettingsContent: React.FC = () => {
         <Sidebar />
         <TopNav title="Settings" />
 
-        <main className="settings-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
+        <main className="settings-main pt-14 min-h-screen fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div className="space-y-8">
               {/* Header */}

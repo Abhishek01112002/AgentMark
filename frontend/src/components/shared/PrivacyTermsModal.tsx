@@ -11,7 +11,7 @@ const PrivacyTermsModal: React.FC<PrivacyTermsModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 modal-overlay">
       {/* Dim Overlay */}
       <div 
         onClick={onClose}
@@ -20,7 +20,7 @@ const PrivacyTermsModal: React.FC<PrivacyTermsModalProps> = ({ isOpen, onClose, 
       
       {/* Modal Container */}
       <div 
-        className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border bg-[#0d0d14] text-[#F1F1F3] overflow-hidden shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl border bg-[#0d0d14] text-[#F1F1F3] overflow-hidden shadow-2xl modal-content"
         style={{ 
           borderColor: 'rgba(192, 193, 255, 0.15)',
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)'

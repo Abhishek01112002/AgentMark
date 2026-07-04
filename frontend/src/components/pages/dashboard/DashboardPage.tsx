@@ -226,10 +226,10 @@ function DashboardContent() {
         <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
           <Sidebar />
           <TopNav title="Dashboard" stats={[]} />
-          <main className="dashboard-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <main className="dashboard-main pt-14 min-h-screen fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
             <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8">
               {/* 4 stat card skeletons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 stagger-enter">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="rounded-xl p-5" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
                     <div className="flex justify-between items-start mb-4">
