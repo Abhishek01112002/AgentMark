@@ -24,10 +24,11 @@ from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 logger = logging.getLogger("agentmark.redis_publisher")
 
-# ── Module-level connection pool ──────────────────────────────────────────────
+# ── Module-level connection pool and client ──────────────────────────────────
 # Initialized once on first use, reused for all subsequent publish calls.
 # This avoids opening a new TCP connection on every agent completion event.
 _pool: Optional[redis.ConnectionPool] = None
+_client: Optional[redis.Redis] = None
 
 
 def _get_pool() -> redis.ConnectionPool:
@@ -105,8 +106,10 @@ def publish_agent_event(
         message = json.dumps(payload)
 
     try:
-        r = redis.Redis(connection_pool=_get_pool(), decode_responses=True)
-        subscribers_count = r.publish(channel, message)
+        global _client
+        if _client is None:
+            _client = redis.Redis(connection_pool=_get_pool(), decode_responses=True)
+        subscribers_count = _client.publish(channel, message)
         logger.debug(
             "Redis publish | channel=%s | agent=%s | status=%s | subscribers=%d",
             channel,

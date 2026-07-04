@@ -46,6 +46,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
 /* ─── Constants ────────────────────────────────────────── */
 const EXPANDED_W = 240;
 const COLLAPSED_W = 72;
+const ACTIVE_CAMPAIGNS_POLL_MS = 30000;
 
 const navItems = [
   { name: 'Dashboard',         icon: LayoutDashboard, path: '/dashboard', isLink: true  },
@@ -74,23 +75,56 @@ const Sidebar: React.FC = () => {
   }>>([]);
 
   useEffect(() => {
+    let cancelled = false;
+    let intervalId: number | undefined;
+
     const fetchActive = async () => {
+      if (document.visibilityState === 'hidden') {
+        return;
+      }
+
       try {
-        const res = await api.get('/campaigns/active/live');
-        setActiveCampaigns(res.data.campaigns || []);
+        const res = await api.get('/campaigns/active/live', { timeout: 8000 });
+        if (!cancelled) {
+          setActiveCampaigns(res.data.campaigns || []);
+        }
       } catch (err) {
-        console.error('Failed to fetch active campaigns in sidebar:', err);
+        if (!cancelled) {
+          console.error('Failed to fetch active campaigns in sidebar:', err);
+        }
       }
     };
-    fetchActive();
+
+    const startPolling = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+      void fetchActive();
+      intervalId = window.setInterval(fetchActive, ACTIVE_CAMPAIGNS_POLL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        startPolling();
+      } else if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    startPolling();
 
     // Listen to custom window events for immediate update
     window.addEventListener('campaign_status_changed', fetchActive);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    const interval = setInterval(fetchActive, 10000); // Poll every 10 seconds
     return () => {
-      clearInterval(interval);
+      cancelled = true;
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
       window.removeEventListener('campaign_status_changed', fetchActive);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

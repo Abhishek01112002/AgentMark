@@ -122,3 +122,15 @@ def try_parse_json(raw: Optional[str]) -> Optional[dict]:
         return json.loads(raw)
     except (json.JSONDecodeError, TypeError):
         return {"raw": raw}
+
+
+class CopyVariantRequest(BaseModel):
+    campaign_id: str
+    channel: str
+    steering_note: str = ""
+    existing_copy: Optional[str] = None
+    strategy_data: Optional[str] = None
+    brief: str = ""
+    brand_voice: str = "professional"
+    target_audience: str = ""
+    llm_config: Optional[dict] = None

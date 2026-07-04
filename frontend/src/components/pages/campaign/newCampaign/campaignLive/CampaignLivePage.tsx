@@ -307,6 +307,24 @@ const CampaignLivePage: React.FC = () => {
                   copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
                   image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
                 });
+
+                // Find lowest scoring agent to pre-select by default
+                let lowestAgent = 'copywriter';
+                let lowestScore = 999;
+                const rawScores = {
+                  research: reviewData.research_review?.score ?? null,
+                  strategy: reviewData.strategy_review?.score ?? null,
+                  copywriter: reviewData.copy_review?.score ?? null,
+                  image_prompt: reviewData.image_review?.score ?? null,
+                };
+                Object.entries(rawScores).forEach(([agent, val]) => {
+                  if (val !== null && val < lowestScore) {
+                    lowestScore = val;
+                    lowestAgent = agent;
+                  }
+                });
+                setSelectedAgent(lowestAgent);
+
                 // Extract reviewer notes for the drawer
                 const overallReview = reviewData.overall || {};
                 setReviewerNotes({
@@ -414,6 +432,11 @@ const CampaignLivePage: React.FC = () => {
       auth: { token },
     });
     socketRef.current = socket;
+
+    socket.on('reconnect_attempt', () => {
+      const refreshedToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+      socket.auth = { token: refreshedToken };
+    });
 
     socket.on('connect', () => {
       setIsConnected(true);
@@ -559,6 +582,24 @@ const CampaignLivePage: React.FC = () => {
                 copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
                 image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
               });
+
+              // Find lowest scoring agent to pre-select by default
+              let lowestAgent = 'copywriter';
+              let lowestScore = 999;
+              const rawScores = {
+                research: reviewData.research_review?.score ?? null,
+                strategy: reviewData.strategy_review?.score ?? null,
+                copywriter: reviewData.copy_review?.score ?? null,
+                image_prompt: reviewData.image_review?.score ?? null,
+              };
+              Object.entries(rawScores).forEach(([agent, val]) => {
+                if (val !== null && val < lowestScore) {
+                  lowestScore = val;
+                  lowestAgent = agent;
+                }
+              });
+              setSelectedAgent(lowestAgent);
+
               const overallReview = reviewData.overall || {};
               setReviewerNotes({
                 feedback: overallReview.summary || reviewData.copy_review?.feedback || '',

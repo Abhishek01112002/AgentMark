@@ -6,7 +6,7 @@ import api from '../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
 import TopNav from '../../../shared/topNav/TopNav';
 import CreateProjectModal from '../../projects/CreateProjectModal';
-import { llmSettingsService } from '../../../../services/llm-settings.service';
+import { llmSettingsService, validateKey } from '../../../../services/llm-settings.service';
 
 interface OptionItem {
   value: string;
@@ -232,21 +232,14 @@ const NewCampaignContent: React.FC = () => {
     }
 
     const keys = llmSettingsService.get();
-    const hasKeys = !!(
-      keys.gemini.keys.some((k) => k.value.trim()) ||
-      keys.groq.keys.some((k) => k.value.trim()) ||
-      keys.openai.keys.some((k) => k.value.trim())
+    const hasKeys = (['gemini', 'groq', 'openai'] as const).some((provider) =>
+      keys[provider].keys.some((k) => validateKey(provider, k.value))
     );
     if (!hasKeys) {
       setShowApiKeysModal(true);
       return;
     }
 
-    await checkDuplicateAndSubmit();
-  };
-
-  const handleProceedWithoutKeys = async () => {
-    setShowApiKeysModal(false);
     await checkDuplicateAndSubmit();
   };
 
@@ -721,9 +714,9 @@ const NewCampaignContent: React.FC = () => {
               <div className="h-16 w-16 bg-[#FFB020]/10 rounded-full flex items-center justify-center mb-4 ring-8 ring-[#FFB020]/5">
                 <AlertTriangle className="text-[#FFB020]" size={32} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">API Keys Config Missing</h3>
+              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">API Keys Required</h3>
               <p className="text-[#A1A1AA] text-sm leading-relaxed">
-                You haven't configured any custom API keys in Settings &gt; API Keys. The campaign will run using the server's default fallback keys. Do you want to proceed?
+                Add at least one valid API key in Settings &gt; API Keys before launching a campaign. Campaigns will not start until a provider key is configured.
               </p>
             </div>
             
@@ -737,10 +730,13 @@ const NewCampaignContent: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={handleProceedWithoutKeys}
+                onClick={() => {
+                  setShowApiKeysModal(false);
+                  window.location.href = '/settings';
+                }}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5355D1] hover:to-[#7A4DD6] text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-[#6366F1]/20 flex items-center justify-center"
               >
-                Yes, Proceed
+                Go to Settings
               </button>
             </div>
           </div>

@@ -23,11 +23,12 @@ if hasattr(sys.stderr, 'reconfigure'):
         pass
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.health import router as health_router
 from api.routes.campaigns import router as campaign_router
+from api.dependencies import verify_internal_secret
 from workflow.graph import create_campaign_graph
 from version import __version__
 
@@ -56,6 +57,8 @@ app = FastAPI(
     description="Multi-Agent Marketing Campaign Generation System",
     version=__version__,
     lifespan=lifespan,
+    docs_url="/docs" if os.getenv("ENV", "development") == "development" else None,
+    redoc_url="/redoc" if os.getenv("ENV", "development") == "development" else None,
 )
 
 # CORS middleware
@@ -69,19 +72,18 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health_router)
-app.include_router(campaign_router)
+app.include_router(campaign_router, dependencies=[Depends(verify_internal_secret)])
 
 
 if __name__ == "__main__":
     import uvicorn
     
     port = int(os.getenv("SERVICE_PORT", 5002))
-    host = os.getenv("SERVICE_HOST", "0.0.0.0")
+    host = os.getenv("SERVICE_HOST", "127.0.0.1")
     
     uvicorn.run(
         "main:app",
         host=host,
         port=port,
-        reload=True,
         log_level="info",
     )

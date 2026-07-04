@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -64,25 +64,30 @@ const ProjectDetailContent: React.FC = () => {
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const didFetchRef = useRef(false);
+  const [totalCampaigns, setTotalCampaigns] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchCampaigns = async (page: number, limit: number) => {
+    if (!id) return;
+    try {
+      const response = await api.get(`/campaigns?projectId=${id}&page=${page}&limit=${limit}`);
+      setCampaigns(response.data.campaigns || []);
+      setTotalCampaigns(response.data.pagination?.total || 0);
+      setTotalPages(response.data.pagination?.totalPages || 1);
+    } catch (error: any) {
+      console.error('Failed to fetch campaigns:', error);
+      toast.error(error.response?.data?.message || 'Failed to load campaigns');
+    }
+  };
 
   useEffect(() => {
-    if (didFetchRef.current) return;
-    didFetchRef.current = true;
-
     const fetchProjectData = async () => {
       if (!id) return;
       
       try {
         setLoading(true);
-        
-        const [projectResponse, campaignsResponse] = await Promise.all([
-          api.get(`/projects/${id}`),
-          api.get(`/campaigns?projectId=${id}`)
-        ]);
-        
+        const projectResponse = await api.get(`/projects/${id}`);
         setProject(projectResponse.data.project);
-        setCampaigns(campaignsResponse.data.campaigns || []);
       } catch (error: any) {
         console.error('Failed to fetch project data:', error);
         toast.error(error.response?.data?.message || 'Failed to load project data');
@@ -98,10 +103,15 @@ const ProjectDetailContent: React.FC = () => {
     fetchProjectData();
   }, [id, navigate]);
 
-  const totalPages = Math.ceil(campaigns.length / itemsPerPage);
+  useEffect(() => {
+    if (id) {
+      fetchCampaigns(currentPage, itemsPerPage);
+    }
+  }, [id, currentPage, itemsPerPage]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, campaigns.length);
-  const paginatedCampaigns = campaigns.slice(startIndex, endIndex);
+  const endIndex = startIndex + campaigns.length;
+  const paginatedCampaigns = campaigns;
 
   const getStatusTone = (status: string): StatusTone => {
     switch (status.toLowerCase()) {
@@ -157,9 +167,18 @@ const ProjectDetailContent: React.FC = () => {
     if (deleteModal.campaign && id) {
       try {
         await api.delete(`/campaigns/${deleteModal.campaign.id}?projectId=${id}`);
-        setCampaigns(campaigns.filter((c) => c.id !== deleteModal.campaign!.id));
+        const nextTotal = Math.max(0, totalCampaigns - 1);
+        const nextTotalPages = Math.max(1, Math.ceil(nextTotal / itemsPerPage));
+        const nextPage = Math.min(currentPage, nextTotalPages);
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
         toast.success('Campaign deleted successfully');
         setDeleteModal({ show: false, campaign: null });
+        setTotalCampaigns(nextTotal);
+        if (nextPage !== currentPage) {
+          setCurrentPage(nextPage);
+        } else {
+          void fetchCampaigns(nextPage, itemsPerPage);
+        }
       } catch (error: any) {
         console.error('Failed to delete campaign:', error);
         toast.error(error.response?.data?.message || 'Failed to delete campaign');
@@ -681,7 +700,7 @@ const ProjectDetailContent: React.FC = () => {
                     style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}
                   >
                     <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
-                      Showing {paginatedCampaigns.length === 0 ? 0 : startIndex + 1} to {endIndex} of {campaigns.length} campaigns
+                      Showing {campaigns.length === 0 ? 0 : startIndex + 1} to {endIndex} of {totalCampaigns} campaigns
                     </div>
 
                     <div className="flex items-center gap-1">
@@ -745,8 +764,7 @@ const ProjectDetailContent: React.FC = () => {
                     >
                       <option value={5}>5 per page</option>
                       <option value={10}>10 per page</option>
-                      <option value={25}>25 per page</option>
-                      <option value={50}>50 per page</option>
+                      <option value={20}>20 per page</option>
                     </select>
                   </div>
                 </div>

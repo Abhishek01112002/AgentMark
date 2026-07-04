@@ -83,6 +83,89 @@ from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import PublisherOutput, normalize_channel_list
 
 
+def _write_hold_output(
+    state: CampaignState,
+    channels: list[str],
+    quality_score: int | float | None,
+    reason: str,
+) -> CampaignState:
+    """Return a valid publisher package for campaigns that must be held."""
+    safe_channels = channels or ["email"]
+    channel_plans = [
+        {
+            "channel": channel,
+            "priority": "HOLD",
+            "content_type": "Campaign asset",
+            "publish_frequency": "Paused until revisions are complete",
+            "optimal_timing": "Do not publish",
+            "copy_asset_used": "Pending revision",
+            "visual_asset_used": "Pending revision",
+            "kpi_targets": {"status": "Hold pending quality fixes"},
+            "launch_date": "TBD",
+            "status": "BLOCKED",
+        }
+        for channel in safe_channels
+    ]
+    first_channel = safe_channels[0]
+    hold_output = {
+        "publishing_decision": "HOLD",
+        "decision_rationale": (
+            f"Publishing is held because the campaign quality score is {quality_score}/100. "
+            f"{reason} Human review or upstream revision is required before launch."
+        ),
+        "publishing_plan": channel_plans,
+        "content_calendar": {
+            "total_weeks": 1,
+            "campaign_start_date": "TBD",
+            "weeks": [
+                {
+                    "week_label": "Revision Hold",
+                    "week_start_date": "TBD",
+                    "theme": "Resolve quality issues before publishing",
+                    "activities": [
+                        {
+                            "day": "TBD",
+                            "channel": first_channel,
+                            "content_type": "Review",
+                            "description": "Pause publishing, review campaign quality issues, revise the affected upstream outputs, and rerun approval before scheduling any live content.",
+                            "caption_hook": "Publishing paused pending quality approval",
+                            "effort": "medium",
+                            "quick_win": False,
+                        }
+                    ],
+                }
+            ],
+        },
+        "asset_checklist": {
+            "copy_assets": [{"asset": "Campaign copy", "status": "BLOCKED", "notes": "Requires revision before publishing"}],
+            "visual_assets": [{"asset": "Campaign visuals", "status": "BLOCKED", "notes": "Requires revision before publishing"}],
+            "missing_assets": ["Approved review decision", "Resolved quality issues"],
+        },
+        "projected_metrics": {
+            "total_reach": "0 until approved",
+            "lead_target": "0 until approved",
+            "estimated_ctr": "N/A",
+            "estimated_cost": "N/A",
+            "roi_projection": "N/A",
+            "projection_note": "Metrics are withheld while publishing is on hold.",
+            "channel_breakdown": {channel: "Paused" for channel in safe_channels},
+            "timeline_to_results": "Pending revision approval",
+            "projection_confidence": "Low",
+            "confidence_explanation": "Campaign quality is below launch threshold.",
+        },
+        "executive_summary": (
+            "This campaign is not ready for publishing. The publisher has prepared a hold package "
+            "so the workflow can finish with a clear decision instead of failing silently. Resolve "
+            "the listed review issues, rerun the reviewer, and only then schedule distribution."
+        ),
+    }
+    state.publisher_output = json.dumps(hold_output, indent=2)
+    state.status = "completed"
+    state.workflow_finished = True
+    state.error = None
+    return state
+
+
 # ==================== PUBLISHER AGENT FUNCTION ====================
 
 def publisher_agent(state: CampaignState) -> CampaignState:
@@ -365,6 +448,17 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         # Use status field as the publishing gate
         can_publish = review_data.get("status", "revision_required") == "approved"
 
+    # Critically low quality should still produce a structured HOLD package so
+    # the UI can show a clear final decision instead of a broken workflow.
+    quality_score = review_data.get("overall_quality_score", 0) or review_data.get("overall", {}).get("quality_score")
+    if quality_score is not None and quality_score < 60:
+        return _write_hold_output(
+            state,
+            channels,
+            quality_score,
+            review_data.get("overall", {}).get("summary", "Quality score is below the publish threshold."),
+        )
+
     if not can_publish:
         raise ValueError(
             f"Publish blocked. Status: {review_data.get('status', 'unknown')}. "
@@ -372,7 +466,6 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         )
 
     # Also validate quality score if present
-    quality_score = review_data.get("overall_quality_score", 0) or review_data.get("overall", {}).get("quality_score")
     if quality_score is not None and quality_score < 60:
         raise ValueError(
             f"Quality score {quality_score} below threshold 60. "

@@ -5,7 +5,7 @@ import { AuthRequest } from '../../middlewares/auth.middleware';
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8).max(72),
   name: z.string().optional(),
 });
 

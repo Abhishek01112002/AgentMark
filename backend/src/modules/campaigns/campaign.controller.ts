@@ -4,9 +4,11 @@ import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { campaignService } from './campaign.service';
 import { getClientMemory } from './campaign-memory.service';
+import { notificationService } from '../notifications/notification.service';
 import { aiServiceClient } from '../../utils/ai-client';
 import type { AIServiceCampaignRequest } from '../../utils/ai-client';
 import prisma from '../../db';
+import { redis } from '../../utils/redis';
 
 // ── Socket.io singleton ────────────────────────────────────────────────────
 // Set once from index.ts after the Socket.io Server is created.
@@ -40,6 +42,18 @@ const approveCampaignSchema = z.object({
   message: 'revisionTarget required when rejecting',
   path: ['revisionTarget'],
 });
+
+const hasExplicitApiKeys = (llmConfig: any): boolean => {
+  if (!llmConfig || typeof llmConfig !== 'object') return false;
+  const providerKeys = ['openai_api_key', 'gemini_api_key', 'groq_api_key', 'tavily_api_key'];
+  return providerKeys.some((key) => {
+    const value = llmConfig[key];
+    if (typeof value === 'string') {
+      return value.split(',').some((part) => part.trim().length > 0);
+    }
+    return Boolean(value);
+  });
+};
 
 const formatFriendlyError = (message: string) => {
   if (!message) return 'Something went wrong while generating your campaign. Please try again.';
@@ -113,6 +127,12 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
       return res.status(404).json({ error: 'Project not found' });
     }
 
+    if (!hasExplicitApiKeys(llmConfig)) {
+      return res.status(400).json({
+        error: 'Please add at least one valid API key in Settings > API Keys before launching a campaign.',
+      });
+    }
+
     const { projectId, ...campaignData } = data;
     const brandName = campaignData.brandName || project.name;
     const briefParts: string[] = [];
@@ -132,6 +152,13 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
     const campaign = await campaignService.create(projectId, { ...campaignData, brandName });
     console.log(`Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
 
+    // Immediately create a lightweight user notification in the background.
+    void notificationService.create(project.userId, {
+      type: 'info',
+      title: 'Campaign started',
+      message: `Campaign "${campaign.name}" is processing now.`,
+    });
+
     // ── Step 2: Respond 201 immediately ──────────────────────────────────────
     // Frontend receives the campaign object and navigates to /live right away.
     // No waiting — the 2-3 min AI pipeline runs entirely in the background.
@@ -144,7 +171,12 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
     // `getIO()` returns the singleton socket.io Server set at startup in index.ts.
     const io = getIO();
     if (io) {
-      const memoryContext = await getClientMemory(projectId);
+      let memoryContext;
+      try {
+        memoryContext = await getClientMemory(projectId);
+      } catch {
+        memoryContext = null;
+      }
       void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
         brand_name: campaign.brandName || brandName,
@@ -237,26 +269,23 @@ export const getCampaign = async (req: AuthRequest, res: Response, next: NextFun
 
     const campaign = await prisma.campaign.findUnique({
       where: { id: req.params.id },
+      include: { project: { select: { userId: true } } },
     });
 
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
+    if (campaign.project.userId !== req.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
     if (projectId && typeof projectId === 'string' && campaign.projectId !== projectId) {
       return res.status(400).json({ error: 'Campaign does not belong to the specified project' });
     }
 
-    // Verify project ownership
-    const project = await prisma.project.findFirst({
-      where: { id: campaign.projectId, userId: req.userId! },
-    });
-
-    if (!project) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    res.json({ campaign });
+    const { project, ...campaignData } = campaign;
+    res.json({ campaign: campaignData });
   } catch (error) {
     next(error);
   }
@@ -270,20 +299,20 @@ export const deleteCampaign = async (req: AuthRequest, res: Response, next: Next
       return res.status(400).json({ error: 'projectId is required' });
     }
 
-    const project = await prisma.project.findFirst({
-      where: { id: projectId, userId: req.userId! },
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id: req.params.id,
+        projectId,
+        project: { userId: req.userId! },
+      },
+      select: { projectId: true },
     });
-
-    if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
-    }
-
-    const campaign = await campaignService.delete(req.params.id, projectId);
 
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
+    await campaignService.delete(req.params.id, campaign.projectId);
     res.json({ message: 'Campaign deleted successfully' });
   } catch (error) {
     next(error);
@@ -297,18 +326,14 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
 
     const campaign = await prisma.campaign.findUnique({
       where: { id },
+      include: { project: { select: { userId: true, name: true } } },
     });
 
     if (!campaign) {
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
-    // Verify project ownership
-    const project = await prisma.project.findFirst({
-      where: { id: campaign.projectId, userId: req.userId! },
-    });
-
-    if (!project) {
+    if (campaign.project.userId !== req.userId) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -382,12 +407,11 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
     // Call FastAPI in background to execute publisher agent
     const io = getIO();
     if (io) {
-      const aiOutputs = campaign.aiOutputs ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) : {};
       const memoryContext = await getClientMemory(campaign.projectId);
       
       void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
-        brand_name: campaign.brandName || project.name,
+        brand_name: campaign.brandName || campaign.project.name,
         industry: campaign.industry,
         primary_goal: campaign.primaryGoal,
         target_audience: campaign.targetAudience,
@@ -395,13 +419,13 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
         campaign_id: campaign.id,
         llm_config: llmConfig,
         client_memory_context: memoryContext?.formattedText ?? null,
-        // Pass existing outputs as strings
-        manager_output: aiOutputs.manager_output ? JSON.stringify(aiOutputs.manager_output) : null,
-        research_output: aiOutputs.research_output ? JSON.stringify(aiOutputs.research_output) : null,
-        strategy_output: aiOutputs.strategy_output ? JSON.stringify(aiOutputs.strategy_output) : null,
-        copy_output: aiOutputs.copy_output ? JSON.stringify(aiOutputs.copy_output) : null,
-        image_output: aiOutputs.image_output ? JSON.stringify(aiOutputs.image_output) : null,
-        review_output: aiOutputs.review_output ? JSON.stringify(aiOutputs.review_output) : null,
+        // Pass existing outputs as strings (use modified currentOutputs)
+        manager_output: currentOutputs.manager_output ? JSON.stringify(currentOutputs.manager_output) : null,
+        research_output: currentOutputs.research_output ? JSON.stringify(currentOutputs.research_output) : null,
+        strategy_output: currentOutputs.strategy_output ? JSON.stringify(currentOutputs.strategy_output) : null,
+        copy_output: currentOutputs.copy_output ? JSON.stringify(currentOutputs.copy_output) : null,
+        image_output: currentOutputs.image_output ? JSON.stringify(currentOutputs.image_output) : null,
+        review_output: currentOutputs.review_output ? JSON.stringify(currentOutputs.review_output) : null,
         // HITL fields - Pass from database
         human_approval_status: action === 'approve' ? 'approved' : 'rejected',
         human_feedback: feedback || null,
@@ -452,13 +476,15 @@ export const enhancePrompt = async (req: AuthRequest, res: Response) => {
 
 export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
   try {
-    const campaign = await prisma.campaign.findUnique({ where: { id: req.params.id } });
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: req.params.id },
+      include: { project: { select: { userId: true } } },
+    });
     if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
 
-    const project = await prisma.project.findFirst({
-      where: { id: campaign.projectId, userId: req.userId! },
-    });
-    if (!project) return res.status(403).json({ error: 'Access denied' });
+    if (campaign.project.userId !== req.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
 
     const snapshots = await prisma.campaignMemorySnapshot.findMany({
       where: { 
@@ -587,3 +613,203 @@ export const testKey = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const generateCopyVariantSchema = z.object({
+  channel: z.string().min(1).max(50),
+  steeringNote: z.string().max(500).optional(),
+});
+
+const updateCopyVariantMetaSchema = z.object({
+  channel: z.string().min(1).max(50),
+  variantId: z.string().min(1),
+  action: z.enum(['pin', 'hide', 'unhide']),
+});
+
+export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { channel, steeringNote } = generateCopyVariantSchema.parse(req.body);
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, project: { userId: req.userId! } },
+      select: {
+        id: true,
+        status: true,
+        additionalInfo: true,
+        brandVoice: true,
+        targetAudience: true,
+        aiOutputs: true,
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    const aiOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const copyVariantsMap = (aiOutputs.copy_variants || {}) as Record<string, any[]>;
+    const channelVariants = copyVariantsMap[channel] || [];
+    const activeVariantsCount = channelVariants.filter((v: any) => !v.isHidden).length;
+
+    if (activeVariantsCount >= 4) {
+      return res.status(400).json({ error: 'Maximum 4 variants reached' });
+    }
+
+    const lockKey = `lock:variant:${id}:${channel}`;
+    const lockSet = await redis.set(lockKey, 'true', 'EX', 120, 'NX');
+    if (!lockSet) {
+      return res.status(409).json({ error: 'Generation in progress' });
+    }
+
+    try {
+      const llmConfigHeader = req.headers['x-llm-config'];
+      let llmConfig: any = undefined;
+      if (typeof llmConfigHeader === 'string') {
+        try { llmConfig = JSON.parse(llmConfigHeader); } catch { /* ignore */ }
+      }
+
+      const response = await aiServiceClient.generateCopyVariant({
+        campaign_id: campaign.id,
+        channel,
+        steering_note: steeringNote || '',
+        existing_copy: aiOutputs.copy_output ? JSON.stringify(aiOutputs.copy_output) : null,
+        strategy_data: aiOutputs.strategy_output ? JSON.stringify(aiOutputs.strategy_output) : null,
+        brief: campaign.additionalInfo || '',
+        brand_voice: campaign.brandVoice,
+        target_audience: campaign.targetAudience,
+        llm_config: llmConfig,
+      });
+
+      const uuid = crypto.randomUUID();
+      const tags: string[] = [];
+      const headline = response.copy_data.headline || '';
+      const body = response.copy_data.body || response.copy_data.body_copy || '';
+      const bodyLower = body.toLowerCase();
+      const headlineLower = headline.toLowerCase();
+
+      if (bodyLower.includes('story') || bodyLower.includes('narrative')) tags.push('🎭 Storytelling');
+      if (body.length < 100 && body.length > 0) tags.push('⚡ Punchy');
+      if (bodyLower.includes('dear') || bodyLower.includes('professional') || bodyLower.includes('expert')) tags.push('💼 Executive');
+      if (headlineLower.includes('?') || bodyLower.includes('?')) tags.push('🤔 Curiosity');
+      if (tags.length === 0) tags.push('✨ Fresh Take');
+
+      const newVariant = {
+        id: uuid,
+        headline: response.copy_data.headline || '',
+        body_copy: response.copy_data.body || response.copy_data.body_copy || '',
+        ctas: response.copy_data.ctas || {},
+        tags,
+        isChampion: false,
+        isHidden: false,
+        createdAt: new Date().toISOString(),
+        generationNote: steeringNote || '',
+      };
+
+      copyVariantsMap[channel] = [...channelVariants, newVariant];
+      aiOutputs.copy_variants = copyVariantsMap;
+
+      const updatedCampaign = await campaignService.updateWithAIOutputs(
+        id, id, { copy_variants: copyVariantsMap } as any, campaign.status as any
+      );
+      await redis.del(lockKey);
+
+      const parsedUpdatedOutputs = updatedCampaign.aiOutputs
+        ? (typeof updatedCampaign.aiOutputs === 'string'
+            ? JSON.parse(updatedCampaign.aiOutputs)
+            : updatedCampaign.aiOutputs) as Record<string, any>
+        : {};
+
+      return res.json({
+        channel,
+        variants: parsedUpdatedOutputs.copy_variants?.[channel] || [],
+      });
+    } catch (err: any) {
+      await redis.del(lockKey);
+      throw err;
+    }
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error generating copy variant:', error);
+    res.status(500).json({ error: 'Failed to generate copy variant' });
+  }
+};
+
+export const updateCopyVariantMeta = async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+  try {
+    const { channel, variantId, action } = updateCopyVariantMetaSchema.parse(req.body);
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, project: { userId: req.userId! } },
+      select: { aiOutputs: true, status: true },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    const aiOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const copyVariantsMap = (aiOutputs.copy_variants || {}) as Record<string, any[]>;
+    const channelVariants = copyVariantsMap[channel] || [];
+
+    // legacy-* IDs exist only in frontend state; accept without DB lookup
+    let variantFound = variantId.startsWith('legacy-');
+
+    const updatedVariants = channelVariants.map((v: any) => {
+      if (v.id === variantId) {
+        variantFound = true;
+        if (action === 'pin') {
+          return { ...v, isChampion: !v.isChampion }; // toggle on/off
+        } else if (action === 'hide') {
+          return { ...v, isHidden: true };
+        } else if (action === 'unhide') {
+          return { ...v, isHidden: false };
+        }
+      } else {
+        if (action === 'pin') {
+          return { ...v, isChampion: false }; // unpin all others when pinning
+        }
+      }
+      return v;
+    });
+
+    if (!variantFound) {
+      return res.status(404).json({ error: 'Variant not found in this channel' });
+    }
+
+    copyVariantsMap[channel] = updatedVariants;
+    aiOutputs.copy_variants = copyVariantsMap;
+
+    const updatedCampaign = await campaignService.updateWithAIOutputs(
+      id, id, { copy_variants: copyVariantsMap } as any, campaign.status as any
+    );
+
+    const parsedUpdatedOutputs = updatedCampaign.aiOutputs
+      ? (typeof updatedCampaign.aiOutputs === 'string'
+          ? JSON.parse(updatedCampaign.aiOutputs)
+          : updatedCampaign.aiOutputs) as Record<string, any>
+      : {};
+
+    return res.json({
+      channel,
+      variants: parsedUpdatedOutputs.copy_variants?.[channel] || [],
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error updating copy variant metadata:', error);
+    res.status(500).json({ error: 'Failed to update copy variant' });
+  }
+};

@@ -134,17 +134,24 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         return;
       }
 
-      // Ignore all messages for soft-deleted campaigns to prevent resurrecting/updating them
+      let campaign = null;
       try {
-        const campaign = await prisma.campaign.findUnique({
+        campaign = await prisma.campaign.findUnique({
           where: { id: campaign_id },
-          select: { status: true },
+          select: {
+            status: true,
+            aiOutputs: true,
+            projectId: true,
+            name: true,
+          },
         });
-        if (!campaign || campaign.status === 'deleted') {
-          return;
-        }
       } catch (err) {
-        console.error(`[Redis Subscriber] Failed to check campaign status for deletion:`, err);
+        console.error(`[Redis Subscriber] Failed to load campaign record for event:`, err);
+        return;
+      }
+
+      if (!campaign || campaign.status === 'deleted') {
+        return;
       }
 
       if (isDuplicateEvent(campaign_id, agent, status, timestamp)) {
@@ -162,51 +169,45 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         // Queue intermediate progress state persistence in database to prevent read-modify-write race conditions
         dbWriteQueue.add(async () => {
           try {
-            const campaign = await prisma.campaign.findUnique({
-              where: { id: campaign_id },
-              select: { aiOutputs: true },
-            });
-            if (campaign) {
-              const currentOutputs = campaign.aiOutputs 
-                ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
-                : {};
-              
-              if (!currentOutputs.completed_agents) {
-                currentOutputs.completed_agents = [];
-              }
-              
-              if (status === 'completed' && !currentOutputs.completed_agents.includes(data.agent)) {
-                currentOutputs.completed_agents.push(data.agent);
-              }
-              currentOutputs.active_agent = status === 'running' ? data.agent : null;
-
-              // Merge intermediate outputs as they complete
-              if (status === 'completed' && outputs && typeof outputs === 'object') {
-                Object.assign(currentOutputs, outputs);
-              }
-
-              const updateData: any = {
-                aiOutputs: currentOutputs as any,
-              };
-
-              if (typeof (data as any).research_revision_count === 'number') {
-                updateData.researchRevisionCount = (data as any).research_revision_count;
-              }
-              if (typeof (data as any).strategy_revision_count === 'number') {
-                updateData.strategyRevisionCount = (data as any).strategy_revision_count;
-              }
-              if (typeof (data as any).copy_revision_count === 'number') {
-                updateData.copyRevisionCount = (data as any).copy_revision_count;
-              }
-              if (typeof (data as any).image_revision_count === 'number') {
-                updateData.imageRevisionCount = (data as any).image_revision_count;
-              }
-
-              await prisma.campaign.update({
-                where: { id: campaign_id },
-                data: updateData,
-              });
+            const currentOutputs = campaign!.aiOutputs 
+              ? (typeof campaign!.aiOutputs === 'string' ? JSON.parse(campaign!.aiOutputs) : campaign!.aiOutputs) as Record<string, any>
+              : {};
+            
+            if (!currentOutputs.completed_agents) {
+              currentOutputs.completed_agents = [];
             }
+            
+            if (status === 'completed' && !currentOutputs.completed_agents.includes(data.agent)) {
+              currentOutputs.completed_agents.push(data.agent);
+            }
+            currentOutputs.active_agent = status === 'running' ? data.agent : null;
+
+            // Merge intermediate outputs as they complete
+            if (status === 'completed' && outputs && typeof outputs === 'object') {
+              Object.assign(currentOutputs, outputs);
+            }
+
+            const updateData: any = {
+              aiOutputs: currentOutputs as any,
+            };
+
+            if (typeof (data as any).research_revision_count === 'number') {
+              updateData.researchRevisionCount = (data as any).research_revision_count;
+            }
+            if (typeof (data as any).strategy_revision_count === 'number') {
+              updateData.strategyRevisionCount = (data as any).strategy_revision_count;
+            }
+            if (typeof (data as any).copy_revision_count === 'number') {
+              updateData.copyRevisionCount = (data as any).copy_revision_count;
+            }
+            if (typeof (data as any).image_revision_count === 'number') {
+              updateData.imageRevisionCount = (data as any).image_revision_count;
+            }
+
+            await prisma.campaign.update({
+              where: { id: campaign_id },
+              data: updateData,
+            });
           } catch (dbErr: any) {
             console.error(`[Redis Subscriber] Failed to persist intermediate progress | campaign=${campaign_id} | error=${dbErr.message}`);
           }
@@ -233,7 +234,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
             } else if (status === 'awaiting_human_approval') {
               const campaign = await prisma.campaign.findUnique({
                 where: { id: campaign_id },
-                select: { aiOutputs: true, name: true, projectId: true },
+                select: { aiOutputs: true, name: true, projectId: true, status: true },
               });
               const currentOutputs = campaign?.aiOutputs 
                 ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
@@ -292,7 +293,8 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 data: updateData,
               });
 
-              if (campaign) {
+              const statusChanged = campaign?.status !== 'awaiting_human_approval';
+              if (statusChanged && campaign) {
                 const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
                 if (project) {
                   await notificationService.create(project.userId, {

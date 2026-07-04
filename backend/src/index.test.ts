@@ -7,7 +7,8 @@ describe('GET /health', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       status: 'ok',
-      message: 'AgentMark API is running',
+      db: expect.any(String),
+      redis: expect.any(String),
     });
   });
 });

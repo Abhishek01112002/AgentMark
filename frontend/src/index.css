@@ -146,3 +146,24 @@
     transition: opacity 0.05s;
   }
 }
+
+.champion-card {
+  border-color: rgba(99, 102, 241, 0.8) !important;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 0 25px rgba(99, 102, 241, 0.25), inset 0 0 12px rgba(99, 102, 241, 0.05) !important;
+}
+.champion-card:hover {
+  border-color: rgba(99, 102, 241, 1.0) !important;
+  box-shadow: 0 0 0 1.5px rgba(99, 102, 241, 0.5), 0 0 35px rgba(99, 102, 241, 0.35), inset 0 0 15px rgba(99, 102, 241, 0.08) !important;
+}
+
+.skeleton-card {
+  background: linear-gradient(110deg, #111118 8%, #1C1C28 18%, #111118 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}

@@ -109,90 +109,50 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
   try {
     const userId = req.userId!;
   
-    // Get all projects with campaigns
-    const projects = await prisma.project.findMany({
-    where: { userId },
-    include: {
-      campaigns: {
-        select: {
-          status: true,
-          reviewScore: true,
-          aiOutputs: true,
-        },
-      },
-    },
-  });
-
-  // Calculate metrics
-  const totalProjects = projects.length;
-  
-  let completedCampaigns = 0;
-  let runningCampaigns = 0;
-  let failedCampaigns = 0;
-  let awaitingApprovalCampaigns = 0;
-  let totalReviewScore = 0;
-  let reviewedCampaigns = 0;
-  let totalCampaignsCount = 0;
-
-  projects.forEach(project => {
-    project.campaigns.forEach(campaign => {
-      totalCampaignsCount++;
-      if (campaign.status === 'completed') {
-        completedCampaigns++;
-      } else if (campaign.status === 'processing') {
-        runningCampaigns++;
-      } else if (campaign.status === 'failed') {
-        failedCampaigns++;
-      } else if (campaign.status === 'awaiting_human_approval') {
-        awaitingApprovalCampaigns++;
-      }
-      
-      let reviewScore = campaign.reviewScore;
-      
-      if (!reviewScore && campaign.aiOutputs) {
-        try {
-          const outputs = typeof campaign.aiOutputs === 'string' 
-            ? JSON.parse(campaign.aiOutputs) 
-            : campaign.aiOutputs;
-          
-          const reviewOutput = outputs.review_output 
-            ? (typeof outputs.review_output === 'string' 
-                ? JSON.parse(outputs.review_output) 
-                : outputs.review_output)
-            : null;
-          
-          if (reviewOutput) {
-            const scores: number[] = [];
-            if (reviewOutput.research_review?.score) scores.push(reviewOutput.research_review.score);
-            if (reviewOutput.strategy_review?.score) scores.push(reviewOutput.strategy_review.score);
-            if (reviewOutput.copy_review?.score) scores.push(reviewOutput.copy_review.score);
-            if (reviewOutput.image_review?.score) scores.push(reviewOutput.image_review.score);
-            
-            if (scores.length > 0) {
-              const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
-              reviewScore = parseFloat(avgScore100.toFixed(1));
-            }
-          }
-        } catch (e) {
-          console.error('Failed to extract review score:', e);
-        }
-      }
-      
-      if (reviewScore !== null && reviewScore !== undefined) {
-        totalReviewScore += reviewScore;
-        reviewedCampaigns++;
-      }
+    const projectIds = await prisma.project.findMany({
+      where: { userId },
+      select: { id: true },
     });
-  });
+    const totalProjects = projectIds.length;
+    const ids = projectIds.map(p => p.id);
 
-  const avgReviewScore = reviewedCampaigns > 0 
-    ? parseFloat((totalReviewScore / reviewedCampaigns).toFixed(1))
-    : 0;
+    if (ids.length === 0) {
+      return res.json({
+        totalProjects: 0, completedCampaigns: 0, runningCampaigns: 0,
+        avgReviewScore: 0, completionRate: 0, totalReviewedCampaigns: 0,
+      });
+    }
 
-  const totalAttemptedCampaigns = completedCampaigns + runningCampaigns + failedCampaigns + awaitingApprovalCampaigns;
-  const completionRate = totalAttemptedCampaigns > 0
-    ? Math.round((completedCampaigns / totalAttemptedCampaigns) * 100)
-    : 0;
+    const statusCounts = await prisma.campaign.groupBy({
+      by: ['status'],
+      where: { projectId: { in: ids } },
+      _count: { status: true },
+    });
+
+    const statusMap: Record<string, number> = {};
+    for (const s of statusCounts) {
+      statusMap[s.status] = s._count.status;
+    }
+
+    const completedCampaigns = statusMap['completed'] || 0;
+    const runningCampaigns = statusMap['processing'] || 0;
+    const failedCampaigns = statusMap['failed'] || 0;
+    const awaitingApprovalCampaigns = statusMap['awaiting_human_approval'] || 0;
+    const totalCampaignsCount = completedCampaigns + runningCampaigns + failedCampaigns + awaitingApprovalCampaigns;
+
+    const scoreAgg = await prisma.campaign.aggregate({
+      where: { projectId: { in: ids }, reviewScore: { not: null } },
+      _avg: { reviewScore: true },
+      _count: { reviewScore: true },
+    });
+    const avgReviewScore = scoreAgg._avg.reviewScore
+      ? parseFloat(Number(scoreAgg._avg.reviewScore).toFixed(1))
+      : 0;
+
+    const totalAttemptedCampaigns = completedCampaigns + runningCampaigns + failedCampaigns + awaitingApprovalCampaigns;
+    const completionRate = totalAttemptedCampaigns > 0
+      ? Math.round((completedCampaigns / totalAttemptedCampaigns) * 100)
+      : 0;
 
     res.json({
       totalProjects,

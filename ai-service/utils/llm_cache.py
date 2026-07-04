@@ -7,13 +7,15 @@ import time
 import hashlib
 import json
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger(__name__)
 
-_cache: dict[str, tuple[any, float]] = {}
+# Use OrderedDict to track insertion order directly (LRU)
+# Keys are SHA256 hashes, values are (cached_data, timestamp)
+_cache: OrderedDict[str, tuple[any, float]] = OrderedDict()
 CACHE_TTL = 3600  # 1 hour
 MAX_CACHE_SIZE = 1000  # safety cap to prevent unbounded memory growth
-_cache_order: list[str] = []  # LRU tracking — front = most recent
 
 
 def make_key(agent_name: str, **params) -> str:
@@ -32,9 +34,8 @@ def make_key(agent_name: str, **params) -> str:
 
 def _evict_lru():
     """Remove oldest entries until under MAX_CACHE_SIZE."""
-    while len(_cache) >= MAX_CACHE_SIZE:
-        oldest_key = _cache_order.pop(0)
-        _cache.pop(oldest_key, None)
+    while len(_cache) > MAX_CACHE_SIZE:
+        _cache.popitem(last=False)
 
 
 def get(key: str) -> object | None:
@@ -43,24 +44,18 @@ def get(key: str) -> object | None:
     data, ts = _cache[key]
     if time.time() - ts > CACHE_TTL:
         del _cache[key]
-        if key in _cache_order:
-            _cache_order.remove(key)
         return None
-    # Move to front (most recently used)
-    if key in _cache_order:
-        _cache_order.remove(key)
-    _cache_order.append(key)
+    # Move key to end to mark it as most recently used (O(1))
+    _cache.move_to_end(key)
     return data
 
 
 def set(key: str, value: any):
+    if key in _cache:
+        del _cache[key]
     _cache[key] = (value, time.time())
-    if key in _cache_order:
-        _cache_order.remove(key)
-    _cache_order.append(key)
     _evict_lru()
 
 
 def clear():
     _cache.clear()
-    _cache_order.clear()

@@ -88,13 +88,25 @@ const formatAiServiceError = (detail: unknown, fallback: string) => {
   return fallback;
 };
 
+const aiServiceHeaders = () => {
+  const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
+  if (!internalSecret) {
+    throw new Error('INTERNAL_SERVICE_SECRET environment variable must be set');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    'X-Internal-Secret': internalSecret,
+  };
+};
+
 class AIServiceClient {
   private baseUrl: string;
   private timeout: number;
 
   constructor() {
     this.baseUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
-    this.timeout = 300000; // 5 minutes timeout for campaign generation
+    this.timeout = 600000; // 10 minutes timeout for campaign generation
   }
 
   /**
@@ -111,9 +123,7 @@ class AIServiceClient {
 
       const response = await fetch(`${this.baseUrl}/campaigns/create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: aiServiceHeaders(),
         body: JSON.stringify(data),
         signal: controller.signal,
       });
@@ -179,7 +189,7 @@ class AIServiceClient {
     try {
       const response = await fetch(`${this.baseUrl}/campaigns/test-key`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: aiServiceHeaders(),
         body: JSON.stringify({ provider, api_key: apiKey }),
         signal: controller.signal,
       });
@@ -211,9 +221,7 @@ class AIServiceClient {
     try {
       const response = await fetch(`${this.baseUrl}/campaigns/enhance-prompt`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: aiServiceHeaders(),
         body: JSON.stringify({
           prompt,
           user_input: userInput || null,
@@ -237,6 +245,41 @@ class AIServiceClient {
         throw new Error('AI Service prompt enhancement timed out');
       }
       throw new Error(error.message || 'AI Service prompt enhancement failed');
+    }
+  }
+
+  /**
+   * Generate copy variant from AI Service
+   */
+  async generateCopyVariant(data: {
+    campaign_id: string;
+    channel: string;
+    steering_note: string;
+    existing_copy: string | null;
+    strategy_data: string | null;
+    brief: string;
+    brand_voice: string;
+    target_audience: string;
+    llm_config?: any;
+  }): Promise<{ channel: string; copy_data: any }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    try {
+      const response = await fetch(`${this.baseUrl}/campaigns/generate-copy-variant`, {
+        method: 'POST',
+        headers: aiServiceHeaders(),
+        body: JSON.stringify(data),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
+        throw new Error(formatAiServiceError(errorData.detail, response.statusText));
+      }
+      return await response.json() as { channel: string; copy_data: any };
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      throw new Error(error.message || 'AI Service copy variant generation failed');
     }
   }
 }

@@ -65,6 +65,149 @@ from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import StrategyOutput, normalize_channel_list
 
 
+def _infer_goal(primary_goal: str | None, recommended_approach: str) -> str:
+    text = f"{primary_goal or ''} {recommended_approach or ''}".lower()
+    if any(term in text for term in ["retain", "retention", "renew", "community", "loyalty"]):
+        return "retention"
+    if any(term in text for term in ["sale", "sales", "close", "deal", "buy", "roi"]):
+        return "sales"
+    if any(term in text for term in ["lead", "pipeline", "gated", "webinar", "signup", "sign up"]):
+        return "lead_gen"
+    return "awareness"
+
+
+def _write_fallback_strategy(
+    state: CampaignState,
+    campaign_name: str,
+    brand_name: str,
+    channels: list[str],
+    deliverables: list[str],
+    market_analysis: dict,
+    competitor_analysis: dict,
+    audience_insights: dict,
+    market_opportunities: list,
+    recommended_approach: str,
+) -> CampaignState:
+    """Write a deterministic research-grounded strategy when the LLM is unavailable."""
+    preferred_channels = audience_insights.get("preferred_channels", []) or []
+    normalized_preferred = normalize_channel_list(preferred_channels)
+    final_channels = channels or normalized_preferred or ["linkedin", "email"]
+    pain_points = audience_insights.get("pain_points", []) or ["unclear customer pain point"]
+    motivations = audience_insights.get("motivations", []) or ["improve business outcomes"]
+    market_trends = market_analysis.get("market_trends", []) or ["market education"]
+    competitors = competitor_analysis.get("top_competitors", []) or ["category competitors"]
+    differentiation = competitor_analysis.get("differentiation_opportunity", "clearer, faster customer value")
+    inferred_goal = _infer_goal(state.primary_goal, recommended_approach)
+    today = datetime.now()
+
+    strategy = {
+        "positioning": f"{brand_name} positions {campaign_name} around {differentiation} for {state.target_audience or 'the target audience'}.",
+        "key_messages": [
+            f"Solve {pain_points[0]} with a practical {brand_name} approach.",
+            f"Help teams {motivations[0]} while reducing friction.",
+            f"Stand apart from {competitors[0]} through {differentiation}.",
+        ],
+        "content_pillars": [
+            f"{market_trends[0]} education",
+            f"{pain_points[0]} solution guidance",
+            f"{differentiation} proof points",
+        ],
+        "channel_strategy": {
+            channel: {
+                "priority": "HIGH" if channel in normalized_preferred or channel == "linkedin" else "MEDIUM",
+                "rationale": f"Use {channel} to reach audiences interested in {', '.join(preferred_channels[:2]) or 'the campaign topic'}.",
+                "content_types": deliverables[:2] or ["educational post", "case study"],
+                "frequency": "2-3x per week",
+                "success_metrics": ["engagement rate", "qualified leads", "conversion rate"],
+            }
+            for channel in final_channels
+        },
+        "audience_segments": [
+            {
+                "segment_name": "Primary decision makers",
+                "demographics": state.target_audience or "Target buyers",
+                "psychographics": motivations[0],
+                "pain_points": pain_points[:3],
+                "messaging_angle": f"Show how {brand_name} reduces {pain_points[0]}.",
+            }
+        ],
+        "timeline": {
+            f"phase_{idx}": {
+                "phase_name": name,
+                "start_date": (today + timedelta(days=(idx - 1) * 7)).strftime("%d-%B-%Y"),
+                "end_date": (today + timedelta(days=idx * 7)).strftime("%d-%B-%Y"),
+                "activities": activities,
+            }
+            for idx, (name, activities) in enumerate([
+                ("Foundation", ["Finalize messaging", "Prepare core assets"]),
+                ("Launch", ["Publish priority content", "Activate top channels"]),
+                ("Optimize", ["Review early signals", "Refine creative"]),
+                ("Scale", ["Expand best-performing channels", "Summarize results"]),
+            ], 1)
+        },
+        "success_metrics": {
+            "primary_kpi": "qualified leads" if inferred_goal == "lead_gen" else "campaign engagement",
+            "secondary_kpis": ["reach", "click-through rate", "conversion rate"],
+            "kpis": ["reach", "engagement", "leads", "conversion"],
+            "targets": {"reach": "10,000+", "engagement": "5%+", "conversion": "2%+"},
+        },
+        "competitive_differentiation": {
+            "competitors": competitors,
+            "primary_differentiation": differentiation,
+            "competitive_advantage": differentiation,
+            "unique_value_proposition": f"{brand_name} helps audiences overcome {pain_points[0]} with {differentiation}.",
+            "positioning_statement": f"{brand_name} is the practical choice for {differentiation}.",
+        },
+        "market_opportunities": market_opportunities or [differentiation],
+        "strategic_approach": recommended_approach or f"Build demand through {final_channels[0]} and research-backed messaging.",
+        "content_calendar": {
+            "total_weeks": 4,
+            "campaign_start_date": today.strftime("%d-%B-%Y"),
+            "weeks": [
+                {
+                    "week_label": f"Week {idx}",
+                    "week_start_date": (today + timedelta(days=(idx - 1) * 7)).strftime("%d-%B-%Y"),
+                    "theme": theme,
+                    "activities": [
+                        {
+                            "day": (today + timedelta(days=(idx - 1) * 7)).strftime("%A %Y-%m-%d"),
+                            "channel": final_channels[0],
+                            "content_type": "Post",
+                            "description": f"Publish content about {theme.lower()} using the campaign positioning and research insights.",
+                            "caption_hook": f"{theme}: make {pain_points[0]} easier to solve.",
+                            "effort": "medium",
+                            "quick_win": idx == 1,
+                        }
+                    ],
+                }
+                for idx, theme in enumerate(["Research-led education", "Pain point proof", "Differentiation", "Conversion push"], 1)
+            ],
+        },
+        "inferred_goal": inferred_goal,
+        "research_foundation": {
+            "market_analysis": market_analysis,
+            "competitor_analysis": competitor_analysis,
+            "audience_insights": audience_insights,
+            "market_opportunities": market_opportunities,
+            "recommended_approach": recommended_approach,
+        },
+        "execution": {
+            "channels": final_channels,
+            "deliverables": deliverables or ["campaign content"],
+            "budget_allocation": {
+                "high_priority_channels": "40%",
+                "medium_priority_channels": "30%",
+                "content_creation": "20%",
+                "community_management": "10%",
+            },
+        },
+    }
+    state.strategy_output = json.dumps(strategy, indent=2)
+    state.status = "strategy_complete"
+    state.error = None
+    return state
+
+
 # ==================== STRATEGY AGENT FUNCTION ====================
 
 def strategy_agent(state: CampaignState) -> CampaignState:
@@ -217,7 +360,19 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             cache_set(cache_key, strategy_plan.model_dump())
     
     if strategy_plan is None:
-        return state  # Error already logged in state
+        logger.info("   ⚠️ Strategy LLM unavailable — using research-grounded fallback strategy")
+        return _write_fallback_strategy(
+            state,
+            campaign_name,
+            brand_name,
+            channels,
+            deliverables,
+            market_analysis,
+            competitor_analysis,
+            audience_insights,
+            market_opportunities,
+            recommended_approach,
+        )
     
     # ========== STEP 4: ENHANCE TIMELINE WITH DATES ==========
     logger.info("\n[STEP 4] Enhancing timeline with calculated dates...")

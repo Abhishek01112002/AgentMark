@@ -7,6 +7,12 @@ vi.mock('react-hot-toast', () => ({
   default: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock('../../../../services/notifications.service', () => ({
+  notificationsService: {
+    create: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 describe('ApiKeys Component', () => {
   beforeEach(() => {
     localStorage.clear();

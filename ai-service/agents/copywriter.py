@@ -67,7 +67,88 @@ from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
-from schemas import CopywriterOutput, normalize_channel_list, normalize_channel_name, Channel
+from schemas import (
+    CopywriterOutput,
+    ChannelCopy,
+    CTAs,
+    MessagingFramework,
+    StrategicAlignment,
+    SegmentMessaging,
+    ChannelMessaging,
+    normalize_channel_list,
+    normalize_channel_name,
+    Channel,
+)
+
+
+def _fallback_copy_output(
+    state: CampaignState,
+    channels: list[str],
+    inferred_goal: str,
+    brand_name: str,
+    brand_voice: str,
+    positioning: str,
+    key_messages: list[str],
+    pain_points: list[str],
+    deliverables: list[str],
+) -> CopywriterOutput:
+    industry = state.industry or "general"
+    safe_channels = channels or ["linkedin", "email"]
+    primary_message = key_messages[0] if key_messages else positioning or f"{brand_name} helps teams move faster"
+    primary_pain = pain_points[0] if pain_points else "operational friction"
+    ctas = CTAs(primary="Get Started", secondary="Learn More", tertiary="Book a Demo")
+    copies = {}
+    for channel in safe_channels:
+        normalized = normalize_channel_name(channel)
+        if normalized is None:
+            continue
+        channel_enum = Channel(normalized)
+        copies[channel_enum] = ChannelCopy(
+            headline=f"{brand_name} for {industry} teams",
+            body=(
+                f"{primary_message} Built for {industry} teams, this campaign addresses "
+                f"{primary_pain} with a {brand_voice} message and clear next step."
+            ),
+            ctas=ctas,
+        )
+    if not copies:
+        copies[Channel.LINKEDIN] = ChannelCopy(
+            headline=f"{brand_name} for {industry} teams",
+            body=f"{brand_name} helps {industry} teams solve {primary_pain} with a practical campaign message.",
+            ctas=ctas,
+        )
+    return CopywriterOutput(
+        inferred_goal=inferred_goal,
+        copies=copies,
+        messaging_framework=MessagingFramework(
+            brand_promise=f"{brand_name} helps {industry} teams solve {primary_pain}.",
+            value_proposition=positioning or primary_message,
+            segment_messaging=[
+                SegmentMessaging(
+                    segment_name=state.target_audience or "Primary audience",
+                    message=f"Reduce {primary_pain} with a {brand_voice} approach.",
+                    tone=brand_voice or "professional",
+                )
+            ],
+            channel_messaging=[
+                ChannelMessaging(
+                    channel_name=channel.value,
+                    approach=f"Use {channel.value} to communicate {industry}-specific value.",
+                    key_points=[primary_message, primary_pain],
+                )
+                for channel in copies.keys()
+            ],
+        ),
+        strategic_alignment=StrategicAlignment(
+            positioning_used=positioning or primary_message,
+            key_messages_count=len(key_messages),
+            deliverables=deliverables or ["campaign copy"],
+        ),
+        copy_readiness={
+            **{channel.value: True for channel in copies.keys()},
+            "messaging_framework_complete": True,
+        },
+    )
 
 
 # ==================== COPYWRITER AGENT FUNCTION ====================
@@ -269,7 +350,13 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
 
     # Cache-aware LLM call
-    cache_key = make_key("Copywriter", prompt=prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
+    cache_key = make_key(
+        "Copywriter",
+        prompt=prompt,
+        industry=state.industry or "",
+        temperature=revision_temperature,
+        max_tokens=revision_max_tokens,
+    )
     cached = cache_get(cache_key)
     if cached is not None:
         logger.info("📦 Cache hit — using cached Copywriter response")
@@ -284,7 +371,18 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
             cache_set(cache_key, copy_output.model_dump())
     
     if copy_output is None:
-        return state  # Error already logged in state
+        logger.info("   ⚠️ Copywriter LLM unavailable — using strategy-grounded fallback copy")
+        copy_output = _fallback_copy_output(
+            state,
+            channels,
+            inferred_goal,
+            brand_name,
+            brand_voice,
+            positioning,
+            key_messages,
+            pain_points,
+            deliverables,
+        )
 
     # ========== POST-REVISION MERGE SAFETY NET ==========
     # Even with surgical mode instructions, LLMs can occasionally drop a channel.

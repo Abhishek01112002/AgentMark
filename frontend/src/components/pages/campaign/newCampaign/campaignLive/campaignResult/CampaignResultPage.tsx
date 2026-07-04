@@ -237,6 +237,22 @@ const CampaignResultPage: React.FC = () => {
     fetchMemoryInsights();
   }, [campaignId]);
 
+  const handleCopyVariantsUpdate = (updatedCopyVariants: any) => {
+    setCampaign(prev => {
+      if (!prev) return null;
+      const currentOutputs = prev.aiOutputs
+        ? (typeof prev.aiOutputs === 'string' ? JSON.parse(prev.aiOutputs) : prev.aiOutputs)
+        : {};
+      return {
+        ...prev,
+        aiOutputs: {
+          ...currentOutputs,
+          copy_variants: updatedCopyVariants
+        }
+      };
+    });
+  };
+
   const handleApprove = async () => {
     try {
       setShowHumanReview(false);
@@ -311,7 +327,7 @@ const CampaignResultPage: React.FC = () => {
         return <StrategyContent data={memoizedStrategyData} campaign={campaign} />;
       }
       case 'copy':
-        return <CopywriterContent data={getOutputField('copy_output') || getOutputField('copyOutput')} />;
+        return <CopywriterContent data={getOutputField('copy_output') || getOutputField('copyOutput')} campaign={campaign} campaignId={campaign.id} onCopyVariantsUpdate={handleCopyVariantsUpdate} />;
       case 'images':
         return <VisualsContent data={getOutputField('image_output') || getOutputField('imageOutput')} campaignId={campaignId} />;
       case 'review':

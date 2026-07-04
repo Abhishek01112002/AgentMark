@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3 } from 'lucide-react';
+import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
@@ -77,6 +77,7 @@ const ProjectsContent: React.FC = () => {
     if (deleteModal.project) {
       try {
         await api.delete(`/projects/${deleteModal.project.id}`);
+        window.dispatchEvent(new CustomEvent('notifications-updated'));
         setProjects(projects.filter((p) => p.id !== deleteModal.project!.id));
         setDeleteModal({ show: false, project: null });
         toast.success('Project deleted successfully');
@@ -235,6 +236,178 @@ const ProjectsContent: React.FC = () => {
                   New Project
               </button>
             </div>
+
+            {/* Stats Overview */}
+            {projects.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+                <div
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  style={{
+                    backgroundColor: '#111118',
+                    border: '1px solid #2A2A38',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2A2A38';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <div
+                    className="absolute top-0 right-0 w-24 h-24 rounded-full"
+                    style={{ backgroundColor: 'rgba(99,102,241,0.03)', filter: 'blur(30px)' }}
+                  />
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#A0A0D2',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Total Projects
+                      </p>
+                      <h3
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '32px',
+                          fontWeight: 700,
+                          color: '#F1F1F3',
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {projects.length}
+                      </h3>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ backgroundColor: 'rgba(99,102,241,0.12)' }}
+                    >
+                      <FolderOpen size={20} style={{ color: '#6366F1' }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  style={{
+                    backgroundColor: '#111118',
+                    border: '1px solid #2A2A38',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(78, 222, 163, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2A2A38';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <div
+                    className="absolute top-0 right-0 w-24 h-24 rounded-full"
+                    style={{ backgroundColor: 'rgba(78,222,163,0.03)', filter: 'blur(30px)' }}
+                  />
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#A0A0D2',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Total Campaigns
+                      </p>
+                      <h3
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '32px',
+                          fontWeight: 700,
+                          color: '#F1F1F3',
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {projects.reduce((sum, p) => sum + (p.campaignCount ?? 0), 0)}
+                      </h3>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ backgroundColor: 'rgba(78,222,163,0.12)' }}
+                    >
+                      <LayoutDashboard size={20} style={{ color: '#4edea3' }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  style={{
+                    backgroundColor: '#111118',
+                    border: '1px solid #2A2A38',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#2A2A38';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <div
+                    className="absolute top-0 right-0 w-24 h-24 rounded-full"
+                    style={{ backgroundColor: 'rgba(245,158,11,0.03)', filter: 'blur(30px)' }}
+                  />
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#A0A0D2',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        Avg. Campaigns / Project
+                      </p>
+                      <h3
+                        style={{
+                          fontFamily: 'Sora, sans-serif',
+                          fontSize: '32px',
+                          fontWeight: 700,
+                          color: '#F1F1F3',
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {projects.length > 0
+                          ? (projects.reduce((sum, p) => sum + (p.campaignCount ?? 0), 0) / projects.length).toFixed(1)
+                          : '0.0'}
+                      </h3>
+                    </div>
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ backgroundColor: 'rgba(245,158,11,0.12)' }}
+                    >
+                      <TrendingUp size={20} style={{ color: '#F59E0B' }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Projects Grid */}
             {projects.length === 0 ? (

@@ -18,6 +18,7 @@ model User {
   avatarUrl String?
   
   projects  Project[]
+  notifications Notification[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -54,7 +55,7 @@ model Campaign {
   brandVoice      String
   
   status          String   @default("draft")
-  reviewScore     Float?   // AI review agent score (0-10)
+  reviewScore     Float?   // AI review agent score (0-100)
   reviewOutput    String?  @db.Text // Full review output JSON with individual agent scores
   
   // AI Service Integration
@@ -83,16 +84,35 @@ model Campaign {
 
   @@map("campaigns")
   @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, isRead])
 }
 
 model CampaignMemorySnapshot {
   id                      String   @id @default(uuid())
 
   projectId               String
-  project                 Project  @relation(fields: [projectId], references: [id])
+  project                 Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   campaignId              String   @unique
-  campaign                Campaign @relation(fields: [campaignId], references: [id])
+  campaign                Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   finalReviewScore        Float?
   humanApprovedOnFirstTry Boolean  @default(false)

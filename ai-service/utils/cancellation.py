@@ -6,8 +6,9 @@ from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
 
 logger = logging.getLogger("agentmark.cancellation")
 
-# Module-level connection pool initialized on demand
+# Module-level connection pool and client initialized on demand
 _pool: Optional[redis.ConnectionPool] = None
+_client: Optional[redis.Redis] = None
 
 
 def _get_pool() -> redis.ConnectionPool:
@@ -35,8 +36,10 @@ def is_campaign_cancelled(campaign_id: Optional[str]) -> bool:
         return False
         
     try:
-        r = redis.Redis(connection_pool=_get_pool(), decode_responses=True)
-        val = r.get(f"cancel:{campaign_id}")
+        global _client
+        if _client is None:
+            _client = redis.Redis(connection_pool=_get_pool(), decode_responses=True)
+        val = _client.get(f"cancel:{campaign_id}")
         return val == "true"
     except Exception as exc:
         logger.warning(

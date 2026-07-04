@@ -39,19 +39,18 @@ if __name__ == '__main__':
     count = clear_pycache(script_dir)
     logger.info(f"   Removed {count} __pycache__ dir(s)")
 
-    # Start Uvicorn with auto-reload
-    logger.info("🚀 Starting AI Service with auto-reload...")
+    # Start Uvicorn without auto-reload to avoid watchfiles noise from log writes.
+    logger.info("🚀 Starting AI Service...")
     logger.info("   URL: http://127.0.0.1:5002")
     logger.info("   Press Ctrl+C to stop\n")
 
     port = int(os.getenv("SERVICE_PORT", 5002))
-    host = os.getenv("SERVICE_HOST", "0.0.0.0")
+    host = os.getenv("SERVICE_HOST", "127.0.0.1")
 
     subprocess.run([
         sys.executable, "-m", "uvicorn",
         "main:app",
         "--host", host,
         "--port", str(port),
-        "--reload",
         "--log-level", "info",
     ])

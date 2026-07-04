@@ -16,7 +16,14 @@ const createSchema = z.object({
 export const getNotifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const unreadOnly = req.query.unreadOnly === 'true';
-    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    let limit: number | undefined = undefined;
+    if (req.query.limit) {
+      const parsedLimit = Number(req.query.limit);
+      if (!Number.isInteger(parsedLimit) || parsedLimit < 1) {
+        return res.status(400).json({ error: 'limit must be a positive integer' });
+      }
+      limit = Math.min(parsedLimit, 100);
+    }
     const notifications = await notificationService.list(req.userId!, limit, unreadOnly);
     res.json({ notifications });
   } catch (error) {

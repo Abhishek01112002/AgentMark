@@ -1,6 +1,11 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+if (!process.env.INTERNAL_SERVICE_SECRET) {
+  throw new Error('INTERNAL_SERVICE_SECRET environment variable must be set');
+}
+
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,7 +23,7 @@ import { notificationService } from './modules/notifications/notification.servic
 import { initRedisSubscriber, shutdownRedisSubscriber } from './utils/redis-subscriber';
 import { verifyToken } from './utils/jwt';
 import { setSocketIO } from './modules/campaigns/campaign.controller';
-import { globalRateLimiter, authRateLimiter, campaignRateLimiter } from './middlewares/rate-limit.middleware';
+import { globalRateLimiter } from './middlewares/rate-limit.middleware';
 
 
 export const app = express();
@@ -36,11 +41,25 @@ app.use(globalRateLimiter);
 // 1 MB limit — prevents oversized JSON payloads from OOM-ing the server.
 app.use(express.json({ limit: '1mb' }));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'AgentMark API is running' });
+app.get('/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const { redis } = await import('./utils/redis');
+    if (redis.status === 'wait') {
+      try {
+        await redis.connect();
+      } catch (connErr) {
+        // ignore connect rejection, let ping handle it or catch below
+      }
+    }
+    await redis.ping();
+    res.json({ status: 'ok', db: 'ok', redis: 'ok' });
+  } catch (err: any) {
+    res.status(503).json({ status: 'degraded', error: err.message || 'Service Degraded' });
+  }
 });
 
-app.use('/api/auth', authRateLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/constants', constantsRoutes);
@@ -133,7 +152,6 @@ const ensureAvatarColumn = async () => {
 
 const startServer = async () => {
   await ensureAvatarColumn();
-  await notificationService.ensureTable();
 
   // Initialize Redis Pub/Sub subscriber (passes the socket.io instance).
   // Any Redis connection errors are handled gracefully inside initRedisSubscriber.

@@ -15,6 +15,7 @@ Redis Integration:
 import os
 import logging
 import asyncio
+import json
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
@@ -30,11 +31,13 @@ from schemas.campaign import (
     CampaignCreateResponse,
     AgentOutputs,
     try_parse_json,
+    CopyVariantRequest,
 )
 from llm.factory import set_llm_config, get_llm_client
 from utils.redis_publisher import publish_agent_event
 from pydantic import BaseModel
 from typing import Optional
+from agents.copywriter import copywriter_agent
 
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
@@ -52,6 +55,30 @@ def get_campaign_semaphore() -> asyncio.Semaphore:
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+def _has_explicit_provider_keys(llm_config: dict | None) -> bool:
+    """Return True only when the caller supplied at least one non-empty provider key."""
+    if not isinstance(llm_config, dict):
+        return False
+
+    for key_name in ("openai_api_key", "gemini_api_key", "groq_api_key", "tavily_api_key"):
+        value = llm_config.get(key_name)
+        if isinstance(value, str):
+            if any(part.strip() for part in value.split(",") if part.strip()):
+                return True
+        elif value:
+            return True
+    return False
+
+
+def _require_explicit_provider_keys(llm_config: dict | None, *, context: str) -> None:
+    if _has_explicit_provider_keys(llm_config):
+        return
+    raise HTTPException(
+        status_code=400,
+        detail="Please add at least one valid API key in Settings > API Keys before launching a campaign.",
+    )
+
+
 def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None) -> CampaignState:
     """Invoke LangGraph workflow synchronously (called via threadpool)."""
     from llm.factory import set_llm_config
@@ -138,6 +165,8 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         payload.primary_goal,
         payload.industry,
     )
+
+    _require_explicit_provider_keys(payload.llm_config, context="campaign")
 
     # Build initial state — campaign_id flows through all nodes for Redis publishing.
     state = CampaignState(
@@ -284,6 +313,7 @@ async def enhance_prompt_route(payload: EnhancePromptRequest):
     """
     Enhance a prompt using the configured LLM and optional user instructions.
     """
+    _require_explicit_provider_keys(payload.llm_config, context="prompt enhancement")
     set_llm_config(payload.llm_config)
     try:
         client = get_llm_client()
@@ -368,3 +398,90 @@ async def test_key_route(payload: TestKeyRequest):
         if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
             return TestKeyResponse(success=False, message="Rate limited — try again later")
         return TestKeyResponse(success=False, message=f"Connection failed: {str(e)[:80]}")
+
+
+@router.post("/generate-copy-variant")
+async def generate_copy_variant_route(payload: CopyVariantRequest):
+    """
+    Generate a new copy variant for a specific channel using the copywriter agent.
+    """
+    _require_explicit_provider_keys(payload.llm_config, context="copy variant generation")
+    set_llm_config(payload.llm_config)
+    
+    # 1. Build a minimal CampaignState with the provided fields
+    state = CampaignState(
+        campaign_id=payload.campaign_id,
+        campaign_name="Variant Generation",
+        brand_name="Brand",
+        industry="other",
+        primary_goal="awareness",
+        target_audience=payload.target_audience,
+        brand_voice=payload.brand_voice,
+        brief=payload.brief,
+        strategy_output=payload.strategy_data,
+        copy_output=payload.existing_copy,
+        status="processing",
+    )
+    
+    # 2. Set human feedback to run in targeted variant mode
+    # Wrap steering_note in <user_input> XML tags to isolate raw user input and prevent prompt injection
+    steering_instructions = (
+        f"Steering instruction: <user_input>{payload.steering_note}</user_input>"
+        if payload.steering_note
+        else "Generate a fresh alternative with different angle/tone."
+    )
+    
+    state.human_feedback = (
+        f"Generate a NEW variant for {payload.channel} channel only. "
+        f"{steering_instructions} "
+        f"Keep other channels unchanged. "
+        f"Return ONLY the {payload.channel} channel copy in the copies dict."
+    )
+    state.human_revision_target = "copywriter"
+    
+    try:
+        # Run copywriter_agent in threadpool since LLM calls are blocking/synchronous
+        final_state = await run_in_threadpool(copywriter_agent, state)
+        
+        # 3. Parse result and extract only the requested channel's copy
+        if not final_state.copy_output:
+            raise HTTPException(status_code=500, detail="Copywriter failed to return output")
+            
+        try:
+            parsed_copy = json.loads(final_state.copy_output)
+        except Exception as e:
+            logger.error("Failed to parse generated copy: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail="Internal server error") from e
+            
+        # Get the channel copies dictionary
+        copies = parsed_copy.get("copies", {})
+        
+        # Find matching key based on name
+        from schemas.agent_outputs import Channel
+        channel_enum_key = None
+        for k in Channel:
+            if k.value == payload.channel:
+                channel_enum_key = k
+                break
+                
+        # Fallback to string key if enum key lookup fails
+        channel_data = copies.get(channel_enum_key) if channel_enum_key else copies.get(payload.channel)
+        
+        if not channel_data:
+            # Maybe the agent returned it flat
+            channel_data = parsed_copy.get(payload.channel)
+            
+        if not channel_data:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Copywriter output did not contain copy for channel '{payload.channel}'"
+            )
+            
+        return {
+            "channel": payload.channel,
+            "copy_data": channel_data
+        }
+        
+    except Exception as e:
+        logger.error("Error in generate_copy_variant_route: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error") from e

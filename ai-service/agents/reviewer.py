@@ -77,7 +77,7 @@ from llm import get_llm_client
 from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
-from schemas import ReviewerOutput
+from schemas import ReviewerOutput, AgentReview, OverallReview
 
 
 # ==================== CONSTANTS ====================
@@ -87,6 +87,105 @@ MIN_QUALITY_SCORE = 70   # Overall minimum: 70%
 MIN_AGENT_SCORE = 60     # Per-agent minimum: 60%
 
 REVISION_PRIORITY = ["research", "strategy", "copy", "image"]
+
+
+def _issues_to_review(agent_name: str, score: int, issues: list[str], action_items: list[str]) -> AgentReview:
+    if issues:
+        score = min(score, 55)
+    return AgentReview(
+        score=score,
+        approved=not issues and score >= MIN_AGENT_SCORE,
+        feedback=f"{agent_name} output {'passes objective checks' if not issues else 'needs revision'}",
+        issues=issues,
+        action_items=action_items or ["Improve completeness and alignment with campaign requirements"],
+    )
+
+
+def _fallback_review_analysis(
+    research_data: dict,
+    strategy_data: dict,
+    copy_data: dict,
+    image_data: dict,
+) -> ReviewerOutput:
+    research_issues = []
+    research_actions = []
+    market = research_data.get("market_analysis", {}) or {}
+    if not market.get("total_addressable_market"):
+        research_issues.append("Missing total_addressable_market in market_analysis")
+        research_actions.append("Add a concrete total_addressable_market or TAM estimate")
+    if len(market.get("market_trends", []) or []) < 3:
+        research_issues.append("market_trends should include at least 3 trends")
+    competitors = research_data.get("competitor_analysis", {}) or {}
+    if len(competitors.get("top_competitors", []) or []) < 2:
+        research_issues.append("competitor_analysis should include at least 2 top_competitors")
+    audience = research_data.get("audience_insights", {}) or {}
+    if len(audience.get("pain_points", []) or []) < 3:
+        research_issues.append("audience_insights should include at least 3 pain_points")
+
+    strategy_issues = []
+    strategy_actions = []
+    valid_goals = {"awareness", "lead_gen", "sales", "retention"}
+    if strategy_data.get("inferred_goal") not in valid_goals:
+        strategy_issues.append(f"Strategy inferred_goal '{strategy_data.get('inferred_goal')}' is invalid")
+        strategy_actions.append("Set inferred_goal to awareness, lead_gen, sales, or retention")
+    if len(strategy_data.get("key_messages", []) or []) < 3:
+        strategy_issues.append("Strategy should include at least 3 key_messages")
+    if len(strategy_data.get("content_pillars", []) or []) < 3:
+        strategy_issues.append("Strategy should include at least 3 content_pillars")
+
+    copy_issues = []
+    copy_actions = []
+    if strategy_data.get("inferred_goal") and copy_data.get("inferred_goal") and strategy_data.get("inferred_goal") != copy_data.get("inferred_goal"):
+        copy_issues.append(
+            f"Copy inferred_goal '{copy_data.get('inferred_goal')}' doesn't match strategy inferred_goal '{strategy_data.get('inferred_goal')}'"
+        )
+        copy_actions.append("Align copy inferred_goal with strategy inferred_goal")
+    email_data = (copy_data.get("copies", {}) or {}).get("email") or copy_data.get("email") or {}
+    if isinstance(email_data, dict) and len(str(email_data.get("subject", ""))) > 60:
+        copy_issues.append("Email subject too long; subject should be under 60 characters")
+        copy_actions.append("Shorten email subject to under 60 characters")
+
+    image_issues = []
+    image_actions = []
+    visual_direction = image_data.get("visual_direction") or {}
+    if not isinstance(visual_direction, dict) or not visual_direction.get("overall_style") or len(str(visual_direction.get("overall_style", ""))) < 20:
+        image_issues.append("visual_direction is incomplete or too short")
+        image_actions.append("Provide detailed visual_direction with style, palette, mood, and themes")
+    if not image_data.get("image_prompts"):
+        image_issues.append("image_prompts array is empty - no visual assets defined")
+        image_actions.append("Create image prompts for key campaign deliverables")
+
+    research_review = _issues_to_review("Research", _compute_objective_score(research_data, "research"), research_issues, research_actions)
+    strategy_review = _issues_to_review("Strategy", _compute_objective_score(strategy_data, "strategy"), strategy_issues, strategy_actions)
+    copy_review = _issues_to_review("Copy", _compute_objective_score(copy_data, "copy"), copy_issues, copy_actions)
+    image_review = _issues_to_review("Image", _compute_objective_score(image_data, "image"), image_issues, image_actions)
+    overall_score = round(
+        research_review.score * 0.25
+        + strategy_review.score * 0.30
+        + copy_review.score * 0.25
+        + image_review.score * 0.20
+    )
+    can_publish = (
+        research_review.approved
+        and strategy_review.approved
+        and copy_review.approved
+        and image_review.approved
+        and overall_score >= MIN_QUALITY_SCORE
+    )
+    return ReviewerOutput(
+        status="approved" if can_publish else "revision_required",
+        can_publish=can_publish,
+        research_review=research_review,
+        strategy_review=strategy_review,
+        copy_review=copy_review,
+        image_review=image_review,
+        overall=OverallReview(
+            quality_score=overall_score,
+            summary="Objective fallback review completed because LLM review was unavailable.",
+            strengths=["Structured outputs were parsed successfully"],
+            critical_improvements=research_issues + strategy_issues + copy_issues + image_issues,
+        ),
+    )
 
 
 # ==================== REVIEWER AGENT FUNCTION ====================
@@ -284,7 +383,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             cache_set(cache_key, review_analysis.model_dump())
     
     if review_analysis is None:
-        return state  # Error already logged in state
+        logger.info("   ⚠️ Reviewer LLM unavailable — using objective fallback review")
+        review_analysis = _fallback_review_analysis(
+            research_data,
+            strategy_data,
+            copy_data,
+            image_data,
+        )
 
     # ========== STEP 6: EXTRACT SCORES AND DECISIONS ==========
     logger.info("\n[STEP 6] Processing quality scores and decisions...")
@@ -329,10 +434,10 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     # IMPORTANT: approved should be based on threshold, not LLM judgment
     # Override LLM's approved field with threshold-based logic
-    research_approved = research_score >= MIN_AGENT_SCORE
-    strategy_approved = strategy_score >= MIN_AGENT_SCORE
-    copy_approved = copy_score >= MIN_AGENT_SCORE
-    image_approved = image_score >= MIN_AGENT_SCORE
+    research_approved = research_score >= MIN_AGENT_SCORE and not research_review.issues
+    strategy_approved = strategy_score >= MIN_AGENT_SCORE and not strategy_review.issues
+    copy_approved = copy_score >= MIN_AGENT_SCORE and not copy_review.issues
+    image_approved = image_score >= MIN_AGENT_SCORE and not image_review.issues
 
     # ========== STEP 7: DISPLAY QUALITY SCORES ==========
     logger.info("✅ Quality analysis complete!")

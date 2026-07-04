@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import prisma from '../../db';
 
 type NotificationType = 'success' | 'warning' | 'error' | 'info';
@@ -15,102 +14,78 @@ export type NotificationRow = {
 };
 
 export const notificationService = {
-  async ensureTable() {
-    await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS notifications (
-        id TEXT PRIMARY KEY,
-        "userId" TEXT NOT NULL,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        "isRead" BOOLEAN NOT NULL DEFAULT FALSE,
-        "createdAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT NOW(),
-        FOREIGN KEY ("userId") REFERENCES "users"(id) ON DELETE CASCADE
-      )
-    `);
-
-    // Ensure database indexes exist for performance optimization
-    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_userId ON notifications("userId")');
-    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_createdAt ON notifications("createdAt" DESC)');
-    await prisma.$executeRawUnsafe('CREATE INDEX IF NOT EXISTS idx_notifications_userId_isRead ON notifications("userId", "isRead")');
-  },
-
   async create(userId: string, data: Omit<NotificationRow, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'isRead'> & { isRead?: boolean }) {
-    const rows = await prisma.$queryRaw<NotificationRow[]>`
-      INSERT INTO notifications (id, "userId", type, title, message, "isRead")
-      VALUES (${crypto.randomUUID()}, ${userId}, ${data.type}, ${data.title}, ${data.message}, ${data.isRead ?? false})
-      RETURNING id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-    `;
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        isRead: data.isRead ?? false,
+      },
+    });
 
-    return rows[0];
+    return notification as NotificationRow;
   },
 
   async list(userId: string, limit?: number, unreadOnly?: boolean) {
-    const isReadFilter = unreadOnly ? 'AND "isRead" = FALSE' : '';
-    const query = limit
-      ? prisma.$queryRawUnsafe<NotificationRow[]>(
-          `SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-           FROM notifications
-           WHERE "userId" = $1 ${isReadFilter}
-           ORDER BY "createdAt" DESC
-           LIMIT $2`,
-          userId, limit
-        )
-      : prisma.$queryRawUnsafe<NotificationRow[]>(
-          `SELECT id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-           FROM notifications
-           WHERE "userId" = $1 ${isReadFilter}
-           ORDER BY "createdAt" DESC`,
-          userId
-        );
+    const notifications = await prisma.notification.findMany({
+      where: {
+        userId,
+        ...(unreadOnly ? { isRead: false } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      ...(limit ? { take: limit } : {}),
+    });
 
-    return query;
+    return notifications as NotificationRow[];
   },
 
   async unreadCount(userId: string) {
-    const rows = await prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(*)::bigint AS count
-      FROM notifications
-      WHERE "userId" = ${userId} AND "isRead" = FALSE
-    `;
-    return Number(rows[0]?.count || 0);
+    return prisma.notification.count({
+      where: { userId, isRead: false },
+    });
   },
 
   async markAsRead(id: string, userId: string) {
-    const rows = await prisma.$queryRaw<NotificationRow[]>`
-      UPDATE notifications
-      SET "isRead" = TRUE, "updatedAt" = NOW()
-      WHERE id = ${id} AND "userId" = ${userId}
-      RETURNING id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-    `;
-    return rows[0] || null;
+    const result = await prisma.notification.updateMany({
+      where: { id, userId },
+      data: { isRead: true },
+    });
+
+    if (result.count === 0) return null;
+
+    const notification = await prisma.notification.findUnique({ where: { id } });
+    return notification as NotificationRow | null;
   },
 
   async markAllAsRead(userId: string) {
-    await prisma.$executeRaw`
-      UPDATE notifications
-      SET "isRead" = TRUE, "updatedAt" = NOW()
-      WHERE "userId" = ${userId} AND "isRead" = FALSE
-    `;
+    await prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
+    });
   },
 
   async delete(id: string, userId: string) {
-    const rows = await prisma.$queryRaw<NotificationRow[]>`
-      DELETE FROM notifications
-      WHERE id = ${id} AND "userId" = ${userId}
-      RETURNING id, "userId", type, title, message, "isRead", "createdAt", "updatedAt"
-    `;
-    return rows[0] || null;
+    const notification = await prisma.notification.findFirst({
+      where: { id, userId },
+    });
+
+    if (!notification) return null;
+
+    await prisma.notification.delete({ where: { id } });
+    return notification as NotificationRow;
   },
 
   async deleteBatch(ids: string[], userId: string) {
     if (ids.length === 0) return 0;
-    const result = await prisma.$executeRaw`
-      DELETE FROM notifications
-      WHERE id = ANY(${ids}) AND "userId" = ${userId}
-    `;
-    return result;
+    const result = await prisma.notification.deleteMany({
+      where: {
+        id: { in: ids },
+        userId,
+      },
+    });
+    return result.count;
   },
 };
 

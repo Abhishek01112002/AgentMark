@@ -30,15 +30,6 @@ export const campaignService = {
       },
     });
 
-    const project = await prisma.project.findUnique({ where: { id: projectId } });
-    if (project) {
-      await notificationService.create(project.userId, {
-        type: 'info',
-        title: 'Campaign started',
-        message: `Campaign "${campaign.name}" is processing now.`,
-      });
-    }
-
     return campaign;
   },
 
@@ -121,16 +112,19 @@ export const campaignService = {
       },
     });
 
-    const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
-    if (project) {
-      await notificationService.create(project.userId, {
-        type: status === 'completed' ? 'success' : 'error',
-        title: status === 'completed' ? 'Campaign completed' : 'Campaign failed',
-        message:
-          status === 'completed'
-            ? `Campaign "${campaign.name}" completed successfully.`
-            : `Campaign "${campaign.name}" failed during processing.`,
-      });
+    const statusChanged = existing?.status !== status;
+    if (statusChanged) {
+      const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
+      if (project) {
+        await notificationService.create(project.userId, {
+          type: status === 'completed' ? 'success' : 'error',
+          title: status === 'completed' ? 'Campaign completed' : 'Campaign failed',
+          message:
+            status === 'completed'
+              ? `Campaign "${campaign.name}" completed successfully.`
+              : `Campaign "${campaign.name}" failed during processing.`,
+        });
+      }
     }
 
     if (status === 'completed') {

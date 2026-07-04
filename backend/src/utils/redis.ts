@@ -7,6 +7,7 @@ export const redis = new Redis({
   lazyConnect: true,
   enableOfflineQueue: false, // Prevent hanging if Redis is offline
   maxRetriesPerRequest: 3,
+  retryStrategy: (times) => Math.min(times * 500, 10000),
 });
 
 redis.on('error', (err) => {

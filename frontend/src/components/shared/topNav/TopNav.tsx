@@ -152,21 +152,21 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
           {stats && stats.map((stat, idx) => (
             <span
               key={idx}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+              className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium transition-all"
               style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '12px',
-                letterSpacing: '0.05em',
-                backgroundColor: '#1A1A24',
-                border: '1px solid #2A2A38',
-                color: '#8B8B9E',
+                fontFamily: 'Sora, sans-serif',
+                fontSize: '11px',
+                backgroundColor: 'rgba(26, 26, 36, 0.6)',
+                border: '1px solid rgba(42, 42, 56, 0.8)',
+                color: '#A0A0D2',
               }}
             >
               <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: stat.color || '#6366F1' }}
               />
-              {stat.label} {stat.value}
+              <span style={{ textTransform: 'uppercase', fontSize: '9px', letterSpacing: '0.06em', color: '#8B8B9E', fontWeight: 600 }}>{stat.label}:</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: '#F1F1F3', fontSize: '12px' }}>{stat.value}</span>
             </span>
           ))}
 
@@ -202,13 +202,15 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
             </button>
 
             {/* Notification Dropdown */}
-            <div
-              className="absolute top-full right-0 mt-2 rounded-xl shadow-xl"
-              style={{ zIndex: 60, display: openDropdown === 'notification' ? 'block' : 'none' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <NotificationPanel onChangeUnreadCount={setUnreadCount} />
-            </div>
+            {openDropdown === 'notification' && (
+              <div
+                className="absolute top-full right-0 mt-2 rounded-xl shadow-xl"
+                style={{ zIndex: 60 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <NotificationPanel onChangeUnreadCount={setUnreadCount} />
+              </div>
+            )}
           </div>
 
           {/* Profile */}
