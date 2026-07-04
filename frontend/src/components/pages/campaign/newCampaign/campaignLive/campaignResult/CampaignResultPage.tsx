@@ -317,7 +317,7 @@ const CampaignResultPage: React.FC = () => {
       case 'review':
         return <ReviewContent data={getOutputField('review_output') || getOutputField('reviewOutput')} reviewScore={campaign.reviewScore} />;
       case 'published':
-        return <PublisherContent data={getOutputField('publisher_output') || getOutputField('publisherOutput')} campaignName={campaign.name} />;
+        return <PublisherContent data={getOutputField('publisher_output') || getOutputField('publisherOutput')} campaignName={campaign.name} campaign={campaign} />;
     }
   };
 

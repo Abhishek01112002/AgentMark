@@ -8,9 +8,10 @@ import { formatDDMonYYYY, displayDate } from '../../../../../../../utils/formatD
 interface PublisherContentProps {
   data?: any;
   campaignName?: string;
+  campaign?: any;
 }
 
-const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName }) => {
+const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName, campaign }) => {
   const hasRealData = data && Object.keys(data).length > 0;
   const publishingDecision = data?.publishing_decision || '';
   const decisionRationale = data?.decision_rationale || '';
@@ -56,21 +57,34 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       return s || '';
     };
 
-    const section = (title: string, inner: string, accentColor = '#6366F1') => `
+    const section = (title: string, inner: string, accentColor = '#475569') => `
       <div class="section" style="--accent:${accentColor}">
-        <div class="section-title" style="border-bottom-color:${accentColor};color:#111">${escRaw(title)}</div>
+        <div class="section-title" style="border-bottom-color:${accentColor};color:#0f172a">${escRaw(title)}</div>
         ${inner}
       </div>`;
 
     const card = (inner: string) => `<div class="card">${inner}</div>`;
     const grid2 = (items: string[]) => `<div class="grid-2">${items.join('')}</div>`;
     const grid4 = (items: string[]) => `<div class="grid-4">${items.join('')}</div>`;
-    const metaRow = (label: string, value: string) =>
-      `<div class="meta-row"><span class="meta-label">${escRaw(label)}</span><span>${esc(value)}</span></div>`;
-    const badge = (t: string, color = '#6B7280') =>
-      `<span class="badge" style="color:${color};background:${color}14;border-color:${color}33">${escRaw(t)}</span>`;
+    const badge = (t: string, color = '#475569') =>
+      `<span class="badge" style="color:${color};background:${color}0c;border-color:${color}22">${escRaw(t)}</span>`;
 
     let sections = '';
+
+    // Campaign Briefing (Context Info)
+    const brandName = campaign?.brandName || campaign?.brand_name || 'N/A';
+    const industry = campaign?.industry || 'N/A';
+    const primaryGoal = campaign?.primaryGoal || 'N/A';
+    const targetAudience = campaign?.targetAudience || 'N/A';
+
+    sections += section('Campaign Briefing', `
+      <div class="brief-grid">
+        <div class="brief-cell"><strong>Brand Name:</strong> <span>${esc(brandName)}</span></div>
+        <div class="brief-cell"><strong>Industry:</strong> <span>${esc(industry)}</span></div>
+        <div class="brief-cell"><strong>Primary Goal:</strong> <span>${esc(primaryGoal)}</span></div>
+        <div class="brief-cell"><strong>Target Audience:</strong> <span>${esc(targetAudience)}</span></div>
+      </div>
+    `, '#1e293b');
 
     // Decision banner
     if (publishingDecision) {
@@ -80,7 +94,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       const bg = isApproved ? '#ECFDF5' : isHold ? '#FEF2F2' : '#FFFBEB';
       const label = isApproved ? 'Approved for Publishing' : isHold ? 'Hold' : 'Revisions Needed';
       sections += `
-        <div class="decision-banner" style="background:${bg};border-color:${color}44;color:${color}">
+        <div class="decision-banner" style="background:${bg};border-color:${color}33;color:${color}">
           <div class="decision-label">${label}</div>
           ${decisionRationale ? `<div class="decision-rationale" style="color:#374151">${esc(decisionRationale)}</div>` : ''}
         </div>`;
@@ -96,77 +110,96 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
     if (qualityScore > 0) {
       metricCards.push(card(`
         <div class="card-label">Quality Score</div>
-        <div style="font-size:36px;font-weight:800;color:#059669;line-height:1;margin-top:6px">${Number(qualityScore).toFixed(1)}<span style="font-size:16px;font-weight:500;color:#6B7280">/10</span></div>
-        <div style="font-size:11px;color:#9CA3AF;margin-top:4px">AI Quality Assessment</div>
+        <div style="font-size:22px;font-weight:800;color:#059669;line-height:1;margin-top:6px">${Number(qualityScore).toFixed(1)}<span style="font-size:13px;font-weight:500;color:#6B7280">/10</span></div>
+        <div style="font-size:10px;color:#9CA3AF;margin-top:4px">AI Quality Assessment</div>
       `));
     }
-    if (projectedMetrics.total_reach) metricCards.push(card(`<div class="card-label">Total Reach</div><div class="metric-val" style="color:#6366F1">${escRaw(projectedMetrics.total_reach)}</div>`));
+    if (projectedMetrics.total_reach) metricCards.push(card(`<div class="card-label">Total Reach</div><div class="metric-val" style="color:#4F46E5">${escRaw(projectedMetrics.total_reach)}</div>`));
     if (projectedMetrics.lead_target) metricCards.push(card(`<div class="card-label">Lead Target</div><div class="metric-val" style="color:#059669">${escRaw(projectedMetrics.lead_target)}</div>`));
     if (projectedMetrics.estimated_ctr) metricCards.push(card(`<div class="card-label">Est. CTR</div><div class="metric-val" style="color:#D97706">${escRaw(projectedMetrics.estimated_ctr)}</div>`));
-    if (projectedMetrics.estimated_cost) metricCards.push(card(`<div class="card-label">Est. Cost</div><div class="metric-val" style="color:#6B7280">${escRaw(projectedMetrics.estimated_cost)}</div>`));
+    if (projectedMetrics.estimated_cost) metricCards.push(card(`<div class="card-label">Est. Cost</div><div class="metric-val" style="color:#475569">${escRaw(projectedMetrics.estimated_cost)}</div>`));
     if (projectedMetrics.roi_projection) metricCards.push(card(`<div class="card-label">ROI Projection</div><div class="metric-val" style="color:#059669">${escRaw(projectedMetrics.roi_projection)}</div>`));
+    
     if (metricCards.length > 0) {
-      sections += section('Metrics & Projections', grid4(metricCards), '#059669');
+      let metricsInner = grid4(metricCards);
       if (projectedMetrics.timeline_to_results) {
-        sections = sections.replace('</div>\n      </div>', `
-          <div style="display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #e5e7eb;font-size:12px;color:#6B7280">
+        metricsInner += `
+          <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:11px;color:#6b7280">
             <span>Timeline to Results: <strong>${escRaw(projectedMetrics.timeline_to_results)}</strong></span>
-          </div>
-        </div>\n      </div>`);
+          </div>`;
       }
+      sections += section('Metrics & Projections', metricsInner, '#059669');
     }
 
-    // Publishing Plan
+    // Publishing Plan (Redesigned as structured Table)
     if (publishingPlan.length > 0) {
-      const planCards = publishingPlan.map((plan: any) => {
+      const tableRows = publishingPlan.map((plan: any) => {
         const statusColor = plan.status === 'ready' ? '#059669' : '#D97706';
-        return `<div class="plan-card">
-          <div class="plan-header">
-            <div>
-              <div class="plan-channel">${escRaw(plan.channel)}</div>
-              <div class="plan-sub">${escRaw(plan.content_type)} · ${escRaw(plan.publish_frequency)}</div>
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-              ${badge(plan.priority + ' Priority')}
-              ${badge(plan.status, statusColor)}
-            </div>
-          </div>
-          <div class="plan-grid">
-            ${metaRow('Optimal Timing', fmtDate(plan.optimal_timing))}
-            ${metaRow('Launch Date', fmtDate(plan.launch_date))}
-            ${plan.copy_asset_used ? metaRow('Copy Asset', plan.copy_asset_used) : ''}
-            ${plan.visual_asset_used ? metaRow('Visual Asset', plan.visual_asset_used) : ''}
-          </div>
-          ${plan.kpi_targets && Object.keys(plan.kpi_targets).length > 0 ? `
-            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb">
-              <div class="meta-label" style="margin-bottom:6px">KPI Targets</div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px">
-                ${Object.entries(plan.kpi_targets).map(([k, v]) => `<span class="kpi-tag">${escRaw(k)}: ${escRaw(String(v))}</span>`).join('')}
+        return `
+          <tr>
+            <td style="font-weight: 700; color: #0f172a">
+              ${escRaw(plan.channel)}
+              <div style="font-size: 10px; color: #6b7280; font-weight: 400; margin-top: 2px">${escRaw(plan.content_type)} (${escRaw(plan.publish_frequency)})</div>
+            </td>
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+                ${badge(plan.priority + ' Priority', '#4f46e5')}
+                ${badge(plan.status, statusColor)}
               </div>
-            </div>` : ''}
-        </div>`;
+            </td>
+            <td style="font-size: 11px">${escRaw(fmtDate(plan.optimal_timing))}</td>
+            <td style="font-size: 11px">${escRaw(fmtDate(plan.launch_date))}</td>
+            <td>
+              <div style="font-size: 10px; color: #475569; line-height: 1.4">
+                ${plan.copy_asset_used ? `<div><strong>Copy:</strong> ${escRaw(plan.copy_asset_used)}</div>` : ''}
+                ${plan.visual_asset_used ? `<div><strong>Visual:</strong> ${escRaw(plan.visual_asset_used)}</div>` : ''}
+              </div>
+              ${plan.kpi_targets && Object.keys(plan.kpi_targets).length > 0 ? `
+                <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px">
+                  ${Object.entries(plan.kpi_targets).map(([k, v]) => `
+                    <span style="font-size: 9px; padding: 1px 4px; border-radius: 3px; background: #f1f5f9; border: 1px solid #e2e8f0; color: #334155">${escRaw(k)}: ${escRaw(String(v))}</span>
+                  `).join('')}
+                </div>` : ''}
+            </td>
+          </tr>`;
       }).join('');
-      sections += section('Publishing Plan', planCards, '#6366F1');
+
+      const tableHtml = `
+        <table class="plan-table">
+          <thead>
+            <tr>
+              <th style="width: 20%">Channel & Type</th>
+              <th style="width: 15%">Priority/Status</th>
+              <th style="width: 18%">Optimal Timing</th>
+              <th style="width: 18%">Launch Date</th>
+              <th style="width: 29%">Assets & Targets</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>`;
+      sections += section('Publishing Plan', tableHtml, '#4f46e5');
     }
 
-    // Placements
+    // Placements (Redesigned as Grid 2 for better horizontal width in print)
     if (displayAssets.length > 0) {
-      const placementCards = displayAssets.slice(0, 9).map((asset: any) => {
-        const platformColor = asset.color || '#6366F1';
+      const placementCards = displayAssets.slice(0, 8).map((asset: any) => {
+        const platformColor = asset.color || '#4f46e5';
         return `<div class="placement-card">
-          <div class="placement-header" style="background:${platformColor}12;border-bottom:1px solid ${platformColor}22">
+          <div class="placement-header" style="background:${platformColor}08;border-bottom:1px solid ${platformColor}18">
             <div class="placement-platform" style="color:${platformColor}">${escRaw(asset.platform || asset.channel || '')}</div>
             <span class="placement-type">${escRaw(asset.type || 'Asset')}</span>
           </div>
           <div class="placement-body">
             ${asset.subject ? `<div class="placement-subject">${esc(asset.subject)}</div>` : ''}
-            <div class="placement-preview">${esc((asset.preview || asset.content || '').substring(0, 280))}${(asset.preview || asset.content || '').length > 280 ? '…' : ''}</div>
+            <div class="placement-preview">${esc((asset.preview || asset.content || '').substring(0, 260))}${(asset.preview || asset.content || '').length > 260 ? '…' : ''}</div>
             ${asset.hashtags?.length ? `<div class="hashtags">${asset.hashtags.map((h: string) => `<span class="hashtag">${escRaw(h)}</span>`).join('')}</div>` : ''}
-            ${asset.replies ? `<div style="font-size:11px;color:#9CA3AF;margin-top:6px">${escRaw(asset.replies)}</div>` : ''}
+            ${asset.replies ? `<div style="font-size:10px;color:#9CA3AF;margin-top:6px">${escRaw(asset.replies)}</div>` : ''}
           </div>
         </div>`;
       }).join('');
-      sections += section('Generated Placements', `<div class="placements-grid">${placementCards}</div>`, '#6366F1');
+      sections += section('Generated Placements', `<div class="grid-2">${placementCards}</div>`, '#4f46e5');
     }
 
     // Asset Checklist
@@ -174,7 +207,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
       const checklistHtml = grid2([
         assetChecklist.copy_assets ? `
           <div>
-            <div class="card-label" style="margin-bottom:10px">Copy Assets</div>
+            <div class="card-label" style="margin-bottom:8px">Copy Assets Checklist</div>
             ${assetChecklist.copy_assets.map((a: any) => `
               <div class="checklist-row">
                 <span class="check-icon" style="color:${a.status === 'complete' ? '#059669' : '#D97706'}">${a.status === 'complete' ? '✓' : '○'}</span>
@@ -184,7 +217,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           </div>` : '<div></div>',
         assetChecklist.visual_assets ? `
           <div>
-            <div class="card-label" style="margin-bottom:10px">Visual Assets</div>
+            <div class="card-label" style="margin-bottom:8px">Visual Assets Checklist</div>
             ${assetChecklist.visual_assets.map((a: any) => `
               <div class="checklist-row">
                 <span class="check-icon" style="color:${a.status === 'complete' ? '#059669' : '#D97706'}">${a.status === 'complete' ? '✓' : '○'}</span>
@@ -208,100 +241,110 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
           ${(week.activities || []).map((a: any) => `
             <div class="activity-row">
               <span class="activity-day">${escRaw(a.day)}</span>
-              <span class="activity-desc">${escRaw(a.channel)}: ${escRaw(a.description)}</span>
+              <span class="activity-desc"><strong>${escRaw(a.channel)}:</strong> ${escRaw(a.description)}</span>
             </div>`).join('')}
         </div>`).join('');
-      sections += section('Content Calendar', weekRows, '#6366F1');
+      sections += section('Content Calendar', weekRows, '#4f46e5');
     }
 
     const CSS = `
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      body { font-family: 'Inter', 'Segoe UI', sans-serif; background: #f8f8fc; color: #1a1a2e; font-size: 13px; line-height: 1.6; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .page { max-width: 980px; margin: 0 auto; padding: 32px 44px 60px; }
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f8fc; color: #1e293b; font-size: 12px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { max-width: 960px; margin: 0 auto; padding: 32px 40px 60px; }
 
       /* Cover */
-      .cover { display: flex; align-items: center; justify-content: space-between; padding: 28px 36px; margin-bottom: 28px; background: linear-gradient(135deg, #4F46E5 0%, #6366F1 50%, #059669 100%); border-radius: 16px; color: white; }
-      .cover-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .75; margin-bottom: 6px; }
-      .cover-title { font-size: 26px; font-weight: 800; line-height: 1.2; }
-      .cover-sub { font-size: 12px; opacity: .7; margin-top: 6px; }
+      .cover { display: flex; align-items: center; justify-content: space-between; padding: 24px 32px; margin-bottom: 24px; background: #1e293b; border-radius: 12px; color: white; }
+      .cover-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .75; margin-bottom: 4px; }
+      .cover-title { font-size: 22px; font-weight: 800; line-height: 1.2; }
+      .cover-sub { font-size: 11px; opacity: .7; margin-top: 4px; }
       .cover-right { text-align: right; }
-      .cover-date { font-size: 11px; opacity: .7; margin-bottom: 8px; }
-      .cover-campaign { font-size: 14px; font-weight: 700; }
-      .cover-score { display: inline-flex; align-items: baseline; gap: 2px; background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3); border-radius: 10px; padding: 6px 14px; margin-top: 8px; }
-      .cover-score-num { font-size: 22px; font-weight: 800; }
-      .cover-score-denom { font-size: 13px; opacity: .75; }
+      .cover-date { font-size: 10px; opacity: .7; margin-bottom: 6px; }
+      .cover-campaign { font-size: 13px; font-weight: 700; }
+      .cover-score { display: inline-flex; align-items: baseline; gap: 2px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 8px; padding: 4px 10px; margin-top: 6px; }
+      .cover-score-num { font-size: 18px; font-weight: 800; }
+      .cover-score-denom { font-size: 11px; opacity: .75; }
+
+      /* Brief Grid */
+      .brief-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 11px; }
+      .brief-cell { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; }
+      .brief-cell strong { color: #64748b; text-transform: uppercase; font-size: 9px; display: block; margin-bottom: 2px; letter-spacing: .05em; }
+      .brief-cell span { color: #0f172a; font-weight: 500; }
 
       /* Decision Banner */
-      .decision-banner { border: 1.5px solid; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
-      .decision-label { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-      .decision-rationale { font-size: 12px; line-height: 1.6; margin-top: 6px; }
+      .decision-banner { border: 1px solid; border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; }
+      .decision-label { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+      .decision-rationale { font-size: 11px; line-height: 1.5; margin-top: 4px; }
 
       /* Section */
-      .section { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; margin-bottom: 18px; break-inside: auto; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-      .section-title { font-size: 13px; font-weight: 700; padding-bottom: 10px; margin-bottom: 14px; border-bottom: 2.5px solid; letter-spacing: .02em; }
-      .summary-text { font-size: 13px; color: #374151; line-height: 1.75; }
+      .section { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; break-inside: auto; }
+      .section-title { font-size: 12px; font-weight: 700; padding-bottom: 8px; margin-bottom: 12px; border-bottom: 2px solid; letter-spacing: .02em; page-break-after: avoid; break-after: avoid; }
+      .summary-text { font-size: 11.5px; color: #334155; line-height: 1.6; }
 
       /* Grids */
-      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-      .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
       /* Card */
-      .card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; break-inside: avoid; }
-      .card-label { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #6366F1; margin-bottom: 5px; }
-      .metric-val { font-size: 26px; font-weight: 800; margin-top: 4px; line-height: 1; }
+      .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; break-inside: avoid; }
+      .card-label { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #64748b; margin-bottom: 3px; }
+      .metric-val { font-size: 18px; font-weight: 800; margin-top: 2px; line-height: 1.2; }
 
       /* Meta */
-      .meta-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 7px; font-size: 12px; }
-      .meta-label { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #9CA3AF; min-width: 90px; padding-top: 1px; flex-shrink: 0; }
+      .meta-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 7px; font-size: 11px; }
+      .meta-label { font-size: 9px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: #94a3b8; min-width: 90px; padding-top: 1px; flex-shrink: 0; }
 
       /* Badge */
-      .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; border: 1px solid; display: inline-block; }
+      .badge { font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px; border: 1px solid; display: inline-block; }
 
-      /* Plan card */
-      .plan-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; break-inside: avoid; }
-      .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
-      .plan-channel { font-size: 13px; font-weight: 700; color: #111; }
-      .plan-sub { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
-      .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-      .kpi-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #EEF2FF; color: #4338CA; border: 1px solid #C7D2FE; }
+      /* Structured Plan Table */
+      .plan-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+      .plan-table th { background: #f8fafc; padding: 8px 10px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; }
+      .plan-table td { padding: 10px 10px; border-bottom: 1px solid #e2e8f0; color: #334155; vertical-align: top; }
+      .plan-table tr:nth-child(even) td { background: #fafbfc; }
 
       /* Placements */
-      .placements-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .placement-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; break-inside: avoid; }
-      .placement-header { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
-      .placement-platform { font-size: 12px; font-weight: 700; }
-      .placement-type { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(0,0,0,.06); color: #6B7280; }
-      .placement-body { padding: 12px 14px; }
-      .placement-subject { font-size: 12px; font-weight: 600; color: #111; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid #f3f4f6; }
-      .placement-preview { font-size: 11px; color: #4b5563; line-height: 1.6; }
-      .hashtags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-      .hashtag { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #EEF2FF; color: #4338CA; }
+      .placement-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; break-inside: avoid; }
+      .placement-header { padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; }
+      .placement-platform { font-size: 11px; font-weight: 700; }
+      .placement-type { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: rgba(0,0,0,.04); color: #64748b; }
+      .placement-body { padding: 10px 12px; }
+      .placement-subject { font-size: 11px; font-weight: 600; color: #0f172a; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #e2e8f0; }
+      .placement-preview { font-size: 10px; color: #334155; line-height: 1.5; }
+      .hashtags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      .hashtag { font-size: 9px; padding: 1px 5px; border-radius: 3px; background: #eff6ff; color: #1d4ed8; }
 
       /* Checklist */
-      .checklist-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 12px; }
-      .check-icon { font-size: 14px; font-weight: 700; flex-shrink: 0; }
-      .check-label { flex: 1; color: #374151; }
-      .check-status { font-size: 10px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+      .checklist-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+      .check-icon { font-size: 12px; font-weight: 700; flex-shrink: 0; }
+      .check-label { flex: 1; color: #334155; }
+      .check-status { font-size: 9px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
 
       /* Calendar */
-      .week-block { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; break-inside: avoid; }
-      .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-      .week-label { font-size: 12px; font-weight: 700; color: #111; }
-      .week-date { font-size: 10px; color: #9CA3AF; }
-      .week-theme { font-size: 11px; color: #6B7280; margin-bottom: 8px; font-style: italic; }
-      .activity-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 4px; font-size: 11px; }
-      .activity-day { background: #EEF2FF; color: #4338CA; border-radius: 4px; padding: 1px 6px; font-weight: 600; min-width: 50px; text-align: center; flex-shrink: 0; }
-      .activity-desc { color: #374151; line-height: 1.5; }
+      .week-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; break-inside: avoid; }
+      .week-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+      .week-label { font-size: 11px; font-weight: 700; color: #0f172a; }
+      .week-date { font-size: 9px; color: #94a3b8; }
+      .week-theme { font-size: 10px; color: #64748b; margin-bottom: 6px; font-style: italic; }
+      .activity-row { display: flex; gap: 6px; align-items: flex-start; margin-bottom: 3px; font-size: 10px; }
+      .activity-day { background: #eff6ff; color: #1d4ed8; border-radius: 3px; padding: 1px 4px; font-weight: 600; min-width: 45px; text-align: center; flex-shrink: 0; }
+      .activity-desc { color: #334155; line-height: 1.4; }
 
       /* Footer */
-      .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 10px; color: #9CA3AF; }
+      .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; }
 
       /* Bullet */
-      .bullet { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #4b5563; margin-bottom: 6px; }
-      .dot { width: 6px; height: 6px; border-radius: 50%; background: #6366F1; flex-shrink: 0; margin-top: 5px; }
+      .bullet { display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: #475569; margin-bottom: 4px; }
+      .dot { width: 5px; height: 5px; border-radius: 50%; background: #4f46e5; flex-shrink: 0; margin-top: 5px; }
 
-      @page { size: A4; margin: 12mm 12mm; }
-      @media print { body { background: white; } .page { padding: 0; } .section, .plan-card, .placement-card, .week-block { box-shadow: none; } }
+      @page { size: A4; margin: 15mm 15mm; }
+      @media print {
+        body { background: white; }
+        .page { padding: 0; }
+        .section { box-shadow: none; border-color: #e2e8f0; }
+        .grid-2, .grid-4 { display: block !important; }
+        .card, .placement-card, .week-block { margin-bottom: 10px !important; }
+        tr { page-break-inside: avoid; break-inside: avoid; }
+      }
     `;
 
     return `<!DOCTYPE html>
@@ -349,7 +392,6 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName 
 </body>
 </html>`;
   };
-
   // ─── Export Publisher PDF via hidden iframe ───────────────────────────────
   const handleExportPDF = () => {
     setExportingPdf(true);
