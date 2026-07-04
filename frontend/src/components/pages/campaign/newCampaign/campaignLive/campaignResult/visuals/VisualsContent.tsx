@@ -278,13 +278,12 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
 
             const ratio = card.aspect_ratio || '1:1';
             const headlineText = card.text_overlay?.headline || '';
-            const promptText =
-              enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : card.prompt || '';
+            const promptText = card.prompt || '';
             const { score, checks } = scorePrompt(promptText);
             const readiness = checkPlatformReadiness(promptText);
-            const originalScore = scorePrompt(card.prompt || '').score;
-            const scoreDiff = score - originalScore;
             const enhancedPromptText = enhancedPrompt[cardId];
+            const enhancedScore = enhancedPromptText ? scorePrompt(enhancedPromptText).score : score;
+            const scoreDiff = enhancedPromptText ? enhancedScore - score : 0;
             const isEnhancing = enhanceLoading[cardId] || false;
 
             return (
@@ -627,11 +626,11 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                           </div>
 
                           {/* Enhance button */}
-                          <div>
+                          <div className="flex items-center gap-3">
                             {isEnhancing ? (
                               <button
                                 disabled
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6366F1]/50 text-white text-sm font-semibold cursor-not-allowed"
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1]/50 text-white text-sm font-semibold cursor-not-allowed"
                               >
                                 <Loader2 size={14} className="animate-spin" />
                                 Enhancing...
@@ -639,7 +638,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                             ) : enhancedPromptText ? (
                               <button
                                 onClick={() => handleEnhancePrompt(cardId, card.prompt || '')}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1]/50 text-[#8B8B9E] hover:text-white text-sm font-semibold transition-all active:scale-95"
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1]/50 text-[#8B8B9E] hover:text-white text-sm font-semibold transition-all active:scale-95"
                               >
                                 <RotateCw size={13} />
                                 Regenerate
@@ -647,7 +646,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                             ) : (
                               <button
                                 onClick={() => handleEnhancePrompt(cardId, card.prompt || '')}
-                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-white text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/20 active:scale-95"
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-white text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/20 active:scale-95"
                               >
                                 <Sparkles size={13} />
                                 Enhance Prompt
@@ -657,34 +656,44 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
 
                           {/* Enhanced result */}
                           {enhancedPromptText && !isEnhancing && (
-                            <div className="border-t border-dashed border-[#2A2A38] pt-5 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
-                                  Enhanced Version
-                                </span>
+                            <div className="border border-[#6366F1]/20 rounded-xl overflow-hidden">
+                              <div className="flex items-center justify-between px-4 py-3 bg-[#6366F1]/5 border-b border-[#6366F1]/10">
+                                <div className="flex items-center gap-2">
+                                  <Sparkles size={14} className="text-[#6366F1]" />
+                                  <span className="text-sm font-semibold text-[#F1F1F3]">
+                                    Enhanced Prompt
+                                  </span>
+                                </div>
                                 {scoreDiff > 0 && (
-                                  <span className="text-xs font-semibold text-[#10B981]">
-                                    Score {originalScore} → {score} (+{scoreDiff})
+                                  <span className="text-xs font-semibold text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded-lg border border-[#10B981]/20">
+                                    +{scoreDiff} score
                                   </span>
                                 )}
                               </div>
-                              <div
-                                className="bg-[#0A0A0F] border border-[#6366F1]/20 rounded-xl p-4 text-sm text-[#D1D1E0] leading-relaxed max-h-[140px] overflow-y-auto whitespace-pre-wrap select-all"
-                                style={mono}
-                              >
-                                {enhancedPromptText}
+                              <div className="p-4 space-y-3">
+                                <div
+                                  className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 text-sm text-[#D1D1E0] leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-wrap select-all"
+                                  style={mono}
+                                >
+                                  {enhancedPromptText}
+                                </div>
+                                <div className="flex items-center justify-end gap-2">
+                                  <span className="text-[10px] text-[#5A5A6E] font-mono">
+                                    {enhancedScore}/100
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyEnhanced(cardId)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                      enhancedCopiedIdx === cardId
+                                        ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                                        : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                                    }`}
+                                  >
+                                    {enhancedCopiedIdx === cardId ? <Check size={11} /> : <Copy size={11} />}
+                                    {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
+                                  </button>
+                                </div>
                               </div>
-                              <button
-                                onClick={() => handleCopyEnhanced(cardId)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                                  enhancedCopiedIdx === cardId
-                                    ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
-                                    : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
-                                }`}
-                              >
-                                {enhancedCopiedIdx === cardId ? <Check size={11} /> : <Copy size={11} />}
-                                {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
-                              </button>
                             </div>
                           )}
                         </div>

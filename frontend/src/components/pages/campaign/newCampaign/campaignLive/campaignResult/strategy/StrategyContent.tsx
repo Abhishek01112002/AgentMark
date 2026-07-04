@@ -298,10 +298,10 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
     tr{page-break-inside:avoid;break-inside:avoid}
     .section-title{font-size:13px;font-weight:700;color:#111;padding-bottom:10px;margin-bottom:14px;border-bottom:2px solid #6366F1;letter-spacing:.02em;page-break-after:avoid;break-after:avoid}
     .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:10px;color:#9CA3AF}
-    @page{size:A4;margin:15mm 15mm}
+    @page{size:A4;margin:0}
     @media print{
       body{background:white}
-      .page{padding:0}
+      .page{padding:15mm 15mm;max-width:100%;margin:0}
       .section{box-shadow:none}
       .grid-2, .grid-4{display:block !important}
       .card, .positioning-block{margin-bottom:12px !important}
@@ -528,10 +528,13 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
 
           /* Page number footer */
           @page {
-            margin: 20mm 15mm;
+            margin: 0;
             size: A4;
           }
-          @page :first { margin-top: 10mm; }
+          @page :first { margin: 0; }
+          #strategy-print-root {
+            padding: 15mm 15mm !important;
+          }
         }
       `}</style>
 
