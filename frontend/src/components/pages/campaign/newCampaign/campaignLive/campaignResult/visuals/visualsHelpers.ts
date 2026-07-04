@@ -63,6 +63,25 @@ export const toggleUsedPrompt = (id: string): string[] => {
   }
 };
 
+export const getEnhancedPrompts = (campaignId?: string): Record<string, string> => {
+  if (!campaignId) return {};
+  try {
+    const stored = localStorage.getItem(`agentmark_enhanced_${campaignId}`);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveEnhancedPrompt = (campaignId: string, cardId: string, prompt: string): void => {
+  try {
+    const key = `agentmark_enhanced_${campaignId}`;
+    const current = JSON.parse(localStorage.getItem(key) || '{}');
+    current[cardId] = prompt;
+    localStorage.setItem(key, JSON.stringify(current));
+  } catch {}
+};
+
 // Prompt Quality Scorer
 export interface CheckItem {
   label: string;

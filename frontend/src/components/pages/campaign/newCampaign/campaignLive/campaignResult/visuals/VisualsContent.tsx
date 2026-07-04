@@ -20,7 +20,9 @@ import {
   toggleUsedPrompt,
   scorePrompt,
   checkPlatformReadiness,
-  enhancePromptWithAI
+  enhancePromptWithAI,
+  getEnhancedPrompts,
+  saveEnhancedPrompt,
 } from './visualsHelpers';
 
 interface VisualsContentProps {
@@ -43,7 +45,7 @@ const mono = { fontFamily: 'JetBrains Mono, monospace' };
 
 // Modifiers and styles setup
 
-const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
+const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => {
   const prompts = data?.image_prompts || [];
   const promptsList = Array.isArray(prompts) ? prompts : [];
 
@@ -51,6 +53,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const [usedPrompts, setUsedPrompts] = useState<string[]>([]);
   const [expandedRationale, setExpandedRationale] = useState<string[]>([]);
   const [scoreOpen, setScoreOpen] = useState<string[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [userEnhanceInput, setUserEnhanceInput] = useState<Record<string, string>>({});
   const [enhancedPrompt, setEnhancedPrompt] = useState<Record<string, string>>({});
   const [enhanceLoading, setEnhanceLoading] = useState<Record<string, boolean>>({});
@@ -59,7 +62,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
 
   useEffect(() => {
     setUsedPrompts(getUsedPrompts());
-  }, []);
+    if (campaignId) {
+      setEnhancedPrompt(getEnhancedPrompts(campaignId));
+    }
+  }, [campaignId]);
 
   const getCardId = (card: any, idx: number) =>
     `${card.deliverable_name || card.deliverable || 'asset'}_${idx}`;
@@ -83,17 +89,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
     }
   };
 
-  const handleEnhanceInputChange = (assetId: string, value: string) =>
-    setUserEnhanceInput(prev => ({ ...prev, [assetId]: value }));
-
-  const handleToggleOption = (assetId: string, option: string) =>
-    setSelectedOptions(prev => {
-      const current = prev[assetId] || [];
-      const updated = current.includes(option)
-        ? current.filter(o => o !== option)
-        : [...current, option];
-      return { ...prev, [assetId]: updated };
-    });
 
   const handleEnhancePrompt = async (assetId: string, originalPrompt: string) => {
     setEnhanceLoading(prev => ({ ...prev, [assetId]: true }));
@@ -104,7 +99,11 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       if (presets.length > 0) combinedInstructions += `Add these details: ${presets.join(', ')}. `;
       if (customText.trim()) combinedInstructions += customText.trim();
       const result = await enhancePromptWithAI(originalPrompt, combinedInstructions);
-      setEnhancedPrompt(prev => ({ ...prev, [assetId]: result }));
+      setEnhancedPrompt(prev => {
+        const updated = { ...prev, [assetId]: result };
+        if (campaignId) saveEnhancedPrompt(campaignId, assetId, result);
+        return updated;
+      });
     } catch (err: any) {
       toast.error(err.response?.data?.error || err.message || 'Enhancement failed');
     } finally {
@@ -572,56 +571,53 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                         </div>
                       </div>
 
-                      <div className="p-5 space-y-5">
-                        {/* Presets + Custom row */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                          {/* Presets */}
-                          <div>
-                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                              <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
-                              Style Presets
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {PRESET_MODIFIERS.map(opt => {
-                                const isActive = (selectedOptions[cardId] || []).includes(opt);
-                                return (
-                                  <button
-                                    key={opt}
-                                    onClick={() => setSelectedOptions(prev => {
-                                      const current = prev[cardId] || [];
-                                      const updated = current.includes(opt)
-                                        ? current.filter(o => o !== opt)
-                                        : [...current, opt];
-                                      return { ...prev, [cardId]: updated };
-                                    })}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                                      isActive
-                                        ? 'bg-[#6366F1]/15 text-white border-[#6366F1]/60 shadow-sm shadow-[#6366F1]/10'
-                                        : 'bg-[#0A0A0F] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/30'
-                                    }`}
-                                  >
-                                    {isActive && <Check size={10} className="text-[#6366F1]" />}
-                                    {opt}
-                                  </button>
-                                );
-                              })}
-                            </div>
+                      <div className="px-5 pb-5 pt-4 space-y-5">
+                        {/* Style Presets */}
+                        <div>
+                          <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                            <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
+                            Style Presets
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {PRESET_MODIFIERS.map(opt => {
+                              const isActive = (selectedOptions[cardId] || []).includes(opt);
+                              return (
+                                <button
+                                  key={opt}
+                                  onClick={() => setSelectedOptions(prev => {
+                                    const current = prev[cardId] || [];
+                                    const updated = current.includes(opt)
+                                      ? current.filter(o => o !== opt)
+                                      : [...current, opt];
+                                    return { ...prev, [cardId]: updated };
+                                  })}
+                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                    isActive
+                                      ? 'bg-[#6366F1]/15 text-white border-[#6366F1]/60 shadow-sm shadow-[#6366F1]/10'
+                                      : 'bg-[#0A0A0F] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/30'
+                                  }`}
+                                >
+                                  {isActive && <Check size={10} className="text-[#6366F1]" />}
+                                  {opt}
+                                </button>
+                              );
+                            })}
                           </div>
+                        </div>
 
-                          {/* Custom input */}
-                          <div>
-                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                              <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
-                              Custom Instructions
-                            </p>
-                            <textarea
-                              value={userEnhanceInput[cardId] || ''}
-                              onChange={e => setUserEnhanceInput(prev => ({ ...prev, [cardId]: e.target.value }))}
-                              placeholder='e.g. "dramatic lighting, cinematic feel, golden hour..."'
-                              className="w-full bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-3.5 text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/40 focus:border-[#6366F1]/40 focus:outline-none h-[88px] resize-none"
-                              style={inter}
-                            />
-                          </div>
+                        {/* Custom Instructions */}
+                        <div>
+                          <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                            <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
+                            Custom Instructions
+                          </p>
+                          <textarea
+                            value={userEnhanceInput[cardId] || ''}
+                            onChange={e => setUserEnhanceInput(prev => ({ ...prev, [cardId]: e.target.value }))}
+                            placeholder='e.g. "dramatic lighting, cinematic feel, golden hour..."'
+                            className="w-full bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-3.5 text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/40 focus:border-[#6366F1]/40 focus:outline-none h-[88px] resize-none"
+                            style={inter}
+                          />
                         </div>
 
                         {/* Action bar */}
