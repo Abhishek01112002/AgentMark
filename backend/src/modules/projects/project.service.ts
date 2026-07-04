@@ -101,7 +101,15 @@ export const projectService = {
 
     if (!project) return null;
 
+    // Manually delete dependent records to prevent database foreign key constraint failures
+    await prisma.campaignMemorySnapshot.deleteMany({
+      where: { projectId: id },
+    });
+    await prisma.campaign.deleteMany({
+      where: { projectId: id },
+    });
     await prisma.project.delete({ where: { id } });
+
     await notificationService.create(userId, {
       type: 'warning',
       title: 'Project deleted',

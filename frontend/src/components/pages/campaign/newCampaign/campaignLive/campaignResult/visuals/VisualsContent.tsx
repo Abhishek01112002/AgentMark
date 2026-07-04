@@ -51,8 +51,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
   const [usedPrompts, setUsedPrompts] = useState<string[]>([]);
   const [expandedRationale, setExpandedRationale] = useState<string[]>([]);
   const [scoreOpen, setScoreOpen] = useState<string[]>([]);
-  const [enhancerOpen, setEnhancerOpen] = useState<string[]>([]);
-  const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [userEnhanceInput, setUserEnhanceInput] = useState<Record<string, string>>({});
   const [enhancedPrompt, setEnhancedPrompt] = useState<Record<string, string>>({});
   const [enhanceLoading, setEnhanceLoading] = useState<Record<string, boolean>>({});
@@ -84,11 +82,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
       toast.error('Failed to copy');
     }
   };
-
-  const handleToggleEnhancer = (assetId: string) =>
-    setEnhancerOpen(prev =>
-      prev.includes(assetId) ? prev.filter(id => id !== assetId) : [...prev, assetId]
-    );
 
   const handleEnhanceInputChange = (assetId: string, value: string) =>
     setUserEnhanceInput(prev => ({ ...prev, [assetId]: value }));
@@ -270,7 +263,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
             const isUsed = usedPrompts.includes(cardId);
             const isCopied = copiedCardId === cardId;
             const isAccordionOpen = expandedRationale.includes(cardId);
-            const isEnhancerOpen = enhancerOpen.includes(cardId);
 
             const platformKey = getPromptPlatformKey(card);
             const { accent: brandAccent, bgAccent, borderColor, label } =
@@ -569,25 +561,24 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                     </div>
 
                     {/* AI Enhancer */}
-                    <div className="border border-[#2A2A38] rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => handleToggleEnhancer(cardId)}
-                        className="w-full flex items-center justify-between px-5 py-3.5 bg-[#0A0A0F] hover:bg-[#111118] transition-colors"
-                      >
-                        <span className="flex items-center gap-2 text-sm font-semibold text-[#6366F1]">
-                          <Sparkles size={15} />
-                          Enhance with AI
-                        </span>
-                        <span className="text-[#8B8B9E]">
-                          {isEnhancerOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                        </span>
-                      </button>
+                    <div className="rounded-xl border border-[#6366F1]/15 bg-gradient-to-br from-[#111118] to-[#0e0e16] overflow-hidden">
+                      <div className="flex items-center gap-2.5 px-5 py-4 border-b border-[#6366F1]/10 bg-[#6366F1]/[0.03]">
+                        <div className="w-7 h-7 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
+                          <Sparkles size={14} className="text-[#6366F1]" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-[#F1F1F3]">AI Enhancement Studio</span>
+                          <p className="text-[10px] text-[#8B8B9E] leading-tight">Refine prompts with style presets & custom instructions</p>
+                        </div>
+                      </div>
 
-                      {isEnhancerOpen && (
-                        <div className="p-5 border-t border-[#2A2A38]/50 space-y-5 bg-[#0A0A0F]/40">
+                      <div className="p-5 space-y-5">
+                        {/* Presets + Custom row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                           {/* Presets */}
                           <div>
-                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2">
+                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                              <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
                               Style Presets
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -596,11 +587,17 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                                 return (
                                   <button
                                     key={opt}
-                                    onClick={() => handleToggleOption(cardId, opt)}
+                                    onClick={() => setSelectedOptions(prev => {
+                                      const current = prev[cardId] || [];
+                                      const updated = current.includes(opt)
+                                        ? current.filter(o => o !== opt)
+                                        : [...current, opt];
+                                      return { ...prev, [cardId]: updated };
+                                    })}
                                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
                                       isActive
-                                        ? 'bg-[#6366F1]/15 text-white border-[#6366F1]/60'
-                                        : 'bg-transparent text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/30'
+                                        ? 'bg-[#6366F1]/15 text-white border-[#6366F1]/60 shadow-sm shadow-[#6366F1]/10'
+                                        : 'bg-[#0A0A0F] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/30'
                                     }`}
                                   >
                                     {isActive && <Check size={10} className="text-[#6366F1]" />}
@@ -613,24 +610,27 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
 
                           {/* Custom input */}
                           <div>
-                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2">
-                              Custom Instructions (optional)
+                            <p className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                              <span className="w-1 h-3 rounded-full bg-[#6366F1]/60" />
+                              Custom Instructions
                             </p>
                             <textarea
                               value={userEnhanceInput[cardId] || ''}
-                              onChange={e => handleEnhanceInputChange(cardId, e.target.value)}
+                              onChange={e => setUserEnhanceInput(prev => ({ ...prev, [cardId]: e.target.value }))}
                               placeholder='e.g. "dramatic lighting, cinematic feel, golden hour..."'
-                              className="w-full bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-3.5 text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/40 focus:border-[#6366F1]/40 focus:outline-none h-20 resize-none"
+                              className="w-full bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-3.5 text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/40 focus:border-[#6366F1]/40 focus:outline-none h-[88px] resize-none"
                               style={inter}
                             />
                           </div>
+                        </div>
 
-                          {/* Enhance button */}
-                          <div className="flex items-center gap-3">
+                        {/* Action bar */}
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-2">
                             {isEnhancing ? (
                               <button
                                 disabled
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1]/50 text-white text-sm font-semibold cursor-not-allowed"
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1] text-white text-sm font-semibold cursor-not-allowed opacity-60"
                               >
                                 <Loader2 size={14} className="animate-spin" />
                                 Enhancing...
@@ -653,51 +653,53 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data }) => {
                               </button>
                             )}
                           </div>
+                        </div>
 
-                          {/* Enhanced result */}
-                          {enhancedPromptText && !isEnhancing && (
-                            <div className="border border-[#6366F1]/20 rounded-xl overflow-hidden">
-                              <div className="flex items-center justify-between px-4 py-3 bg-[#6366F1]/5 border-b border-[#6366F1]/10">
-                                <div className="flex items-center gap-2">
-                                  <Sparkles size={14} className="text-[#6366F1]" />
-                                  <span className="text-sm font-semibold text-[#F1F1F3]">
-                                    Enhanced Prompt
-                                  </span>
-                                </div>
+                        {/* Enhanced result */}
+                        {enhancedPromptText && !isEnhancing && (
+                          <div className="border border-[#6366F1]/20 rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-3 bg-[#6366F1]/5 border-b border-[#6366F1]/10">
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-[#6366F1]" />
+                                <span className="text-sm font-semibold text-[#F1F1F3]">
+                                  Enhanced Prompt
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[11px] text-[#5A5A6E] font-mono">
+                                  Score: {score} → {enhancedScore}
+                                </span>
                                 {scoreDiff > 0 && (
                                   <span className="text-xs font-semibold text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded-lg border border-[#10B981]/20">
-                                    +{scoreDiff} score
+                                    +{scoreDiff}
                                   </span>
                                 )}
                               </div>
-                              <div className="p-4 space-y-3">
-                                <div
-                                  className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 text-sm text-[#D1D1E0] leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-wrap select-all"
-                                  style={mono}
+                            </div>
+                            <div className="p-4 space-y-3">
+                              <div
+                                className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 text-sm text-[#D1D1E0] leading-relaxed max-h-[200px] overflow-y-auto whitespace-pre-wrap select-all"
+                                style={mono}
+                              >
+                                {enhancedPromptText}
+                              </div>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleCopyEnhanced(cardId)}
+                                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                    enhancedCopiedIdx === cardId
+                                      ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                                      : 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20 hover:bg-[#6366F1]/20'
+                                  }`}
                                 >
-                                  {enhancedPromptText}
-                                </div>
-                                <div className="flex items-center justify-end gap-2">
-                                  <span className="text-[10px] text-[#5A5A6E] font-mono">
-                                    {enhancedScore}/100
-                                  </span>
-                                  <button
-                                    onClick={() => handleCopyEnhanced(cardId)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                                      enhancedCopiedIdx === cardId
-                                        ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
-                                        : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
-                                    }`}
-                                  >
-                                    {enhancedCopiedIdx === cardId ? <Check size={11} /> : <Copy size={11} />}
-                                    {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
-                                  </button>
-                                </div>
+                                  {enhancedCopiedIdx === cardId ? <Check size={11} /> : <Copy size={11} />}
+                                  {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
+                                </button>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Rationale */}
