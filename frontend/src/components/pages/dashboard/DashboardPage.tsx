@@ -12,6 +12,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
+import { llmSettingsService } from '../../../services/llm-settings.service';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import { formatDDMonYYYY } from '../../../utils/formatDate';
@@ -167,6 +168,12 @@ function DashboardContent() {
     totalReviewedCampaigns: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [hasApiKeys, setHasApiKeys] = useState(true);
+
+  useEffect(() => {
+    const settings = llmSettingsService.get();
+    setHasApiKeys(llmSettingsService.hasValidApiKeys(settings));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -287,6 +294,52 @@ function DashboardContent() {
 
         <main className="dashboard-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8">
+            {!hasApiKeys && (
+              <div
+                className="relative rounded-xl overflow-hidden p-6 sm:p-8"
+                style={{ backgroundColor: '#1B1B27', border: '1px solid #2A2A38' }}
+              >
+                <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p
+                      className="text-xs uppercase tracking-[0.24em] text-[#A0A0D2]"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      API keys required
+                    </p>
+                    <h3
+                      className="mt-2 text-xl font-semibold text-white"
+                      style={{ fontFamily: 'Sora, sans-serif' }}
+                    >
+                      Add API keys before creating campaigns
+                    </h3>
+                    <p className="mt-2 text-sm text-[#8B8B9E] max-w-2xl" style={{ lineHeight: '1.75' }}>
+                      Save at least one valid provider key in Settings &gt; API Keys so your first campaign can launch successfully.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/settings')}
+                    className="inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition-colors"
+                    style={{
+                      borderColor: '#2A2A38',
+                      color: '#F1F1F3',
+                      backgroundColor: '#131318',
+                      fontFamily: 'JetBrains Mono, monospace',
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1B1B29';
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = '#131318';
+                    }}
+                  >
+                    Add API Keys
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               <StatCard
                 icon={FolderOpen}

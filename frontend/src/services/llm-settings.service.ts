@@ -137,6 +137,11 @@ export const llmSettingsService = {
     return state[id].keys.filter((k) => validateKey(id, k.value)).length;
   },
 
+  hasValidApiKeys(state: LlmSettingsState): boolean {
+    return (['gemini', 'groq', 'openai', 'tavily'] as LlmProviderId[])
+      .some((provider) => this.countValidKeys(state, provider) > 0);
+  },
+
   normalize(state: LlmSettingsState | Record<string, unknown>): LlmSettingsState {
     const raw = state as Record<string, unknown>;
     const hasLegacy = DEFAULT_ORDER.some(

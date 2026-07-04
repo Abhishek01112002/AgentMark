@@ -334,9 +334,14 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   };
 
   const platformLabel = tabs.find(t => t.id === activeTab)?.label || 'Copy';
+  const hasRightPanelContent = Boolean(
+    messagingFramework?.brand_promise ||
+    messagingFramework?.value_proposition ||
+    messagingFramework?.segment_messaging?.length > 0
+  );
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 md:space-y-6">
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
@@ -388,9 +393,9 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+      <div className={`grid grid-cols-1 ${hasRightPanelContent ? 'xl:grid-cols-12' : 'xl:grid-cols-1'} gap-5`}>
         {/* Left Column - Variants Stack Feed */}
-        <div className="xl:col-span-7 space-y-6">
+        <div className={`${hasRightPanelContent ? 'xl:col-span-7' : 'xl:col-span-1'} space-y-5`}>
           
           {/* Channel Strategy Angle Box */}
           {(() => {
@@ -643,41 +648,11 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
             </div>
           </div>
 
-          {/* Strategic Alignment */}
-          {strategicAlignment.positioning_used && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-                <Link size={20} className="text-[#6366F1]" />
-                Strategic Alignment
-              </h4>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Positioning Used</span>
-                  <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{strategicAlignment.positioning_used}</p>
-                </div>
-                {strategicAlignment.key_messages_count && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Key Messages Integrated:</span>
-                    <span className="px-2 py-1 rounded bg-[#6366F1]/10 text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{strategicAlignment.key_messages_count}</span>
-                  </div>
-                )}
-                {strategicAlignment.deliverables?.length > 0 && (
-                  <div>
-                    <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Deliverables Covered</span>
-                    <div className="flex flex-wrap gap-2">
-                      {strategicAlignment.deliverables.map((del: string, idx: number) => (
-                        <span key={idx} className="px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{del}</span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right Column - Messaging Framework & Segment Messaging */}
-        <div className="xl:col-span-5 space-y-6">
+        {hasRightPanelContent && (
+          <div className="xl:col-span-5 space-y-5">
           {/* Messaging Framework */}
           {messagingFramework.brand_promise && (
             <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
@@ -716,12 +691,45 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
             </div>
           )}
         </div>
+      )}
       </div>
+
+      {/* Strategic Alignment */}
+      {strategicAlignment.positioning_used && (
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+          <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+            <Link size={20} className="text-[#6366F1]" />
+            Strategic Alignment
+          </h4>
+          <div className="space-y-3">
+            <div>
+              <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Positioning Used</span>
+              <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{strategicAlignment.positioning_used}</p>
+            </div>
+            {strategicAlignment.key_messages_count && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Key Messages Integrated:</span>
+                <span className="px-2 py-1 rounded bg-[#6366F1]/10 text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{strategicAlignment.key_messages_count}</span>
+              </div>
+            )}
+            {strategicAlignment.deliverables?.length > 0 && (
+              <div>
+                <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Deliverables Covered</span>
+                <div className="flex flex-wrap gap-2">
+                  {strategicAlignment.deliverables.map((del: string, idx: number) => (
+                    <span key={idx} className="px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{del}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Copy Readiness Overview */}
       {Object.keys(copyReadiness).length > 0 && (
-        <div className="card-elevate mt-8 bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
-          <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
+        <div className="mt-6 bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+          <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
             {Object.entries(copyReadiness).map(([channel, ready]: [string, any]) => (
               <div key={channel} className="flex items-center gap-2">
