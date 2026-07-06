@@ -198,7 +198,7 @@ const ProjectsContent: React.FC = () => {
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6">
             
             {/* Header */}
-            <div className="flex justify-between items-start gap-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: '#F1F1F3' }}>
                   My Projects
@@ -209,7 +209,7 @@ const ProjectsContent: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all btn-press"
+                className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center"
                 style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';

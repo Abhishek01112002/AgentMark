@@ -68,7 +68,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   return (
-    <div className="w-[90vw] max-w-[520px]" style={{ width: '520px' }}>
+    <div className="w-[90vw] max-w-[520px]">
       <div className="bg-surface border border-border-base rounded-xl overflow-hidden shadow-2xl">
         <div className="p-4 border-b border-border-base flex items-center justify-between">
           <div className="flex items-center gap-2">

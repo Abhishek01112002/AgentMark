@@ -610,8 +610,8 @@ const NewCampaignContent: React.FC = () => {
         )}
       </section>
 
-        <div className="flex items-center justify-between pt-4 border-t border-[#2A2A38]">
-          <div className="flex items-center gap-2 bg-[#111118] border border-[#2A2A38] px-3 py-1.5 rounded-full">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-[#2A2A38]">
+          <div className="flex items-center gap-2 bg-[#111118] border border-[#2A2A38] px-3 py-2.5 rounded-full w-full sm:w-auto justify-center min-h-[44px]">
             <div className={`w-2 h-2 rounded-full transition-all duration-300 ${isFormValid() ? 'bg-[#4edea3]' : 'bg-[#FFA500] animate-pulse'}`} />
             <span className="text-xs uppercase tracking-wider font-mono" style={{ color: '#8B8B9E' }}>
               {isFormValid() ? '✓ Ready to Launch' : 'Waiting for required fields'}
@@ -620,7 +620,7 @@ const NewCampaignContent: React.FC = () => {
           <button
             type="submit"
             disabled={isCreating}
-            className="px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center min-h-[44px]"
             style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: '#6366F1', color: '#F1F1F3' }}
             onMouseEnter={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
             onMouseLeave={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}

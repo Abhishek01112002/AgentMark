@@ -310,7 +310,7 @@ const ProjectDetailContent: React.FC = () => {
               className="rounded-xl p-6"
               style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
             >
-              <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                 <div className="flex items-start gap-4 group">
                   <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -350,10 +350,10 @@ const ProjectDetailContent: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => navigate(`/projects/${id}/memory`)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all"
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all w-full sm:w-auto justify-center"
                     style={{
                       backgroundColor: '#1A1A24',
                       color: '#c0c1ff',
@@ -373,7 +373,7 @@ const ProjectDetailContent: React.FC = () => {
                   </button>
                   <button
                     onClick={() => navigate(`/campaign/new?projectId=${id}`)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all btn-press"
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center"
                     style={{
                       backgroundColor: '#6366F1',
                       color: '#F1F1F3',

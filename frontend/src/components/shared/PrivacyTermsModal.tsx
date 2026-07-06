@@ -11,7 +11,7 @@ const PrivacyTermsModal: React.FC<PrivacyTermsModalProps> = ({ isOpen, onClose, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 modal-overlay">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 modal-overlay">
       {/* Dim Overlay */}
       <div 
         onClick={onClose}

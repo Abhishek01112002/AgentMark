@@ -476,7 +476,7 @@ const CampaignResultPage: React.FC = () => {
         }
         .drawer-tab-btn {
           position: relative;
-          padding: 10px 0;
+          padding: 12px 0;
           font-size: 11px;
           font-family: 'JetBrains Mono', monospace;
           letter-spacing: 0.05em;
@@ -730,7 +730,7 @@ const CampaignResultPage: React.FC = () => {
           </div>
 
           {/* Drawer Tabs */}
-          <div className="flex border-b border-[#1e1e2b] px-2">
+          <div className="flex border-b border-[#1e1e2b] px-2 overflow-x-auto scrollbar-none min-w-max w-full">
             <button className={`drawer-tab-btn ${drawerTab === 'scores' ? 'active' : ''}`} onClick={() => setDrawerTab('scores')}>Review Scores</button>
             <button className={`drawer-tab-btn ${drawerTab === 'inspect' ? 'active' : ''}`} onClick={() => setDrawerTab('inspect')}>Inspect Drafts</button>
             <button className={`drawer-tab-btn ${drawerTab === 'revise' ? 'active' : ''}`} onClick={() => setDrawerTab('revise')}>Request Revision</button>
@@ -1034,7 +1034,7 @@ const CampaignResultPage: React.FC = () => {
                 {/* Agent Selector */}
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Select Agent to Revise</label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {([
                       { key: 'research', label: 'Research', icon: 'search', downstream: 'Re-runs Strategy → Copy → Image → Reviewer' },
                       { key: 'strategy', label: 'Strategy', icon: 'lightbulb', downstream: 'Re-runs Copy → Image → Reviewer' },

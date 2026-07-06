@@ -27,7 +27,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
   return (
     <>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay"
+        className="fixed inset-0 z-[80] flex items-center justify-center p-4 modal-overlay"
         style={{ backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
         onClick={onClose}
       >

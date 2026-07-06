@@ -888,12 +888,12 @@ const CampaignLivePage: React.FC = () => {
                     AI Agents Running
                   </h1>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                   {/* Cancel/Delete Button */}
                   {!campaignFailed && (
                     <button
                       onClick={handleCancelCampaign}
-                      className="px-4 py-2 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-sm font-medium transition-colors hover:border-red-500/30 flex items-center gap-2"
+                      className="px-4 py-3 rounded border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-400 text-sm font-medium transition-colors hover:border-red-500/30 flex items-center gap-2 w-full sm:w-auto justify-center min-h-[44px]"
                       style={{ fontFamily: 'JetBrains Mono, monospace' }}
                     >
                       <Trash size={14} />
@@ -905,7 +905,7 @@ const CampaignLivePage: React.FC = () => {
                       const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
                       navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
                     }}
-                    className="px-4 py-2 rounded border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1f1f25] flex items-center gap-2"
+                    className="px-4 py-3 rounded border border-[#2A2A38] text-sm font-medium transition-colors hover:bg-[#1f1f25] flex items-center gap-2 w-full sm:w-auto justify-center min-h-[44px]"
                     style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}
                   >
                     <XCircle size={16} />
@@ -1015,7 +1015,7 @@ const CampaignLivePage: React.FC = () => {
                 </div>
 
                 {/* Right Column: Live Reasoning */}
-                <div className="lg:col-span-8 flex flex-col h-[700px]">
+                <div className="lg:col-span-8 flex flex-col h-[400px] md:h-[560px] lg:h-[700px]">
                   <div className="bg-[#111118] border border-[#2A2A38] rounded-lg flex flex-col h-full overflow-hidden">
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-[#2A2A38] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#1b1b20]">

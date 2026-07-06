@@ -282,14 +282,18 @@ const Notifications: React.FC = () => {
 
       {/* Confirmation Modal */}
       {confirmModal && confirmModal.isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div 
-            className="w-full max-w-md bg-surface border border-border-base rounded-2xl p-6 shadow-2xl"
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-overlay"
+          onClick={() => setConfirmModal(null)}
+        >
+          <div
+            className="w-full max-w-md bg-surface border border-border-base rounded-2xl p-6 shadow-2xl modal-content"
             style={{
               backgroundColor: '#16161F',
               borderColor: '#2A2A38',
               fontFamily: 'Sora, sans-serif'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-text-primary mb-2">
               {confirmModal.title}

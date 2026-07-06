@@ -279,10 +279,10 @@ const CampaignHistoryContent: React.FC = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-wrap flex-shrink-0">
                     <button
                       onClick={() => setStatusFilter('all')}
-                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap transition-colors"
+                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap transition-colors min-h-[44px]"
                       style={{
                         backgroundColor: statusFilter === 'all' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'all' ? '#6366F1' : '#8B8B9E',
@@ -294,7 +294,7 @@ const CampaignHistoryContent: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setStatusFilter('processing')}
-                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
                       style={{
                         backgroundColor: statusFilter === 'processing' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'processing' ? '#6366F1' : '#8B8B9E',
@@ -306,7 +306,7 @@ const CampaignHistoryContent: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setStatusFilter('completed')}
-                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
                       style={{
                         backgroundColor: statusFilter === 'completed' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'completed' ? '#6366F1' : '#8B8B9E',
@@ -318,7 +318,7 @@ const CampaignHistoryContent: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setStatusFilter('failed')}
-                      className="px-4 py-2 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors"
+                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
                       style={{
                         backgroundColor: statusFilter === 'failed' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'failed' ? '#6366F1' : '#8B8B9E',
