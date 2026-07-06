@@ -326,164 +326,179 @@ const ApiKeys: React.FC = () => {
 
             return (
               <div key={id} className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="font-headline-sm text-headline-sm text-text-primary">{meta.name}</h3>
-                  {(() => {
-                    const style = TAG_STYLES[meta.tag];
-                    return (
-                      <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-xs text-label-xs`}>
-                        {style.label}
-                      </span>
-                    );
-                  })()}
-                </div>
-
-                {/* Saved keys */}
-                {savedKeys.length > 0 && (
-                  <div className="space-y-2 mb-3">
-                    <div className="text-label-xs text-text-muted font-medium uppercase tracking-wider">
-                      Saved keys ({savedKeys.length})
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left Column: API Key Management */}
+                  <div className="lg:col-span-2 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-headline-sm text-headline-sm text-text-primary">{meta.name}</h3>
+                      {(() => {
+                        const style = TAG_STYLES[meta.tag];
+                        return (
+                          <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-xs text-label-xs`}>
+                            {style.label}
+                          </span>
+                        );
+                      })()}
                     </div>
-                    {savedKeys.map((keyEntry, idx) => {
-                      const keyId = `${id}-${idx}`;
-                      const isVisible = !hiddenKeys[keyId];
-                      const tStatus = testStatus[keyId] || 'idle';
-                      return (
-                        <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-low rounded-lg border border-border-base group">
-                          <div className="flex-1 font-mono text-sm text-text-primary truncate min-w-0 w-full">
-                            {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
-                          </div>
-                          <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
-                            <button
-                              onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
-                              className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
-                              aria-label="Toggle key visibility"
-                            >
-                              {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-                            </button>
-                            {id !== 'tavily' && (
-                              <TestKeyButton
-                                status={tStatus}
-                                onClick={() => testKey(id, keyEntry.value, keyId)}
-                                disabled={tStatus === 'testing'}
-                              />
-                            )}
-                            <button
-                              onClick={() => setDeleteTarget({ provider: id, index: idx })}
-                              className="p-3 text-text-muted hover:text-danger transition-colors flex items-center justify-center min-h-[44px]"
-                              title={`Delete key #${idx + 1}`}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
+
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                      {meta.description}
+                    </p>
+
+                    {/* Saved keys */}
+                    {savedKeys.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-label-xs text-text-muted font-medium uppercase tracking-wider">
+                          Saved keys ({savedKeys.length})
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        {savedKeys.map((keyEntry, idx) => {
+                          const keyId = `${id}-${idx}`;
+                          const isVisible = !hiddenKeys[keyId];
+                          const tStatus = testStatus[keyId] || 'idle';
+                          return (
+                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-low rounded-lg border border-border-base group">
+                              <div className="flex-1 font-mono text-sm text-text-primary truncate min-w-0 w-full">
+                                {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
+                              </div>
+                              <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
+                                <button
+                                  onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
+                                  className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
+                                  aria-label="Toggle key visibility"
+                                >
+                                  {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                                </button>
+                                {id !== 'tavily' && (
+                                  <TestKeyButton
+                                    status={tStatus}
+                                    onClick={() => testKey(id, keyEntry.value, keyId)}
+                                    disabled={tStatus === 'testing'}
+                                  />
+                                )}
+                                <button
+                                  onClick={() => setDeleteTarget({ provider: id, index: idx })}
+                                  className="p-3 text-text-muted hover:text-danger transition-colors flex items-center justify-center min-h-[44px]"
+                                  title={`Delete key #${idx + 1}`}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
-                {/* New key input */}
-                <div>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base w-full">
-                    <div className="flex items-center flex-1 gap-2 min-w-0 w-full">
-                      <input
-                        id={`new-key-input-${id}`}
-                        type={hiddenKeys[`${id}-new-input`] ? 'password' : 'text'}
-                        placeholder={meta.placeholder}
-                        value={newVal}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setNewKeyValues((prev) => ({ ...prev, [id]: val }));
-                          setTestStatus((prev) => {
-                            const k = `${id}-new`;
-                            return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
-                          });
-                          // Real-time format validation for all providers
-                          if (val.trim()) {
-                            const isValid = validateKey(id, val);
-                            setFormatErrors((prev) => ({
-                              ...prev,
-                              [id]: isValid ? '' : `Invalid format. Expected: ${meta.format}`,
-                            }));
-                          } else {
-                            setFormatErrors((prev) => ({ ...prev, [id]: '' }));
-                          }
-                        }}
-                        className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none font-mono min-w-0"
-                      />
-                      <button
-                        onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
-                        className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
-                        aria-label="Toggle key visibility"
-                      >
-                        {hiddenKeys[`${id}-new-input`] ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
-                      {id !== 'tavily' && (
-                        <TestKeyButton
-                          status={testStatus[`${id}-new`] || 'idle'}
-                          onClick={() => testKey(id, newVal, `${id}-new`)}
-                          disabled={testStatus[`${id}-new`] === 'testing' || !newVal.trim()}
-                        />
+                    {/* New key input */}
+                    <div className="space-y-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base w-full">
+                        <div className="flex items-center flex-1 gap-2 min-w-0 w-full">
+                          <input
+                            id={`new-key-input-${id}`}
+                            type={hiddenKeys[`${id}-new-input`] ? 'password' : 'text'}
+                            placeholder={meta.placeholder}
+                            value={newVal}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setNewKeyValues((prev) => ({ ...prev, [id]: val }));
+                              setTestStatus((prev) => {
+                                const k = `${id}-new`;
+                                return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
+                              });
+                              // Real-time format validation for all providers
+                              if (val.trim()) {
+                                const isValid = validateKey(id, val);
+                                setFormatErrors((prev) => ({
+                                  ...prev,
+                                  [id]: isValid ? '' : `Invalid format. Expected: ${meta.format}`,
+                                }));
+                              } else {
+                                setFormatErrors((prev) => ({ ...prev, [id]: '' }));
+                              }
+                            }}
+                            className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none font-mono min-w-0"
+                          />
+                          <button
+                            onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
+                            className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
+                            aria-label="Toggle key visibility"
+                          >
+                            {hiddenKeys[`${id}-new-input`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
+                          {id !== 'tavily' && (
+                            <TestKeyButton
+                              status={testStatus[`${id}-new`] || 'idle'}
+                              onClick={() => testKey(id, newVal, `${id}-new`)}
+                              disabled={testStatus[`${id}-new`] === 'testing' || !newVal.trim()}
+                            />
+                          )}
+                          <button
+                            onClick={() => handleSaveNewKey(id)}
+                            disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
+                            className="px-4 py-3 bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-h-[44px]"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                      {isDuplicate && (
+                        <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
+                          <AlertCircle size={12} />
+                          This API key is already saved. Add a different key instead.
+                        </p>
                       )}
-                      <button
-                        onClick={() => handleSaveNewKey(id)}
-                        disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
-                        className="px-4 py-3 bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-h-[44px]"
-                      >
-                        Save
-                      </button>
+                      {formatErrors[id] && !isDuplicate && (
+                        <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
+                          <AlertCircle size={12} />
+                          {formatErrors[id]}
+                        </p>
+                      )}
                     </div>
-                  </div>
-                  {isDuplicate && (
-                    <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
-                      <AlertCircle size={12} />
-                      This API key is already saved. Add a different key instead.
-                    </p>
-                  )}
-                  {formatErrors[id] && !isDuplicate && (
-                    <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
-                      <AlertCircle size={12} />
-                      {formatErrors[id]}
-                    </p>
-                  )}
-                </div>
 
-                {/* Add another key */}
-                <button
-                  onClick={() => addEmptyKey(id)}
-                  className="mt-2 flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors"
-                >
-                  <Plus size={13} />
-                  Add another {meta.name} key
-                </button>
-
-                {/* Provider meta footer */}
-                <div className="flex items-center justify-between mt-4 text-xs text-text-secondary">
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-text-primary font-medium">Powers:</span>
-                      <span className="text-text-secondary">{meta.usage}</span>
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="text-text-primary font-medium">Format:</span>
-                      <code className="bg-surface-container-low px-1.5 py-0.5 rounded font-mono text-[10px] text-text-primary border border-border-base">
-                        {meta.format}
-                      </code>
-                    </span>
+                    {/* Add another key */}
+                    <button
+                      onClick={() => addEmptyKey(id)}
+                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors py-2 px-1 rounded hover:bg-surface-container-low min-h-[32px]"
+                    >
+                      <Plus size={13} />
+                      Add another {meta.name} key
+                    </button>
                   </div>
-                  <a
-                    href={meta.docs}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-primary hover:text-primary/80 transition-all hover:underline"
-                  >
-                    Get key
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17L17 7M17 7H7M17 7V17" />
-                    </svg>
-                  </a>
+
+                  {/* Right Column: Provider Information Details Card */}
+                  <div className="flex flex-col justify-between p-5 rounded-xl bg-surface-container-low border border-border-base gap-4 h-full">
+                    <div className="space-y-4">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                        Provider Details
+                      </div>
+                      <div className="space-y-3 text-xs">
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-text-primary font-medium">Powers</span>
+                          <span className="text-text-secondary leading-relaxed">{meta.usage}</span>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-text-primary font-medium">Expected Format</span>
+                          <code className="bg-surface-container-high px-2 py-1 rounded font-mono text-[10px] text-text-primary border border-border-base self-start">
+                            {meta.format}
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+                    <a
+                      href={meta.docs}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-border-base bg-surface hover:bg-surface-container-high text-xs text-text-primary hover:text-primary transition-all font-semibold min-h-[44px]"
+                    >
+                      Get API Key
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M7 17L17 7M17 7H7M17 7V17" />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               </div>
             );
