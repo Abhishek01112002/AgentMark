@@ -1319,7 +1319,7 @@ const CampaignLivePage: React.FC = () => {
 
                 <button
                   onClick={() => setDrawerTab('inspect')}
-                  className="w-full py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
+                  className="w-full py-3 min-h-[44px] rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
                   style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                 >
                   <span className="material-symbols-outlined text-[15px]">article</span>
@@ -1469,7 +1469,7 @@ const CampaignLivePage: React.FC = () => {
 
                       <button
                         onClick={() => navigate(`/campaign/${campaignId}/result`)}
-                        className="w-full py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
+                        className="w-full py-3 min-h-[44px] rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
                         style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                       >
                         <span className="material-symbols-outlined text-[15px]">open_in_new</span>

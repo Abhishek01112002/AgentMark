@@ -576,7 +576,7 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               )}
               <button
                 onClick={handleExportPDF}
-                className="px-4 py-2 rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
+                className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
                 style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
               >
                 <FileDown size={16} />Export PDF

@@ -45,14 +45,14 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
         </button>
         <button
           onClick={onGetStartedClick}
-          className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono"
+          className="px-4 py-3 min-h-[44px] rounded-lg text-xs sm:text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono flex items-center justify-center"
         >
           Get Started
         </button>
 
         {/* Mobile hamburger */}
         <button
-          className="lg:hidden p-2 -mr-2 flex-shrink-0 text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+          className="lg:hidden p-2.5 -mr-2 flex-shrink-0 text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
           onClick={() => setMobileOpen(true)}
           aria-label="Open menu"
         >
@@ -79,7 +79,7 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
             <div className="flex justify-end mb-8">
               <button
                 onClick={() => setMobileOpen(false)}
-                className="p-1 text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+                className="p-2.5 text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
                 aria-label="Close menu"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -105,13 +105,13 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
             <div className="mt-auto flex flex-col gap-3 pt-8 border-t border-[#2A2A38]/50">
               <button
                 onClick={() => { setMobileOpen(false); onLoginClick(); }}
-                className="w-full text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono py-2"
+                className="w-full text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono py-3 min-h-[44px] flex items-center justify-center"
               >
                 Login
               </button>
               <button
                 onClick={() => { setMobileOpen(false); onGetStartedClick(); }}
-                className="w-full py-2.5 rounded-lg text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono"
+                className="w-full py-3 min-h-[44px] rounded-lg text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono flex items-center justify-center"
               >
                 Get Started
               </button>

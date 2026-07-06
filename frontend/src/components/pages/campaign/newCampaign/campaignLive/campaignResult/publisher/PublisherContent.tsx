@@ -470,7 +470,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
             <button
               onClick={handleExportPDF}
               disabled={exportingPdf}
-              className="px-4 py-2 rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
+              className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
               style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
             >
               <FileDown size={16} />
@@ -519,7 +519,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
             <LineChart size={20} className="text-[#6366F1]" />
             Projected Metrics
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
             {projectedMetrics.total_reach && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Total Reach</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{projectedMetrics.total_reach}</p></div>)}
             {projectedMetrics.lead_target && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Lead Target</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.lead_target}</p></div>)}
             {projectedMetrics.estimated_ctr && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. CTR</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#F59E0B' }}>{projectedMetrics.estimated_ctr}</p></div>)}

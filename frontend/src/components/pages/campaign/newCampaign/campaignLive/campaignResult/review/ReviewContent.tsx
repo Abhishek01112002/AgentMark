@@ -225,7 +225,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                   <div className="min-w-0">
                     <span className="text-sm leading-relaxed block" style={{ fontFamily: 'Inter, sans-serif', color: '#c7c4d7' }}>{typeof item === 'string' ? item : item.text || item.description}</span>
                     {item.action && (
-                      <button className="text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{item.action}</button>
+                      <button className="text-xs mt-1 block sm:opacity-0 sm:group-hover:opacity-100 transition-opacity min-h-[32px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{item.action}</button>
                     )}
                   </div>
                 </li>

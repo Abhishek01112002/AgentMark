@@ -294,7 +294,7 @@ const ProjectDetailContent: React.FC = () => {
             
             <button
               onClick={() => navigate('/projects')}
-              className="flex items-center gap-2 text-sm font-medium transition-colors"
+              className="flex items-center gap-2 px-1 py-3 text-sm font-medium transition-colors"
               style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
               onMouseEnter={(e) => (e.currentTarget.style.color = '#F1F1F3')}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#8B8B9E')}
@@ -325,7 +325,7 @@ const ProjectDetailContent: React.FC = () => {
                       </h1>
                       <button
                         onClick={() => setShowRenameModal(true)}
-                        className="p-1.5 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                         style={{ color: '#8B8B9E' }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLElement).style.color = '#6366F1';
@@ -656,7 +656,7 @@ const ProjectDetailContent: React.FC = () => {
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     onClick={() => handleViewCampaign(row.id, row.status)}
-                                    className="p-1.5 rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
                                     title="View Details"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseEnter={(e) => {
@@ -672,7 +672,7 @@ const ProjectDetailContent: React.FC = () => {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(row)}
-                                    className="p-1.5 rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
                                     title="Delete"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseEnter={(e) => {
@@ -707,8 +707,8 @@ const ProjectDetailContent: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(1)}
                         disabled={currentPage === 1 || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         title="First"
                       >
                         &lt;&lt;
@@ -716,16 +716,16 @@ const ProjectDetailContent: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1 || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         title="Previous"
                       >
                         &lt;
                       </button>
 
                       <div
-                        className="px-3 py-1 rounded border"
-                        style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border"
+                        style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace' }}
                       >
                         {totalPages === 0 ? 0 : currentPage}
                       </div>
@@ -733,8 +733,8 @@ const ProjectDetailContent: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         title="Next"
                       >
                         &gt;
@@ -742,8 +742,8 @@ const ProjectDetailContent: React.FC = () => {
                       <button
                         onClick={() => handlePageChange(totalPages)}
                         disabled={currentPage === totalPages || totalPages === 0}
-                        className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                        className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                        style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                         title="Last"
                       >
                         &gt;&gt;
@@ -753,7 +753,7 @@ const ProjectDetailContent: React.FC = () => {
                     <select
                       value={itemsPerPage}
                       onChange={handleItemsPerPageChange}
-                      className="px-3 py-1 rounded border text-sm cursor-pointer"
+                      className="px-3 py-2 min-h-[36px] rounded border text-sm cursor-pointer"
                       style={{
                         backgroundColor: '#111118',
                         borderColor: '#2A2A38',

@@ -9,6 +9,8 @@ interface FAQItem {
 
 const SupportContent: React.FC = () => {
   const [activeAccordion, setActiveAccordion] = useState<number>(0);
+  const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
+  const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
 
   const faqs: FAQItem[] = [
     {
@@ -26,6 +28,33 @@ const SupportContent: React.FC = () => {
     {
       question: 'Is my proprietary data kept private?',
       answer: 'Absolutely. We utilize zero-retention data processing. Your strategy inputs and proprietary research are never used to train global models and are encrypted at rest with AES-256 standards.',
+    },
+  ];
+
+  const tutorials = [
+    {
+      title: 'Introduction to Agent Clusters',
+      duration: '2:40',
+      videoUrl: '/videos/intro_clusters.mp4',
+      description: 'Understand how the 7 autonomous agents inside the AgentMark cluster collaborate, from market research to automated publishing.',
+    },
+    {
+      title: 'Refining Copy with the Co-Creation Workbench',
+      duration: '3:15',
+      videoUrl: '/videos/refining_copy.mp4',
+      description: 'Learn how to fine-tune copy drafts, issue revisions, and pin copy variations on the co-creation workbench.',
+    },
+    {
+      title: 'Setting up Tavily & LLM API Keys',
+      duration: '1:50',
+      videoUrl: '/videos/api_keys.mp4',
+      description: 'A step-by-step walkthrough of adding provider credentials and testing API connection states.',
+    },
+    {
+      title: 'Customizing Brand Voice & Directives',
+      duration: '4:10',
+      videoUrl: '/videos/brand_voice.mp4',
+      description: 'Master advanced prompt configurations to enforce brand tone, style guidelines, and compliance rules.',
     },
   ];
 
@@ -75,6 +104,20 @@ const SupportContent: React.FC = () => {
             margin-left: var(--sidebar-w, 240px);
           }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out forwards;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
       `}</style>
 
       <div className="min-h-screen" style={{ backgroundColor: '#0e0e13', color: '#F1F1F3' }}>
@@ -95,7 +138,7 @@ const SupportContent: React.FC = () => {
 
               {/* Top Row Resource Cards */}
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <a className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer" href="#">
+                <a className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer" href="/docs">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1", color: '#c0c1ff' }}>
                       menu_book
@@ -110,7 +153,10 @@ const SupportContent: React.FC = () => {
                   </span>
                 </a>
 
-                <a className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer" href="#">
+                <button 
+                  onClick={() => setShowTutorialModal(true)}
+                  className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer w-full text-left bg-[#111118] border border-[#2A2A38]"
+                >
                   <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary mb-6 group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1", color: '#4edea3' }}>
                       play_circle
@@ -123,7 +169,7 @@ const SupportContent: React.FC = () => {
                   <span className="mt-auto flex items-center text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
                     Watch Now <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span>
                   </span>
-                </a>
+                </button>
               </section>
 
               {/* FAQ Section - Full Width */}
@@ -188,6 +234,104 @@ const SupportContent: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Immersive Lightbox Theater Modal */}
+      {showTutorialModal && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0A0A0F]/85 backdrop-blur-md animate-fadeIn modal-overlay"
+          onClick={() => setShowTutorialModal(false)}
+        >
+          <div 
+            className="w-full max-w-5xl bg-[#111118] border border-[#2A2A38] rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row relative animate-scaleIn modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ minHeight: '520px' }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowTutorialModal(false)}
+              className="absolute top-4 right-4 z-50 p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full bg-[#16161F]/90 border border-[#2A2A38] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+              title="Close Player"
+            >
+              <span className="material-symbols-outlined text-[20px]">close</span>
+            </button>
+
+            {/* Left Column: Player (Theater View) */}
+            <div className="flex-1 lg:col-span-2 bg-black flex flex-col">
+              <div className="relative aspect-video w-full flex-1 bg-black">
+                <video
+                  key={activeVideoIndex}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                  src={tutorials[activeVideoIndex].videoUrl}
+                />
+              </div>
+              <div className="p-5 border-t border-[#2A2A38]">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono text-[#4edea3] bg-[#4edea3]/10 border border-[#4edea3]/20">
+                    MASTERCLASS
+                  </span>
+                  <span className="text-xs text-[#8B8B9E] font-mono">
+                    Duration: {tutorials[activeVideoIndex].duration}
+                  </span>
+                </div>
+                <h4 className="text-xl font-bold mb-2 text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  {tutorials[activeVideoIndex].title}
+                </h4>
+                <p className="text-sm text-[#8B8B9E] leading-relaxed" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  {tutorials[activeVideoIndex].description}
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column: Playlist */}
+            <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-[#2A2A38] bg-[#16161F] flex flex-col max-h-[600px] lg:max-h-none overflow-y-auto">
+              <div className="p-4 border-b border-[#2A2A38]">
+                <h5 className="font-semibold text-[#F1F1F3] text-xs tracking-wider uppercase font-mono">
+                  Tutorials & Guides
+                </h5>
+                <p className="text-[11px] text-[#8B8B9E] mt-1">
+                  Learn how to master the AgentMark cluster
+                </p>
+              </div>
+              <div className="flex-1 divide-y divide-[#2A2A38]/50">
+                {tutorials.map((video, idx) => {
+                  const isActive = idx === activeVideoIndex;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveVideoIndex(idx)}
+                      className={`w-full text-left p-4 transition-all flex items-start gap-3 border-l-2 ${
+                        isActive 
+                          ? 'border-[#4edea3] bg-[#111118]' 
+                          : 'border-transparent hover:bg-[#111118]/50'
+                      }`}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span 
+                        className={`material-symbols-outlined text-[20px] shrink-0 mt-0.5 ${
+                          isActive ? 'text-[#4edea3]' : 'text-[#8B8B9E]'
+                        }`}
+                      >
+                        {isActive ? 'play_circle' : 'play_arrow'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm text-[#F1F1F3] line-clamp-2" style={{ fontFamily: 'Sora, sans-serif' }}>
+                          {video.title}
+                        </div>
+                        <div className="text-xs text-[#8B8B9E] mt-1 font-mono">
+                          {video.duration}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

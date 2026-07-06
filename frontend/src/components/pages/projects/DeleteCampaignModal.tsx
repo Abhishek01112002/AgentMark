@@ -44,7 +44,7 @@ const DeleteCampaignModal: React.FC<DeleteCampaignModalProps> = ({ campaignName,
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg transition-colors"
+              className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
               style={{ color: '#8B8B9E' }}
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
@@ -73,7 +73,7 @@ const DeleteCampaignModal: React.FC<DeleteCampaignModalProps> = ({ campaignName,
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+              className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{
                 backgroundColor: 'transparent',
                 border: '1px solid #2A2A38',
@@ -93,7 +93,7 @@ const DeleteCampaignModal: React.FC<DeleteCampaignModalProps> = ({ campaignName,
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all"
+              className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all flex items-center justify-center"
               style={{
                 backgroundColor: '#F43F5E',
                 color: '#F1F1F3',

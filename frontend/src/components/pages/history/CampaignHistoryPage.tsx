@@ -463,7 +463,7 @@ const CampaignHistoryContent: React.FC = () => {
                                         navigate(`/campaign/${campaign.id}/result?projectId=${campaign.projectId}`);
                                       }
                                     }}
-                                    className="p-1.5 rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
                                     title="View Details"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseEnter={(e) => {
@@ -497,8 +497,8 @@ const CampaignHistoryContent: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(1)}
                           disabled={currentPage === 1 || totalPages === 0}
-                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                           title="First"
                         >
                           &lt;&lt;
@@ -506,16 +506,16 @@ const CampaignHistoryContent: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage === 1 || totalPages === 0}
-                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                           title="Previous"
                         >
                           &lt;
                         </button>
 
                         <div
-                          className="px-3 py-1 rounded border"
-                          style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border"
+                          style={{ backgroundColor: '#1A1A24', borderColor: '#2A2A38', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace' }}
                         >
                           {totalPages === 0 ? 0 : currentPage}
                         </div>
@@ -523,8 +523,8 @@ const CampaignHistoryContent: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages || totalPages === 0}
-                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                           title="Next"
                         >
                           &gt;
@@ -532,8 +532,8 @@ const CampaignHistoryContent: React.FC = () => {
                         <button
                           onClick={() => handlePageChange(totalPages)}
                           disabled={currentPage === totalPages || totalPages === 0}
-                          className="px-2 py-1 rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
-                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontSize: '12px', fontFamily: 'JetBrains Mono, monospace' }}
+                          className="px-3 py-2 text-xs min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                          style={{ borderColor: '#2A2A38', color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                           title="Last"
                         >
                           &gt;&gt;
@@ -543,7 +543,7 @@ const CampaignHistoryContent: React.FC = () => {
                       <select
                         value={itemsPerPage}
                         onChange={handleItemsPerPageChange}
-                        className="px-3 py-1 rounded border text-sm cursor-pointer"
+                        className="px-3 py-2 min-h-[36px] rounded border text-sm cursor-pointer"
                         style={{
                           backgroundColor: '#111118',
                           borderColor: '#2A2A38',

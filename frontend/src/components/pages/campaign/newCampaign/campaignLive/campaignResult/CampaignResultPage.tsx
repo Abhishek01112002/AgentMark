@@ -53,7 +53,7 @@ const tabs: Tab[] = [
   { id: 'copy', label: 'Copy', icon: PenTool },
   { id: 'images', label: 'Images', icon: ImageIcon },
   { id: 'review', label: 'Review', icon: CheckSquare },
-  { id: 'published', label: 'Published', icon: Send },
+  { id: 'published', label: 'Publishing', icon: Send },
 ];
 
 const CampaignResultPage: React.FC = () => {
@@ -625,13 +625,13 @@ const CampaignResultPage: React.FC = () => {
                   <p className="text-xs text-[#8B8B9E]">AI agents have generated campaign drafts. Inspect metrics or request changes.</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
                 <button
                   onClick={() => {
                     setIsMinimized(false);
                     setDrawerTab('scores');
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold hover:bg-surface hover:border-[#6366F1]/50 text-[#F1F1F3] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                  className="px-4 py-3 min-h-[44px] rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold hover:bg-surface hover:border-[#6366F1]/50 text-[#F1F1F3] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] flex items-center justify-center"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   Inspect Scores
@@ -641,14 +641,14 @@ const CampaignResultPage: React.FC = () => {
                     setIsMinimized(false);
                     setDrawerTab('revise');
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/30 text-xs font-semibold hover:bg-[#DC2626]/20 text-[#EF4444] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98]"
+                  className="px-4 py-3 min-h-[44px] rounded-xl bg-[#DC2626]/10 border border-[#DC2626]/30 text-xs font-semibold hover:bg-[#DC2626]/20 text-[#EF4444] transition-all cursor-pointer whitespace-nowrap active:scale-[0.98] flex items-center justify-center"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   Request Revision
                 </button>
                 <button
                   onClick={handleApprove}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[#4edea3] hover:bg-[#3ce595] text-[#0e0e13] transition-all cursor-pointer shadow-[0_0_15px_rgba(78,222,163,0.3)] whitespace-nowrap active:scale-[0.98]"
+                  className="px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold bg-[#4edea3] hover:bg-[#3ce595] text-[#0e0e13] transition-all cursor-pointer shadow-[0_0_15px_rgba(78,222,163,0.3)] whitespace-nowrap active:scale-[0.98] flex items-center justify-center"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   Approve &amp; Publish

@@ -591,7 +591,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                                       : [...current, opt];
                                     return { ...prev, [cardId]: updated };
                                   })}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                  className={`flex items-center gap-1.5 px-3 py-2 min-h-[36px] rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
                                     isActive
                                       ? 'bg-[#6366F1]/15 text-white border-[#6366F1]/60 shadow-sm shadow-[#6366F1]/10'
                                       : 'bg-[#0A0A0F] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/30'
@@ -626,7 +626,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             {isEnhancing ? (
                               <button
                                 disabled
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1] text-white text-sm font-semibold cursor-not-allowed opacity-60"
+                                className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-[#6366F1] text-white text-sm font-semibold cursor-not-allowed opacity-60"
                               >
                                 <Loader2 size={14} className="animate-spin" />
                                 Enhancing...
@@ -634,7 +634,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             ) : enhancedPromptText ? (
                               <button
                                 onClick={() => handleEnhancePrompt(cardId, card.prompt || '')}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1]/50 text-[#8B8B9E] hover:text-white text-sm font-semibold transition-all active:scale-95"
+                                className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1]/50 text-[#8B8B9E] hover:text-white text-sm font-semibold transition-all active:scale-95"
                               >
                                 <RotateCw size={13} />
                                 Regenerate
@@ -642,7 +642,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             ) : (
                               <button
                                 onClick={() => handleEnhancePrompt(cardId, card.prompt || '')}
-                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-white text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/20 active:scale-95"
+                                className="flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-white text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/20 active:scale-95"
                               >
                                 <Sparkles size={13} />
                                 Enhance Prompt
@@ -682,7 +682,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                               <div className="flex items-center justify-end gap-2">
                                 <button
                                   onClick={() => handleCopyEnhanced(cardId)}
-                                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                  className={`flex items-center gap-1.5 px-4 py-3 min-h-[44px] rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
                                     enhancedCopiedIdx === cardId
                                       ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
                                       : 'bg-[#6366F1]/10 text-[#6366F1] border-[#6366F1]/20 hover:bg-[#6366F1]/20'

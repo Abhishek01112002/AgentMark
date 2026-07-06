@@ -341,7 +341,7 @@ const NewCampaignContent: React.FC = () => {
                 required
                 value={formData.projectId}
                 onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                className="flex-1 rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
+                className="flex-1 rounded-lg px-3 py-3 min-h-[44px] text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
                 disabled={loadingProjects || isCreating}
               >
@@ -355,7 +355,7 @@ const NewCampaignContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowCreateProjectModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all"
                 style={{
                   backgroundColor: 'rgba(99,102,241,0.1)',
                   color: '#6366F1',
@@ -405,7 +405,7 @@ const NewCampaignContent: React.FC = () => {
                 required
                 value={formData.campaignName}
                 onChange={(e) => setFormData({ ...formData, campaignName: e.target.value })}
-                className="w-full rounded-lg px-3 py-2 text-sm border transition-all"
+                className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border transition-all"
                 placeholder="e.g., Q3 Product Launch"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               />
@@ -419,7 +419,7 @@ const NewCampaignContent: React.FC = () => {
                 required
                 value={formData.brandName}
                 onChange={(e) => setFormData({ ...formData, brandName: e.target.value })}
-                className="w-full rounded-lg px-3 py-2 text-sm border transition-all"
+                className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border transition-all"
                 placeholder="Your brand"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               />
@@ -443,7 +443,7 @@ const NewCampaignContent: React.FC = () => {
                 required
                 value={formData.industry}
                 onChange={(e) => setFormData({ ...formData, industry: e.target.value, customIndustry: '' })}
-                className="w-full rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
+                className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 <option value="">Select industry...</option>
@@ -460,7 +460,7 @@ const NewCampaignContent: React.FC = () => {
                   required
                   value={formData.customIndustry}
                   onChange={(e) => setFormData({ ...formData, customIndustry: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm border transition-all animate-fadeIn"
+                  className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border transition-all animate-fadeIn"
                   placeholder="Enter your industry..."
                   style={{ fontFamily: 'Sora, sans-serif' }}
                 />
@@ -474,7 +474,7 @@ const NewCampaignContent: React.FC = () => {
                 required
                 value={formData.goal}
                 onChange={(e) => setFormData({ ...formData, goal: e.target.value, customGoal: '' })}
-                className="w-full rounded-lg px-3 py-2 text-sm border cursor-pointer transition-all"
+                className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border cursor-pointer transition-all"
                 style={{ fontFamily: 'Sora, sans-serif' }}
               >
                 <option value="">Select goal...</option>
@@ -491,7 +491,7 @@ const NewCampaignContent: React.FC = () => {
                   required
                   value={formData.customGoal}
                   onChange={(e) => setFormData({ ...formData, customGoal: e.target.value })}
-                  className="w-full rounded-lg px-3 py-2 text-sm border transition-all animate-fadeIn"
+                  className="w-full rounded-lg px-3 py-3 min-h-[44px] text-sm border transition-all animate-fadeIn"
                   placeholder="Enter your goal..."
                   style={{ fontFamily: 'Sora, sans-serif' }}
                 />

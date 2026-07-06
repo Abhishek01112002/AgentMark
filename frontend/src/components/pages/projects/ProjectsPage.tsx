@@ -423,7 +423,7 @@ const ProjectsContent: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-lg font-medium transition-all"
                   style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
@@ -500,7 +500,7 @@ const ProjectsContent: React.FC = () => {
                     <div className="flex items-center gap-2 pt-4 border-t" style={{ borderColor: '#2A2A38' }}>
                       <button
                         onClick={() => navigate(`/projects/${project.id}`)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all"
                         style={{
                           backgroundColor: 'rgba(99,102,241,0.1)',
                           color: '#6366F1',
@@ -531,7 +531,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleRenameClick(project);
                         }}
-                        className="p-2 rounded-lg transition-all"
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all"
                         style={{ color: '#8B8B9E', border: '1px solid #2A2A38' }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLElement).style.color = '#6366F1';
@@ -566,7 +566,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleDeleteClick(project);
                         }}
-                        className="p-2 rounded-lg transition-all"
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all"
                         style={{ color: '#8B8B9E', border: '1px solid #2A2A38' }}
                         onMouseEnter={(e) => {
                           (e.currentTarget as HTMLElement).style.color = '#F43F5E';
@@ -613,7 +613,7 @@ const ProjectsContent: React.FC = () => {
                 <button
                   onClick={handleLoadMore}
                   disabled={showingAll}
-                  className="px-4 py-2 rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24]"
+                  className="px-4 py-3 min-h-[44px] rounded-lg border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#1A1A24] flex items-center justify-center"
                   style={{
                     borderColor: '#2A2A38',
                     color: '#F1F1F3',

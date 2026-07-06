@@ -22,7 +22,7 @@ describe('ApiKeys Component', () => {
   it('renders the API Keys heading and description', () => {
     render(<ApiKeys />);
     expect(screen.getByRole('heading', { name: /api keys/i })).toBeInTheDocument();
-    expect(screen.getByText(/Add your provider API keys/i)).toBeInTheDocument();
+    expect(screen.getByText(/Add API keys for LLM and search providers/i)).toBeInTheDocument();
   });
 
   it('renders inputs for Gemini, Groq, and OpenAI', () => {

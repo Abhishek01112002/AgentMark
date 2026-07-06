@@ -58,7 +58,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
             {/* Close button — hover via Tailwind, no JS handlers */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
+              className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
             >
               <X size={20} />
             </button>
@@ -77,7 +77,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-lg text-sm outline-none transition-all"
+                className="w-full px-4 py-3 min-h-[44px] rounded-lg text-sm outline-none transition-all"
                 style={{
                   backgroundColor: '#0A0A0F',
                   border: '1px solid #2A2A38',
@@ -94,7 +94,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
+                className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3] flex items-center justify-center"
                 style={{
                   backgroundColor: 'transparent',
                   border: '1px solid #2A2A38',
@@ -106,7 +106,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
               {/* Rename button — hover via Tailwind + CSS shadow transition */}
               <button
                 type="submit"
-                className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#F1F1F3] bg-[#6366F1] hover:bg-[#8083ff] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all text-[#F1F1F3] bg-[#6366F1] hover:bg-[#8083ff] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] flex items-center justify-center"
                 style={{
                   fontFamily: 'JetBrains Mono, monospace',
                   border: 'none',

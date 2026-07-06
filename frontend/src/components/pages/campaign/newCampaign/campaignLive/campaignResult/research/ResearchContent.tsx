@@ -291,14 +291,14 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         {/* Tavily/LiteRAG Sources */}
         {literasSources.length > 0 && (
           <div className="lg:col-span-2" style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex items-center gap-4" style={{ background: '#111118', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#8B8B9E', marginBottom: '1rem' }}>
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4" style={{ background: '#111118', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#8B8B9E', marginBottom: '1rem' }}>
               <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{literasSources.length}</strong> sources retrieved</span>
               <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{marketSources.length}</strong> market</span>
               <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 9h6"/><path d="M9 13h6"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{competitorSources.length}</strong> competitor</span>
-              <span style={{ marginLeft: 'auto', color: '#5A5A6E', fontSize: '12px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Live</span>
+              <span className="sm:ml-auto" style={{ color: '#5A5A6E', fontSize: '12px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Live</span>
             </div>
 
-            <div className="flex gap-1.5" style={{ marginBottom: '1rem' }}>
+            <div className="flex flex-wrap gap-1.5" style={{ marginBottom: '1rem' }}>
               {(["all", "market", "competitor"] as const).map(f => (
                 <button
                   key={f}
@@ -321,7 +321,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               Real-time sources used
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {literasSources
                 .filter(s => activeFilter === "all" || s.query_type === activeFilter)
                 .map((src, i) => {

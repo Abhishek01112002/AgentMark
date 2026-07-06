@@ -42,7 +42,7 @@ const PrivacyTermsModal: React.FC<PrivacyTermsModalProps> = ({ isOpen, onClose, 
           
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[#1e1e2b] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
+            className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg hover:bg-[#1e1e2b] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
           >
             <X size={18} />
           </button>
@@ -142,7 +142,7 @@ const PrivacyTermsModal: React.FC<PrivacyTermsModalProps> = ({ isOpen, onClose, 
         <div className="px-6 py-4 border-t border-[#1e1e2b] flex justify-end" style={{ background: '#0a0a0f' }}>
           <button 
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
+            className="px-4 py-3 min-h-[44px] text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-colors flex items-center justify-center"
           >
             Acknowledge
           </button>

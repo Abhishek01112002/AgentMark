@@ -15,6 +15,7 @@ const CampaignHistoryPage = React.lazy(() => import('./components/pages/history/
 const MemoryHubPage = React.lazy(() => import('./components/pages/memoryHub/MemoryHubPage'));
 const Settings = React.lazy(() => import('./components/pages/settings/Settings'));
 const Support = React.lazy(() => import('./components/pages/support/Support'));
+const DocsPage = React.lazy(() => import('./components/pages/docs/DocsPage'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-surface-container-lowest">
@@ -145,6 +146,10 @@ const App: React.FC = () => {
               <Support />
             </ProtectedRoute>
           }
+        />
+        <Route
+          path="/docs"
+          element={<DocsPage />}
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

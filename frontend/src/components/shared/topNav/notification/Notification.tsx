@@ -131,7 +131,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
                           e.stopPropagation();
                           void handleNotificationClick(notification.id);
                         }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-2 min-h-[36px] rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
                       >
                         <Check size={12} />
                         Read
@@ -154,7 +154,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
         <div className="bg-surface-container-lowest p-3 text-center border-t border-border-base">
           <button
             onClick={handleViewAllActivity}
-            className="font-label-md text-label-md text-text-secondary hover:text-text-primary transition-colors"
+            className="font-label-md text-label-md text-text-secondary hover:text-text-primary transition-colors py-3 w-full flex items-center justify-center min-h-[44px]"
           >
             View all activity
           </button>

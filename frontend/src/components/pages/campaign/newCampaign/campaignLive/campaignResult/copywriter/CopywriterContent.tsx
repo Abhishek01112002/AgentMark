@@ -382,7 +382,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 active:scale-95 group select-none cursor-pointer border ${tabStyle.className}`}
+                className={`px-5 py-3 min-h-[44px] rounded-full text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 active:scale-95 group select-none cursor-pointer border ${tabStyle.className}`}
                 style={{ fontFamily: 'Inter, sans-serif' }}
               >
                 <ChannelIcon channel={tab.id} size={15} className={tabStyle.iconClass} />
@@ -494,7 +494,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                     {/* Copy to Clipboard Icon */}
                     <button
                       onClick={() => handleCopyVariantToClipboard(variant, platformLabel)}
-                      className="p-1.5 rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
+                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
                       title="Copy this variant"
                     >
                       <Copy size={13} />
@@ -503,7 +503,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                     {/* Pin Champion Toggle */}
                     <button
                       onClick={() => handleUpdateMeta(activeTab, variant.id, 'pin')}
-                      className={`p-1.5 rounded border transition-all cursor-pointer ${
+                      className={`p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all cursor-pointer ${
                         variant.isChampion 
                           ? 'bg-[#6366F1]/20 border-[#6366F1] text-[#8083ff]' 
                           : 'bg-transparent border-[#2A2A38] text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-white'
@@ -516,7 +516,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                     {/* Hide Toggle */}
                     <button
                       onClick={() => handleUpdateMeta(activeTab, variant.id, 'hide')}
-                      className="p-1.5 rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-red-400 hover:border-red-400/40"
+                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-red-400 hover:border-red-400/40"
                       title="Hide variant"
                     >
                       <EyeOff size={13} />
@@ -616,13 +616,13 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                 value={steeringInput[activeTab] || ''}
                 onChange={(e) => setSteeringInput(prev => ({ ...prev, [activeTab]: e.target.value }))}
                 disabled={isGenerating[activeTab] || activeVariantsCount >= 4}
-                className="flex-1 bg-[#0A0A0F] border border-[#2A2A38] rounded-xl px-4 py-2.5 text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/30 focus:border-[#6366F1]/50 focus:outline-none disabled:opacity-40"
+                className="flex-1 bg-[#0A0A0F] border border-[#2A2A38] rounded-xl px-4 py-3 min-h-[44px] text-sm text-[#D1D1E0] placeholder-[#8B8B9E]/30 focus:border-[#6366F1]/50 focus:outline-none disabled:opacity-40"
               />
               
               {activeVariantsCount >= 4 ? (
                 <button
                   disabled
-                  className="px-4 py-2.5 rounded-xl border border-[#2A2A38] text-[#8B8B9E] text-xs font-mono disabled:opacity-50 cursor-not-allowed bg-transparent"
+                  className="px-4 py-3 min-h-[44px] rounded-xl border border-[#2A2A38] text-[#8B8B9E] text-xs font-mono disabled:opacity-50 cursor-not-allowed bg-transparent"
                 >
                   Limit Reached (4/4)
                 </button>
@@ -630,7 +630,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                 <button
                   onClick={() => handleGenerateVariant(activeTab)}
                   disabled={isGenerating[activeTab]}
-                  className="px-5 py-2.5 bg-[#6366F1] hover:bg-[#5254d8] disabled:bg-[#6366F1]/40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md shadow-[#6366F1]/10"
+                  className="px-5 py-3 min-h-[44px] bg-[#6366F1] hover:bg-[#5254d8] disabled:bg-[#6366F1]/40 disabled:cursor-not-allowed text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md shadow-[#6366F1]/10"
                 >
                   {isGenerating[activeTab] ? (
                     <>

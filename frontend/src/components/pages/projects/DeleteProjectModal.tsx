@@ -45,7 +45,7 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ projectName, on
             {/* Close button — hover via Tailwind, no JS handlers */}
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
+              className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
             >
               <X size={20} />
             </button>
@@ -66,7 +66,7 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ projectName, on
             {/* Cancel button — hover via Tailwind */}
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
+              className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3] flex items-center justify-center"
               style={{
                 backgroundColor: 'transparent',
                 border: '1px solid #2A2A38',
@@ -78,7 +78,7 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({ projectName, on
             {/* Delete button — hover via Tailwind + CSS shadow transition */}
             <button
               onClick={onConfirm}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all text-[#F1F1F3] bg-[#F43F5E] hover:bg-[#E11D48] hover:shadow-[0_0_20px_rgba(244,63,94,0.3)]"
+              className="flex-1 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all text-[#F1F1F3] bg-[#F43F5E] hover:bg-[#E11D48] hover:shadow-[0_0_20px_rgba(244,63,94,0.3)] flex items-center justify-center"
               style={{
                 fontFamily: 'JetBrains Mono, monospace',
                 border: 'none',

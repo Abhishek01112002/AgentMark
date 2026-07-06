@@ -87,8 +87,8 @@ const PROVIDERS: ProviderMeta[] = [
 ];
 
 function DeleteConfirm({ label, onConfirm, onCancel }: { label: string; onConfirm: () => void; onCancel: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 modal-overlay" onClick={onCancel}>
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm modal-overlay" onClick={onCancel}>
       <div className="bg-surface border border-border-base rounded-xl p-6 shadow-2xl max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">Delete {label}?</h3>
         <p className="font-body-sm text-body-sm text-text-secondary mb-6">This cannot be undone. The key will be permanently removed.</p>
@@ -97,7 +97,8 @@ function DeleteConfirm({ label, onConfirm, onCancel }: { label: string; onConfir
           <button onClick={onConfirm} className="px-4 py-2 bg-danger text-on-danger rounded-lg hover:opacity-90 transition-all text-sm">Delete</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -114,13 +115,13 @@ function TestKeyButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-1.5 px-3 py-3 border border-border-base rounded-lg text-xs text-text-secondary hover:bg-surface-container-high transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+      className="flex items-center gap-1.5 px-2.5 py-2 border border-border-base rounded-lg text-[11px] text-text-secondary hover:bg-surface-container-high transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
       title={status === 'passed' ? 'Connection successful' : status === 'failed' ? 'Connection failed' : 'Test connection'}
     >
-      {status === 'testing' ? <><RefreshCw size={12} className="animate-spin" /> Testing</>
-        : status === 'passed' ? <><CheckCircle2 size={12} className="text-secondary" /> Connected</>
-        : status === 'failed' ? <><XCircle size={12} className="text-danger" /> Failed</>
-        : <><RefreshCw size={12} /> Test</>}
+      {status === 'testing' ? <><RefreshCw size={11} className="animate-spin" /> Testing</>
+        : status === 'passed' ? <><CheckCircle2 size={11} className="text-secondary" /> Connected</>
+        : status === 'failed' ? <><XCircle size={11} className="text-danger" /> Failed</>
+        : <><RefreshCw size={11} /> Test</>}
     </button>
   );
 }
@@ -253,8 +254,8 @@ const ApiKeys: React.FC = () => {
         />
       )}
 
-      {confirmSave && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 modal-overlay" onClick={() => setConfirmSave(null)}>
+      {confirmSave && createPortal(
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm modal-overlay" onClick={() => setConfirmSave(null)}>
           <div className="bg-surface border border-border-base rounded-xl p-6 shadow-2xl max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
             {confirmSave.testFirst ? (
               <>
@@ -308,13 +309,14 @@ const ApiKeys: React.FC = () => {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      <div className="bg-surface border border-border-base rounded-xl overflow-hidden">
-        <div className="p-6 border-b border-border-base">
-          <h2 className="font-headline-md text-headline-md text-text-primary">API Keys</h2>
-          <p className="font-body-sm text-body-sm text-text-secondary mt-1">Add your provider API keys.</p>
+      <div className="bg-surface border border-border-base rounded-2xl overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-border-base">
+          <h2 className="text-lg font-semibold text-text-primary">API Keys</h2>
+          <p className="text-sm text-text-secondary mt-0.5">Add API keys for LLM and search providers.</p>
         </div>
 
         <div className="divide-y divide-border-base">
@@ -326,10 +328,10 @@ const ApiKeys: React.FC = () => {
             const isDuplicate = newVal.trim().length > 0 && savedKeys.some((k) => k.value === newVal.trim());
 
             return (
-              <div key={id} className="p-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Left Column: API Key Management */}
-                  <div className="lg:col-span-2 space-y-4">
+              <div key={id} className="p-4 sm:p-5 md:p-6">
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
+                  {/* Main: Key Management */}
+                  <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
                     {/* Header */}
                     <div className="flex items-center gap-2">
                       <h3 className="font-headline-sm text-headline-sm text-text-primary">{meta.name}</h3>
@@ -349,7 +351,7 @@ const ApiKeys: React.FC = () => {
 
                     {/* Saved keys */}
                     {savedKeys.length > 0 && (
-                      <div className="space-y-2">
+                      <div className="space-y-1.5">
                         <div className="text-label-xs text-text-muted font-medium uppercase tracking-wider">
                           Saved keys ({savedKeys.length})
                         </div>
@@ -358,17 +360,17 @@ const ApiKeys: React.FC = () => {
                           const isVisible = !hiddenKeys[keyId];
                           const tStatus = testStatus[keyId] || 'idle';
                           return (
-                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-low rounded-lg border border-border-base group">
+                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 bg-surface-container-low rounded-lg border border-border-base">
                               <div className="flex-1 font-mono text-sm text-text-primary truncate min-w-0 w-full">
                                 {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
                               </div>
-                              <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
+                              <div className="flex items-center gap-1 justify-end shrink-0 w-full sm:w-auto">
                                 <button
                                   onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
-                                  className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
+                                  className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
                                   aria-label="Toggle key visibility"
                                 >
-                                  {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                                  {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
                                 </button>
                                 {id !== 'tavily' && (
                                   <TestKeyButton
@@ -379,7 +381,7 @@ const ApiKeys: React.FC = () => {
                                 )}
                                 <button
                                   onClick={() => setDeleteTarget({ provider: id, index: idx })}
-                                  className="p-3 text-text-muted hover:text-danger transition-colors flex items-center justify-center min-h-[44px]"
+                                  className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-danger transition-colors"
                                   title={`Delete key #${idx + 1}`}
                                 >
                                   <Trash2 size={13} />
@@ -392,8 +394,8 @@ const ApiKeys: React.FC = () => {
                     )}
 
                     {/* New key input */}
-                    <div className="space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base w-full">
+                    <div className="space-y-1.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base w-full">
                         <div className="flex items-center flex-1 gap-2 min-w-0 w-full">
                           <input
                             id={`new-key-input-${id}`}
@@ -407,7 +409,6 @@ const ApiKeys: React.FC = () => {
                                 const k = `${id}-new`;
                                 return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
                               });
-                              // Real-time format validation for all providers
                               if (val.trim()) {
                                 const isValid = validateKey(id, val);
                                 setFormatErrors((prev) => ({
@@ -422,10 +423,10 @@ const ApiKeys: React.FC = () => {
                           />
                           <button
                             onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
-                            className="p-3 text-text-muted hover:text-text-primary transition-colors flex items-center justify-center min-h-[44px]"
+                            className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
                             aria-label="Toggle key visibility"
                           >
-                            {hiddenKeys[`${id}-new-input`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                            {hiddenKeys[`${id}-new-input`] ? <EyeOff size={13} /> : <Eye size={13} />}
                           </button>
                         </div>
                         <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
@@ -439,7 +440,7 @@ const ApiKeys: React.FC = () => {
                           <button
                             onClick={() => handleSaveNewKey(id)}
                             disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
-                            className="px-4 py-3 bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap min-h-[44px]"
+                            className="px-4 py-3 min-h-[44px] bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center"
                           >
                             Save
                           </button>
@@ -462,43 +463,45 @@ const ApiKeys: React.FC = () => {
                     {/* Add another key */}
                     <button
                       onClick={() => addEmptyKey(id)}
-                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors py-2 px-1 rounded hover:bg-surface-container-low min-h-[32px]"
+                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors py-3 min-h-[44px] px-2 rounded hover:bg-surface-container-low"
                     >
                       <Plus size={13} />
                       Add another {meta.name} key
                     </button>
                   </div>
 
-                  {/* Right Column: Provider Information Details Card */}
-                  <div className="flex flex-col justify-between p-5 rounded-xl bg-surface-container-low border border-border-base gap-4 h-full">
-                    <div className="space-y-4">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                  {/* Sidebar: Provider Details — hidden on mobile, visible on lg+ */}
+                  <div className="hidden lg:block lg:w-64 xl:w-72 shrink-0">
+                    <div className="p-4 rounded-xl bg-surface-container-low border border-border-base h-full flex flex-col gap-3">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
                         Provider Details
                       </div>
                       <div className="space-y-3 text-xs">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-text-primary font-medium">Powers</span>
-                          <span className="text-text-secondary leading-relaxed">{meta.usage}</span>
+                        <div>
+                          <div className="text-text-primary font-medium text-[11px] mb-1">Powers</div>
+                          <div className="text-text-secondary leading-relaxed">{meta.usage}</div>
                         </div>
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-text-primary font-medium">Expected Format</span>
-                          <code className="bg-surface-container-high px-2 py-1 rounded font-mono text-[10px] text-text-primary border border-border-base self-start">
+                        <div>
+                          <div className="text-text-primary font-medium text-[11px] mb-1">Expected Format</div>
+                          <code className="inline-block bg-surface-container-high px-2 py-1 rounded font-mono text-[10px] text-text-primary border border-border-base">
                             {meta.format}
                           </code>
                         </div>
                       </div>
+                      <div className="mt-auto pt-2">
+                        <a
+                          href={meta.docs}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 w-full px-4 py-3 min-h-[44px] rounded-lg border border-border-base bg-surface hover:bg-surface-container-high text-xs text-text-primary hover:text-primary transition-all font-semibold"
+                        >
+                          Get API Key
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7M17 7H7M17 7V17" />
+                          </svg>
+                        </a>
+                      </div>
                     </div>
-                    <a
-                      href={meta.docs}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg border border-border-base bg-surface hover:bg-surface-container-high text-xs text-text-primary hover:text-primary transition-all font-semibold min-h-[44px]"
-                    >
-                      Get API Key
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M7 17L17 7M17 7H7M17 7V17" />
-                      </svg>
-                    </a>
                   </div>
                 </div>
               </div>
@@ -506,8 +509,8 @@ const ApiKeys: React.FC = () => {
           })}
         </div>
 
-        <div className="bg-surface-container-low px-6 py-4 flex items-center gap-3 text-xs text-text-muted">
-          <span>Keys stored locally in your browser. Sent per-request via headers.</span>
+        <div className="bg-surface-container-low px-5 sm:px-6 py-3.5 flex items-center gap-3 text-xs text-text-muted">
+          <span>Keys are stored locally in your browser and sent per-request via headers.</span>
         </div>
       </div>
     </div>

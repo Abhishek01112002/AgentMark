@@ -576,7 +576,7 @@ const Sidebar: React.FC = () => {
       <div
         className="md:hidden fixed top-0 left-0 h-full z-[70] flex flex-col"
         style={{
-          width: '240px',
+          width: 'min(240px, 85vw)',
           transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 300ms cubic-bezier(0.4,0,0.2,1)',
           backgroundColor: '#0e0e13',
