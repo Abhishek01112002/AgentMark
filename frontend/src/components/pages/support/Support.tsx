@@ -18,6 +18,14 @@ const SupportContent: React.FC = () => {
       answer: 'Most multi-channel campaigns are generated within 45 to 90 seconds. Complex strategies requiring deep research may take up to 3 minutes as our agents traverse web data and internal knowledge bases.',
     },
     {
+      question: 'How do I generate images directly from my prompt cards?',
+      answer: 'In the Visuals tab of your campaign results, click "Generate" next to any prompt. A dropdown will appear containing popular studio bridges (DALL-E 3, Midjourney, Leonardo, Flux.1, etc.). Selecting one copies the prompt to your clipboard and opens the platform with the prompt pre-loaded in the generation box.',
+    },
+    {
+      question: 'How do I post or compose drafts from generated marketing copy?',
+      answer: 'In the Copywriter tab, each copy card has a highlighted direct-action CTA button at the bottom (e.g., "Post on X", "Share on LinkedIn", or "Compose in Email Client"). Clicking this button copies your copy variant to the clipboard and opens the composing page of the specific platform with the content pre-filled.',
+    },
+    {
       question: 'What happens if an agent failure occurs?',
       answer: 'Our "Self-Healing Architecture" automatically attempts to restart stalled agents. If an agent remains unresponsive, you\'ll see a red status dot. You can manually refresh the node from the Review panel without losing progress.',
     },
