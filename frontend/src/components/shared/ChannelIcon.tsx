@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Globe, PanelTop, Hash } from 'lucide-react';
+import { Globe, PanelTop, Hash } from 'lucide-react';
 
 interface ChannelIconProps {
   channel: string;
@@ -154,9 +154,21 @@ export const ChannelIcon: React.FC<ChannelIconProps> = ({ channel, size = 20, cl
     );
   }
 
-  // Standard Lucide brand icons / fallbacks
   if (name.includes('email') || name.includes('newsletter')) {
-    return <Mail size={size} className={className} />;
+    return (
+      <svg 
+        viewBox="0 0 24 24" 
+        width={size} 
+        height={size} 
+        className={className} 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d="M2 5.5V18.5C2 19.33 2.67 20 3.5 20H6V8.5L2 5.5Z" fill="#4285F4"/>
+        <path d="M22 5.5V18.5C22 19.33 21.33 20 20.5 20H18V8.5L22 5.5Z" fill="#34A853"/>
+        <path d="M18 8.5V5.5C18 4.67 17.33 4 16.5 4H7.5C6.67 4 6 4.67 6 5.5V8.5L12 13.5L18 8.5Z" fill="#EA4335"/>
+        <path d="M12 13.5L6 8.5V5.5L12 10.5L18 5.5V8.5L12 13.5Z" fill="#FBBC05"/>
+      </svg>
+    );
   }
   if (name.includes('banner') || name.includes('display')) {
     return <PanelTop size={size} className={className} />;
