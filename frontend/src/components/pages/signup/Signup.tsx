@@ -230,7 +230,7 @@ const SignUp = () => {
                 </div>
               </div>
 
-              <button onClick={() => { setFlipped(true); setTimeout(() => navigate('/login'), 500); }} className="w-full flex items-center justify-center gap-2 border border-[#2A2A38] hover:border-indigo-500/40 text-gray-400 hover:text-white py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-indigo-500/5 group">
+              <button onClick={() => { setFlipped(true); setTimeout(() => navigate('/login'), 500); }} className="w-full flex items-center justify-center gap-2 border border-[#2A2A38] hover:border-indigo-500/40 text-gray-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-indigo-500/5 group min-h-[44px]">
                 <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
                 <span>Already have an account? Sign in</span>
               </button>

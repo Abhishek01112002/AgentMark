@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
 import { Check, Trash2 } from 'lucide-react';
 import { formatDDMonYYYY } from '../../../../utils/formatDate';
@@ -128,14 +129,14 @@ const Notifications: React.FC = () => {
 
   return (
     <div className="bg-surface border border-border-base rounded-xl overflow-hidden">
-      <div className="p-6 border-b border-border-base flex items-start justify-between gap-4">
+      <div className="p-6 border-b border-border-base flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
           <p className="font-body-sm text-body-sm text-text-secondary mt-1">View and manage your account notifications.</p>
         </div>
         <button
           onClick={() => { markAllRead().catch(console.error); }}
-          className="px-4 py-2 rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors text-sm"
+          className="px-4 py-3 rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors text-sm w-full sm:w-auto justify-center min-h-[44px]"
         >
           Mark all read
         </button>
@@ -174,47 +175,49 @@ const Notifications: React.FC = () => {
             const meta = iconMap[notification.type] || iconMap.info;
             const isSelected = selectedIds.includes(notification.id);
             return (
-              <div key={notification.id} className="p-4 hover:bg-surface-container-low transition-colors group flex items-start gap-4">
-                <div className="pt-2 flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => handleSelectOne(notification.id)}
-                    className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
-                  />
-                </div>
-                <div className="flex-1 flex gap-4 min-w-0">
-                  <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color} flex-shrink-0`}>
-                    <span className="material-symbols-outlined">{meta.icon}</span>
+              <div key={notification.id} className="p-4 hover:bg-surface-container-low transition-colors group flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-start gap-4 w-full">
+                  <div className="pt-2 flex-shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleSelectOne(notification.id)}
+                      className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
+                    />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start gap-2">
-                      <p className="font-body-md text-body-md text-text-primary font-semibold truncate">{notification.title}</p>
-                      <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
-                        {(() => {
-                            const d = new Date(notification.createdAt);
-                            return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                          })()}
-                      </span>
+                  <div className="flex-1 flex gap-4 min-w-0">
+                    <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color} flex-shrink-0`}>
+                      <span className="material-symbols-outlined">{meta.icon}</span>
                     </div>
-                    <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">{notification.message}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <p className="font-body-md text-body-md text-text-primary font-semibold truncate">{notification.title}</p>
+                        <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
+                          {(() => {
+                              const d = new Date(notification.createdAt);
+                              return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                            })()}
+                        </span>
+                      </div>
+                      <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">{notification.message}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 justify-end w-full sm:w-auto pl-8 sm:pl-0">
                   {!notification.isRead ? (
                     <button
                       onClick={() => { markOneRead(notification.id).catch(console.error); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold"
+                      className="inline-flex items-center gap-1.5 px-3 py-3 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold min-h-[44px]"
                     >
                       <Check size={14} />
-                      <span className="hidden sm:inline">Mark as read</span>
+                      <span>Mark as read</span>
                     </button>
                   ) : (
-                    <span className="text-xs text-text-muted px-2">Read</span>
+                    <span className="text-xs text-text-muted px-2 font-mono">Read</span>
                   )}
                   <button
                     onClick={() => { deleteOne(notification.id); }}
-                    className="inline-flex items-center justify-center p-2 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors"
+                    className="inline-flex items-center justify-center p-3 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors min-h-[44px] min-w-[44px]"
                     title="Delete notification"
                   >
                     <Trash2 size={14} />
@@ -281,7 +284,7 @@ const Notifications: React.FC = () => {
       </div>
 
       {/* Confirmation Modal */}
-      {confirmModal && confirmModal.isOpen && (
+      {confirmModal && confirmModal.isOpen && createPortal(
         <div
           className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm modal-overlay"
           onClick={() => setConfirmModal(null)}
@@ -319,7 +322,8 @@ const Notifications: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

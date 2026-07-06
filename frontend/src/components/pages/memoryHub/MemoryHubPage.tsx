@@ -136,7 +136,7 @@ const MemoryHubPage: React.FC = () => {
             <div className="flex items-center gap-3 mb-2">
               <button
                 onClick={() => navigate(-1)}
-                className="p-2 rounded-lg transition-colors"
+                className="p-3 rounded-lg transition-colors min-h-[44px]"
                 style={{ color: '#8B8B9E' }}
                 onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1F1F25'; }}
                 onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
@@ -284,7 +284,7 @@ const MemoryHubPage: React.FC = () => {
                         <div key={event.id} className="relative">
                           <div className="flex items-start gap-6">
                             <div className="relative flex flex-col items-center flex-shrink-0">
-                              <div className="timeline-dot w-10 h-10 rounded-full flex items-center justify-center cursor-pointer" style={{
+                              <div className="timeline-dot w-11 h-11 rounded-full flex items-center justify-center cursor-pointer" style={{
                                 backgroundColor: event.scoreColor + '20',
                                 border: `2px solid ${event.scoreColor}`,
                                 boxShadow: `0 0 15px ${event.scoreColor}30`,
@@ -308,9 +308,9 @@ const MemoryHubPage: React.FC = () => {
                               <div className="flex items-start justify-between gap-4">
                                 <div className="min-w-0 flex-1">
                                   <h3 className="text-sm font-semibold truncate" style={{ color: '#F1F1F3' }}>{event.campaignName}</h3>
-                                  <p className="text-xs mt-1" style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}>
-                                    {formatDDMonYYYY(new Date(event.completedAt))}
-                                    {event.brandVoice && <span className="ml-3">Voice: {event.brandVoice}</span>}
+                                  <p className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}>
+                                    <span>{formatDDMonYYYY(new Date(event.completedAt))}</span>
+                                    {event.brandVoice && <span>Voice: {event.brandVoice}</span>}
                                   </p>
                                 </div>
                                 <div className="text-right flex-shrink-0">

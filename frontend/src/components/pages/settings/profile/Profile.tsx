@@ -215,7 +215,7 @@ const Profile: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-4 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity"
+                  className="px-4 py-3 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-opacity min-h-[44px]"
                   disabled={isUploading}
                 >
                   {isUploading ? 'Uploading...' : 'Change Photo'}
@@ -224,7 +224,7 @@ const Profile: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleRemovePhoto}
-                    className="px-4 py-2 border border-border-base text-text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors"
+                    className="px-4 py-3 border border-border-base text-text-secondary rounded-lg font-label-md text-label-md hover:bg-surface-container-high transition-colors min-h-[44px]"
                     disabled={isUploading}
                   >
                     Remove Photo
@@ -291,7 +291,7 @@ const Profile: React.FC = () => {
           <button
             onClick={handleSaveChanges}
             disabled={isLoading || isUploading}
-            className="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
           >
             {isLoading ? 'Saving...' : 'Save Changes'}
           </button>
@@ -320,23 +320,23 @@ const Profile: React.FC = () => {
               <button
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={isLoading}
-                className="px-6 py-2 border border-danger text-danger hover:bg-danger hover:text-white rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 border border-danger text-danger hover:bg-danger hover:text-white rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 Delete Account
               </button>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handleDeleteAccount}
                   disabled={isLoading}
-                  className="px-6 py-2 bg-danger text-white hover:bg-danger/90 rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-danger text-white hover:bg-danger/90 rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   {isLoading ? 'Deleting...' : 'Yes, Delete Forever'}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={isLoading}
-                  className="px-6 py-2 border border-border-base text-text-secondary hover:bg-surface-container-high rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 border border-border-base text-text-secondary hover:bg-surface-container-high rounded-lg font-label-md text-label-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
                   Cancel
                 </button>

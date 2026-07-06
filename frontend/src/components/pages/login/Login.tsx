@@ -223,7 +223,7 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] lg:text-xs text-gray-500 pt-0.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[10px] lg:text-xs text-gray-500 pt-0.5 w-full">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input 
                       type="checkbox" 
@@ -233,7 +233,7 @@ const Login = () => {
                     />
                     <span>Keep me signed in for 30 days</span>
                   </label>
-                  <button type="button" onClick={() => toast.error('Coming soon!')} className="hover:text-white transition-colors">Forgot password?</button>
+                  <button type="button" onClick={() => toast.error('Coming soon!')} className="hover:text-white transition-colors text-left sm:text-right min-h-[32px]">Forgot password?</button>
                 </div>
 
                 <button type="submit" disabled={isLoading} className="w-full mt-2 flex items-center justify-center gap-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 lg:py-3.5 rounded-xl text-sm transition-all duration-200 shadow-[0_4px_20px_rgba(99,102,241,0.25)] hover:shadow-[0_6px_28px_rgba(99,102,241,0.4)] hover:-translate-y-0.5 active:translate-y-0 group disabled:opacity-50 disabled:cursor-not-allowed">
@@ -251,7 +251,7 @@ const Login = () => {
                 </div>
               </div>
 
-              <button onClick={() => { setFlipped(true); setTimeout(() => navigate('/signup'), 500); }} className="w-full flex items-center justify-center gap-2 border border-[#2A2A38] hover:border-indigo-500/40 text-gray-400 hover:text-white py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-indigo-500/5 group">
+              <button onClick={() => { setFlipped(true); setTimeout(() => navigate('/signup'), 500); }} className="w-full flex items-center justify-center gap-2 border border-[#2A2A38] hover:border-indigo-500/40 text-gray-400 hover:text-white py-3 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-indigo-500/5 group min-h-[44px]">
                 <span>Create a new account</span>
                 <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </button>

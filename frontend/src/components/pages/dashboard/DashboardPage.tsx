@@ -495,7 +495,7 @@ function DashboardContent() {
                 </h3>
                 <button
                   onClick={() => navigate('/projects')}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-all"
+                  className="flex items-center gap-2 px-3 py-3 rounded-lg border transition-all min-h-[44px]"
                   style={{
                     borderColor: '#2A2A38',
                     color: '#F1F1F3',
@@ -710,7 +710,7 @@ function DashboardContent() {
                             <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                               <button
                                 onClick={() => navigate(`/projects/${row.id}`)}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg transition-colors"
+                                className="inline-flex items-center gap-2 px-3 py-3 rounded-lg transition-colors min-h-[44px]"
                                 style={{
                                   backgroundColor: '#1A1A24',
                                   color: '#F1F1F3',
