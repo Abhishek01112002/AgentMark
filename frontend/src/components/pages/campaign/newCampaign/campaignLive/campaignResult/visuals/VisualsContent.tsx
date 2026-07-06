@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Loader2,
   RotateCw,
-  Share2
+  Share2,
+  ExternalLink
 } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
@@ -60,6 +61,127 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
   const [enhanceLoading, setEnhanceLoading] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
   const [enhancedCopiedIdx, setEnhancedCopiedIdx] = useState<string | null>(null);
+  const [studioDropdownOpen, setStudioDropdownOpen] = useState<string | null>(null);
+
+  const AI_STUDIOS = [
+    { 
+      name: 'DALL·E', 
+      label: 'Generate on DALL·E', 
+      url: 'https://chatgpt.com/?hints=dalle', 
+      color: '#10B981', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#10B981] fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M21.36 11.12a3.84 3.84 0 0 0-1.84-2.91 3.84 3.84 0 0 0 .14-3.41 3.84 3.84 0 0 0-2.82-2.33 3.84 3.84 0 0 0-3.32-.4 3.84 3.84 0 0 0-2.55-2.07h-.06a3.84 3.84 0 0 0-3.42 1.58A3.84 3.84 0 0 0 4 3.3a3.84 3.84 0 0 0-2.33 2.82 3.84 3.84 0 0 0-.4 3.32 3.84 3.84 0 0 0-2.07 2.55 3.84 3.84 0 0 0 1.58 3.42c.07.06.14.12.2.17a3.84 3.84 0 0 0-.2 3.41 3.84 3.84 0 0 0 2.82 2.33 3.84 3.84 0 0 0 3.32.4 3.84 3.84 0 0 0 2.55 2.07A3.84 3.84 0 0 0 15 22.25a3.84 3.84 0 0 0 2.33-2.82 3.84 3.84 0 0 0 .4-3.32 3.84 3.84 0 0 0 2.07-2.55 3.84 3.84 0 0 0-1.58-3.42c-.06-.06-.13-.11-.2-.17a3.84 3.84 0 0 0 .34-2.26zm-9.08 9.5a2.29 2.29 0 0 1-1.12.3 2.31 2.31 0 0 1-1.62-.68l4.47-2.58a.26.26 0 0 0 .13-.23v-6.38l1.79 1.03a.08.08 0 0 1 .04.07v5.27a2.3 2.3 0 0 1-1.74 2.28a2.31 2.31 0 0 1-1.93-.11zm-5.73-3.3a2.31 2.31 0 0 1-.82-1.78v-5.17l4.47 2.58a.26.26 0 0 0 .26 0l5.53-3.19v2.07a.08.08 0 0 1-.04.07l-4.57 2.64a2.3 2.3 0 0 1-2.87-.27c-.43-.44-.72-1-.82-1.61a2.3 2.3 0 0 1-.14-1.35zm-2.07-7.23a2.3 2.3 0 0 1 .82-1.78l4.48-2.59v5.17l-4.47-2.58a.26.26 0 0 0-.26 0l-5.53 3.19v-2.07a.08.08 0 0 1 .04-.07L5.53 10a2.3 2.3 0 0 1 2.87.27a2.31 2.31 0 0 1 .82 1.78v1.35zm2.91-4.7a2.3 2.3 0 0 1 1.12-.3 2.31 2.31 0 0 1 1.62.68l-4.47 2.58a.26.26 0 0 0-.13.23v6.38L9.04 12a.08.08 0 0 1-.04-.07v-5.27a2.3 2.3 0 0 1 1.74-2.28 2.31 2.31 0 0 1 .65-.08zm5.73 3.3a2.31 2.31 0 0 1 .82 1.78v5.17l-4.47-2.58a.26.26 0 0 0-.26 0l-5.53 3.19v-2.07a.08.08 0 0 1 .04-.07l4.57-2.64a2.3 2.3 0 0 1 2.87.27a2.31 2.31 0 0 1 .96 2.96zm2.07 7.23a2.3 2.3 0 0 1-.82 1.78l-4.48 2.59V11.23l4.47 2.58a.26.26 0 0 0 .26 0l5.53-3.19v2.07c0 .03-.02.05-.04.07l-4.57 2.64a2.3 2.3 0 0 1-2.87-.27a2.31 2.31 0 0 1-.82-1.78v-1.35z"/>
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Midjourney', 
+      label: 'Imagine on Midjourney', 
+      url: 'https://www.midjourney.com/imagine', 
+      color: '#5865F2', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#5865F2] fill-none stroke-current" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 17h20L12 4z" />
+          <path d="M12 4v13" />
+          <path d="M7 17a5 5 0 0 1 10 0" />
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Leonardo.ai', 
+      label: 'Create on Leonardo', 
+      url: 'https://app.leonardo.ai/ai-generations', 
+      color: '#F97316', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#F97316] fill-none stroke-current" strokeWidth="2.5" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Clipdrop', 
+      label: 'Render on Clipdrop', 
+      url: 'https://clipdrop.co/stable-diffusion', 
+      color: '#8B5CF6', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#8B5CF6] fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L9 9 2 12l7 3 3 7 3-7 7-3-7-3z" />
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Flux.1', 
+      label: 'Generate on Flux.1', 
+      url: 'https://replicate.com/black-forest-labs/flux-dev', 
+      color: '#3B82F6', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#3B82F6] fill-none stroke-current" strokeWidth="3" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 21V3h14M5 11h10" />
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Ideogram 2.0', 
+      label: 'Create on Ideogram', 
+      url: 'https://ideogram.ai/', 
+      color: '#EC4899', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#EC4899] fill-none stroke-current" strokeWidth="3" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 4h6M12 4v16M9 20h6" />
+        </svg>
+      ) 
+    },
+    { 
+      name: 'Google Imagen 3', 
+      label: 'Generate on Imagen 3', 
+      url: 'https://aistudio.google.com/', 
+      color: '#00D2FF', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#00D2FF] fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2c-.3 2.7-2.3 4.7-5 5 2.7.3 4.7 2.3 5 5 .3-2.7 2.3-4.7 5-5-2.7-.3-4.7-2.3-5-5zM6 14c-.2 1.3-1.2 2.3-2.5 2.5 1.3.2 2.3 1.2 2.5 2.5.2-1.3 1.2-2.3 2.5-2.5-1.3-.2-2.3-1.2-2.5-2.5z" />
+        </svg>
+      ) 
+    },
+  ];
+
+  const getStudioUrl = (name: string, baseUrl: string, promptText: string) => {
+    const encoded = encodeURIComponent(promptText);
+    if (name === 'DALL·E') {
+      return `https://chatgpt.com/?hints=dalle&q=${encoded}`;
+    }
+    if (name === 'Midjourney') {
+      return `https://www.midjourney.com/imagine?prompt=${encoded}`;
+    }
+    if (name === 'Leonardo.ai') {
+      return `https://app.leonardo.ai/ai-generations?prompt=${encoded}`;
+    }
+    if (name === 'Google Imagen 3') {
+      return `https://aistudio.google.com/app/prompts/new?prompt=${encoded}`;
+    }
+    if (name === 'Ideogram 2.0') {
+      return `https://ideogram.ai/?prompt=${encoded}`;
+    }
+    return baseUrl;
+  };
+
+  const openInStudio = async (promptText: string, studioName: string, baseUrl: string) => {
+    if (!promptText || !promptText.trim()) {
+      toast.error('No prompt text available to generate.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(promptText);
+      const destinationUrl = getStudioUrl(studioName, baseUrl, promptText);
+      toast.success('Prompt copied & pre-filled — opening studio...', { duration: 2500 });
+      setTimeout(() => {
+        window.open(destinationUrl, '_blank', 'noopener,noreferrer');
+      }, 400);
+    } catch {
+      toast.error('Failed to copy prompt');
+    }
+    setStudioDropdownOpen(null);
+  };
 
   useEffect(() => {
     setUsedPrompts(getUsedPrompts());
@@ -579,6 +701,41 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             <Share2 size={11} />
                             Share
                           </button>
+                          {/* AI Studio Bridges Dropdown */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setStudioDropdownOpen(prev => prev === cardId ? null : cardId)}
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/10 to-[#8B5CF6]/10 text-[#a3a5fc] border-[#6366F1]/25 hover:border-[#6366F1]/50 transition-all active:scale-95"
+                              title="Open in AI Studio"
+                            >
+                              <ExternalLink size={11} />
+                              Generate
+                              <ChevronDown size={10} className={`transition-transform ${studioDropdownOpen === cardId ? 'rotate-180' : ''}`} />
+                            </button>
+                            {studioDropdownOpen === cardId && (
+                              <>
+                                <div className="fixed inset-0 z-40" onClick={() => setStudioDropdownOpen(null)} />
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-[#111118] border border-[#2A2A38] rounded-xl shadow-2xl z-50 overflow-hidden max-h-[300px] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-top-1">
+                                  <div className="px-3 py-2 border-b border-[#2A2A38]">
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8B8B9E]">Copy & Open in Studio</p>
+                                  </div>
+                                  {AI_STUDIOS.map(studio => (
+                                    <button
+                                      key={studio.name}
+                                      onClick={() => openInStudio(card.prompt || '', studio.name, studio.url)}
+                                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-xs font-medium text-[#D1D1E0] hover:bg-[#1A1A24] transition-colors group/studio"
+                                    >
+                                      <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">{studio.icon}</span>
+                                      <div className="flex-1 min-w-0">
+                                        <span className="group-hover/studio:text-white transition-colors">{studio.label}</span>
+                                      </div>
+                                      <ExternalLink size={10} className="text-[#8B8B9E] group-hover/studio:text-[#6366F1] transition-colors shrink-0" />
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div
@@ -733,6 +890,41 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                                   <Share2 size={11} />
                                   Share
                                 </button>
+                                {/* AI Studio Bridges for Enhanced */}
+                                <div className="relative">
+                                  <button
+                                    onClick={() => setStudioDropdownOpen(prev => prev === `${cardId}-enh` ? null : `${cardId}-enh`)}
+                                    className="flex items-center gap-1.5 px-4 py-3 min-h-[44px] rounded-lg text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/10 to-[#8B5CF6]/10 text-[#a3a5fc] border-[#6366F1]/25 hover:border-[#6366F1]/50 transition-all active:scale-95"
+                                    title="Open in AI Studio"
+                                  >
+                                    <ExternalLink size={11} />
+                                    Generate
+                                    <ChevronDown size={10} className={`transition-transform ${studioDropdownOpen === `${cardId}-enh` ? 'rotate-180' : ''}`} />
+                                  </button>
+                                  {studioDropdownOpen === `${cardId}-enh` && (
+                                    <>
+                                      <div className="fixed inset-0 z-40" onClick={() => setStudioDropdownOpen(null)} />
+                                      <div className="absolute right-0 bottom-full mb-2 w-56 bg-[#111118] border border-[#2A2A38] rounded-xl shadow-2xl z-50 overflow-hidden max-h-[300px] overflow-y-auto scrollbar-none">
+                                        <div className="px-3 py-2 border-b border-[#2A2A38]">
+                                          <p className="text-[10px] font-bold uppercase tracking-wider text-[#8B8B9E]">Copy & Open in Studio</p>
+                                        </div>
+                                        {AI_STUDIOS.map(studio => (
+                                          <button
+                                            key={studio.name}
+                                            onClick={() => openInStudio(enhancedPromptText, studio.name, studio.url)}
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-xs font-medium text-[#D1D1E0] hover:bg-[#1A1A24] transition-colors group/studio"
+                                          >
+                                            <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">{studio.icon}</span>
+                                            <div className="flex-1 min-w-0">
+                                              <span className="group-hover/studio:text-white transition-colors">{studio.label}</span>
+                                            </div>
+                                            <ExternalLink size={10} className="text-[#8B8B9E] group-hover/studio:text-[#6366F1] transition-colors shrink-0" />
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>

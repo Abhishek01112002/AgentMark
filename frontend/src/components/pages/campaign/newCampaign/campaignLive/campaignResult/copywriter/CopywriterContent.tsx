@@ -83,6 +83,159 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   const [steeringInput, setSteeringInput] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
 
+  const getBridgeForChannel = (channel: string) => {
+    const ch = channel.toLowerCase();
+    
+    if (ch === 'twitter' || ch === 'x') {
+      return { 
+        name: 'X (Twitter)', 
+        label: 'Post on X (Twitter)', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'linkedin') {
+      return { 
+        name: 'LinkedIn', 
+        label: 'Share on LinkedIn', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#0077B5] fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'email') {
+      return { 
+        name: 'Email App', 
+        label: 'Compose in Email Client', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#818CF8] fill-none stroke-current" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'facebook') {
+      return { 
+        name: 'Meta Ads Manager', 
+        label: 'Open Meta Ads Manager', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#1877F2] fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1V12h3v3h-3v6.8c4.56-.93 8-4.96 8-9.8z"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'instagram') {
+      return { 
+        name: 'Meta Ads Manager', 
+        label: 'Open Meta Ads Manager', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#E1306C] fill-none stroke-current" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'youtube' || ch === 'tiktok') {
+      return { 
+        name: ch === 'youtube' ? 'YouTube Studio' : 'TikTok Upload', 
+        label: ch === 'youtube' ? 'Open YouTube Studio' : 'Open TikTok Studio', 
+        icon: ch === 'youtube' ? (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[#FF0000] fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.11C19.518 3.545 12 3.545 12 3.545s-7.518 0-9.388.508a3.003 3.003 0 0 0-2.11 2.11C0 8.033 0 12 0 12s0 3.967.502 5.837a3.003 3.003 0 0 0 2.11 2.11c1.87.508 9.388.508 9.388.508s7.518 0 9.388-.508a3.003 3.003 0 0 0 2.11-2.11C24 15.967 24 12 24 12s0-3.967-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-white fill-current" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.74 4.29 1.84V9.9c-2.07-.03-4.11-.83-5.69-2.2-.08.06-.09.15-.09.24v9.06c.01 4.54-3.53 8.35-8.07 8.52-4.9.29-9.15-3.37-9.12-8.29.04-4.57 3.58-8.4 8.15-8.54v3.91a4.34 4.34 0 0 0-4.22 4.6c.16 2.37 2.19 4.22 4.57 4.15 2.39-.07 4.26-2.13 4.19-4.52V.02z"/>
+          </svg>
+        ) 
+      };
+    }
+    if (ch === 'google_ads') {
+      return { 
+        name: 'Google Ads', 
+        label: 'Open Google Ads', 
+        icon: (
+          <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.02 15.84l9.16-15.06c.4-.66 1.25-.87 1.91-.47l4.58 2.78c.66.4.87 1.25.47 1.91L7.98 20.06c-.4.66-1.25.87-1.91.47L1.49 17.75c-.66-.4-.87-1.25-.47-1.91z" fill="#F4B400"/>
+            <path d="M16.48 16.59l4.58 2.78c.66.4.87 1.25.47 1.91l-2.29 3.76c-.4.66-1.25.87-1.91.47l-4.58-2.78c-.66-.4-.87-1.25-.47-1.91l2.29-3.76c.4-.66 1.25-.87 1.91-.47z" fill="#4285F4"/>
+          </svg>
+        ) 
+      };
+    }
+    return null;
+  };
+
+  const getCopywriterBridgeUrl = (name: string, copyText: string, variant: CopyVariant) => {
+    const encoded = encodeURIComponent(copyText);
+    if (name === 'X (Twitter)') {
+      return `https://x.com/intent/post?text=${encoded}`;
+    }
+    if (name === 'LinkedIn') {
+      return `https://www.linkedin.com/sharing/share-offsite/`;
+    }
+    if (name === 'Email App') {
+      return `mailto:?subject=${encodeURIComponent(variant.headline || '')}&body=${encodeURIComponent(variant.body_copy || '')}`;
+    }
+    if (name === 'Meta Ads Manager') {
+      return 'https://adsmanager.facebook.com/';
+    }
+    if (name === 'YouTube Studio') {
+      return 'https://studio.youtube.com/';
+    }
+    if (name === 'TikTok Upload') {
+      return 'https://www.tiktok.com/upload';
+    }
+    if (name === 'Google Ads') {
+      return 'https://ads.google.com/';
+    }
+    return '';
+  };
+
+  const getVariantFormattedText = (variant: CopyVariant): string => {
+    const parts: string[] = [];
+    if (variant.headline) {
+      parts.push(variant.headline);
+      parts.push('');
+    }
+    if (variant.body_copy) {
+      parts.push(variant.body_copy);
+    }
+    return parts.join('\n');
+  };
+
+  const handleOpenCopywriterBridge = async (variant: CopyVariant, bridgeName: string) => {
+    const copyText = getVariantFormattedText(variant);
+    if (!copyText || !copyText.trim()) {
+      toast.error('No copy text available to share.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(copyText);
+      const url = getCopywriterBridgeUrl(bridgeName, copyText, variant);
+      toast.success('Copy text copied to clipboard — opening bridge...', { duration: 2500 });
+      if (url) {
+        setTimeout(() => {
+          if (url.startsWith('mailto:')) {
+            window.location.href = url;
+          } else {
+            window.open(url, '_blank', 'noopener,noreferrer');
+          }
+        }, 400);
+      }
+    } catch {
+      toast.error('Failed to copy text');
+    }
+  };
+
   // Seed localVariants on mount: merge existing copy_variants (from DB) with the
   // original AI output (copy_output / legacy) so the original is never lost when
   // a new variant is generated for the first time on a channel.
@@ -577,6 +730,24 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                       </div>
                     </div>
                   )}
+                  {/* Highlighted Direct Action Button at bottom */}
+                  {(() => {
+                    const bridge = getBridgeForChannel(activeTab);
+                    if (!bridge) return null;
+                    return (
+                      <div className="pt-4 mt-5 border-t border-[#2A2A38]/50 flex justify-end">
+                        <button
+                          onClick={() => handleOpenCopywriterBridge(variant, bridge.name)}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/15 to-[#8B5CF6]/15 hover:from-[#6366F1]/25 hover:to-[#8B5CF6]/25 text-[#a3a5fc] border-[#6366F1]/30 hover:border-[#6366F1]/50 transition-all active:scale-95 cursor-pointer shadow-lg shadow-indigo-900/10"
+                        >
+                          <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">
+                            {bridge.icon}
+                          </span>
+                          <span>{bridge.label}</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
