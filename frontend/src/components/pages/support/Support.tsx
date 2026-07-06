@@ -33,10 +33,7 @@ const SupportContent: React.FC = () => {
       question: 'How does the Tavily web search integration assist the market research phase?',
       answer: 'During campaign strategy generation, our Research Agent utilizes Tavily API to fetch real-time market trends, competitor insights, and public sentiment. It then synthesizes this live data directly into the campaign strategy outline instead of relying solely on static model training data.',
     },
-    {
-      question: 'Can I connect my own ad accounts for automated publishing?',
-      answer: 'Currently, AgentMark supports one-click social bridging (direct-linking to X, LinkedIn, Meta Ads Manager, YouTube Studio, and TikTok Studio with pre-filled content). Automated API publishing via direct webhooks or native integrations (HubSpot, Salesforce, Zapier) is available for Enterprise tier configurations.',
-    },
+
     {
       question: 'How do I customize the brand voice or tone parameters?',
       answer: 'Under Campaign Settings, you can define custom brand directives, target audience profiles, and tone constraints. These rules are injected as system prompts across the entire agent cluster, ensuring all generated copy and visuals strictly align with your corporate guidelines.',
