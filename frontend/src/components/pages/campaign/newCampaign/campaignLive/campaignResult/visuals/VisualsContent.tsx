@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  RotateCw
+  RotateCw,
+  Share2
 } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import toast from 'react-hot-toast';
@@ -86,6 +87,29 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       setTimeout(() => setCopiedCardId(null), 2000);
     } catch {
       toast.error('Failed to copy');
+    }
+  };
+
+  const handleSharePrompt = async (promptText: string, title: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Image Prompt - ${title}`,
+          text: promptText,
+        });
+        toast.success('Prompt shared!');
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          toast.error('Failed to share');
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(promptText);
+        toast.success('Copied to clipboard! (Share API not supported)');
+      } catch {
+        toast.error('Failed to copy');
+      }
     }
   };
 
@@ -535,17 +559,27 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                         <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
                           Image Prompt
                         </span>
-                        <button
-                          onClick={() => handleCopyPrompt(card.prompt || '', cardId)}
-                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                            isCopied
-                              ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
-                              : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
-                          }`}
-                        >
-                          {isCopied ? <Check size={11} /> : <Copy size={11} />}
-                          {isCopied ? 'Copied' : 'Copy'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleCopyPrompt(card.prompt || '', cardId)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                              isCopied
+                                ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                                : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                            }`}
+                          >
+                            {isCopied ? <Check size={11} /> : <Copy size={11} />}
+                            {isCopied ? 'Copied' : 'Copy'}
+                          </button>
+                          <button
+                            onClick={() => handleSharePrompt(card.prompt || '', `${card.platform || 'Platform'} Prompt`)}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40 transition-all active:scale-95"
+                            title="Share Prompt"
+                          >
+                            <Share2 size={11} />
+                            Share
+                          </button>
+                        </div>
                       </div>
                       <div
                         className={`bg-[#0A0A0F] border rounded-xl p-4 text-sm leading-relaxed text-[#D1D1E0] min-h-[130px] max-h-[240px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
@@ -690,6 +724,14 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                                 >
                                   {enhancedCopiedIdx === cardId ? <Check size={11} /> : <Copy size={11} />}
                                   {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
+                                </button>
+                                <button
+                                  onClick={() => handleSharePrompt(enhancedPromptText, `${card.platform || 'Platform'} Enhanced Prompt`)}
+                                  className="flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] rounded-lg text-xs font-semibold border bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40 transition-all active:scale-95"
+                                  title="Share Enhanced Prompt"
+                                >
+                                  <Share2 size={11} />
+                                  Share
                                 </button>
                               </div>
                             </div>
