@@ -526,9 +526,31 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
             {projectedMetrics.estimated_cost && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. Cost</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{projectedMetrics.estimated_cost}</p></div>)}
             {projectedMetrics.roi_projection && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>ROI Projection</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.roi_projection}</p></div>)}
           </div>
-          {projectedMetrics.timeline_to_results && (
-            <div className="flex items-center gap-2 text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-              <Calendar size={14} />Timeline: {projectedMetrics.timeline_to_results}
+          <div className="flex flex-wrap gap-x-8 gap-y-2 items-center justify-between text-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '16px' }}>
+            {projectedMetrics.timeline_to_results && (
+              <div className="flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                <Calendar size={14} className="text-[#6366F1]" />
+                <span>Timeline: <strong style={{ color: '#F1F1F3' }}>{projectedMetrics.timeline_to_results}</strong></span>
+              </div>
+            )}
+            
+            {projectedMetrics.projection_confidence && (
+              <div className="flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ color: '#8B8B9E' }}>Confidence:</span>
+                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-[#4edea3]/10 border border-[#4edea3]/20" style={{ color: '#4edea3', fontFamily: 'JetBrains Mono, monospace' }}>
+                  {projectedMetrics.projection_confidence}
+                </span>
+                {projectedMetrics.confidence_explanation && (
+                  <span className="text-[#8B8B9E] text-xs">({projectedMetrics.confidence_explanation})</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {projectedMetrics.projection_note && (
+            <div className="mt-4 p-3.5 rounded-lg bg-[#0d0d14] border border-[#2A2A38]/50 text-xs italic" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+              <span className="font-semibold uppercase tracking-wider text-[#A0A0D2] not-italic block mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '10px' }}>Analyst Note</span>
+              "{projectedMetrics.projection_note}"
             </div>
           )}
         </div>
