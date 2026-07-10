@@ -100,8 +100,36 @@ function fromLegacyFormat(raw: Record<string, unknown>): LlmSettingsState {
 
 export const llmSettingsService = {
   get(userId?: string | null): LlmSettingsState {
-    const key = getStorageKey(userId);
-    const raw = localStorage.getItem(key);
+    if (!userId) {
+      return this.normalize({
+        gemini: defaultProvider(),
+        groq: defaultProvider(),
+        openai: defaultProvider(),
+        tavily: defaultProvider(),
+        providerOrder: [...DEFAULT_ORDER],
+      });
+    }
+
+    const scopedKey = getStorageKey(userId);
+    let raw = localStorage.getItem(scopedKey);
+
+    // Migration logic: If user has no scoped keys but has old legacy global keys,
+    // migrate them to this user's scope and clean up the legacy key.
+    if (!raw) {
+      const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (legacyRaw) {
+        try {
+          // Verify it's valid JSON before migrating
+          JSON.parse(legacyRaw);
+          localStorage.setItem(scopedKey, legacyRaw);
+          raw = legacyRaw;
+        } catch {
+          // ignore malformed legacy config
+        }
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
+
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -120,26 +148,17 @@ export const llmSettingsService = {
   },
 
   save(state: LlmSettingsState, userId?: string | null) {
+    if (!userId) return;
     const key = getStorageKey(userId);
     localStorage.setItem(key, JSON.stringify(this.normalize(state)));
   },
 
   clear(userId?: string | null) {
+    if (!userId) return;
     const key = getStorageKey(userId);
     localStorage.removeItem(key);
   },
 
-  /** Remove keys for ALL users — called on logout so the browser is pristine. */
-  clearAll() {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k === LEGACY_STORAGE_KEY || k.startsWith('agentmark_llm_config_'))) {
-        keysToRemove.push(k);
-      }
-    }
-    keysToRemove.forEach((k) => localStorage.removeItem(k));
-  },
 
   toHeaderPayload(state: LlmSettingsState) {
     return {
