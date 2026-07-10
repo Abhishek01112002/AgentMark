@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 
@@ -11,6 +11,14 @@ const SupportContent: React.FC = () => {
   const [activeAccordion, setActiveAccordion] = useState<number>(0);
   const [showTutorialModal, setShowTutorialModal] = useState<boolean>(false);
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed, activeVideoIndex, showTutorialModal]);
 
   const faqs: FAQItem[] = [
     {
@@ -58,24 +66,45 @@ const SupportContent: React.FC = () => {
       duration: '2:40',
       videoUrl: '/videos/intro_clusters.mp4',
       description: 'Understand how the 7 autonomous agents inside the AgentMark cluster collaborate, from market research to automated publishing.',
+      steps: [
+        'Fill out target audience, industry, and brand voice guidelines on the launch screen.',
+        'Trigger the campaign run to initiate the manager agent orchestration.',
+        'Track real-time agent output progress through overview, research, and strategy milestones.'
+      ]
     },
     {
       title: 'Refining Copy with the Co-Creation Workbench',
       duration: '3:15',
       videoUrl: '/videos/refining_copy.mp4',
       description: 'Learn how to fine-tune copy drafts, issue revisions, and pin copy variations on the co-creation workbench.',
+      steps: [
+        'Navigate to the Copywriter tab in the final campaign output workspace.',
+        'Compare multiple copy variants side-by-side.',
+        'Use the bottom-right text input area to request custom modifications (e.g., "Make it sound more urgent").',
+        'Mark the winning variant as the "Champion" to lock it in.'
+      ]
     },
     {
       title: 'Setting up Tavily & LLM API Keys',
       duration: '1:50',
       videoUrl: '/videos/api_keys.mp4',
       description: 'A step-by-step walkthrough of adding provider credentials and testing API connection states.',
+      steps: [
+        'Click the Settings tab in the main sidebar.',
+        'Insert your Gemini or OpenAI API keys in the dashboard card fields.',
+        'Click "Save Credentials" and verify the connection health status indicator turns green.'
+      ]
     },
     {
       title: 'Customizing Brand Voice & Directives',
       duration: '4:10',
       videoUrl: '/videos/brand_voice.mp4',
       description: 'Master advanced prompt configurations to enforce brand tone, style guidelines, and compliance rules.',
+      steps: [
+        'Open the Advanced Configurations panel on the new campaign screen.',
+        'Write custom negative directives (e.g., "Do not mention pricing or discounts").',
+        'Observe how the Reviewer Agent references these directives to audit generated outputs.'
+      ]
     },
   ];
 
@@ -280,29 +309,74 @@ const SupportContent: React.FC = () => {
             <div className="flex-1 lg:col-span-2 bg-black flex flex-col">
               <div className="relative aspect-video w-full flex-1 bg-black">
                 <video
+                  ref={videoRef}
                   key={activeVideoIndex}
                   controls
                   autoPlay
+                  muted
                   playsInline
                   className="absolute inset-0 w-full h-full object-cover"
                   src={tutorials[activeVideoIndex].videoUrl}
+                  onPlay={() => {
+                    if (videoRef.current) {
+                      videoRef.current.playbackRate = playbackSpeed;
+                    }
+                  }}
                 />
               </div>
-              <div className="p-5 border-t border-[#2A2A38]">
+              <div className="p-5 border-t border-[#2A2A38] max-h-[220px] overflow-y-auto">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono text-[#4edea3] bg-[#4edea3]/10 border border-[#4edea3]/20">
                     MASTERCLASS
                   </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider font-mono text-[#F59E0B] bg-[#F59E0B]/10 border border-[#F59E0B]/20">
+                    SILENT WALKTHROUGH
+                  </span>
                   <span className="text-xs text-[#8B8B9E] font-mono">
                     Duration: {tutorials[activeVideoIndex].duration}
                   </span>
+                  
+                  {/* Playback Speed Toggles */}
+                  <div className="flex items-center gap-1 ml-auto">
+                    <span className="text-[9px] uppercase text-[#8B8B9E] font-mono mr-1">Speed</span>
+                    {[0.5, 1, 1.5, 2].map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={() => setPlaybackSpeed(speed)}
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border transition-all ${
+                          playbackSpeed === speed
+                            ? 'bg-[#4edea3]/10 border-[#4edea3] text-[#4edea3]'
+                            : 'bg-transparent border-[#2A2A38] text-[#8B8B9E] hover:border-[#8B8B9E]/50'
+                        }`}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <h4 className="text-xl font-bold mb-2 text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
                   {tutorials[activeVideoIndex].title}
                 </h4>
-                <p className="text-sm text-[#8B8B9E] leading-relaxed" style={{ fontFamily: 'Sora, sans-serif' }}>
+                <p className="text-sm text-[#8B8B9E] leading-relaxed mb-4" style={{ fontFamily: 'Sora, sans-serif' }}>
                   {tutorials[activeVideoIndex].description}
                 </p>
+
+                {/* Step by Step Guide (Useful for Silent/Unvoiced Screen Records) */}
+                {tutorials[activeVideoIndex].steps && (
+                  <div className="mt-4 pt-4 border-t border-[#2A2A38]/50">
+                    <span className="text-[10px] font-semibold tracking-wider font-mono text-[#A0A0D2] uppercase block mb-2">
+                      Key Steps Shown in Video:
+                    </span>
+                    <ul className="space-y-1.5">
+                      {tutorials[activeVideoIndex].steps.map((step, sIdx) => (
+                        <li key={sIdx} className="text-xs text-[#8B8B9E] flex items-start gap-2 leading-relaxed">
+                          <span className="text-[#4edea3] font-mono font-semibold mt-0.5 shrink-0">{sIdx + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
 
