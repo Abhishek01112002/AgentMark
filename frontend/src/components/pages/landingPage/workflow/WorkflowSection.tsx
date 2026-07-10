@@ -172,13 +172,13 @@ export const WorkflowSection = () => {
             </div>
             <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-32 w-32 sm:h-40 sm:w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[rgba(99,102,241,0.09)] blur-3xl" />
 
-            <div className="flex flex-col gap-4 sm:gap-6 relative z-20">
+             <div className="flex flex-col gap-4 sm:gap-6 relative z-20">
               <div className="flex flex-col gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] border-b pb-3 sm:pb-4 text-[#8B8B9E] border-[#2A2A38] font-mono min-[380px]:flex-row min-[380px]:items-center min-[380px]:justify-between">
                 <span className="inline-flex items-center gap-1.5 sm:gap-2">
                   <span className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-[#10B981] pulse-anim" />
-                  Campaign: Q3 Product Launch
+                  <span>Campaign: <strong className="text-[#F1F1F3] font-bold">Q3 Product Launch</strong></span>
                 </span>
-                <span>Status: Generating Assets</span>
+                <span>Status: <strong className="text-[#A5B4FC] font-bold animate-pulse">Generating Assets</strong></span>
               </div>
 
               {/* Agent nodes - Responsive grid */}
@@ -200,7 +200,8 @@ export const WorkflowSection = () => {
                     <span
                       className="text-[8px] sm:text-[9px] md:text-[10px] text-center"
                       style={{
-                        color: node.active || node.done ? "#6366F1" : "#4A4A5E",
+                        color: node.active ? "#C0C1FF" : node.done ? "#10B981" : "#6B6B80",
+                        fontWeight: node.active ? 600 : 500,
                         fontFamily: "JetBrains Mono, monospace",
                       }}
                     >
@@ -235,14 +236,14 @@ export const WorkflowSection = () => {
                 className="rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 border text-xs sm:text-sm flex items-start min-h-24 sm:min-h-32 bg-[#0A0A0F] relative overflow-hidden"
                 style={{
                   borderColor: "#2A2A38",
-                  color: "#8B8B9E",
+                  color: "#F1F1F3",
                   fontFamily: "JetBrains Mono, monospace",
                 }}
               >
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent)]" />
                 <div className="pointer-events-none absolute left-0 top-0 h-full w-16 sm:w-24 bg-[linear-gradient(90deg,rgba(99,102,241,0.08),transparent)]" />
                 <span className="mr-1.5 sm:mr-2 text-indigo-400 shrink-0">&gt;</span>
-                <span className="leading-5 sm:leading-6 md:leading-7">{displayedText}</span>
+                <span className="leading-5 sm:leading-6 md:leading-7 text-[#F1F1F3]">{displayedText}</span>
               </div>
             </div>
           </div>

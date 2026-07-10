@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { SparklesIcon, ArrowRightIcon } from '../icons';
 
-export const HeroSection = () => {
+export const HeroSection = ({ onViewDemoClick }: { onViewDemoClick?: () => void }) => {
   const navigate = useNavigate();
 
   return (
@@ -40,13 +40,16 @@ export const HeroSection = () => {
         <div className="mt-6 sm:mt-8 md:mt-10 flex w-full flex-row flex-wrap items-center justify-center gap-2 sm:gap-4 mb-8 sm:mb-12 px-4">
           <button
             onClick={() => navigate('/signup')}
-            className="flex w-auto items-center justify-center gap-1.5 sm:gap-2 rounded-md bg-[#6366F1] px-4 sm:px-6 py-3 min-h-[44px] text-[11px] sm:text-xs font-bold text-[#F1F1F3] transition-all hover:bg-[#4F46E5] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] font-mono"
+            className="flex w-auto items-center justify-center gap-1.5 sm:gap-2 rounded-md bg-[#6366F1] px-4 sm:px-6 py-3 min-h-[44px] text-xs sm:text-sm font-semibold text-[#F1F1F3] transition-all hover:bg-[#4F46E5] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] cursor-pointer"
+            style={{ fontFamily: 'Sora, sans-serif' }}
           >
             Start Your Campaign
-            <ArrowRightIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <ArrowRightIcon className="w-3.5 h-3.5" />
           </button>
           <button
-            className="flex w-auto items-center justify-center gap-1.5 sm:gap-2 rounded-md border border-[#2A2A38] bg-[#111118] px-4 sm:px-6 py-3 min-h-[44px] text-[11px] sm:text-xs font-bold text-[#F1F1F3] transition-all hover:bg-[#1A1A24] font-mono"
+            onClick={onViewDemoClick}
+            className="flex w-auto items-center justify-center gap-1.5 sm:gap-2 rounded-md border border-[#2A2A38] bg-[#111118] px-4 sm:px-6 py-3 min-h-[44px] text-xs sm:text-sm font-semibold text-[#F1F1F3] transition-all hover:bg-[#1A1A24] cursor-pointer"
+            style={{ fontFamily: 'Sora, sans-serif' }}
           >
             View Demo
           </button>
