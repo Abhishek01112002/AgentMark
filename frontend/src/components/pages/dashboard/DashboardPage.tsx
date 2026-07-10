@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import { llmSettingsService } from '../../../services/llm-settings.service';
@@ -158,6 +159,7 @@ const dashboardStyles = (
 
 function DashboardContent() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalProjects: 0,
@@ -171,9 +173,9 @@ function DashboardContent() {
   const [hasApiKeys, setHasApiKeys] = useState(true);
 
   useEffect(() => {
-    const settings = llmSettingsService.get();
+    const settings = llmSettingsService.get(user?.id);
     setHasApiKeys(llmSettingsService.hasValidApiKeys(settings));
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;

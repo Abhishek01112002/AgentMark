@@ -11,7 +11,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and user-scoped LLM config
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -19,15 +19,18 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    const llmConfigRaw = localStorage.getItem('agentmark_llm_config');
-    if (llmConfigRaw) {
-      try {
-        const llmConfig = llmSettingsService.normalize(JSON.parse(llmConfigRaw));
-        config.headers['x-llm-config'] = JSON.stringify(llmSettingsService.toHeaderPayload(llmConfig));
-      } catch {
-        // ignore malformed local storage and continue without provider config
-      }
+    // Scope LLM config to the currently logged-in user so keys from
+    // a previous account's session never bleed into a new account.
+    const storedUser = localStorage.getItem('user');
+    const userId = storedUser ? (() => { try { return JSON.parse(storedUser)?.id as string | undefined; } catch { return undefined; } })() : undefined;
+
+    const llmConfig = llmSettingsService.get(userId);
+    const payload = llmSettingsService.toHeaderPayload(llmConfig);
+    const hasKeys = Object.values(payload).some((v) => v && v !== null);
+    if (hasKeys) {
+      config.headers['x-llm-config'] = JSON.stringify(payload);
     }
+
     return config;
   },
   (error) => {

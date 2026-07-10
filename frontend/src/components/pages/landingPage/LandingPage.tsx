@@ -24,8 +24,8 @@ export default function LandingPage() {
   const tutorials = [
     {
       title: 'How to Launch Your First Campaign',
-      duration: '1:00',
-      videoUrl: '/videos/create_campaign.mp4',
+      duration: '3:32',
+      videoUrl: '/create_campaign.mp4',
       description: 'A quick walkthrough showing how to enter target parameters and trigger the multi-agent campaign runner.',
       steps: [
         'Click on "New Campaign" in the sidebar dashboard.',
@@ -35,8 +35,8 @@ export default function LandingPage() {
     },
     {
       title: 'Reviewing & Sharing Copy Variants',
-      duration: '1:00',
-      videoUrl: '/videos/customize_copy.mp4',
+      duration: '1:04',
+      videoUrl: '/customize_copy.mp4',
       description: 'Learn how to inspect the generated copywriter outputs and use the one-click brand bridges.',
       steps: [
         'Navigate to the Copywriter tab in your completed campaign results.',
@@ -46,8 +46,8 @@ export default function LandingPage() {
     },
     {
       title: 'Generating Visual Prompts via AI Bridges',
-      duration: '1:00',
-      videoUrl: '/videos/visual_studio_bridges.mp4',
+      duration: '0:55',
+      videoUrl: '/visual_studio_bridges.mp4',
       description: 'Learn how to copy generated image prompts and launch external image generation tools.',
       steps: [
         'Navigate to the Visuals tab in your campaign results.',
@@ -57,8 +57,8 @@ export default function LandingPage() {
     },
     {
       title: 'Configuring API Keys & Credentials',
-      duration: '0:30',
-      videoUrl: '/videos/setup_api_keys.mp4',
+      duration: '0:38',
+      videoUrl: '/setup_api_keys.mp4',
       description: 'A step-by-step guide to adding your LLM credentials for campaign execution.',
       steps: [
         'Click on "Settings" in the main sidebar.',
@@ -227,7 +227,7 @@ export default function LandingPage() {
                   autoPlay
                   muted
                   playsInline
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain"
                   src={tutorials[activeVideoIndex].videoUrl}
                   onPlay={() => {
                     if (videoRef.current) {

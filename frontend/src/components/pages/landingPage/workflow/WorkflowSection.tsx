@@ -36,16 +36,16 @@ export const WorkflowSection = () => {
       setDisplayedText(text.slice(0, charIndex));
 
       if (charIndex < text.length) {
-        typingTimer = window.setTimeout(typeNextChar, 22);
+        typingTimer = window.setTimeout(typeNextChar, 42);
         return;
       }
 
       advanceTimer = window.setTimeout(() => {
         setActiveStepIndex((current) => (current + 1) % PIPELINE_STEPS.length);
-      }, 2300);
+      }, 4200);
     };
 
-    typingTimer = window.setTimeout(typeNextChar, 120);
+    typingTimer = window.setTimeout(typeNextChar, 300);
 
     return () => {
       if (typingTimer) window.clearTimeout(typingTimer);

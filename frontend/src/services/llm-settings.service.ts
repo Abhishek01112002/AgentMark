@@ -17,7 +17,14 @@ export interface LlmSettingsState {
   providerOrder: LlmProviderId[];
 }
 
-const STORAGE_KEY = 'agentmark_llm_config';
+// ── Storage key helpers ──────────────────────────────────────────────────────
+// Keys are scoped per-user so that switching accounts never leaks API keys
+// from one user's session into another's.
+const LEGACY_STORAGE_KEY = 'agentmark_llm_config';
+
+function getStorageKey(userId?: string | null): string {
+  return userId ? `agentmark_llm_config_${userId}` : LEGACY_STORAGE_KEY;
+}
 
 const defaultProvider = (): LlmProviderState => ({
   keys: [],
@@ -92,8 +99,9 @@ function fromLegacyFormat(raw: Record<string, unknown>): LlmSettingsState {
 }
 
 export const llmSettingsService = {
-  get(): LlmSettingsState {
-    const raw = localStorage.getItem(STORAGE_KEY);
+  get(userId?: string | null): LlmSettingsState {
+    const key = getStorageKey(userId);
+    const raw = localStorage.getItem(key);
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as Record<string, unknown>;
@@ -111,12 +119,26 @@ export const llmSettingsService = {
     });
   },
 
-  save(state: LlmSettingsState) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.normalize(state)));
+  save(state: LlmSettingsState, userId?: string | null) {
+    const key = getStorageKey(userId);
+    localStorage.setItem(key, JSON.stringify(this.normalize(state)));
   },
 
-  clear() {
-    localStorage.removeItem(STORAGE_KEY);
+  clear(userId?: string | null) {
+    const key = getStorageKey(userId);
+    localStorage.removeItem(key);
+  },
+
+  /** Remove keys for ALL users — called on logout so the browser is pristine. */
+  clearAll() {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k === LEGACY_STORAGE_KEY || k.startsWith('agentmark_llm_config_'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
   },
 
   toHeaderPayload(state: LlmSettingsState) {

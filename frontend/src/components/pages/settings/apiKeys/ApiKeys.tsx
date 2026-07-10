@@ -4,6 +4,7 @@ import { Plus, Trash2, RefreshCw, CheckCircle2, XCircle, AlertCircle, Eye, EyeOf
 import toast from 'react-hot-toast';
 import api from '../../../../services/api';
 import { notificationsService } from '../../../../services/notifications.service';
+import { useAuth } from '../../../../contexts/AuthContext';
 import {
   llmSettingsService,
   LlmProviderId,
@@ -132,7 +133,8 @@ function maskKey(key: string): string {
 }
 
 const ApiKeys: React.FC = () => {
-  const [settings, setSettings] = useState<LlmSettingsState>(() => llmSettingsService.get());
+  const { user } = useAuth();
+  const [settings, setSettings] = useState<LlmSettingsState>(() => llmSettingsService.get(user?.id));
   const [newKeyValues, setNewKeyValues] = useState<Record<LlmProviderId, string>>({ gemini: '', groq: '', openai: '', tavily: '' });
   const [formatErrors, setFormatErrors] = useState<Record<LlmProviderId, string>>({ gemini: '', groq: '', openai: '', tavily: '' });
   const [hiddenKeys, setHiddenKeys] = useState<Record<string, boolean>>({});
@@ -179,7 +181,7 @@ const ApiKeys: React.FC = () => {
     const name = PROVIDERS.find((p) => p.id === provider)?.name || provider;
     const keys = settings[provider].keys.filter((_, i) => i !== index);
     const updated = { ...settings, [provider]: { keys } };
-    llmSettingsService.save(updated);
+    llmSettingsService.save(updated, user?.id);
     setSettings(updated);
     toast.success(`${name} key removed`);
     setDeleteTarget(null);
@@ -194,7 +196,7 @@ const ApiKeys: React.FC = () => {
     const name = PROVIDERS.find((p) => p.id === provider)?.name || provider;
     const existing = settings[provider].keys;
     const updated = { ...settings, [provider]: { keys: [...existing, { value: keyValue }] } };
-    llmSettingsService.save(updated);
+    llmSettingsService.save(updated, user?.id);
     setSettings(updated);
     setNewKeyValues((prev) => ({ ...prev, [provider]: '' }));
     setConfirmSave(null);

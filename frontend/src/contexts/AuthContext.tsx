@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { llmSettingsService } from '../services/llm-settings.service';
 
 interface User {
   id: string;
@@ -73,6 +74,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post('/auth/login', { email, password, rememberMe });
       const { user, token } = response.data;
 
+      // Clear any LLM config that may be lingering from a previous session or
+      // a different user account before we set the new user context.
+      llmSettingsService.clearAll();
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
@@ -90,6 +95,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post('/auth/signup', { email, password, name });
       const { user, token } = response.data;
 
+      // New account — start with a completely clean slate.
+      llmSettingsService.clearAll();
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
@@ -103,6 +111,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    // Wipe ALL user-scoped and legacy LLM keys so the next person
+    // who logs into this browser starts with zero saved keys.
+    llmSettingsService.clearAll();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

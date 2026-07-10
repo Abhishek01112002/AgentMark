@@ -7,6 +7,7 @@ import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
 import TopNav from '../../../shared/topNav/TopNav';
 import CreateProjectModal from '../../projects/CreateProjectModal';
 import { llmSettingsService, validateKey } from '../../../../services/llm-settings.service';
+import { useAuth } from '../../../../contexts/AuthContext';
 
 interface OptionItem {
   value: string;
@@ -34,6 +35,7 @@ const VOICE_ICONS: Record<string, any> = {
 const NewCampaignContent: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
@@ -231,7 +233,7 @@ const NewCampaignContent: React.FC = () => {
       return;
     }
 
-    const keys = llmSettingsService.get();
+    const keys = llmSettingsService.get(user?.id);
     const hasKeys = (['gemini', 'groq', 'openai'] as const).some((provider) =>
       keys[provider].keys.some((k) => validateKey(provider, k.value))
     );
