@@ -62,48 +62,47 @@ const SupportContent: React.FC = () => {
 
   const tutorials = [
     {
-      title: 'Introduction to Agent Clusters',
-      duration: '2:40',
-      videoUrl: '/videos/intro_clusters.mp4',
-      description: 'Understand how the 7 autonomous agents inside the AgentMark cluster collaborate, from market research to automated publishing.',
+      title: 'How to Launch Your First Campaign',
+      duration: '1:00',
+      videoUrl: '/videos/create_campaign.mp4',
+      description: 'A quick walkthrough showing how to enter target parameters and trigger the multi-agent campaign runner.',
       steps: [
-        'Fill out target audience, industry, and brand voice guidelines on the launch screen.',
-        'Trigger the campaign run to initiate the manager agent orchestration.',
-        'Track real-time agent output progress through overview, research, and strategy milestones.'
+        'Click on "New Campaign" in the sidebar dashboard.',
+        'Fill in the target audience, industry, and primary campaign goals.',
+        'Choose a brand voice and click "Launch Campaign" to start the AI runner.'
       ]
     },
     {
-      title: 'Refining Copy with the Co-Creation Workbench',
-      duration: '3:15',
-      videoUrl: '/videos/refining_copy.mp4',
-      description: 'Learn how to fine-tune copy drafts, issue revisions, and pin copy variations on the co-creation workbench.',
+      title: 'Reviewing & Sharing Copy Variants',
+      duration: '1:00',
+      videoUrl: '/videos/customize_copy.mp4',
+      description: 'Learn how to inspect the generated copywriter outputs and use the one-click brand bridges.',
       steps: [
-        'Navigate to the Copywriter tab in the final campaign output workspace.',
-        'Compare multiple copy variants side-by-side.',
-        'Use the bottom-right text input area to request custom modifications (e.g., "Make it sound more urgent").',
-        'Mark the winning variant as the "Champion" to lock it in.'
+        'Navigate to the Copywriter tab in your completed campaign results.',
+        'Select any channel tab (e.g., X, LinkedIn, Email) to view the generated drafts.',
+        'Click the bottom CTA button (like "Compose in Gmail" or "Post on X") to copy the text and open the bridge.'
       ]
     },
     {
-      title: 'Setting up Tavily & LLM API Keys',
-      duration: '1:50',
-      videoUrl: '/videos/api_keys.mp4',
-      description: 'A step-by-step walkthrough of adding provider credentials and testing API connection states.',
+      title: 'Generating Visual Prompts via AI Bridges',
+      duration: '1:00',
+      videoUrl: '/videos/visual_studio_bridges.mp4',
+      description: 'Learn how to copy generated image prompts and launch external image generation tools.',
       steps: [
-        'Click the Settings tab in the main sidebar.',
-        'Insert your Gemini or OpenAI API keys in the dashboard card fields.',
-        'Click "Save Credentials" and verify the connection health status indicator turns green.'
+        'Navigate to the Visuals tab in your campaign results.',
+        'Scroll to any generated prompt card.',
+        'Click the "Generate" button on the card, select an AI Studio engine (like DALL-E or Imagen 3), and let the bridge pre-fill the prompt.'
       ]
     },
     {
-      title: 'Customizing Brand Voice & Directives',
-      duration: '4:10',
-      videoUrl: '/videos/brand_voice.mp4',
-      description: 'Master advanced prompt configurations to enforce brand tone, style guidelines, and compliance rules.',
+      title: 'Configuring API Keys & Credentials',
+      duration: '0:30',
+      videoUrl: '/videos/setup_api_keys.mp4',
+      description: 'A step-by-step guide to adding your LLM credentials for campaign execution.',
       steps: [
-        'Open the Advanced Configurations panel on the new campaign screen.',
-        'Write custom negative directives (e.g., "Do not mention pricing or discounts").',
-        'Observe how the Reviewer Agent references these directives to audit generated outputs.'
+        'Click on "Settings" in the main sidebar.',
+        'Add your Gemini or OpenAI API keys into the respective input fields.',
+        'Click "Save Credentials" and wait for the green confirmation toast.'
       ]
     },
   ];
