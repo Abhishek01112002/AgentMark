@@ -13,6 +13,13 @@ vi.mock('../../../../services/notifications.service', () => ({
   },
 }));
 
+// ApiKeys now calls useAuth() to scope API keys per user.
+// Provide a stable mock so tests don't need a real AuthProvider tree.
+const MOCK_USER_ID = 'test-user-ci';
+vi.mock('../../../../contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: MOCK_USER_ID, email: 'ci@test.com', name: 'CI User' } }),
+}));
+
 describe('ApiKeys Component', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -47,7 +54,8 @@ describe('ApiKeys Component', () => {
     const saveAnyway = screen.getByRole('button', { name: /save anyway/i });
     fireEvent.click(saveAnyway);
 
-    const savedSettings = llmSettingsService.get();
+    // Keys are now scoped per userId — pass the same mocked userId used above
+    const savedSettings = llmSettingsService.get(MOCK_USER_ID);
     expect(savedSettings.gemini.keys[0].value).toBe('AIzaSyTestKey123456789012345678901234567');
   });
 });
