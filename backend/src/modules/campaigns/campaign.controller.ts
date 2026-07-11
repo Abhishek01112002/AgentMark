@@ -660,9 +660,12 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
     }
 
     const lockKey = `lock:variant:${id}:${channel}`;
-    const lockSet = await redis.set(lockKey, 'true', 'EX', 120, 'NX');
+    // TTL is set to 95s — slightly longer than the frontend's 90s per-attempt timeout.
+    // This guarantees the lock is always released before a legitimate retry fires,
+    // while still preventing true duplicate concurrent requests.
+    const lockSet = await redis.set(lockKey, 'true', 'EX', 95, 'NX');
     if (!lockSet) {
-      return res.status(409).json({ error: 'Generation in progress' });
+      return res.status(409).json({ error: 'A generation is already in progress for this channel. Please wait a moment and try again.' });
     }
 
     try {

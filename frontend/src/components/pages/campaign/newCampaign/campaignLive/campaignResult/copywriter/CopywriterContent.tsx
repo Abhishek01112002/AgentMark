@@ -310,46 +310,86 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     }
     const note = steeringInput[channel] || '';
     setIsGenerating(prev => ({ ...prev, [channel]: true }));
-    try {
-      const response = await api.post(`/campaigns/${campaignId}/variants/copy`, {
-        channel,
-        steeringNote: note,
-      });
-      const updatedVariants = response.data.variants || [];
-      setLocalVariants(prev => {
-        const prevChannelVariants: CopyVariant[] = prev[channel] || [];
-        const legacyVar = prevChannelVariants.find((v: CopyVariant) => v.id.startsWith('legacy-'));
-        
-        let newChannelVariants = [...updatedVariants];
-        if (legacyVar) {
-          const hasLegacy = updatedVariants.some((v: CopyVariant) => v.id === legacyVar.id);
-          if (!hasLegacy) {
-            newChannelVariants = [legacyVar, ...updatedVariants];
+
+    const MAX_ATTEMPTS = 3;
+    let lastErr: any = null;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 1) {
+          // Show a subtle retrying toast on subsequent attempts
+          toast.loading(`Retrying… (attempt ${attempt}/${MAX_ATTEMPTS})`, {
+            id: 'variant-retry',
+            duration: 8000,
+          });
+          // Small back-off before retry: 2s on attempt 2, 4s on attempt 3
+          await new Promise(res => setTimeout(res, (attempt - 1) * 2000));
+        }
+
+        const response = await api.post(
+          `/campaigns/${campaignId}/variants/copy`,
+          { channel, steeringNote: note },
+          // Override the global 10-second timeout — LLM calls can take 30-60s
+          { timeout: 90000 },
+        );
+
+        toast.dismiss('variant-retry');
+
+        const updatedVariants = response.data.variants || [];
+        setLocalVariants(prev => {
+          const prevChannelVariants: CopyVariant[] = prev[channel] || [];
+          const legacyVar = prevChannelVariants.find((v: CopyVariant) => v.id.startsWith('legacy-'));
+
+          let newChannelVariants = [...updatedVariants];
+          if (legacyVar) {
+            const hasLegacy = updatedVariants.some((v: CopyVariant) => v.id === legacyVar.id);
+            if (!hasLegacy) {
+              newChannelVariants = [legacyVar, ...updatedVariants];
+            }
           }
-        }
-        const updatedMap = {
-          ...prev,
-          [channel]: newChannelVariants,
-        };
-        if (onCopyVariantsUpdate) {
-          onCopyVariantsUpdate(updatedMap);
-        }
-        return updatedMap;
-      });
-      setSteeringInput(prev => ({ ...prev, [channel]: '' }));
-      toast.success('Successfully generated new copy variant!');
-    } catch (err: any) {
-      console.error('Failed to generate variant:', err);
-      const rawErr = err.response?.data?.error;
-      const errMsg = typeof rawErr === 'string'
-        ? rawErr
-        : (Array.isArray(rawErr)
-            ? rawErr[0]?.message || JSON.stringify(rawErr)
-            : (rawErr?.message || err.message || 'Failed to generate variant'));
-      toast.error(errMsg);
-    } finally {
-      setIsGenerating(prev => ({ ...prev, [channel]: false }));
+          const updatedMap = { ...prev, [channel]: newChannelVariants };
+          if (onCopyVariantsUpdate) onCopyVariantsUpdate(updatedMap);
+          return updatedMap;
+        });
+        setSteeringInput(prev => ({ ...prev, [channel]: '' }));
+        toast.success('New copy variant generated!');
+        // Success — break out of retry loop
+        lastErr = null;
+        break;
+      } catch (err: any) {
+        lastErr = err;
+        toast.dismiss('variant-retry');
+
+        const status = err.response?.status;
+        const isRetryable =
+          !status || // network/timeout — no HTTP response
+          status === 408 ||
+          status === 429 ||
+          status >= 500;
+
+        // 409 means lock is already held — no point retrying immediately
+        if (status === 409 || !isRetryable || attempt === MAX_ATTEMPTS) break;
+
+        console.warn(`Variant generation attempt ${attempt} failed, retrying…`, err.message);
+      }
     }
+
+    if (lastErr) {
+      console.error('Failed to generate variant:', lastErr);
+      const rawErr = lastErr.response?.data?.error;
+      const errMsg =
+        typeof rawErr === 'string'
+          ? rawErr
+          : Array.isArray(rawErr)
+          ? rawErr[0]?.message || JSON.stringify(rawErr)
+          : rawErr?.message ||
+            (lastErr.code === 'ECONNABORTED' || lastErr.message?.includes('timeout')
+              ? 'Request timed out — please try again'
+              : lastErr.message || 'Failed to generate variant');
+      toast.error(errMsg);
+    }
+
+    setIsGenerating(prev => ({ ...prev, [channel]: false }));
   };
 
   const handleUpdateMeta = async (channel: string, variantId: string, action: 'pin' | 'hide' | 'unhide') => {
