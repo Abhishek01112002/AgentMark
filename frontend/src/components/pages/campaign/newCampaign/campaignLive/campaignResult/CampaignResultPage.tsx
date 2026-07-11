@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, LucideIcon, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,14 +6,24 @@ import { ChannelIcon } from '../../../../../shared/ChannelIcon';
 import api from '../../../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../../shared/topNav/TopNav';
-import OverviewContent from './overview/OverviewContent';
-import ResearchContent from './research/ResearchContent';
-import StrategyContent from './strategy/StrategyContent';
-import CopywriterContent from './copywriter/CopywriterContent';
-import VisualsContent from './visuals/VisualsContent';
-import ReviewContent from './review/ReviewContent';
-import PublisherContent from './publisher/PublisherContent';
 import MemoryInsightsCard from './MemoryInsightsCard';
+
+// Lazy-load each tab's content so its JS chunk is only fetched when the tab
+// is first opened — shaves ~250 KB from the initial parse budget.
+const OverviewContent   = lazy(() => import('./overview/OverviewContent'));
+const ResearchContent   = lazy(() => import('./research/ResearchContent'));
+const StrategyContent   = lazy(() => import('./strategy/StrategyContent'));
+const CopywriterContent = lazy(() => import('./copywriter/CopywriterContent'));
+const VisualsContent    = lazy(() => import('./visuals/VisualsContent'));
+const ReviewContent     = lazy(() => import('./review/ReviewContent'));
+const PublisherContent  = lazy(() => import('./publisher/PublisherContent'));
+
+/** Minimal fallback rendered while a tab's chunk is being fetched. */
+const TabLoader = () => (
+  <div className="flex items-center justify-center py-20">
+    <Loader2 size={24} className="animate-spin text-[#6366F1]/60" />
+  </div>
+);
 
 type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'images' | 'review' | 'published';
 
@@ -610,7 +620,9 @@ const CampaignResultPage: React.FC = () => {
 
               {/* Tab Content */}
               <div className="rounded-2xl border border-[#2A2A38] bg-[#0F0F15]/90 backdrop-blur p-4 sm:p-5 md:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)]">
-                {renderTabContent()}
+                <Suspense fallback={<TabLoader />}>
+                  {renderTabContent()}
+                </Suspense>
               </div>
             </div>
           </div>

@@ -741,7 +741,7 @@ const CampaignLivePage: React.FC = () => {
       if (typewriterText.length > 0) {
         timeout = window.setTimeout(() => {
           setTypewriterText(currentString.substring(0, typewriterText.length - 1));
-        }, 30);
+        }, 50);  // was 30ms — reduced re-render frequency from ~33/s to ~20/s
       } else {
         setIsDeleting(false);
         setCurrentStringIndex((prev) => (prev + 1) % TYPEWRITER_STRINGS.length);
@@ -750,9 +750,9 @@ const CampaignLivePage: React.FC = () => {
       if (typewriterText.length < currentString.length) {
         timeout = window.setTimeout(() => {
           setTypewriterText(currentString.substring(0, typewriterText.length + 1));
-        }, 60);
+        }, 100);  // was 60ms — smoother, less CPU pressure
       } else {
-        timeout = window.setTimeout(() => setIsDeleting(true), 2000);
+        timeout = window.setTimeout(() => setIsDeleting(true), 3000);  // was 2000ms
       }
     }
 
