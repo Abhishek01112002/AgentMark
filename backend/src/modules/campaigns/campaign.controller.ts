@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import { campaignService } from './campaign.service';
-import { getClientMemory } from './campaign-memory.service';
+import { getClientMemory, recordHumanRejection } from './campaign-memory.service';
 import { notificationService } from '../notifications/notification.service';
 import { aiServiceClient } from '../../utils/ai-client';
 import type { AIServiceCampaignRequest } from '../../utils/ai-client';
@@ -385,6 +385,10 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       currentOutputs.active_agent = revisionTarget;
     } else if (action === 'approve') {
       currentOutputs.active_agent = 'publisher';
+    }
+
+    if (action === 'reject' && revisionTarget && feedback) {
+      await recordHumanRejection(id, campaign.projectId, revisionTarget, feedback);
     }
 
     // Update campaign status and HITL fields in database

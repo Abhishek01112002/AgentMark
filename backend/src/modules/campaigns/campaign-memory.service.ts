@@ -39,6 +39,52 @@ export async function getClientMemory(projectId: string): Promise<MemoryContext 
   }
 }
 
+export async function recordHumanRejection(campaignId: string, projectId: string, targetAgent: string, feedbackText: string) {
+  try {
+    const existing = await prisma.campaignMemorySnapshot.findUnique({
+      where: { campaignId },
+    });
+
+    const newReason = { targetAgent, feedbackText };
+
+    if (existing) {
+      const reasons = Array.isArray(existing.rejectionReasons)
+        ? [...(existing.rejectionReasons as any[])]
+        : [];
+
+      // Avoid duplicates in case of double click or retry
+      const isDuplicate = reasons.some(
+        (r) => r.targetAgent === targetAgent && r.feedbackText === feedbackText
+      );
+
+      if (!isDuplicate) {
+        reasons.push(newReason);
+      }
+
+      await prisma.campaignMemorySnapshot.update({
+        where: { campaignId },
+        data: {
+          rejectionReasons: reasons,
+          humanApprovedOnFirstTry: false,
+        },
+      });
+    } else {
+      await prisma.campaignMemorySnapshot.create({
+        data: {
+          campaignId,
+          projectId,
+          humanApprovedOnFirstTry: false,
+          rejectionReasons: [newReason],
+          finalApprovedTone: [],
+          finalChannelsUsed: [],
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Failed to record human rejection:", error);
+  }
+}
+
 export async function saveMemorySnapshot(campaignId: string, projectId: string) {
   try {
     const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
@@ -59,10 +105,16 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       channels.push(...strategyOutput.execution.channels);
     }
 
-    const totalRevisions = (campaign.researchRevisionCount || 0) +
-                           (campaign.strategyRevisionCount || 0) +
-                           (campaign.copyRevisionCount || 0) +
-                           (campaign.imageRevisionCount || 0);
+    const existing = await prisma.campaignMemorySnapshot.findUnique({
+      where: { campaignId },
+    });
+
+    let reasons: any[] = [];
+    if (existing && Array.isArray(existing.rejectionReasons)) {
+      reasons = [...(existing.rejectionReasons as any[])];
+    } else if (campaign.humanFeedback && campaign.humanRevisionTarget) {
+      reasons = [{ targetAgent: campaign.humanRevisionTarget, feedbackText: campaign.humanFeedback }];
+    }
 
     const data: any = {
       projectId,
@@ -71,11 +123,8 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       humanApprovedOnFirstTry: !campaign.humanRevisionTarget,
       finalApprovedTone: campaign.brandVoice ? [campaign.brandVoice] : [],
       finalChannelsUsed: channels,
+      rejectionReasons: reasons,
     };
-
-    if (campaign.humanFeedback) {
-      data.rejectionReasons = [{ targetAgent: campaign.humanRevisionTarget, feedbackText: campaign.humanFeedback }];
-    }
 
     await prisma.campaignMemorySnapshot.upsert({
       where: { campaignId },
