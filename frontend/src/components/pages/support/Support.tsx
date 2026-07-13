@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
+import { BookOpen, PlayCircle, ChevronDown, Mail, MessageCircle, X, ArrowRight, Play } from 'lucide-react';
 
 interface FAQItem {
   question: string;
@@ -41,7 +42,6 @@ const SupportContent: React.FC = () => {
       question: 'How does the Tavily web search integration assist the market research phase?',
       answer: 'During campaign strategy generation, our Research Agent utilizes Tavily API to fetch real-time market trends, competitor insights, and public sentiment. It then synthesizes this live data directly into the campaign strategy outline instead of relying solely on static model training data.',
     },
-
     {
       question: 'How do I customize the brand voice or tone parameters?',
       answer: 'Under Campaign Settings, you can define custom brand directives, target audience profiles, and tone constraints. These rules are injected as system prompts across the entire agent cluster, ensuring all generated copy and visuals strictly align with your corporate guidelines.',
@@ -189,16 +189,14 @@ const SupportContent: React.FC = () => {
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 <a className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer" href="/docs">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1", color: '#c0c1ff' }}>
-                      menu_book
-                    </span>
+                    <BookOpen size={32} style={{ color: '#c0c1ff' }} />
                   </div>
                   <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Documentation</h3>
                   <p className="text-sm mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
                     Comprehensive guides on setting up workflows and scaling agents.
                   </p>
                   <span className="mt-auto flex items-center text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>
-                    Explore Docs <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span>
+                    Explore Docs <ArrowRight size={18} className="ml-1" />
                   </span>
                 </a>
 
@@ -207,16 +205,14 @@ const SupportContent: React.FC = () => {
                   className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer w-full text-left bg-[#111118] border border-[#2A2A38]"
                 >
                   <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary mb-6 group-hover:scale-110 transition-transform">
-                    <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1", color: '#4edea3' }}>
-                      play_circle
-                    </span>
+                    <PlayCircle size={32} style={{ color: '#4edea3' }} />
                   </div>
                   <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Video Tutorials</h3>
                   <p className="text-sm mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
                     Watch step-by-step masterclasses on high-performance marketing.
                   </p>
                   <span className="mt-auto flex items-center text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-                    Watch Now <span className="material-symbols-outlined ml-1 text-[18px]">arrow_forward</span>
+                    Watch Now <ArrowRight size={18} className="ml-1" />
                   </span>
                 </button>
               </section>
@@ -233,14 +229,13 @@ const SupportContent: React.FC = () => {
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                       >
                         <span className="text-sm font-medium pr-4" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{faq.question}</span>
-                        <span
-                          className={`material-symbols-outlined chevron transition-transform ${
+                        <ChevronDown
+                          size={18}
+                          className={`chevron transition-transform ${
                             activeAccordion === index ? 'active' : ''
                           }`}
                           style={{ color: '#8B8B9E' }}
-                        >
-                          expand_more
-                        </span>
+                        />
                       </button>
                       <div className={`accordion-content ${activeAccordion === index ? 'active' : ''}`}>
                         <div className="px-6 pb-6 text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
@@ -258,7 +253,7 @@ const SupportContent: React.FC = () => {
                     className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#2A2A38] rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#464554]"
                     style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    <span className="material-symbols-outlined text-[24px]" style={{ color: '#c0c1ff' }}>mail</span>
+                    <Mail size={24} style={{ color: '#c0c1ff' }} />
                     <div className="text-left">
                       <div className="text-xs mb-1" style={{ color: '#8B8B9E' }}>Email Us</div>
                       <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>info@novateches.com</div>
@@ -271,7 +266,7 @@ const SupportContent: React.FC = () => {
                     className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#2A2A38] rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#464554]"
                     style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    <span className="material-symbols-outlined text-[24px]" style={{ color: '#4edea3' }}>chat</span>
+                    <MessageCircle size={24} style={{ color: '#4edea3' }} />
                     <div className="text-left">
                       <div className="text-xs mb-1" style={{ color: '#8B8B9E' }}>Live Chat</div>
                       <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>+91 63664 11798</div>
@@ -301,7 +296,7 @@ const SupportContent: React.FC = () => {
               className="absolute top-4 right-4 z-50 p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-full bg-[#16161F]/90 border border-[#2A2A38] text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors"
               title="Close Player"
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <X size={20} />
             </button>
 
             {/* Left Column: Player (Theater View) */}
@@ -403,13 +398,11 @@ const SupportContent: React.FC = () => {
                       }`}
                       style={{ cursor: 'pointer' }}
                     >
-                      <span 
-                        className={`material-symbols-outlined text-[20px] shrink-0 mt-0.5 ${
-                          isActive ? 'text-[#4edea3]' : 'text-[#8B8B9E]'
-                        }`}
-                      >
-                        {isActive ? 'play_circle' : 'play_arrow'}
-                      </span>
+                      {isActive ? (
+                        <PlayCircle size={20} className="shrink-0 mt-0.5 text-[#4edea3]" />
+                      ) : (
+                        <Play size={20} className="shrink-0 mt-0.5 text-[#8B8B9E]" />
+                      )}
                       <div className="min-w-0">
                         <div className="font-semibold text-sm text-[#F1F1F3] line-clamp-2" style={{ fontFamily: 'Sora, sans-serif' }}>
                           {video.title}
