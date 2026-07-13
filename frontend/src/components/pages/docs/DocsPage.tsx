@@ -93,12 +93,66 @@ const sections: Section[] = [
     id: 'memory', title: 'Memory', icon: <Brain size={16} />,
     content: (
       <>
-        <p>Memory Hub stores information across campaigns, helping agents maintain consistency over time. Access it from the sidebar.</p>
+        <p>Memory Hub stores brand voice details, tone configurations, and revision history across campaigns to maintain long-term brand consistency.</p>
         <div className="feature-grid">
-          <div className="feature-card"><div className="feature-icon"><Brain size={18} /></div><div><strong>Brand voice</strong><span>Tone and style preferences from past campaigns</span></div></div>
-          <div className="feature-card"><div className="feature-icon"><Layers size={18} /></div><div><strong>Content patterns</strong><span>Approved copy patterns available for future reference</span></div></div>
-          <div className="feature-card"><div className="feature-icon"><Globe size={18} /></div><div><strong>Audience data</strong><span>Segment definitions and targeting preferences</span></div></div>
+          <div className="feature-card"><div className="feature-icon"><Brain size={18} /></div><div><strong>Brand Voice & Tone</strong><span>Learned style parameters automatically injected into new agent prompts</span></div></div>
+          <div className="feature-card"><div className="feature-icon"><Layers size={18} /></div><div><strong>Historical Insights</strong><span>Aggregated scores, approval rates, and revision hotspots</span></div></div>
         </div>
+
+        <h4 className="mt-6">Dashboard Metrics</h4>
+        <ul>
+          <li><strong>Average Quality Score:</strong> The average rating score computed across all completed campaigns.</li>
+          <li><strong>Approved on 1st Try:</strong> The percentage of campaigns that were approved directly by the human reviewer without revisions.</li>
+          <li><strong>Revision Focus:</strong> The agent that received the most human feedback instructions, highlighting improvement areas.</li>
+        </ul>
+
+        <h4>Campaign Memory Timeline Indicators</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Indicator</th>
+              <th>Status</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Numeric Value</strong> (e.g., 93)</td>
+              <td>Finalized</td>
+              <td>The final review score given to the campaign upon successful completion.</td>
+            </tr>
+            <tr>
+              <td><strong>Dash</strong> (—)</td>
+              <td>In Progress / Paused</td>
+              <td>Displays when a campaign is active, processing, or awaiting human approval (no final score is saved yet).</td>
+            </tr>
+            <tr>
+              <td><strong>Green Dot with Check</strong></td>
+              <td>Direct Approval</td>
+              <td>The campaign was approved on the first attempt without any human feedback revisions.</td>
+            </tr>
+            <tr>
+              <td><strong>Red/Orange Dot with Cross</strong></td>
+              <td>Revised</td>
+              <td>Human revisions were requested and processed before the campaign was finalized.</td>
+            </tr>
+            <tr>
+              <td><strong>Green Color Code</strong></td>
+              <td>Quality Score &ge; 80</td>
+              <td>Indicates high quality outputs meeting the top tier evaluation baseline.</td>
+            </tr>
+            <tr>
+              <td><strong>Orange Color Code</strong></td>
+              <td>Quality Score &ge; 60</td>
+              <td>Indicates average quality outputs.</td>
+            </tr>
+            <tr>
+              <td><strong>Red Color Code</strong></td>
+              <td>Quality Score &lt; 60</td>
+              <td>Indicates low score threshold or an incomplete campaign run.</td>
+            </tr>
+          </tbody>
+        </table>
       </>
     )
   },
