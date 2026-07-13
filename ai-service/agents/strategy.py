@@ -454,6 +454,26 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         logger.info(f"     Content Creation: {budget.content_creation}")
         logger.info(f"     Community Management: {budget.community_management}")
     
+    # ========== STEP 4C: NORMALIZE SUCCESS METRICS TARGETS ==========
+    if strategy_plan.success_metrics and strategy_plan.success_metrics.kpis:
+        kpis = strategy_plan.success_metrics.kpis
+        raw_targets = dict(strategy_plan.success_metrics.targets or {})
+        norm = lambda s: s.lower().replace('_', ' ').replace('-', ' ').replace('/', ' ').replace('&', ' ').replace('(', '').replace(')', '').replace(' ', '')
+        normalized = {}
+        for kpi in kpis:
+            nkpi = norm(kpi)
+            match = next(
+                (v for k, v in raw_targets.items()
+                 if norm(k) == nkpi
+                 or nkpi.startswith(norm(k))
+                 or norm(k) in nkpi
+                 or any(t for t in norm(k).split() if len(t) >= 3 and t in nkpi)),
+                None
+            )
+            normalized[kpi] = match if match else "N/A"
+        strategy_plan.success_metrics = strategy_plan.success_metrics.model_copy(update={"targets": normalized})
+        logger.info(f"   ✓ success_metrics targets normalized: {normalized}")
+
     # ========== STEP 5: DISPLAY STRATEGY SUMMARY ==========
     logger.info("\n[STEP 5] Strategy summary...")
     logger.info("-" * 80)

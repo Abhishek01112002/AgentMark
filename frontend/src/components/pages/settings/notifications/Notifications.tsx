@@ -129,21 +129,21 @@ const Notifications: React.FC = () => {
 
   return (
     <div className="bg-surface border border-border-base rounded-xl overflow-hidden">
-      <div className="p-6 border-b border-border-base flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="p-4 md:p-6 border-b border-border-base flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
           <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
           <p className="font-body-sm text-body-sm text-text-secondary mt-1">View and manage your account notifications.</p>
         </div>
         <button
           onClick={() => { markAllRead().catch(console.error); }}
-          className="px-4 py-3 rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors text-sm w-full sm:w-auto justify-center min-h-[44px]"
+          className="px-4 py-3 rounded-lg border border-border-base text-text-secondary hover:bg-surface-container-high transition-colors text-sm w-full md:w-auto justify-center min-h-[44px] flex-shrink-0"
         >
           Mark all read
         </button>
       </div>
 
       {notifications.length > 0 && (
-        <div className="px-6 py-3 bg-surface-container-low border-b border-border-base flex items-center justify-between gap-4">
+        <div className="px-4 md:px-6 py-3 bg-surface-container-low border-b border-border-base flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -158,7 +158,7 @@ const Notifications: React.FC = () => {
           {selectedIds.length > 0 && (
             <button
               onClick={() => { deleteSelected(); }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors text-xs font-semibold"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-error/10 hover:bg-error/20 text-error border border-error/20 transition-colors text-xs font-semibold w-full md:w-auto justify-center"
             >
               <Trash2 size={14} />
               Delete Selected
@@ -175,9 +175,9 @@ const Notifications: React.FC = () => {
             const meta = iconMap[notification.type] || iconMap.info;
             const isSelected = selectedIds.includes(notification.id);
             return (
-              <div key={notification.id} className="p-4 hover:bg-surface-container-low transition-colors group flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex items-start gap-4 w-full">
-                  <div className="pt-2 flex-shrink-0">
+              <div key={notification.id} className="p-3 md:p-4 hover:bg-surface-container-low transition-colors group flex flex-col gap-3">
+                <div className="flex items-start gap-3 md:gap-4 w-full">
+                  <div className="pt-1 md:pt-2 flex-shrink-0">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -185,12 +185,12 @@ const Notifications: React.FC = () => {
                       className="w-4 h-4 rounded border-border-base bg-surface-container-lowest text-primary focus:ring-primary cursor-pointer accent-[#8083ff]"
                     />
                   </div>
-                  <div className="flex-1 flex gap-4 min-w-0">
+                  <div className="flex-1 flex gap-3 md:gap-4 min-w-0">
                     <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color} flex-shrink-0`}>
                       <span className="material-symbols-outlined">{meta.icon}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-1 md:gap-2">
                         <p className="font-body-md text-body-md text-text-primary font-semibold truncate">{notification.title}</p>
                         <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
                           {(() => {
@@ -203,21 +203,21 @@ const Notifications: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 justify-end w-full sm:w-auto pl-8 sm:pl-0">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-2 pl-7 md:pl-0 md:justify-end">
                   {!notification.isRead ? (
                     <button
                       onClick={() => { markOneRead(notification.id).catch(console.error); }}
-                      className="inline-flex items-center gap-1.5 px-3 py-3 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold min-h-[44px]"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 md:py-3 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-xs font-semibold min-h-[40px] md:min-h-[44px] w-full md:w-auto"
                     >
                       <Check size={14} />
                       <span>Mark as read</span>
                     </button>
                   ) : (
-                    <span className="text-xs text-text-muted px-2 font-mono">Read</span>
+                    <span className="text-xs text-text-muted px-2 font-mono py-2 md:py-0">Read</span>
                   )}
                   <button
                     onClick={() => { deleteOne(notification.id); }}
-                    className="inline-flex items-center justify-center p-3 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors min-h-[44px] min-w-[44px]"
+                    className="inline-flex items-center justify-center p-2 md:p-3 rounded-lg border border-error/20 text-error hover:bg-error/10 transition-colors min-h-[40px] md:min-h-[44px] min-w-[40px] md:min-w-[44px]"
                     title="Delete notification"
                   >
                     <Trash2 size={14} />
@@ -231,55 +231,57 @@ const Notifications: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-surface-container-lowest px-6 py-4 border-t border-border-base">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="font-body-sm text-body-sm text-text-secondary">
+      <div className="bg-surface-container-lowest px-4 md:px-6 py-3 md:py-4 border-t border-border-base">
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="font-body-sm text-body-sm text-text-secondary text-center md:text-left">
             Showing {notifications.length === 0 ? 0 : startIndex + 1} to {endIndex} of {notifications.length} notifications
           </div>
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
-            >
-              &lt;&lt;
-            </button>
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
-            >
-              &lt;
-            </button>
-            <div className="px-3 py-1 bg-surface-container-low rounded border border-border-base font-label-md text-label-md text-text-primary">
-              {currentPage}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-1 justify-center md:justify-start">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
+              >
+                &lt;&lt;
+              </button>
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
+              >
+                &lt;
+              </button>
+              <div className="px-3 py-1 bg-surface-container-low rounded border border-border-base font-label-md text-label-md text-text-primary">
+                {currentPage}
+              </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
+              >
+                &gt;
+              </button>
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
+              >
+                &gt;&gt;
+              </button>
             </div>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
-            >
-              &gt;
-            </button>
-            <button
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 rounded border border-border-base text-text-secondary hover:bg-surface-container-high disabled:opacity-50 disabled:cursor-not-allowed font-label-sm text-label-sm transition-all"
-            >
-              &gt;&gt;
-            </button>
-          </div>
 
-          <select
-            value={itemsPerPage}
-            onChange={handleItemsPerPageChange}
-            className="px-3 py-1 rounded border border-border-base bg-surface-container-lowest text-text-secondary font-label-sm text-label-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none cursor-pointer"
-          >
-            <option value={5}>5 per page</option>
-            <option value={10}>10 per page</option>
-            <option value={25}>25 per page</option>
-          </select>
+            <select
+              value={itemsPerPage}
+              onChange={handleItemsPerPageChange}
+              className="px-3 py-1 rounded border border-border-base bg-surface-container-lowest text-text-secondary font-label-sm text-label-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none cursor-pointer w-full md:w-auto"
+            >
+              <option value={5}>5 per page</option>
+              <option value={10}>10 per page</option>
+              <option value={25}>25 per page</option>
+            </select>
+          </div>
         </div>
       </div>
 

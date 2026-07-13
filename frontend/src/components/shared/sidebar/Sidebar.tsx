@@ -136,6 +136,9 @@ const Sidebar: React.FC = () => {
       return location.pathname.startsWith('/projects') || 
              (location.pathname.startsWith('/campaign/') && location.pathname !== '/campaign/new');
     }
+    if (path === '/support') {
+      return location.pathname === '/support' || location.pathname === '/docs';
+    }
     return location.pathname === path;
   };
 

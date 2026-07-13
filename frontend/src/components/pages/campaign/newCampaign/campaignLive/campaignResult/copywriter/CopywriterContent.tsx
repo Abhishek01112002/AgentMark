@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, BookOpen, Copy, Target, Plus, Loader2, Eye, EyeOff, Star } from 'lucide-react';
+import { Link, BookOpen, Copy, Target, Plus, Loader2, EyeOff, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import api from '../../../../../../../services/api';
@@ -48,6 +48,13 @@ function getVariantsForChannel(
 }
 
 const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId, campaign, onCopyVariantsUpdate }) => {
+  const createVariantSignature = (variant: Partial<CopyVariant>) =>
+    [
+      (variant.headline || '').trim().toLowerCase(),
+      (variant.body_copy || '').trim().toLowerCase(),
+      Object.values(variant.ctas || {}).map(v => String(v).trim().toLowerCase()).join('|'),
+    ].join('::');
+
   const parsedData = React.useMemo(() => {
     if (!data) return null;
     if (typeof data === 'string') {
@@ -64,7 +71,6 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   const hasRealData = flatData && Object.keys(flatData).length > 0;
 
   // Extract data from AI output
-  const inferredGoal = flatData?.inferred_goal || '';
   const messagingFramework = flatData?.messaging_framework || {};
   const strategicAlignment = flatData?.strategic_alignment || {};
   const copyReadiness = flatData?.copy_readiness || {};
@@ -82,6 +88,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   const [localVariants, setLocalVariants] = useState<CopyVariantsMap>({});
   const [steeringInput, setSteeringInput] = useState<Record<string, string>>({});
   const [isGenerating, setIsGenerating] = useState<Record<string, boolean>>({});
+  const [variantPageByChannel, setVariantPageByChannel] = useState<Record<string, number>>({});
 
   const getBridgesForChannel = (channel: string) => {
     const list = [];
@@ -252,13 +259,18 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     }
   };
 
-  // Seed localVariants on mount: merge existing copy_variants (from DB) with the
-  // original AI output (copy_output / legacy) so the original is never lost when
-  // a new variant is generated for the first time on a channel.
+  // Keep a ref to copy_variants so the seeding effect can read it without
+  // re-running every time the parent updates campaign (which would cause a loop).
+  const copyVariantsRef = React.useRef<CopyVariantsMap>(campaign?.aiOutputs?.copy_variants || {});
+  useEffect(() => {
+    copyVariantsRef.current = campaign?.aiOutputs?.copy_variants || {};
+  }, [campaign?.aiOutputs?.copy_variants]);
+
+  // Seed localVariants once when parsedData is available.
   useEffect(() => {
     if (!parsedData) return;
 
-    const existingVariants: CopyVariantsMap = campaign?.aiOutputs?.copy_variants || {};
+    const existingVariants: CopyVariantsMap = copyVariantsRef.current;
 
     // Build a seeded map that guarantees the legacy original is slot-0 for every channel
     const seeded: CopyVariantsMap = {};
@@ -280,7 +292,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
           body_copy: legacyCopy.body || legacyCopy.body_copy || legacyCopy.caption || '',
           ctas: legacyCopy.ctas || {},
           tags: ['✨ Original'],
-          isChampion: dbVariants.length === 0 || !dbVariants.some(v => v.isChampion), // Champion if no active champion is set in DB variants
+          isChampion: dbVariants.length === 0 || !dbVariants.some(v => v.isChampion),
           isHidden: false,
           createdAt: new Date().toISOString(),
           generationNote: '',
@@ -292,8 +304,9 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     });
 
     setLocalVariants(seeded);
+  // Only re-seed when the source AI data changes, not when parent campaign updates
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [campaign, parsedData]);
+  }, [parsedData]);
 
   const activeChannelVariants = React.useMemo(() => {
     return getVariantsForChannel(activeTab, localVariants, parsedData);
@@ -303,6 +316,17 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     return activeChannelVariants.filter(v => !v.isHidden).length;
   }, [activeChannelVariants]);
 
+  const activeVisibleVariants = React.useMemo(() => {
+    return activeChannelVariants.filter(v => !v.isHidden);
+  }, [activeChannelVariants]);
+
+  const activeVariantPage = Math.min(
+    variantPageByChannel[activeTab] || 1,
+    Math.max(activeVisibleVariants.length, 1)
+  );
+
+  const currentVariant = activeVisibleVariants[activeVariantPage - 1] || null;
+
   const handleGenerateVariant = async (channel: string) => {
     if (!campaignId) {
       toast.error('Campaign ID not found');
@@ -310,6 +334,14 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     }
     const note = steeringInput[channel] || '';
     setIsGenerating(prev => ({ ...prev, [channel]: true }));
+    const currentVariants = (localVariants[channel] || []).filter(v => !v.isHidden);
+    const currentVariantPayload = currentVariants.map(v => ({
+      id: v.id,
+      headline: v.headline,
+      body_copy: v.body_copy,
+      ctas: v.ctas,
+      generationNote: v.generationNote,
+    }));
 
     const MAX_ATTEMPTS = 3;
     let lastErr: any = null;
@@ -328,7 +360,11 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
         const response = await api.post(
           `/campaigns/${campaignId}/variants/copy`,
-          { channel, steeringNote: note },
+          {
+            channel,
+            steeringNote: note,
+            existing_copy: JSON.stringify(currentVariantPayload),
+          },
           // Override the global 10-second timeout — LLM calls can take 30-60s
           { timeout: 90000 },
         );
@@ -336,20 +372,54 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
         toast.dismiss('variant-retry');
 
         const updatedVariants = response.data.variants || [];
+        const responseCopyData = response.data.copy_data || response.data.copyData || null;
         setLocalVariants(prev => {
           const prevChannelVariants: CopyVariant[] = prev[channel] || [];
           const legacyVar = prevChannelVariants.find((v: CopyVariant) => v.id.startsWith('legacy-'));
 
-          let newChannelVariants = [...updatedVariants];
-          if (legacyVar) {
-            const hasLegacy = updatedVariants.some((v: CopyVariant) => v.id === legacyVar.id);
-            if (!hasLegacy) {
-              newChannelVariants = [legacyVar, ...updatedVariants];
+          const normalizedUpdated = [...updatedVariants];
+          if (!normalizedUpdated.length && responseCopyData) {
+            const candidateVariant: CopyVariant = {
+              id: `generated-${channel}-${Date.now()}`,
+              headline: responseCopyData.headline || '',
+              body_copy: responseCopyData.body_copy || responseCopyData.body || '',
+              ctas: responseCopyData.ctas || {},
+              tags: responseCopyData.tags || ['✨ Generated'],
+              isChampion: false,
+              isHidden: false,
+              createdAt: responseCopyData.createdAt || new Date().toISOString(),
+              generationNote: responseCopyData.generationNote || note,
+            };
+            const candidateSignature = createVariantSignature(candidateVariant);
+            const existingSignatures = prevChannelVariants.map(createVariantSignature);
+            if (!existingSignatures.includes(candidateSignature)) {
+              normalizedUpdated.push(candidateVariant);
             }
           }
-          const updatedMap = { ...prev, [channel]: newChannelVariants };
-          if (onCopyVariantsUpdate) onCopyVariantsUpdate(updatedMap);
-          return updatedMap;
+
+          let newChannelVariants = normalizedUpdated;
+          if (legacyVar) {
+            const hasLegacy = normalizedUpdated.some((v: CopyVariant) => v.id === legacyVar.id);
+            if (!hasLegacy) {
+              newChannelVariants = [legacyVar, ...normalizedUpdated];
+            }
+          }
+          if (!newChannelVariants.length && responseCopyData) {
+            newChannelVariants = prevChannelVariants.length > 0 ? [...prevChannelVariants] : [];
+          }
+          const deduped: CopyVariant[] = [];
+          const seen = new Set<string>();
+          [...newChannelVariants].forEach(v => {
+            const sig = createVariantSignature(v);
+            if (seen.has(sig)) return;
+            seen.add(sig);
+            deduped.push(v);
+          });
+          newChannelVariants = deduped.slice(0, 4);
+          const next = { ...prev, [channel]: newChannelVariants };
+          // Call outside updater via setTimeout to avoid render-phase setState
+          if (onCopyVariantsUpdate) setTimeout(() => onCopyVariantsUpdate(next), 0);
+          return next;
         });
         setSteeringInput(prev => ({ ...prev, [channel]: '' }));
         toast.success('New copy variant generated!');
@@ -425,14 +495,9 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
             newChannelVariants = [updatedLegacy, ...updatedVariants];
           }
         }
-        const updatedMap = {
-          ...prev,
-          [channel]: newChannelVariants,
-        };
-        if (onCopyVariantsUpdate) {
-          onCopyVariantsUpdate(updatedMap);
-        }
-        return updatedMap;
+        const next = { ...prev, [channel]: newChannelVariants };
+        if (onCopyVariantsUpdate) setTimeout(() => onCopyVariantsUpdate(next), 0);
+        return next;
       });
       toast.dismiss(loadingToast);
       toast.success(`Successfully updated variant!`);
@@ -473,6 +538,16 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
       toast.success('Copy option copied to clipboard!');
     } catch {
       toast.error('Failed to copy');
+    }
+  };
+
+  const handleCopyField = async (value: string, label: string) => {
+    if (!value.trim()) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied to clipboard!`);
+    } catch {
+      toast.error(`Failed to copy ${label.toLowerCase()}`);
     }
   };
 
@@ -552,10 +627,20 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   return (
     <div className="space-y-6 md:space-y-6">
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-semibold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for "Q4 Product Launch".'}</p>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center" style={{ color: '#6366F1' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
+            </div>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for your campaign.'}</p>
+          </div>
+          <div className="flex gap-3 flex-wrap items-center">
+            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              Goal: CONTENT CREATION
+            </span>
           </div>
         </div>
       </div>
@@ -568,13 +653,8 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
         </div>
       )}
 
-      {/* Inferred Goal & Copy Readiness */}
+      {/* Copy Readiness */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        {inferredGoal && (
-          <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-            Goal: {inferredGoal.replace('_', ' ').toUpperCase()}
-          </span>
-        )}
         {Object.entries(copyReadiness).filter(([_, ready]) => ready).length > 0 && (
           <span className="px-3 py-1.5 rounded-full bg-[#4edea3]/10 border border-[#4edea3]/20 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
             {Object.entries(copyReadiness).filter(([_, ready]) => ready).length} Channels Ready
@@ -644,173 +724,201 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
             );
           })()}
 
-          {/* Variants List Feed */}
-          {activeChannelVariants.map((variant) => {
-            if (variant.isHidden) {
-              return (
-                <div 
-                  key={variant.id} 
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-[#2A2A38] bg-[#0d0d14] opacity-50 transition-all hover:opacity-80"
-                >
-                  <span className="text-xs text-[#8B8B9E] font-mono flex items-center gap-2">
-                    <EyeOff size={13} />
-                    Hidden variant — {variant.tags?.[0] || 'AI Output'}
-                  </span>
-                  <button 
-                    onClick={() => handleUpdateMeta(activeTab, variant.id, 'unhide')}
-                    className="text-xs text-[#6366F1] hover:underline cursor-pointer flex items-center gap-1 font-semibold"
+          {/* Variants Pagination Feed */}
+          {currentVariant ? (
+            <div 
+              key={currentVariant.id} 
+              className={`card-elevate bg-[#111118] border rounded-xl p-5 md:p-6 relative overflow-hidden transition-all duration-300 ${
+                currentVariant.isChampion ? 'champion-card' : 'border-[#2A2A38]'
+              }`}
+            >
+              {currentVariant.isChampion && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#6366F1] to-transparent opacity-70" />
+              )}
+
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 4].map((page) => {
+                    const exists = activeVisibleVariants[page - 1];
+                    const isActive = activeVariantPage === page;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setVariantPageByChannel(prev => ({ ...prev, [activeTab]: page }))}
+                        disabled={!exists && page > activeVisibleVariants.length}
+                        className={`w-8 h-8 rounded-full border text-[10px] font-bold transition-all ${
+                          isActive
+                            ? 'bg-[#6366F1] border-[#6366F1] text-white'
+                            : exists
+                              ? 'bg-[#0A0A0F] border-[#2A2A38] text-[#8B8B9E] hover:text-white hover:border-[#3A3A4A]'
+                              : 'bg-[#0A0A0F] border-[#1F1F2B] text-[#49495A] cursor-not-allowed'
+                        }`}
+                        aria-label={`Variant page ${page}`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-[10px] text-[#5A5A6E] font-mono">
+                  Variant {activeVariantPage} of {Math.min(activeVisibleVariants.length, 4)}
+                </span>
+              </div>
+
+              {/* Card Header Actions */}
+              <div className="flex justify-between items-start mb-5 flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  {currentVariant.tags?.map((tag, tIdx) => (
+                    <span 
+                      key={tIdx} 
+                      className="px-2.5 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] font-bold text-[#8083ff]"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  {currentVariant.generationNote && (
+                    <span 
+                      className="px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-[10px] text-[#8B8B9E] italic max-w-[150px] truncate"
+                      title={`Staging Note: ${currentVariant.generationNote}`}
+                    >
+                      "{currentVariant.generationNote}"
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    onClick={() => handleCopyVariantToClipboard(currentVariant, platformLabel)}
+                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
+                    title="Copy this variant"
                   >
-                    <Eye size={12} />
-                    Show
+                    <Copy size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleUpdateMeta(activeTab, currentVariant.id, 'pin')}
+                    className={`p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all cursor-pointer ${
+                      currentVariant.isChampion 
+                        ? 'bg-[#6366F1]/20 border-[#6366F1] text-[#8083ff]' 
+                        : 'bg-transparent border-[#2A2A38] text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-white'
+                    }`}
+                    title={currentVariant.isChampion ? 'Active Champion' : 'Pin as Champion'}
+                  >
+                    <Star size={13} fill={currentVariant.isChampion ? '#6366F1' : 'none'} />
+                  </button>
+                  <button
+                    onClick={() => handleUpdateMeta(activeTab, currentVariant.id, 'hide')}
+                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-red-400 hover:border-red-400/40"
+                    title="Hide variant"
+                  >
+                    <EyeOff size={13} />
                   </button>
                 </div>
-              );
-            }
+              </div>
 
-            return (
-              <div 
-                key={variant.id} 
-                className={`card-elevate bg-[#111118] border rounded-xl p-5 md:p-6 relative overflow-hidden transition-all duration-300 ${
-                  variant.isChampion ? 'champion-card' : 'border-[#2A2A38]'
-                }`}
-              >
-                {variant.isChampion && (
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#6366F1] to-transparent opacity-70" />
-                )}
-
-                {/* Card Header Actions */}
-                <div className="flex justify-between items-start mb-5 flex-wrap gap-2">
-                  <div className="flex flex-wrap gap-1.5 items-center">
-                    {variant.tags?.map((tag, tIdx) => (
-                      <span 
-                        key={tIdx} 
-                        className="px-2.5 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] font-bold text-[#8083ff]"
-                        style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                    {variant.generationNote && (
-                      <span 
-                        className="px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-[10px] text-[#8B8B9E] italic max-w-[150px] truncate"
-                        title={`Staging Note: ${variant.generationNote}`}
-                      >
-                        "{variant.generationNote}"
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    {/* Copy to Clipboard Icon */}
-                    <button
-                      onClick={() => handleCopyVariantToClipboard(variant, platformLabel)}
-                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
-                      title="Copy this variant"
-                    >
-                      <Copy size={13} />
-                    </button>
-
-                    {/* Pin Champion Toggle */}
-                    <button
-                      onClick={() => handleUpdateMeta(activeTab, variant.id, 'pin')}
-                      className={`p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded border transition-all cursor-pointer ${
-                        variant.isChampion 
-                          ? 'bg-[#6366F1]/20 border-[#6366F1] text-[#8083ff]' 
-                          : 'bg-transparent border-[#2A2A38] text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-white'
-                      }`}
-                      title={variant.isChampion ? 'Active Champion' : 'Pin as Champion'}
-                    >
-                      <Star size={13} fill={variant.isChampion ? '#6366F1' : 'none'} />
-                    </button>
-
-                    {/* Hide Toggle */}
-                    <button
-                      onClick={() => handleUpdateMeta(activeTab, variant.id, 'hide')}
-                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-red-400 hover:border-red-400/40"
-                      title="Hide variant"
-                    >
-                      <EyeOff size={13} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Card Fields */}
-                <div className="space-y-4">
-                  {variant.headline && (
+              {/* Card Fields */}
+              <div className="space-y-4">
+                {currentVariant.headline && (
                     <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
                       <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Headline</label>
-                      <p className="text-sm outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{variant.headline}</p>
+                      <div className="flex items-start gap-3">
+                        <p className="text-sm outline-none flex-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{currentVariant.headline}</p>
+                        <button
+                          onClick={() => handleCopyField(currentVariant.headline, 'Headline')}
+                          className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
+                          title="Copy headline"
+                        >
+                          <Copy size={13} />
+                        </button>
+                      </div>
                     </div>
-                  )}
+                )}
 
-                  {activeTab === 'email' && variant.headline && (
+                {activeTab === 'email' && currentVariant.headline && (
                     <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
                       <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Subject</label>
-                      <p className="text-sm outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{variant.headline}</p>
+                      <p className="text-sm outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{currentVariant.headline}</p>
                     </div>
-                  )}
+                )}
 
-                  {variant.body_copy && (
+                {currentVariant.body_copy && (
                     <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
                       <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Body</label>
-                      <div className="text-sm outline-none min-h-[80px] whitespace-pre-wrap" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-                        {variant.body_copy}
+                      <div className="flex items-start gap-3">
+                        <div className="text-sm outline-none min-h-[80px] whitespace-pre-wrap flex-1" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                          {currentVariant.body_copy}
+                        </div>
+                        <button
+                          onClick={() => handleCopyField(currentVariant.body_copy, 'Body')}
+                          className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
+                          title="Copy body"
+                        >
+                          <Copy size={13} />
+                        </button>
                       </div>
                     </div>
-                  )}
+                )}
 
-                  {/* CTAs */}
-                  {variant.ctas && Object.keys(variant.ctas).length > 0 && (
+                {/* CTAs */}
+                {currentVariant.ctas && Object.keys(currentVariant.ctas).length > 0 && (
                     <div className="space-y-2">
                       <label className="text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Call to Actions</label>
-                      <div className="flex flex-wrap gap-2">
-                        {Object.entries(variant.ctas).map(([key, val]) => {
-                          if (!val) return null;
-                          const isHero = key === 'primary' || key === 'hero_cta';
-                          return (
-                            <button
-                              key={key}
-                              onClick={() => handleSingleCtaCopy(val)}
-                              className={`group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border active:scale-95 transition-all cursor-pointer ${
-                                isHero
-                                  ? 'bg-[#6366F1]/15 hover:bg-[#6366F1]/25 border-[#6366F1]/30 text-[#818CF8]'
-                                  : 'bg-[#1A1A24] border-[#2A2A38] hover:bg-[#1C1C28] text-[#F1F1F3]'
-                              }`}
-                              style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                              title="Click to copy CTA"
-                            >
-                              <span>{val}</span>
-                              <Copy size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />
-                            </button>
-                          );
-                        })}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {Object.entries(currentVariant.ctas)
+                          .filter(([, val]) => Boolean(val))
+                          .slice(0, 4)
+                          .map(([key, val], idx) => {
+                            const isHero = key === 'primary' || key === 'hero_cta';
+                            return (
+                              <button
+                                key={key}
+                                onClick={() => handleSingleCtaCopy(val)}
+                                className={`group inline-flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-semibold border active:scale-95 transition-all cursor-pointer min-h-[44px] ${
+                                  isHero
+                                    ? 'bg-[#6366F1]/15 hover:bg-[#6366F1]/25 border-[#6366F1]/30 text-[#818CF8]'
+                                    : 'bg-[#1A1A24] border-[#2A2A38] hover:bg-[#1C1C28] text-[#F1F1F3]'
+                                }`}
+                                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                                title="Click to copy CTA"
+                              >
+                                <span className="truncate text-left">{val}</span>
+                                <span className="flex items-center gap-1 shrink-0">
+                                  <span className="text-[10px] opacity-60">{idx + 1}</span>
+                                  <Copy size={10} className="opacity-60 group-hover:opacity-100 transition-opacity" />
+                                </span>
+                              </button>
+                            );
+                          })}
                       </div>
                     </div>
-                  )}
-                  {/* Highlighted Direct Action Buttons at bottom */}
-                  {(() => {
-                    const bridges = getBridgesForChannel(activeTab);
-                    if (bridges.length === 0) return null;
-                    return (
-                      <div className="pt-4 mt-5 border-t border-[#2A2A38]/50 flex flex-wrap gap-3 justify-end">
-                        {bridges.map(bridge => (
-                          <button
-                            key={bridge.name}
-                            onClick={() => handleOpenCopywriterBridge(variant, bridge.name)}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/15 to-[#8B5CF6]/15 hover:from-[#6366F1]/25 hover:to-[#8B5CF6]/25 text-[#a3a5fc] border-[#6366F1]/30 hover:border-[#6366F1]/50 transition-all active:scale-95 cursor-pointer shadow-lg shadow-indigo-900/10"
-                          >
-                            <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">
-                              {bridge.icon}
-                            </span>
-                            <span>{bridge.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                )}
+                {/* Highlighted Direct Action Buttons at bottom */}
+                {(() => {
+                  const bridges = getBridgesForChannel(activeTab);
+                  if (bridges.length === 0) return null;
+                  return (
+                    <div className="pt-4 mt-5 border-t border-[#2A2A38]/50 flex flex-wrap gap-3 justify-end">
+                      {bridges.map(bridge => (
+                        <button
+                          key={bridge.name}
+                          onClick={() => handleOpenCopywriterBridge(currentVariant, bridge.name)}
+                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-xl text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/15 to-[#8B5CF6]/15 hover:from-[#6366F1]/25 hover:to-[#8B5CF6]/25 text-[#a3a5fc] border-[#6366F1]/30 hover:border-[#6366F1]/50 transition-all active:scale-95 cursor-pointer shadow-lg shadow-indigo-900/10"
+                        >
+                          <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">
+                            {bridge.icon}
+                          </span>
+                          <span>{bridge.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
+              <p className="text-sm text-[#8B8B9E]">No visible variants yet.</p>
+            </div>
+          )}
 
           {/* Shimmering Skeleton Card (while generating) */}
           {isGenerating[activeTab] && (
@@ -960,12 +1068,35 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
       {Object.keys(copyReadiness).length > 0 && (
         <div className="mt-6 bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
           <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-3">
-            {Object.entries(copyReadiness).map(([channel, ready]: [string, any]) => (
-              <div key={channel} className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${ready ? 'bg-[#4edea3]' : 'bg-[#8B8B9E]'}`} />
-                <ChannelIcon channel={channel} size={12} className={ready ? 'text-[#4edea3]' : 'text-[#8B8B9E]'} />
-                <span className="text-xs capitalize" style={{ fontFamily: 'JetBrains Mono, monospace', color: ready ? '#4edea3' : '#8B8B9E' }}>
+          
+          {/* Messaging Framework Status */}
+          {copyReadiness.messaging_framework_complete !== undefined && (
+            <div className="mb-4 pb-4 border-b border-[#2A2A38]">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-6 h-6 rounded-lg" style={{ backgroundColor: copyReadiness.messaging_framework_complete ? 'rgba(78, 222, 163, 0.15)' : 'rgba(139, 139, 158, 0.15)' }}>
+                  <span className={`w-2 h-2 rounded-full ${copyReadiness.messaging_framework_complete ? 'bg-[#4edea3]' : 'bg-[#8B8B9E]'}`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: copyReadiness.messaging_framework_complete ? '#4edea3' : '#8B8B9E' }}>
+                    MESSAGING FRAMEWORK
+                  </p>
+                  <p className="text-[10px] mt-0.5" style={{ color: '#8B8B9E' }}>
+                    {copyReadiness.messaging_framework_complete ? 'Brand promise, value proposition & segment messaging ready' : 'Messaging framework not yet generated'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Channel Readiness Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+            {Object.entries(copyReadiness)
+              .filter(([channel]) => channel !== 'messaging_framework_complete')
+              .map(([channel, ready]: [string, any]) => (
+              <div key={channel} className="flex items-center gap-2 min-w-0">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ready ? 'bg-[#4edea3]' : 'bg-[#8B8B9E]'}`} />
+                <ChannelIcon channel={channel} size={12} className={`flex-shrink-0 ${ready ? 'text-[#4edea3]' : 'text-[#8B8B9E]'}`} />
+                <span className="text-xs capitalize truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: ready ? '#4edea3' : '#8B8B9E' }}>
                   {channel}
                 </span>
               </div>

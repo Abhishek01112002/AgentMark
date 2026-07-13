@@ -30,6 +30,7 @@ import {
 interface VisualsContentProps {
   data?: any;
   campaignId?: string;
+  campaign?: any;
 }
 
 const PRESET_MODIFIERS = [
@@ -215,20 +216,15 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
   const handleSharePrompt = async (promptText: string, title: string) => {
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: `Image Prompt - ${title}`,
-          text: promptText,
-        });
+        await navigator.share({ title: `Image Prompt - ${title}`, text: promptText });
         toast.success('Prompt shared!');
       } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          toast.error('Failed to share');
-        }
+        if (err.name !== 'AbortError') toast.error('Failed to share');
       }
     } else {
       try {
         await navigator.clipboard.writeText(promptText);
-        toast.success('Copied to clipboard! (Share API not supported)');
+        toast.success('Prompt copied to clipboard!');
       } catch {
         toast.error('Failed to copy');
       }
@@ -327,39 +323,33 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
       {/* ── PAGE HEADER ───────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#6366F1]">
-            <Palette size={22} />
-          </div>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl md:text-3xl font-semibold text-white tracking-tight">
-              Visual Assets
-            </h2>
-            <p className="text-sm text-[#8B8B9E] mt-0.5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
+                <Palette size={22} />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Visual Assets</h2>
+            </div>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
               Creative prompts and visual direction for every platform
             </p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {promptsList.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-xs font-semibold text-[#F1F1F3]">
-                {promptsList.length} {promptsList.length === 1 ? 'prompt' : 'prompts'}
+          <div className="flex gap-3 flex-wrap items-center">
+            {promptsList.length > 0 && (
+              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+                Goal: VISUAL CREATION
               </span>
-            </div>
-          )}
-          <button
-            onClick={handleCopyAllPrompts}
-            className="px-4 py-2 rounded-xl bg-transparent border border-[#2A2A38] hover:bg-[#1A1A24] text-[#F1F1F3] text-sm font-semibold transition-all active:scale-[0.98] flex items-center gap-1.5"
-          >
-            <Copy size={14} />
-            Copy All Prompts
-          </button>
-
+            )}
+            <button
+              onClick={handleCopyAllPrompts}
+              className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
+              style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
+            >
+              <Copy size={16} />Copy All Prompts
+            </button>
+          </div>
         </div>
-      </div>
       </div>
 
 

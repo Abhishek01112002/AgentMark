@@ -4,6 +4,7 @@ import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
   data?: any;
+  campaign?: any;
 }
 
 interface SourceMeta {
@@ -14,9 +15,9 @@ interface SourceMeta {
   query_type: "market" | "competitor";
 }
 
-const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
-  // Use real data if available, otherwise show placeholder
+const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => {
   const hasRealData = data && Object.keys(data).length > 0;
+  const inferredGoal = data?.inferred_goal || campaign?.primaryGoal || '';
   
   // Extract data from AI output
   const marketAnalysis = data?.market_analysis || {};
@@ -43,22 +44,24 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
     <div className="space-y-6 md:space-y-8">
       {/* Page Header */}
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
-              <Search size={22} />
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
+                <Search size={22} />
+              </div>
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Market Research</h2>
             </div>
-            <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-              Research - AgentMark
-            </h2>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+              {hasRealData ? 'AI-powered market intelligence and audience insights' : 'Real-time market intelligence powered by autonomous agents.'}
+            </p>
           </div>
-          <p className="text-sm text-[#8B8B9E]" style={{ fontFamily: 'Inter, sans-serif' }}>
-            {hasRealData ? 'AI-powered market intelligence and audience insights' : 'Real-time market intelligence powered by autonomous agents.'}
-          </p>
+          <div className="flex gap-3 flex-wrap items-center">
+            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              Goal: RESEARCH
+            </span>
+          </div>
         </div>
-      </div>
-
       </div>
 
       {!hasRealData && (
@@ -186,8 +189,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               </h4>
               <ul className="space-y-2">
                 {(audienceInsights.pain_points || audienceInsights.painPoints || ['Time scarcity', 'Data silos', 'Inconsistent ROI']).slice(0, 4).map((point: string, idx: number) => (
-                  <li key={idx} className="flex items-center gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] flex-shrink-0" />
+                  <li key={idx} className="flex items-start gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] flex-shrink-0 mt-[7px]" />
                     {point}
                   </li>
                 ))}
@@ -201,8 +204,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               </h4>
               <ul className="space-y-2">
                 {(audienceInsights.motivations || ['Workflow automation', 'Predictable growth']).slice(0, 4).map((motivation: string, idx: number) => (
-                  <li key={idx} className="flex items-center gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] flex-shrink-0" />
+                  <li key={idx} className="flex items-start gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] flex-shrink-0 mt-[7px]" />
                     {motivation}
                   </li>
                 ))}
@@ -216,8 +219,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               </h4>
               <div className="flex flex-wrap gap-2">
                 {(audienceInsights.preferred_channels || audienceInsights.channels || ['LinkedIn', 'Email', 'Twitter']).slice(0, 5).map((channel: string, idx: number) => (
-                  <span key={idx} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs font-medium text-[#8B8B9E] hover:border-[#6366F1]/30 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <ChannelIcon channel={channel} size={12} className="text-[#6366F1]" />
+                  <span key={idx} className="inline-flex items-start gap-1.5 px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs font-medium text-[#8B8B9E] hover:border-[#6366F1]/30 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    <ChannelIcon channel={channel} size={12} className="text-[#6366F1] mt-[2px] flex-shrink-0" />
                     {channel}
                   </span>
                 ))}

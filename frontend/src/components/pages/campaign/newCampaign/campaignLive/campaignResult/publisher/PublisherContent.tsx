@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Calendar, ShieldCheck, FileDown, ThumbsUp, FileText, LineChart, Map } from 'lucide-react';
+import { Calendar, Send, FileDown, ThumbsUp, FileText, LineChart, Map } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import { formatDDMonYYYY, displayDate } from '../../../../../../../utils/formatDate';
@@ -446,27 +446,20 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
       `}</style>
       {/* ── Header ── */}
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 bg-[#4edea3]/10 border border-[#4edea3]/20 rounded-full px-3 py-1">
-              <ShieldCheck size={14} className="text-[#4edea3]" />
-              <span className="text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>Campaign Completed</span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{campaignName || 'Campaign Assets'}</h1>
-            <p className="text-sm md:text-base flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-              <Calendar size={14} />Generated on {generatedDate}
-            </p>
-          </div>
-          <div className="flex items-center gap-4 flex-wrap">
-            {qualityScore > 0 && (
-              <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-4 flex flex-col items-end shadow-lg">
-                <span className="text-xs uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Quality Score</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{qualityScore.toFixed(1)}</span>
-                  <span className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#A0A0D2' }}>/10</span>
-                </div>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
+                <Send size={22} />
               </div>
-            )}
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Publisher</h2>
+            </div>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>AI-generated publishing strategy &amp; placements</p>
+          </div>
+          <div className="flex gap-3 flex-wrap items-center">
+            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              Goal: PUBLISHING
+            </span>
             <button
               onClick={handleExportPDF}
               disabled={exportingPdf}
@@ -519,12 +512,37 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
             <LineChart size={20} className="text-[#6366F1]" />
             Projected Metrics
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-            {projectedMetrics.total_reach && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Total Reach</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{projectedMetrics.total_reach}</p></div>)}
-            {projectedMetrics.lead_target && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Lead Target</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.lead_target}</p></div>)}
-            {projectedMetrics.estimated_ctr && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. CTR</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#F59E0B' }}>{projectedMetrics.estimated_ctr}</p></div>)}
-            {projectedMetrics.estimated_cost && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. Cost</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{projectedMetrics.estimated_cost}</p></div>)}
-            {projectedMetrics.roi_projection && (<div><span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>ROI Projection</span><p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.roi_projection}</p></div>)}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            {projectedMetrics.total_reach && (
+              <div className="bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl p-4 min-w-0">
+                <span className="text-xs uppercase mb-2 block truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Total Reach</span>
+                <p className="text-xl font-bold break-words leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{projectedMetrics.total_reach}</p>
+              </div>
+            )}
+            {projectedMetrics.lead_target && (
+              <div className="bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl p-4 min-w-0">
+                <span className="text-xs uppercase mb-2 block truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Lead Target</span>
+                <p className="text-xl font-bold break-words leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.lead_target}</p>
+              </div>
+            )}
+            {projectedMetrics.estimated_ctr && (
+              <div className="bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl p-4 min-w-0">
+                <span className="text-xs uppercase mb-2 block truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. CTR</span>
+                <p className="text-xl font-bold break-words leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#F59E0B' }}>{projectedMetrics.estimated_ctr}</p>
+              </div>
+            )}
+            {projectedMetrics.estimated_cost && (
+              <div className="bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl p-4 min-w-0">
+                <span className="text-xs uppercase mb-2 block truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Est. Cost</span>
+                <p className="text-xl font-bold break-words leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{projectedMetrics.estimated_cost}</p>
+              </div>
+            )}
+            {projectedMetrics.roi_projection && (
+              <div className="bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl p-4 min-w-0">
+                <span className="text-xs uppercase mb-2 block truncate" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>ROI Projection</span>
+                <p className="text-xl font-bold break-words leading-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{projectedMetrics.roi_projection}</p>
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap gap-x-8 gap-y-2 items-center justify-between text-sm" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '16px' }}>
             {projectedMetrics.timeline_to_results && (

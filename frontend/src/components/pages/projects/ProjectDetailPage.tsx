@@ -8,11 +8,11 @@ import {
   Edit3,
   FolderOpen,
   LayoutDashboard,
-  MessageSquare,
-  TrendingUp,
   Star,
   StarHalf,
   Brain,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
@@ -66,6 +66,7 @@ const ProjectDetailContent: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [totalCampaigns, setTotalCampaigns] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const fetchCampaigns = async (page: number, limit: number) => {
     if (!id) return;
@@ -111,7 +112,20 @@ const ProjectDetailContent: React.FC = () => {
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + campaigns.length;
-  const paginatedCampaigns = campaigns;
+
+  // Sort by createdAt; index (#) is always based on original creation order (asc)
+  const sortedCampaigns = [...campaigns].sort((a, b) => {
+    const diff = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    return sortOrder === 'asc' ? diff : -diff;
+  });
+
+  // Global sequence number based on absolute creation order across all pages
+  const getSeqNumber = (campaign: Campaign) => {
+    const allSortedAsc = [...campaigns].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    return startIndex + allSortedAsc.findIndex(c => c.id === campaign.id) + 1;
+  };
 
   const getStatusTone = (status: string): StatusTone => {
     switch (status.toLowerCase()) {
@@ -138,19 +152,7 @@ const ProjectDetailContent: React.FC = () => {
     return formatDDMonYYYY(new Date(dateString));
   };
 
-  const getCampaignIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return LayoutDashboard;
-      case 'processing':
-      case 'running':
-        return TrendingUp;
-      default:
-        return MessageSquare;
-    }
-  };
-
-  const handlePageChange = (page: number) => {
+const handlePageChange = (page: number) => {
     setCurrentPage(Math.min(Math.max(page, 1), totalPages));
   };
 
@@ -462,7 +464,14 @@ const ProjectDetailContent: React.FC = () => {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            Campaign Name
+                            <button
+                              onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+                              className="inline-flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
+                              style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, textTransform: 'uppercase' }}
+                            >
+                              Campaign Name
+                              {sortOrder === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                            </button>
                           </th>
                           <th
                             style={{
@@ -528,8 +537,8 @@ const ProjectDetailContent: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {paginatedCampaigns.map((row) => {
-                          const Icon = getCampaignIcon(row.status);
+                        {sortedCampaigns.map((row) => {
+                          const seqNum = getSeqNumber(row);
                           const statusTone = getStatusTone(row.status);
                           const badge = badgeMap[statusTone];
                           
@@ -580,10 +589,13 @@ const ProjectDetailContent: React.FC = () => {
                                     style={{
                                       backgroundColor: '#1A1A24',
                                       border: '1px solid #2A2A38',
-                                      color: '#F1F1F3',
+                                      color: '#A0A0D2',
+                                      fontFamily: 'JetBrains Mono, monospace',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
                                     }}
                                   >
-                                    <Icon size={16} />
+                                    {seqNum}
                                   </div>
                                   <span
                                     className="truncate"

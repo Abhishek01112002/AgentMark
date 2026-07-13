@@ -268,8 +268,8 @@ const CampaignHistoryContent: React.FC = () => {
               </header>
 
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4">
-                  <div className="relative flex-1">
+                <div className="flex flex-col gap-4">
+                  <div className="relative w-full">
                     <input
                       className="w-full rounded-lg px-4 py-2 text-sm border transition-all focus:outline-none focus:border-[#6366F1]"
                       style={{ backgroundColor: '#111118', borderColor: '#2A2A38', color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}
@@ -279,10 +279,10 @@ const CampaignHistoryContent: React.FC = () => {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <div className="flex gap-2 flex-wrap flex-shrink-0">
+                  <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => setStatusFilter('all')}
-                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap transition-colors min-h-[44px]"
+                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
                       style={{
                         backgroundColor: statusFilter === 'all' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'all' ? '#6366F1' : '#8B8B9E',
@@ -294,7 +294,7 @@ const CampaignHistoryContent: React.FC = () => {
                     </button>
                     <button
                       onClick={() => setStatusFilter('processing')}
-                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
+                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
                       style={{
                         backgroundColor: statusFilter === 'processing' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'processing' ? '#6366F1' : '#8B8B9E',
@@ -302,11 +302,11 @@ const CampaignHistoryContent: React.FC = () => {
                         fontFamily: 'JetBrains Mono, monospace',
                       }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" /> Processing
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] flex-shrink-0" /> Processing
                     </button>
                     <button
                       onClick={() => setStatusFilter('completed')}
-                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
+                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
                       style={{
                         backgroundColor: statusFilter === 'completed' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'completed' ? '#6366F1' : '#8B8B9E',
@@ -314,11 +314,11 @@ const CampaignHistoryContent: React.FC = () => {
                         fontFamily: 'JetBrains Mono, monospace',
                       }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3]" /> Completed
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] flex-shrink-0" /> Completed
                     </button>
                     <button
                       onClick={() => setStatusFilter('failed')}
-                      className="px-4 py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-2 transition-colors min-h-[44px]"
+                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
                       style={{
                         backgroundColor: statusFilter === 'failed' ? 'rgba(99,102,241,0.1)' : '#111118',
                         color: statusFilter === 'failed' ? '#6366F1' : '#8B8B9E',
@@ -326,7 +326,7 @@ const CampaignHistoryContent: React.FC = () => {
                         fontFamily: 'JetBrains Mono, monospace',
                       }}
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E]" /> Failed
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] flex-shrink-0" /> Failed
                     </button>
                   </div>
                 </div>

@@ -40,7 +40,25 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
   const channelStrategy = data?.channel_strategy || {};
   const audienceSegments = data?.audience_segments || [];
   const timeline = data?.timeline || {};
-  const successMetrics = data?.success_metrics || {};
+  const rawMetrics = data?.success_metrics || {};
+  const successMetrics = Array.isArray(rawMetrics)
+    ? { kpis: rawMetrics, targets: {} }
+    : rawMetrics;
+
+  const lookupTarget = (kpi: string, idx: number): string => {
+    const t = successMetrics.targets || {};
+    if (t[kpi]) return t[kpi];
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const tokens = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
+    const normKpi = norm(kpi);
+    const match = Object.keys(t).find(k => {
+      const nk = norm(k);
+      if (nk === normKpi || normKpi.includes(nk) || nk.includes(normKpi)) return true;
+      // any key token appears in kpi (handles 'ctr' matching 'click-through rate' via 'clickthrough')
+      return tokens(k).some(kt => kt.length >= 2 && normKpi.includes(kt));
+    });
+    return match ? t[match] : (t[`kpi${idx + 1}`] || '');
+  };
   const competitiveDiff = data?.competitive_differentiation || {};
   const budgetAllocation = data?.execution?.budget_allocation || {};
   const inferredGoal = data?.inferred_goal || campaign?.primaryGoal || '';
@@ -173,11 +191,24 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
     }
 
     if (successMetrics.kpis) {
+      const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
       sections += sectionWrap('Success Metrics & KPIs', grid4(
-        successMetrics.kpis.map((kpi: string) => card(`
-          <div class="card-label">${esc(kpi)}</div>
-          ${successMetrics.targets?.[kpi] ? `<div style="font-size:20px;font-weight:700;color:#059669;margin-top:6px">${esc(successMetrics.targets[kpi])}</div>` : ''}
-        `))
+        successMetrics.kpis.map((kpi: any, i: number) => {
+          const label = typeof kpi === 'object' ? (kpi.metric || kpi.name || '') : String(kpi);
+          const t = successMetrics.targets || {};
+          const normLabel = norm(label);
+          const matchKey = Object.keys(t).find(k => {
+            const nk = norm(k);
+            return nk === normLabel || normLabel.includes(nk) || nk.includes(normLabel);
+          });
+          const target = typeof kpi === 'object'
+            ? (kpi.target || kpi.value || '')
+            : (t[label] || (matchKey ? t[matchKey] : '') || t[`kpi${i+1}`] || '');
+          return card(`
+            <div class="card-label">${esc(label)}</div>
+            ${target ? `<div style="font-size:20px;font-weight:700;color:#059669;margin-top:6px">${esc(target)}</div>` : ''}
+          `);
+        })
       ));
     }
 
@@ -569,11 +600,9 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               </p>
             </div>
             <div className="flex gap-3 flex-wrap items-center">
-              {inferredGoal && (
-                <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
-                  Goal: {inferredGoal.replace('_', ' ').toUpperCase()}
-                </span>
-              )}
+              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+                Goal: STRATEGY
+              </span>
               <button
                 onClick={handleExportPDF}
                 className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
@@ -736,14 +765,20 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                 <BarChart3 size={20} className="text-[#6366F1] pdf-no-print" />Success Metrics & KPIs
               </h2>
               <div className="pdf-grid-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {successMetrics.kpis.map((kpi: string, idx: number) => (
+                {successMetrics.kpis.map((kpi: any, idx: number) => {
+                  const kpiLabel = typeof kpi === 'object' ? (kpi.metric || kpi.name || kpi.kpi || JSON.stringify(kpi)) : String(kpi);
+                  const kpiTarget = typeof kpi === 'object'
+                    ? (kpi.target || kpi.value || kpi.goal || '')
+                    : lookupTarget(kpiLabel, idx);
+                  return (
                   <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{kpi}</p>
-                    {successMetrics.targets?.[kpi] && (
-                      <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{successMetrics.targets[kpi]}</p>
-                    )}
+                    <p className="text-sm font-medium mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{kpiLabel}</p>
+                    <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: kpiTarget ? '#4edea3' : '#3A3A4A' }}>
+                      {kpiTarget || '—'}
+                    </p>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -787,10 +822,10 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               <h2 className="text-lg md:text-xl mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 600, color: '#F1F1F3' }}>
                 <DollarSign size={20} className="text-[#6366F1] pdf-no-print" />Budget Allocation
               </h2>
-              <div className="pdf-grid-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="pdf-grid-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {Object.entries(budgetAllocation).map(([key, value]: [string, any], idx: number) => (
                   <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
-                    <h3 className="text-xs uppercase mb-2" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{key.replace(/_/g, ' ')}</h3>
+                    <h3 className="text-xs uppercase mb-2 break-words" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>{key.replace(/_/g, ' ')}</h3>
                     <p className="text-lg font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{value}</p>
                   </div>
                 ))}

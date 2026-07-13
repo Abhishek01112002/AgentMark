@@ -61,23 +61,19 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
-                <Compass size={24} />
+                <Compass size={22} />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-                Campaign Overview
-              </h2>
+              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Overview</h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#B8B8D1' }}>
-              Strategic campaign foundation and execution plan
-            </p>
+            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>Strategic campaign foundation and execution plan</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1 rounded-full bg-[#111118] border border-[#2A2A38] text-xs md:text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-              Manager Agent
+          <div className="flex gap-3 flex-wrap items-center">
+            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              Goal: ORCHESTRATION
             </span>
           </div>
         </div>

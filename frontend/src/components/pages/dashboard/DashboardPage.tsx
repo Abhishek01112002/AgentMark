@@ -484,13 +484,14 @@ function DashboardContent() {
                 style={{ backgroundColor: '#111118', borderBottom: '1px solid #2A2A38' }}
               >
                 <h3
-                  className="truncate"
+                  className="min-w-0 shrink"
                   style={{
                     fontFamily: 'Sora, sans-serif',
-                    fontSize: 'clamp(18px, 3vw, 24px)',
-                    lineHeight: '32px',
+                    fontSize: 'clamp(15px, 2.5vw, 24px)',
+                    lineHeight: '1.4',
                     fontWeight: 600,
                     color: '#F1F1F3',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Recent Projects

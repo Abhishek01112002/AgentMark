@@ -30,10 +30,16 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
   const [openDropdown, setOpenDropdown] = useState<'profile' | 'notification' | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const headerRef = useRef<HTMLDivElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
+  const [notifPos, setNotifPos] = useState<{ top: number; right: number } | null>(null);
 
   const displayTitle = title || routeTitles[location.pathname] || 'AgentMark';
 
   const handleDropdownToggle = (dropdown: 'profile' | 'notification') => {
+    if (dropdown === 'notification' && openDropdown !== 'notification' && bellRef.current) {
+      const rect = bellRef.current.getBoundingClientRect();
+      setNotifPos({ top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
+    }
     setOpenDropdown(openDropdown === dropdown ? null : dropdown);
   };
 
@@ -133,13 +139,14 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
           {/* Desktop title */}
           <h1
-            className="hidden md:block truncate"
+            className="hidden md:block"
             style={{
               fontFamily: 'Sora, sans-serif',
-              fontSize: '24px',
+              fontSize: 'clamp(16px, 2vw, 24px)',
               lineHeight: '32px',
               fontWeight: 600,
               color: '#c0c1ff',
+              whiteSpace: 'nowrap',
             }}
           >
             {displayTitle}
@@ -173,21 +180,13 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
           {/* Notifications */}
           <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
+              ref={bellRef}
               className="relative transition-colors"
               style={{ color: openDropdown === 'notification' ? '#c0c1ff' : '#c7c4d7' }}
               onMouseEnter={(e) => {
                 if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
               }}
               onMouseLeave={(e) => {
-                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
-              }}
-              onTouchStart={(e) => {
-                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
-              }}
-              onTouchEnd={(e) => {
-                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
-              }}
-              onTouchCancel={(e) => {
                 if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
               }}
               onClick={() => handleDropdownToggle('notification')}
@@ -200,17 +199,6 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
                 </span>
               )}
             </button>
-
-            {/* Notification Dropdown */}
-            {openDropdown === 'notification' && (
-              <div
-                className="absolute top-full right-0 mt-2 rounded-xl shadow-xl dropdown-enter"
-                style={{ zIndex: 60 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <NotificationPanel onChangeUnreadCount={setUnreadCount} />
-              </div>
-            )}
           </div>
 
           {/* Profile */}
@@ -219,6 +207,23 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
           </div>
         </div>
       </header>
+
+      {/* Notification panel — fixed so it never overflows the header or sidebar */}
+      {openDropdown === 'notification' && notifPos && (
+        <div
+          className="dropdown-enter"
+          style={{
+            position: 'fixed',
+            top: notifPos.top,
+            right: notifPos.right,
+            zIndex: 9999,
+            width: 'clamp(280px, 40vw, 480px)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <NotificationPanel onChangeUnreadCount={setUnreadCount} />
+        </div>
+      )}
     </>
   );
 };

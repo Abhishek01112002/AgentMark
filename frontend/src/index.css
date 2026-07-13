@@ -22,8 +22,13 @@
   input, textarea, select, [contenteditable="true"] {
     cursor: text;
   }
-  button, a, [role="button"], label[for], [tabindex]:not([tabindex="-1"]) {
-    cursor: pointer;
+  button, a, [role="button"], label[for], [tabindex]:not([tabindex="-1"]),
+  label.cursor-pointer, label.cursor-pointer *,
+  .cursor-pointer, .cursor-pointer * {
+    cursor: pointer !important;
+  }
+  button *, a * {
+    cursor: pointer !important;
   }
   /* Keyboard navigation focus ring — invisible to mouse, critical for WCAG AA */
   :focus-visible {

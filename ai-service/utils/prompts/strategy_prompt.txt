@@ -87,8 +87,11 @@ Based on the research insights above, develop a comprehensive strategy covering:
 
 7. SUCCESS METRICS
    - Infer the goal from recommended_approach (awareness/lead_gen/sales/retention)
-   - Define KPIs (3-5 KPIs aligned with the goal)
-   - Set targets as key-value pairs
+   - Define exactly 4 KPIs aligned with the goal
+   - CRITICAL: The targets object MUST have exactly the same number of entries as the kpis array
+   - CRITICAL: Each targets key MUST be copied EXACTLY character-for-character from the kpis array — no abbreviations, no shortcuts
+   - WRONG: kpis: ["Customer Acquisition Cost (CAC)"] with targets: {{"cac": "$20"}}
+   - RIGHT: kpis: ["Customer Acquisition Cost (CAC)"] with targets: {{"Customer Acquisition Cost (CAC)": "$20"}}
 
 8. COMPETITIVE DIFFERENTIATION
    - State competitive advantage
@@ -168,10 +171,11 @@ EXACT JSON STRUCTURE:
     }}
   }},
   "success_metrics": {{
-    "kpis": ["KPI1", "KPI2", "KPI3"],
+    "kpis": ["KPI Name 1", "KPI Name 2", "KPI Name 3"],
     "targets": {{
-      "kpi1": "target_value",
-      "kpi2": "target_value"
+      "KPI Name 1": "target_value",
+      "KPI Name 2": "target_value",
+      "KPI Name 3": "target_value"
     }}
   }},
   "competitive_differentiation": {{

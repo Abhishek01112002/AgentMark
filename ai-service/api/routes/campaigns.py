@@ -422,6 +422,15 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
         copy_output=payload.existing_copy,
         status="processing",
     )
+
+    existing_variants_section = ""
+    if payload.existing_copy:
+        existing_variants_section = (
+            "\n\nEXISTING VARIANTS (do not repeat these exactly or create near-duplicates):\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{payload.existing_copy}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        )
     
     # 2. Set human feedback to run in targeted variant mode
     # Wrap steering_note in <user_input> XML tags to isolate raw user input and prevent prompt injection
@@ -434,8 +443,10 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
     state.human_feedback = (
         f"Generate a NEW variant for {payload.channel} channel only. "
         f"{steering_instructions} "
+        f"Make this meaningfully different from prior variants. "
         f"Keep other channels unchanged. "
         f"Return ONLY the {payload.channel} channel copy in the copies dict."
+        f"{existing_variants_section}"
     )
     state.human_revision_target = "copywriter"
     

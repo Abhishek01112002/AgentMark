@@ -196,7 +196,8 @@ function DocsContent() {
         .toc-pill.active svg { opacity: 1; color: #818cf8; }
 
         /* Content */
-        .doc-content h2 { font-size: 22px; font-weight: 600; margin: 40px 0 16px; color: #f1f1f3; scroll-margin-top: 72px; letter-spacing: -0.2px; }
+        .doc-content h2 { font-size: 22px; font-weight: 600; margin: 40px 0 16px; color: #f1f1f3; scroll-margin-top: 80px; letter-spacing: -0.2px; }
+        .doc-content section { scroll-margin-top: 72px; }
         .doc-content h4 { font-size: 14px; font-weight: 600; margin: 24px 0 8px; color: #e5e7eb; }
         .doc-content p { font-size: 14px; color: #9ca3af; line-height: 1.75; margin-bottom: 14px; }
         .doc-content p.lead { font-size: 15px; color: #d1d5db; line-height: 1.85; margin-bottom: 20px; }
@@ -298,7 +299,7 @@ function DocsContent() {
         <TopNav title="Documentation" />
 
         <main className="docs-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
-          <div className="px-4 py-6 md:px-6 lg:px-8 max-w-4xl mx-auto">
+          <div className="px-4 py-6 sm:px-5 md:px-8 lg:px-10 xl:px-14 2xl:px-16 w-full">
             <button onClick={() => navigate('/support')} className="back-btn mb-4">
               <ArrowLeft size={13} /> Back to Support
             </button>
@@ -318,12 +319,6 @@ function DocsContent() {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="mb-7">
-                <button onClick={() => navigate('/support')} className="back-btn mb-3 md:hidden">
-                  <ArrowLeft size={13} /> Back
-                </button>
-                <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#f1f1f3', letterSpacing: '-0.3px' }}>Documentation</h1>
-              </div>
 
               <div className="doc-content">
                 {sections.map(s => (

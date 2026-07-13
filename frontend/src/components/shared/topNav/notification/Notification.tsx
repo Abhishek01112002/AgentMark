@@ -68,8 +68,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   return (
-    <div className="w-[90vw] max-w-[520px]">
-      <div className="bg-surface border border-border-base rounded-xl overflow-hidden shadow-2xl">
+    <div className="bg-surface border border-border-base rounded-xl overflow-hidden shadow-2xl w-full">
         <div className="p-4 border-b border-border-base flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
@@ -103,17 +102,17 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
                     index !== notifications.length - 1 ? 'border-b border-border-base' : ''
                   }`}
                 >
-                  <div className="flex gap-4">
-                    <div className={`mt-1 w-10 h-10 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color}`}>
-                      <span className="material-symbols-outlined">{meta.icon}</span>
+                  <div className="flex gap-3">
+                    <div className={`mt-1 w-9 h-9 shrink-0 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color}`}>
+                      <span className="material-symbols-outlined text-[20px]">{meta.icon}</span>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <p className="font-body-md text-body-md text-text-primary font-semibold truncate">
+                      <div className="flex flex-wrap justify-between items-start gap-x-2 gap-y-0.5">
+                        <p className="font-body-md text-body-md text-text-primary font-semibold truncate max-w-[60%]">
                           {notification.title}
                         </p>
-                        <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap">
+                        <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap text-[10px]">
                           {(() => {
                             const d = new Date(notification.createdAt);
                             return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -123,15 +122,12 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
                       <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">
                         {notification.message}
                       </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 self-center">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleNotificationClick(notification.id);
                         }}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-2 min-h-[36px] rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
+                        className="mt-2 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
                       >
                         <Check size={12} />
                         Read
@@ -159,7 +155,6 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
             View all activity
           </button>
         </div>
-      </div>
     </div>
   );
 };

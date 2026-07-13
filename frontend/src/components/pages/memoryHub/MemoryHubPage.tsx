@@ -100,13 +100,12 @@ const MemoryHubPage: React.FC = () => {
         }
         .timeline-line {
           position: absolute;
-          left: 50%;
-          top: 0;
-          bottom: 0;
+          left: 22px;
+          top: 44px;
+          bottom: 44px;
           width: 2px;
-          transform: translateX(-50%);
           background: linear-gradient(180deg, #6366F1 0%, #4edea3 100%);
-          opacity: 0.3;
+          opacity: 0.4;
         }
         .timeline-dot {
           transition: transform 300ms, box-shadow 300ms;
@@ -132,8 +131,8 @@ const MemoryHubPage: React.FC = () => {
         <TopNav title="Brand Memory Hub" />
 
         <main className="memory-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
-          <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8 max-w-7xl mx-auto">
-            <div className="flex items-center gap-3 mb-2">
+          <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 xl:px-10 2xl:px-12 space-y-6 md:space-y-8 w-full">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
               <button
                 onClick={() => navigate(-1)}
                 className="p-3 rounded-lg transition-colors min-h-[44px]"
@@ -146,9 +145,9 @@ const MemoryHubPage: React.FC = () => {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(78,222,163,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
                 <Brain size={22} style={{ color: '#6366F1' }} />
               </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-semibold" style={{ color: '#F1F1F3' }}>Brand Memory Hub</h1>
-                <p className="text-sm" style={{ color: '#8B8B9E' }}>{projectName}</p>
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight" style={{ color: '#F1F1F3' }}>Brand Memory Hub</h1>
+                <p className="text-sm truncate" style={{ color: '#8B8B9E' }}>{projectName}</p>
               </div>
             </div>
 
@@ -214,8 +213,8 @@ const MemoryHubPage: React.FC = () => {
                     <Zap size={16} style={{ color: '#6366F1' }} />
                     AI Learning Insights
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <Radio size={16} style={{ color: '#6366F1' }} />
                         <span className="text-xs font-medium uppercase tracking-wider" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>Preferred Channels</span>
@@ -233,7 +232,7 @@ const MemoryHubPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
+                    <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <Palette size={16} style={{ color: '#4edea3' }} />
                         <span className="text-xs font-medium uppercase tracking-wider" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>Learned Tone</span>
@@ -251,7 +250,7 @@ const MemoryHubPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
+                    <div className="p-3 sm:p-4 rounded-lg sm:col-span-2 lg:col-span-1" style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38' }}>
                       <div className="flex items-center gap-2 mb-3">
                         <Target size={16} style={{ color: aggregated?.mostRejectedAgent ? '#F59E0B' : '#4A4A5E' }} />
                         <span className="text-xs font-medium uppercase tracking-wider" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>Revision Focus</span>
@@ -282,7 +281,7 @@ const MemoryHubPage: React.FC = () => {
                     <div className="space-y-6">
                       {timelineEvents.map((event) => (
                         <div key={event.id} className="relative">
-                          <div className="flex items-start gap-6">
+                          <div className="flex items-start gap-3 sm:gap-4">
                             <div className="relative flex flex-col items-center flex-shrink-0">
                               <div className="timeline-dot w-11 h-11 rounded-full flex items-center justify-center cursor-pointer" style={{
                                 backgroundColor: event.scoreColor + '20',
@@ -299,13 +298,13 @@ const MemoryHubPage: React.FC = () => {
                               </div>
                             </div>
 
-                            <div className="flex-1 min-w-0 p-4 rounded-lg transition-all cursor-pointer" style={{
+                            <div className="flex-1 min-w-0 p-3 sm:p-4 rounded-lg transition-all cursor-pointer" style={{
                               backgroundColor: expandedCampaign === event.id ? '#1A1A24' : '#131318',
                               border: `1px solid ${expandedCampaign === event.id ? event.scoreColor + '30' : '#2A2A38'}`,
                             }}
                               onClick={() => setExpandedCampaign(expandedCampaign === event.id ? null : event.id)}
                             >
-                              <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start justify-between gap-2 sm:gap-4">
                                 <div className="min-w-0 flex-1">
                                   <h3 className="text-sm font-semibold truncate" style={{ color: '#F1F1F3' }}>{event.campaignName}</h3>
                                   <p className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}>
