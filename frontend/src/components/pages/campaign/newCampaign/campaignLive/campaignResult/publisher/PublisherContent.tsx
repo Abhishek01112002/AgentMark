@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Calendar, Send, FileDown, ThumbsUp, FileText, LineChart, Map } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
-import { formatDDMonYYYY, displayDate } from '../../../../../../../utils/formatDate';
+import { displayDate } from '../../../../../../../utils/formatDate';
 
 
 interface PublisherContentProps {
@@ -23,7 +23,7 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
 
   const assets = data?.assets || data?.placements || [];
   const qualityScore = data?.quality_score || data?.score || 0;
-  const generatedDate = data?.generated_date || formatDDMonYYYY(new Date());
+
 
   const [exportingPdf, setExportingPdf] = useState(false);
   const [channelTasks, setChannelTasks] = useState<Record<string, boolean[]>>({});

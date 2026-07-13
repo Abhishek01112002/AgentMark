@@ -15,10 +15,10 @@ interface SourceMeta {
   query_type: "market" | "competitor";
 }
 
-const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => {
+const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   const hasRealData = data && Object.keys(data).length > 0;
-  const inferredGoal = data?.inferred_goal || campaign?.primaryGoal || '';
   
+
   // Extract data from AI output
   const marketAnalysis = data?.market_analysis || {};
   const competitorAnalysis = data?.competitor_analysis || {};

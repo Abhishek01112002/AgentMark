@@ -62,6 +62,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
   const [enhanceLoading, setEnhanceLoading] = useState<Record<string, boolean>>({});
   const [copiedCardId, setCopiedCardId] = useState<string | null>(null);
   const [enhancedCopiedIdx, setEnhancedCopiedIdx] = useState<string | null>(null);
+  const [sharedCardId, setSharedCardId] = useState<string | null>(null);
   const [studioDropdownOpen, setStudioDropdownOpen] = useState<string | null>(null);
 
   const AI_STUDIOS = [
@@ -213,18 +214,19 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
     }
   };
 
-  const handleSharePrompt = async (promptText: string, title: string) => {
+  const handleSharePrompt = async (promptText: string, title: string, cardId?: string) => {
     if (navigator.share) {
       try {
         await navigator.share({ title: `Image Prompt - ${title}`, text: promptText });
-        toast.success('Prompt shared!');
+        if (cardId) { setSharedCardId(cardId); setTimeout(() => setSharedCardId(null), 2000); }
       } catch (err: any) {
         if (err.name !== 'AbortError') toast.error('Failed to share');
       }
     } else {
       try {
         await navigator.clipboard.writeText(promptText);
-        toast.success('Prompt copied to clipboard!');
+        if (cardId) { setSharedCardId(cardId); setTimeout(() => setSharedCardId(null), 2000); }
+        else toast.success('Prompt copied to clipboard!');
       } catch {
         toast.error('Failed to copy');
       }
@@ -684,12 +686,16 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             {isCopied ? 'Copied' : 'Copy'}
                           </button>
                           <button
-                            onClick={() => handleSharePrompt(card.prompt || '', `${card.platform || 'Platform'} Prompt`)}
-                            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40 transition-all active:scale-95"
+                            onClick={() => handleSharePrompt(card.prompt || '', `${card.platform || 'Platform'} Prompt`, cardId)}
+                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                              sharedCardId === cardId
+                                ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                                : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                            }`}
                             title="Share Prompt"
                           >
-                            <Share2 size={11} />
-                            Share
+                            {sharedCardId === cardId ? <Check size={11} /> : <Share2 size={11} />}
+                            {sharedCardId === cardId ? 'Shared' : 'Share'}
                           </button>
                           {/* AI Studio Bridges Dropdown */}
                           <div className="relative">
@@ -873,12 +879,16 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                                   {enhancedCopiedIdx === cardId ? 'Copied' : 'Copy Enhanced'}
                                 </button>
                                 <button
-                                  onClick={() => handleSharePrompt(enhancedPromptText, `${card.platform || 'Platform'} Enhanced Prompt`)}
-                                  className="flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] rounded-lg text-xs font-semibold border bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40 transition-all active:scale-95"
+                                  onClick={() => handleSharePrompt(enhancedPromptText, `${card.platform || 'Platform'} Enhanced Prompt`, `${cardId}-enh`)}
+                                  className={`flex items-center justify-center gap-1.5 px-4 py-3 min-h-[44px] rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                                    sharedCardId === `${cardId}-enh`
+                                      ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
+                                      : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                                  }`}
                                   title="Share Enhanced Prompt"
                                 >
-                                  <Share2 size={11} />
-                                  Share
+                                  {sharedCardId === `${cardId}-enh` ? <Check size={11} /> : <Share2 size={11} />}
+                                  {sharedCardId === `${cardId}-enh` ? 'Shared' : 'Share'}
                                 </button>
                                 {/* AI Studio Bridges for Enhanced */}
                                 <div className="relative">
