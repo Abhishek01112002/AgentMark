@@ -68,7 +68,7 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       projectId,
       campaignId,
       finalReviewScore: campaign.reviewScore ?? null,
-      humanApprovedOnFirstTry: totalRevisions === 0,
+      humanApprovedOnFirstTry: !campaign.humanRevisionTarget,
       finalApprovedTone: campaign.brandVoice ? [campaign.brandVoice] : [],
       finalChannelsUsed: channels,
     };
