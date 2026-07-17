@@ -53,7 +53,7 @@ Add the server configuration to your `claude_desktop_config.json`:
         "run",
         "--directory",
         "E:/AgentMark/AgentMark/agentmark-mcp-server",
-        "server.py"
+        "agentmark-mcp-server"
       ],
       "env": {
         "AGENTMARK_API_URL": "http://localhost:5000",
@@ -75,7 +75,7 @@ Add the server configuration to your `claude_desktop_config.json`:
 3. Fill in the details:
    * **Name:** `AgentMark`
    * **Type:** `command`
-   * **Command:** `uv run --directory E:/AgentMark/AgentMark/agentmark-mcp-server server.py`
+   * **Command:** `uv run --directory E:/AgentMark/AgentMark/agentmark-mcp-server agentmark-mcp-server`
 4. Under environment variables, add:
    * `AGENTMARK_API_URL`: `http://localhost:5000`
    * `AGENTMARK_API_KEY`: `YOUR_JWT_BEARER_TOKEN_HERE`
@@ -99,6 +99,6 @@ uv pip install -e .
 export AGENTMARK_API_URL="http://localhost:5000"
 export AGENTMARK_API_KEY="YOUR_JWT_BEARER_TOKEN_HERE"
 
-npx @modelcontextprotocol/inspector uv run server.py
+npx @modelcontextprotocol/inspector uv run --directory E:/AgentMark/AgentMark/agentmark-mcp-server agentmark-mcp-server
 ```
 This launches a local web interface on `http://localhost:3000` where you can manually run and audit every tool.
