@@ -66,12 +66,26 @@ async def generate_campaign_impl(
     # 3. Synchronous polling loop for asynchronous background task
     max_retries = 180  # 15 minutes max timeout
     retry_interval = 5  # Poll every 5 seconds
+    consecutive_failures = 0
     
     for attempt in range(max_retries):
         await asyncio.sleep(retry_interval)
         logger.info(f"Polling campaign status | campaign={campaign_id} | attempt={attempt + 1}")
         
-        campaign_details = await client.get(f"/api/campaigns/{campaign_id}")
+        try:
+            campaign_details = await client.get(f"/api/campaigns/{campaign_id}")
+            consecutive_failures = 0  # Reset on success
+        except Exception as e:
+            consecutive_failures += 1
+            logger.warning(
+                f"Transient status check failure ({consecutive_failures}/5) "
+                f"for campaign {campaign_id}: {str(e)}"
+            )
+            if consecutive_failures >= 5:
+                logger.error(f"Unrecoverable connection issues polling campaign {campaign_id}.")
+                raise RuntimeError(f"Lost communication with AgentMark API: {str(e)}")
+            continue
+
         status = campaign_details.get("status", "draft").lower()
 
         if status == "completed":

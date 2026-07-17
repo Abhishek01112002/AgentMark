@@ -37,6 +37,14 @@ async def run_focus_group_impl(
     # Extract copy if not explicitly provided
     if not copy_text:
         ai_outputs = campaign_details.get("aiOutputs") or {}
+        if isinstance(ai_outputs, str):
+            import json
+            try:
+                ai_outputs = json.loads(ai_outputs)
+            except Exception as e:
+                logger.error(f"Failed to parse stringified aiOutputs: {str(e)}")
+                ai_outputs = {}
+                
         copywriter = ai_outputs.get("copywriter") or {}
         copies = copywriter.get("copies") or {}
         

@@ -27,12 +27,26 @@ async def publish_to_channel_impl(
     # Poll status until completed (publisher done)
     max_retries = 90  # 7.5 minutes max timeout
     retry_interval = 5
+    consecutive_failures = 0
     
     for attempt in range(max_retries):
         await asyncio.sleep(retry_interval)
         logger.info(f"Polling publisher status | campaign={campaign_id} | attempt={attempt + 1}")
         
-        campaign_details = await client.get(f"/api/campaigns/{campaign_id}")
+        try:
+            campaign_details = await client.get(f"/api/campaigns/{campaign_id}")
+            consecutive_failures = 0  # Reset on success
+        except Exception as e:
+            consecutive_failures += 1
+            logger.warning(
+                f"Transient status check failure ({consecutive_failures}/5) "
+                f"for campaign {campaign_id}: {str(e)}"
+            )
+            if consecutive_failures >= 5:
+                logger.error(f"Unrecoverable connection issues polling campaign {campaign_id}.")
+                raise RuntimeError(f"Lost communication with AgentMark API: {str(e)}")
+            continue
+
         status = campaign_details.get("status", "draft").lower()
 
         if status == "completed":
