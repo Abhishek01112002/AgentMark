@@ -82,6 +82,86 @@ from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import PublisherOutput, normalize_channel_list
 
+# Channel intelligence snippets (injected per active channel only)
+_CHANNEL_INTELLIGENCE = {
+    "linkedin": (
+        "LinkedIn:\n"
+        "  - Best for: B2B lead gen, thought leadership, professional audiences\n"
+        "  - Optimal times: Tuesday & Thursday, 8-10am and 12pm EST\n"
+        "  - Frequency: 3-4x/week (organic), daily for sponsored\n"
+        "  - Content formats: carousel posts, articles, text posts with insights\n"
+        "  - Goal alignment: Excellent for lead_gen and awareness; moderate for sales"
+    ),
+    "email": (
+        "Email:\n"
+        "  - Best for: Nurture sequences, retention, direct conversion\n"
+        "  - Optimal times: Tuesday/Wednesday, 7-9am EST\n"
+        "  - Frequency: 1-2x/week (nurture), 2-3x/week (sales push)\n"
+        "  - Content formats: newsletters, drip sequences, promotional emails\n"
+        "  - Goal alignment: Excellent for retention and sales; good for lead_gen"
+    ),
+    "instagram": (
+        "Instagram:\n"
+        "  - Best for: Visual brands, B2C, lifestyle, product showcase\n"
+        "  - Optimal times: Monday-Friday, 11am-1pm and 7-9pm EST\n"
+        "  - Frequency: 1x/day (feed), 3-5x/day (stories)\n"
+        "  - Content formats: reels, carousels, stories, static posts\n"
+        "  - Goal alignment: Excellent for awareness; good for sales"
+    ),
+    "tiktok": (
+        "TikTok:\n"
+        "  - Best for: Gen Z/Millennial B2C, viral growth, entertainment brands\n"
+        "  - Optimal times: 7-9am, 12-3pm, 7-11pm EST\n"
+        "  - Frequency: 1-3x/day\n"
+        "  - Content formats: short-form video (15-60 seconds), trending audio\n"
+        "  - Goal alignment: Excellent for awareness; growing for lead_gen"
+    ),
+    "facebook": (
+        "Facebook:\n"
+        "  - Best for: Community building, B2C, broad demographics, retargeting\n"
+        "  - Optimal times: Wednesday, 11am-1pm EST; Thursday/Friday 1-4pm\n"
+        "  - Frequency: 1x/day (organic), continuous (ads)\n"
+        "  - Content formats: posts, stories, live video, groups, ads\n"
+        "  - Goal alignment: Good for all goals; especially retention and awareness"
+    ),
+    "twitter": (
+        "Twitter/X:\n"
+        "  - Best for: Real-time engagement, tech/media audiences, thought leadership\n"
+        "  - Optimal times: 8-10am and 6-9pm EST weekdays\n"
+        "  - Frequency: 3-5x/day\n"
+        "  - Content formats: tweets, threads, polls, spaces\n"
+        "  - Goal alignment: Good for awareness; moderate for lead_gen"
+    ),
+    "youtube": (
+        "YouTube:\n"
+        "  - Best for: Educational content, tutorials, long-form storytelling\n"
+        "  - Optimal times: Thursday/Friday, 12pm-4pm EST\n"
+        "  - Frequency: 1-2x/week\n"
+        "  - Content formats: tutorials (10-20min), shorts (<60s), webinars\n"
+        "  - Goal alignment: Excellent for awareness and retention; good for sales"
+    ),
+    "google_ads": (
+        "Google Ads:\n"
+        "  - Best for: High-intent search capture, retargeting, direct conversion\n"
+        "  - Optimal times: Business hours, peak on Tuesday-Thursday\n"
+        "  - Frequency: Continuous with weekly A/B rotation\n"
+        "  - Content formats: search ads, display ads, responsive ads\n"
+        "  - Goal alignment: Excellent for sales and lead_gen"
+    ),
+}
+
+
+def _build_channel_intelligence(channels):
+    """Return channel intelligence text for active channels only."""
+    snippets = [
+        _CHANNEL_INTELLIGENCE[ch.lower().replace(" ", "_").replace("/", "_")]
+        for ch in channels
+        if ch.lower().replace(" ", "_").replace("/", "_") in _CHANNEL_INTELLIGENCE
+    ]
+    return "\n\n".join(snippets) if snippets else "No channel-specific intelligence available."
+
+
+
 
 def _write_hold_output(
     state: CampaignState,
@@ -514,7 +594,9 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         channels_count=len(channels),
         deliverables_count=len(deliverables),
         # Pre-calculated decision for strict enforcement
-        expected_decision=expected_decision
+        expected_decision=expected_decision,
+        # Dynamic channel intelligence (only active channels)
+        channel_intelligence=_build_channel_intelligence(channels),
     )
 
     logger.info("   Querying LLM with structured output...")

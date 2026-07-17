@@ -19,6 +19,14 @@ const sendCommand = async (...args: string[]): Promise<any> => {
   if (!redisClient) {
     throw new Error('Redis rate limit store is disabled in test');
   }
+  
+  // If connection is in progress, wait for the ready event instead of throwing immediately
+  if (redisClient.status === 'connecting') {
+    await new Promise<void>((resolve) => {
+      redisClient.once('ready', () => resolve());
+    });
+  }
+
   if (redisClient.status !== 'ready') {
     throw new Error(`Redis not ready (status: ${redisClient.status})`);
   }

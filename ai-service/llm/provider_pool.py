@@ -21,7 +21,7 @@ class ProviderPool:
     and environment variables, then selects only keys with current capacity.
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, custom_order: list[str] = None):
         self.providers: list[tuple[str, str, str]] = []
         config = config or {}
 
@@ -31,7 +31,7 @@ class ProviderPool:
             "groq": _split_keys(config.get("groq_api_key") or os.getenv("GROQ_API_KEY")),
         }
 
-        requested_order = config.get("provider_order") if os.getenv("RESPECT_CLIENT_PROVIDER_ORDER") == "true" else None
+        requested_order = custom_order or (config.get("provider_order") if os.getenv("RESPECT_CLIENT_PROVIDER_ORDER") == "true" else None)
         provider_order = [
             provider
             for provider in (requested_order if isinstance(requested_order, list) else DEFAULT_PROVIDER_ORDER)

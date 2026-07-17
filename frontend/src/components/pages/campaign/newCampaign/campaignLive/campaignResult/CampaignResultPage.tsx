@@ -1,6 +1,6 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, LucideIcon, Loader2 } from 'lucide-react';
+import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, Users, LucideIcon, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../shared/ChannelIcon';
 import api from '../../../../../../services/api';
@@ -10,13 +10,14 @@ import MemoryInsightsCard from './MemoryInsightsCard';
 
 // Lazy-load each tab's content so its JS chunk is only fetched when the tab
 // is first opened — shaves ~250 KB from the initial parse budget.
-const OverviewContent   = lazy(() => import('./overview/OverviewContent'));
-const ResearchContent   = lazy(() => import('./research/ResearchContent'));
-const StrategyContent   = lazy(() => import('./strategy/StrategyContent'));
-const CopywriterContent = lazy(() => import('./copywriter/CopywriterContent'));
-const VisualsContent    = lazy(() => import('./visuals/VisualsContent'));
-const ReviewContent     = lazy(() => import('./review/ReviewContent'));
-const PublisherContent  = lazy(() => import('./publisher/PublisherContent'));
+const OverviewContent    = lazy(() => import('./overview/OverviewContent'));
+const ResearchContent    = lazy(() => import('./research/ResearchContent'));
+const StrategyContent    = lazy(() => import('./strategy/StrategyContent'));
+const CopywriterContent  = lazy(() => import('./copywriter/CopywriterContent'));
+const VisualsContent     = lazy(() => import('./visuals/VisualsContent'));
+const ReviewContent      = lazy(() => import('./review/ReviewContent'));
+const PublisherContent   = lazy(() => import('./publisher/PublisherContent'));
+const FocusGroupContent  = lazy(() => import('./focusGroup/FocusGroupPanel'));
 
 /** Minimal fallback rendered while a tab's chunk is being fetched. */
 const TabLoader = () => (
@@ -25,13 +26,14 @@ const TabLoader = () => (
   </div>
 );
 
-type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'images' | 'review' | 'published';
+type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'images' | 'review' | 'published' | 'focus-group';
 
 interface Tab {
   id: TabId;
   label: string;
   icon: LucideIcon;
 }
+
 
 interface Campaign {
   id: string;
@@ -57,13 +59,14 @@ interface Campaign {
 }
 
 const tabs: Tab[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'research', label: 'Research', icon: FileText },
-  { id: 'strategy', label: 'Strategy', icon: Compass },
-  { id: 'copy', label: 'Copy', icon: PenTool },
-  { id: 'images', label: 'Images', icon: ImageIcon },
-  { id: 'review', label: 'Review', icon: CheckSquare },
-  { id: 'published', label: 'Publishing', icon: Send },
+  { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
+  { id: 'research',    label: 'Research',     icon: FileText },
+  { id: 'strategy',    label: 'Strategy',     icon: Compass },
+  { id: 'copy',        label: 'Copy',         icon: PenTool },
+  { id: 'images',      label: 'Images',       icon: ImageIcon },
+  { id: 'review',      label: 'Review',       icon: CheckSquare },
+  { id: 'published',   label: 'Publishing',   icon: Send },
+  { id: 'focus-group', label: 'Focus Group',  icon: Users },
 ];
 
 const CampaignResultPage: React.FC = () => {
@@ -96,6 +99,17 @@ const CampaignResultPage: React.FC = () => {
   const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
   const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
 
+  // ── Focus Group Simulation State ──────────────────────────────────────────
+  const [focusGroupReport, setFocusGroupReport] = useState<any>(null);
+  const [focusGroupLoading, setFocusGroupLoading] = useState(false);
+  const [focusGroupError, setFocusGroupError] = useState<string | null>(null); // Fix #2
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_focusGroupFetched, setFocusGroupFetched] = useState(false);
+
+  // Fix #1: canonical copy slice length — must match what backend hashes
+  const COPY_SLICE_LENGTH = 4000;
+
+
   // Helper to extract and automatically parse JSON string fields from aiOutputs
   const getOutputField = React.useCallback((field: string) => {
     if (!campaign) return null;
@@ -116,6 +130,161 @@ const CampaignResultPage: React.FC = () => {
     }
     return null;
   }, [campaign]);
+
+  const resolvedChannels = React.useMemo(() => {
+    if (!campaign) return { channels: [], flatCopyData: null, copyVariants: {} };
+    const outputs = campaign.aiOutputs || {};
+    const copyVariants = outputs.copy_variants || {};
+    const copyData = getOutputField('copy_output') || getOutputField('copyOutput');
+    // Fix #5: compute flatCopyData ONCE here and share with activeCopyText + focus-group renderer
+    const flatCopyData = copyData && copyData.copies ? { ...copyData, ...copyData.copies } : copyData;
+
+    const channelsSet = new Set<string>();
+    
+    // 1. Add channels from manager output
+    const managerChannels = outputs.manager_output?.channels || [];
+    managerChannels.forEach((ch: string) => channelsSet.add(ch.toLowerCase()));
+    
+    // 2. Add channels from copyData (legacy copies)
+    if (flatCopyData) {
+      Object.keys(flatCopyData).forEach((key) => {
+        if (flatCopyData[key] && typeof flatCopyData[key] === 'object') {
+          channelsSet.add(key.toLowerCase());
+        }
+      });
+      if (flatCopyData.copies) {
+        Object.keys(flatCopyData.copies).forEach((key) => {
+          channelsSet.add(key.toLowerCase());
+        });
+      }
+    }
+    
+    // 3. Add channels from copyVariants
+    Object.keys(copyVariants).forEach((ch: string) => {
+      if (copyVariants[ch]?.length > 0) {
+        channelsSet.add(ch.toLowerCase());
+      }
+    });
+
+    // Remove helper keys if they got added
+    channelsSet.delete('copies');
+    channelsSet.delete('messaging_framework');
+    channelsSet.delete('strategic_alignment');
+    channelsSet.delete('copy_readiness');
+    
+    // Fix #5: return flatCopyData alongside channels so activeCopyText doesn't recompute it
+    return { channels: Array.from(channelsSet), flatCopyData, copyVariants };
+  }, [campaign, getOutputField]);
+
+  const activeCopyText = React.useMemo(() => {
+    if (!campaign) return '';
+    // Fix #5: reuse precomputed channels + flatCopyData from resolvedChannels
+    const { channels, flatCopyData, copyVariants } = resolvedChannels;
+
+    const championTexts: string[] = [];
+    
+    channels.forEach((channel: string) => {
+      const channelVariants = copyVariants[channel] || [];
+      const champion = channelVariants.find((v: any) => v.isChampion) || channelVariants[0];
+      if (champion) {
+        const headline = champion.headline || champion.subject || '';
+        const body = champion.body_copy || champion.body || '';
+        championTexts.push(`[${channel.toUpperCase()}] Headline: ${headline}\nBody: ${body}`);
+      } else {
+        const legacyCopy = flatCopyData?.[channel] || flatCopyData?.copies?.[channel];
+        if (legacyCopy) {
+          const headline = legacyCopy.headline || legacyCopy.subject || '';
+          const body = legacyCopy.body || legacyCopy.body_copy || legacyCopy.caption || '';
+          championTexts.push(`[${channel.toUpperCase()}] Headline: ${headline}\nBody: ${body}`);
+        }
+      }
+    });
+    
+    return championTexts.filter(Boolean).join('\n\n');
+  }, [campaign, resolvedChannels]);
+
+  // Fix #1: hash the exact same sliced string that will be sent to the backend
+  const copyHash = React.useMemo(() => {
+    const text = activeCopyText.slice(0, COPY_SLICE_LENGTH);
+    if (!text) return '';
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+      const chr = text.charCodeAt(i);
+      hash = ((hash << 5) - hash) + chr;
+      hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(36);
+  }, [activeCopyText, COPY_SLICE_LENGTH]);
+
+  // Load report when campaign or active copy hash changes
+  React.useEffect(() => {
+    if (campaign && copyHash) {
+      const outputs = campaign.aiOutputs || {};
+      const outputsMap = outputs.focus_group_outputs || {};
+      const savedReport = outputsMap[copyHash] || (outputs.focus_group_output_hash === copyHash ? outputs.focus_group_output : null);
+      
+      if (savedReport) {
+        setFocusGroupReport(savedReport);
+        setFocusGroupFetched(true);
+      } else {
+        setFocusGroupReport(null);
+        setFocusGroupFetched(false);
+      }
+    }
+  }, [campaign, copyHash]);
+
+  const handleRunSimulation = useCallback(async () => {
+    if (!campaign || focusGroupLoading || !activeCopyText) return;
+    setFocusGroupLoading(true);
+    setFocusGroupFetched(true);
+    try {
+      const res = await api.post('/focus-group/simulate', {
+        campaign_id: campaign.id,
+        copy_text: activeCopyText.slice(0, 4000),
+        campaign_context: {
+          brand_name: campaign.brandName || campaign.brand_name || '',
+          brand: campaign.brandName || campaign.brand_name || '',
+          industry: campaign.industry,
+          goal: campaign.primaryGoal,
+          target_audience: campaign.targetAudience,
+          audience: campaign.targetAudience,
+        },
+      }, {
+        timeout: 60000, // Extend timeout to 60 seconds for parallel LLM runs
+      });
+      setFocusGroupReport(res.data);
+      
+      // Update local campaign state so the new report is persisted in memory immediately
+      setCampaign(prev => {
+        if (!prev) return null;
+        const currentOutputs = prev.aiOutputs || {};
+        const currentOutputsMap = currentOutputs.focus_group_outputs || {};
+        const updatedOutputsMap = {
+          ...currentOutputsMap,
+          [copyHash]: res.data
+        };
+        const updatedOutputs = {
+          ...currentOutputs,
+          focus_group_output: res.data,
+          focus_group_output_hash: copyHash,
+          focus_group_outputs: updatedOutputsMap
+        };
+        return {
+          ...prev,
+          aiOutputs: updatedOutputs
+        };
+      });
+    } catch (err: any) {
+      console.error('Focus group simulation failed:', err);
+      // Fix #2: Show descriptive error toast and store error for inline display
+      const msg = err?.response?.data?.detail || err?.message || 'Simulation failed. Please try again.';
+      toast.error(`Focus Group: ${msg}`);
+      setFocusGroupError(msg);
+      setFocusGroupFetched(false);
+    } finally {
+      setFocusGroupLoading(false);
+    }
+  }, [campaign, focusGroupLoading, activeCopyText, copyHash]);
 
   // Memoize parsed campaign outputs to avoid redundant JSON.parse calls in render path
   const parsedCampaignOutputs = React.useMemo(() => {
@@ -320,6 +489,9 @@ const CampaignResultPage: React.FC = () => {
         return !!(getOutputField('review_output') || getOutputField('reviewOutput'));
       case 'published':
         return !!(getOutputField('publisher_output') || getOutputField('publisherOutput') || campaign.status === 'completed');
+      case 'focus-group':
+        // Available once copy output exists — simulation is always optional / user-triggered
+        return !!(getOutputField('copy_output') || getOutputField('copyOutput'));
       default:
         return false;
     }
@@ -344,6 +516,43 @@ const CampaignResultPage: React.FC = () => {
         return <ReviewContent data={getOutputField('review_output') || getOutputField('reviewOutput')} reviewScore={campaign.reviewScore} />;
       case 'published':
         return <PublisherContent data={getOutputField('publisher_output') || getOutputField('publisherOutput')} campaignName={campaign.name} campaign={campaign} />;
+      case 'focus-group': {
+        const { channels, flatCopyData, copyVariants } = resolvedChannels;
+        const championCopies: Record<string, { headline?: string; body?: string }> = {};
+        
+        channels.forEach((channel: string) => {
+          const channelVariants = copyVariants[channel] || [];
+          const champion = channelVariants.find((v: any) => v.isChampion) || channelVariants[0];
+          if (champion) {
+            championCopies[channel] = {
+              headline: champion.headline || champion.subject,
+              body: champion.body_copy || champion.body
+            };
+          } else {
+            const legacyCopy = flatCopyData?.[channel] || flatCopyData?.copies?.[channel];
+            if (legacyCopy) {
+              championCopies[channel] = {
+                headline: legacyCopy.headline || legacyCopy.subject,
+                body: legacyCopy.body || legacyCopy.body_copy || legacyCopy.caption
+              };
+            }
+          }
+        });
+
+        const resolvedCopies = championCopies;
+
+        return (
+          <FocusGroupContent
+            report={focusGroupReport}
+            copyText={activeCopyText.slice(0, 4000)}
+            copies={resolvedCopies}
+            targetAudience={campaign.targetAudience}
+            isLoading={focusGroupLoading}
+            onRunSimulation={handleRunSimulation}
+            error={focusGroupError}
+          />
+        );
+      }
     }
   };
 

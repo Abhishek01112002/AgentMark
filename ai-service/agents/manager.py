@@ -107,7 +107,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
     logger.info("🧠 Manager thinking with AI...")
     
     # Initialize LLM client
-    llm = get_llm_client()
+    llm = get_llm_client(low_complexity=True)
     
     # Load prompt from manager_prompt.txt and format with campaign data
     prompt = load_prompt(

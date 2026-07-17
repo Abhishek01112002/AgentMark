@@ -28,6 +28,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.health import router as health_router
 from api.routes.campaigns import router as campaign_router
+from routers.focus_group_router import router as focus_group_router
 from api.dependencies import verify_internal_secret
 from workflow.graph import create_campaign_graph
 from version import __version__
@@ -73,6 +74,8 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router)
 app.include_router(campaign_router, dependencies=[Depends(verify_internal_secret)])
+# Focus Group router: user-triggered (not internal), exposed under /api prefix via reverse proxy
+app.include_router(focus_group_router)
 
 
 if __name__ == "__main__":

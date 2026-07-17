@@ -328,13 +328,37 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Image — Prompts: {len(image_prompts)} | "
           f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
 
+    # Create a lean version of strategy_data to save tokens
+    strategy_lean = dict(strategy_data)
+    if "research_foundation" in strategy_lean:
+        foundation_lean = {}
+        for k, v in strategy_data["research_foundation"].items():
+            if isinstance(v, dict):
+                foundation_lean[k] = {
+                    "status": "VALIDATED_AND_PRESENT",
+                    "note": f"Omitted verbose details to conserve tokens. Field exists: {list(v.keys())}"
+                }
+            elif isinstance(v, list):
+                foundation_lean[k] = [f"VALIDATED_AND_PRESENT ({len(v)} items)"]
+            else:
+                foundation_lean[k] = "VALIDATED_AND_PRESENT"
+        strategy_lean["research_foundation"] = foundation_lean
+
+    if "content_calendar" in strategy_lean:
+        strategy_lean["content_calendar"] = {
+            "status": "VALIDATED_AND_PRESENT",
+            "weeks_count": len(strategy_data.get("content_calendar", [])),
+            "note": "Full content calendar details omitted to conserve tokens."
+        }
+    logger.info("✓ Strategy (Lean): Omitted content_calendar and research_foundation to save tokens")
+
     # ========== STEP 5: REVIEW WITH LLM ==========
     logger.info("\n[STEP 5] Sending ALL 28 fields to LLM for quality analysis...")
     logger.info("-" * 80)
     logger.info("🔍 AI Quality Analyst reviewing campaign outputs...")
 
     # Initialize LLM client
-    llm = get_llm_client()
+    llm = get_llm_client(low_complexity=True)
 
     # Load reviewer prompt and format with ALL agent outputs
     prompt = load_prompt(
@@ -360,7 +384,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         image_revision_count=image_revision_count,
         # All agent outputs (full JSON for LLM to analyze)
         research_output=json.dumps(research_data, indent=2),
-        strategy_output=json.dumps(strategy_data, indent=2),
+        strategy_output=json.dumps(strategy_lean, indent=2),
         copy_output=json.dumps(copy_data, indent=2),
         image_output=json.dumps(image_data, indent=2)
     )

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 CURRENT_LLM_CONFIG: ContextVar[dict | None] = ContextVar("current_llm_config", default=None)
 _PER_REQUEST_RATE_POOL: ContextVar[RateAwarePool | None] = ContextVar("_per_request_rate_pool", default=None)
+_PER_REQUEST_LOW_COMPLEXITY_POOL: ContextVar[RateAwarePool | None] = ContextVar("_per_request_low_complexity_pool", default=None)
 
 
 class AllProvidersRateLimitedError(Exception):
@@ -32,6 +33,7 @@ def set_llm_config(config: dict | None):
     resolved = config or {}
     CURRENT_LLM_CONFIG.set(resolved)
     _PER_REQUEST_RATE_POOL.set(None)
+    _PER_REQUEST_LOW_COMPLEXITY_POOL.set(None)
 
 
 def get_current_llm_config() -> dict:
@@ -131,13 +133,20 @@ def _build_rate_aware_pool(config: dict) -> RateAwarePool:
     return RateAwarePool(config)
 
 
-def get_llm_client(provider: str = None) -> BaseLLMClient:
+def get_llm_client(provider: str = None, low_complexity: bool = False) -> BaseLLMClient:
     config = get_current_llm_config()
 
     if provider is None:
+        if low_complexity:
+            pool = _PER_REQUEST_LOW_COMPLEXITY_POOL.get()
+            if pool is None:
+                pool = RateAwarePool(config, custom_order=["groq", "gemini", "openai"])
+                _PER_REQUEST_LOW_COMPLEXITY_POOL.set(pool)
+            return SmartClient(pool)
+        
         pool = _PER_REQUEST_RATE_POOL.get()
         if pool is None:
-            pool = _build_rate_aware_pool(config)
+            pool = RateAwarePool(config)
             _PER_REQUEST_RATE_POOL.set(pool)
         return SmartClient(pool)
 

@@ -17,6 +17,7 @@ import campaignRoutes from './modules/campaigns/campaign.routes';
 import constantsRoutes from './modules/constants/constants.routes';
 import imagekitRoutes from './modules/imagekit/imagekit.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
+import focusGroupRoutes from './modules/focus-group/focus-group.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import prisma from './db';
 import { notificationService } from './modules/notifications/notification.service';
@@ -65,6 +66,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/constants', constantsRoutes);
 app.use('/api/imagekit', imagekitRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/focus-group', focusGroupRoutes);
 
 app.use(errorHandler);
 

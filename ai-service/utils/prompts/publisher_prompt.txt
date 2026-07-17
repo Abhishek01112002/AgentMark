@@ -193,63 +193,9 @@ Write it as if presenting to a CMO — confident, data-driven, and action-orient
 CHANNEL-SPECIFIC PUBLISHING INTELLIGENCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Use this channel intelligence to make specific, accurate recommendations:
+Use this channel intelligence for the active campaign channels only:
 
-LinkedIn:
-  - Best for: B2B lead gen, thought leadership, professional audiences
-  - Optimal times: Tuesday & Thursday, 8-10am and 12pm EST
-  - Frequency: 3-4x/week (organic), daily for sponsored
-  - Content formats: carousel posts, articles, text posts with insights
-  - Goal alignment: Excellent for lead_gen and awareness; moderate for sales
-
-Email:
-  - Best for: Nurture sequences, retention, direct conversion
-  - Optimal times: Tuesday/Wednesday, 7-9am EST
-  - Frequency: 1-2x/week (nurture), 2-3x/week (sales push)
-  - Content formats: newsletters, drip sequences, promotional emails
-  - Goal alignment: Excellent for retention and sales; good for lead_gen
-
-Instagram:
-  - Best for: Visual brands, B2C, lifestyle, product showcase
-  - Optimal times: Monday-Friday, 11am-1pm and 7-9pm EST
-  - Frequency: 1x/day (feed), 3-5x/day (stories)
-  - Content formats: reels, carousels, stories, static posts
-  - Goal alignment: Excellent for awareness; good for sales
-
-TikTok:
-  - Best for: Gen Z/Millennial B2C, viral growth, entertainment brands
-  - Optimal times: 7-9am, 12-3pm, 7-11pm EST
-  - Frequency: 1-3x/day
-  - Content formats: short-form video (15-60 seconds), trending audio
-  - Goal alignment: Excellent for awareness; growing for lead_gen
-
-Facebook:
-  - Best for: Community building, B2C, broad demographics, retargeting
-  - Optimal times: Wednesday, 11am-1pm EST; Thursday/Friday 1-4pm
-  - Frequency: 1x/day (organic), continuous (ads)
-  - Content formats: posts, stories, live video, groups, ads
-  - Goal alignment: Good for all goals; especially retention and awareness
-
-Twitter/X:
-  - Best for: Real-time engagement, tech/media audiences, thought leadership
-  - Optimal times: 8-10am and 6-9pm EST weekdays
-  - Frequency: 3-5x/day
-  - Content formats: tweets, threads, polls, spaces
-  - Goal alignment: Good for awareness; moderate for lead_gen
-
-YouTube:
-  - Best for: Educational content, tutorials, long-form storytelling
-  - Optimal times: Thursday/Friday, 12pm-4pm EST
-  - Frequency: 1-2x/week
-  - Content formats: tutorials (10-20min), shorts (<60s), webinars
-  - Goal alignment: Excellent for awareness and retention; good for sales
-
-Google Ads:
-  - Best for: High-intent search capture, retargeting, direct conversion
-  - Optimal times: Business hours, peak on Tuesday-Thursday
-  - Frequency: Continuous with weekly A/B rotation
-  - Content formats: search ads, display ads, responsive ads
-  - Goal alignment: Excellent for sales and lead_gen
+{channel_intelligence}
 
 RESPONSE FORMAT:
 Respond ONLY with valid JSON matching the exact structure below. No markdown, no explanations, no prefix or suffix.

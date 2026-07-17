@@ -62,9 +62,14 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
     window.addEventListener('notifications-updated', handleUpdate);
 
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
-        setOpenDropdown(null);
+      const target = event.target as Node;
+      if (headerRef.current && headerRef.current.contains(target)) {
+        return;
       }
+      if (target instanceof HTMLElement && target.closest('.notification-panel-container')) {
+        return;
+      }
+      setOpenDropdown(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -211,7 +216,7 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
       {/* Notification panel — fixed so it never overflows the header or sidebar */}
       {openDropdown === 'notification' && notifPos && (
         <div
-          className="dropdown-enter"
+          className="dropdown-enter notification-panel-container"
           style={{
             position: 'fixed',
             top: notifPos.top,

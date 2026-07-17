@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import json
 import logging
 import os
 import time
@@ -13,6 +15,7 @@ from config.settings import REDIS_DB, REDIS_HOST, REDIS_PORT
 logger = logging.getLogger(__name__)
 
 DAILY_SEARCH_LIMIT = 100
+SEARCH_CACHE_TTL = 43200  # 12 hours — market data doesn't change that fast
 
 
 class SourceMeta(BaseModel):
@@ -125,8 +128,33 @@ def search_web(
     """
     Never raises. Tries each Tavily key in rotation until one succeeds.
     Returns snippets, source metadata, or a clear error message.
+    Caches successful responses in Redis for SEARCH_CACHE_TTL seconds.
     """
     start = time.monotonic()
+
+    # Initialise shared Redis client once if not provided
+    if redis_client is None:
+        try:
+            redis_client = redis.Redis(connection_pool=_get_redis_pool(), decode_responses=True)
+        except Exception as exc:
+            logger.warning("Could not initialize Redis client in search_service: %s", exc)
+
+    # ── Redis cache check ─────────────────────────────────────────────────────
+    q_hash = hashlib.md5(query.encode("utf-8")).hexdigest()
+    cache_key = f"tavily:q:{q_hash}"
+    if redis_client:
+        try:
+            cached_raw = redis_client.get(cache_key)
+            if cached_raw:
+                cached_obj = json.loads(cached_raw)
+                logger.info(
+                    "Tavily cache HIT | query='%s' | snippets=%d",
+                    query[:80],
+                    len(cached_obj.get("snippets", [])),
+                )
+                return SearchResult(**cached_obj)
+        except Exception as exc:
+            logger.warning("Tavily Redis cache read failed (non-fatal): %s", exc)
 
     clients = _get_clients(api_key=api_key)
     if not clients:
@@ -135,12 +163,6 @@ def search_web(
             query=query,
             error_message="Tavily client not initialized. Set TAVILY_API_KEY or pass tavily_api_key in llm_config.",
         )
-
-    if redis_client is None:
-        try:
-            redis_client = redis.Redis(connection_pool=_get_redis_pool(), decode_responses=True)
-        except Exception as exc:
-            logger.warning("Could not initialize Redis client in search_service: %s", exc)
 
     # Try each key in order. Track the last error so we can report it if all fail.
     last_error: Optional[str] = None
@@ -192,9 +214,17 @@ def search_web(
                 key_id,
                 latency_ms,
             )
-            return SearchResult(
+            result = SearchResult(
                 success=True, query=query, snippets=snippets, sources=sources
             )
+            # ── Cache successful result in Redis ──────────────────────────────
+            if redis_client:
+                try:
+                    redis_client.setex(cache_key, SEARCH_CACHE_TTL, result.model_dump_json())
+                    logger.debug("Tavily result cached | key=%s | ttl=%ds", cache_key[:20], SEARCH_CACHE_TTL)
+                except Exception as exc:
+                    logger.warning("Tavily Redis cache write failed (non-fatal): %s", exc)
+            return result
 
         except Exception as exc:
             latency_ms = int((time.monotonic() - start) * 1000)
