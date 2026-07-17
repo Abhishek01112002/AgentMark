@@ -1,10 +1,12 @@
 import logging
 import sys
+from typing import Optional
+from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP
-from client import AgentMarkClient
-from tools.campaign import generate_campaign_impl
-from tools.focus_group import run_focus_group_impl
-from tools.publish import publish_to_channel_impl
+from .client import AgentMarkClient
+from .tools.campaign import generate_campaign_impl
+from .tools.focus_group import run_focus_group_impl
+from .tools.publish import publish_to_channel_impl
 
 # Configure standard stream logging to stderr (stdout is used for MCP protocol communication)
 logging.basicConfig(
@@ -14,10 +16,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger("agentmark-mcp-server")
 
+# Global singleton client managed by the server lifespan hook
+_client_instance: Optional[AgentMarkClient] = None
+
+@asynccontextmanager
+async def mcp_lifespan(server: FastMCP):
+    global _client_instance
+    logger.info("⚡ Initializing AgentMark Client connection pool (lifespan start)")
+    _client_instance = AgentMarkClient()
+    try:
+        yield
+    finally:
+        logger.info("🔌 Closing AgentMark Client connection pool (lifespan end)")
+        if _client_instance:
+            await _client_instance.close()
+            _client_instance = None
+
+# Initialize FastMCP with the lifecycle context manager
 mcp = FastMCP(
     "AgentMark",
-    description="Model Context Protocol (MCP) server for AgentMark AI marketing platform"
+    description="Model Context Protocol (MCP) server for AgentMark AI marketing platform",
+    lifespan=mcp_lifespan
 )
+
+def get_client() -> AgentMarkClient:
+    """Helper to retrieve the active singleton client, with fallback."""
+    global _client_instance
+    if _client_instance is None:
+        logger.warning("AgentMarkClient accessed outside lifespan context. Creating fallback client.")
+        return AgentMarkClient()
+    return _client_instance
 
 @mcp.tool()
 async def generate_campaign(
@@ -52,7 +80,7 @@ async def generate_campaign(
         groq_api_key: Optional Groq API key override.
         tavily_api_key: Optional Tavily API key override.
     """
-    client = AgentMarkClient()
+    client = get_client()
     try:
         return await generate_campaign_impl(
             client=client,
@@ -72,8 +100,6 @@ async def generate_campaign(
     except Exception as e:
         logger.error(f"Error in generate_campaign tool: {str(e)}")
         raise e
-    finally:
-        await client.close()
 
 @mcp.tool()
 async def run_focus_group(
@@ -90,7 +116,7 @@ async def run_focus_group(
         copy_text: Optional copy text to evaluate. If empty, the system will automatically extract and evaluate the campaign's generated copy.
         negativity_bias: Score weighting bias toward worst score (0.0 to 1.0). Default is 0.3.
     """
-    client = AgentMarkClient()
+    client = get_client()
     try:
         return await run_focus_group_impl(
             client=client,
@@ -101,8 +127,6 @@ async def run_focus_group(
     except Exception as e:
         logger.error(f"Error in run_focus_group tool: {str(e)}")
         raise e
-    finally:
-        await client.close()
 
 @mcp.tool()
 async def publish_to_channel(
@@ -115,7 +139,7 @@ async def publish_to_channel(
     Args:
         campaign_id: The UUID of the campaign to publish.
     """
-    client = AgentMarkClient()
+    client = get_client()
     try:
         return await publish_to_channel_impl(
             client=client,
@@ -124,8 +148,6 @@ async def publish_to_channel(
     except Exception as e:
         logger.error(f"Error in publish_to_channel tool: {str(e)}")
         raise e
-    finally:
-        await client.close()
 
 def main():
     mcp.run()

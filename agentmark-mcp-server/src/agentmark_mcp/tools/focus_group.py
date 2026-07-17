@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, Any, Optional
-from client import AgentMarkClient
-from formatters.fg_formatter import format_focus_group_report
+from ..client import AgentMarkClient
+from ..formatters.fg_formatter import format_focus_group_report
 
 logger = logging.getLogger("agentmark-mcp-server")
 

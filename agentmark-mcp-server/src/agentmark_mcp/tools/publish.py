@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Dict, Any
-from client import AgentMarkClient
+from ..client import AgentMarkClient
 
 logger = logging.getLogger("agentmark-mcp-server")
 

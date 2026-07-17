@@ -2,8 +2,8 @@ import asyncio
 import json
 import logging
 from typing import Dict, Any, List, Optional
-from client import AgentMarkClient
-from formatters.brief_formatter import format_campaign_brief
+from ..client import AgentMarkClient
+from ..formatters.brief_formatter import format_campaign_brief
 
 logger = logging.getLogger("agentmark-mcp-server")
 

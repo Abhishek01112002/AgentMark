@@ -110,6 +110,6 @@ def format_campaign_brief(campaign: Dict[str, Any]) -> str:
     markdown.append("\n---")
     markdown.append("\n## 🚀 Action Items & Next Steps")
     markdown.append(f"1. **Simulate Focus Group Feedback:** run `run_focus_group(campaign_id=\"{campaign_id}\")` to test engagement with AI personas.")
-    markdown.append(f"2. **Publish Campaign:** run `publish_to_channel(campaign_id=\"{campaign_id}\", channel=\"<channel_name>\")` to distribute this content.")
+    markdown.append(f"2. **Publish Campaign:** run `publish_to_channel(campaign_id=\"{campaign_id}\")` to distribute this content.")
     
     return "\n".join(markdown)
