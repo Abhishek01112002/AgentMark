@@ -2,6 +2,7 @@ import asyncio
 import logging
 from typing import Dict, Any
 from ..client import AgentMarkClient
+from ..config import POLL_INTERVAL_SECS, PUBLISH_TIMEOUT_SECS
 
 logger = logging.getLogger("agentmark-mcp-server")
 
@@ -25,8 +26,8 @@ async def publish_to_channel_impl(
     logger.info(f"Campaign approval submitted. Campaign status is now processing.")
 
     # Poll status until completed (publisher done)
-    max_retries = 90  # 7.5 minutes max timeout
-    retry_interval = 5
+    retry_interval = POLL_INTERVAL_SECS
+    max_retries = max(1, PUBLISH_TIMEOUT_SECS // POLL_INTERVAL_SECS)
     consecutive_failures = 0
     
     for attempt in range(max_retries):
@@ -102,6 +103,6 @@ async def publish_to_channel_impl(
             raise RuntimeError(f"Publisher execution failed: {error_msg}")
             
     raise TimeoutError(
-        f"Publisher workflow timed out after {max_retries * retry_interval} seconds. "
+        f"Publisher workflow timed out after {PUBLISH_TIMEOUT_SECS} seconds. "
         "Please check the web dashboard to see if publication has completed."
     )

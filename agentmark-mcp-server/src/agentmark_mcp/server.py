@@ -1,5 +1,6 @@
 import logging
 import sys
+import uuid
 from typing import Optional
 from contextlib import asynccontextmanager
 from mcp.server.fastmcp import FastMCP
@@ -47,6 +48,18 @@ def get_client() -> AgentMarkClient:
         return AgentMarkClient()
     return _client_instance
 
+def validate_uuid(id_str: str, param_name: str) -> None:
+    """Validates if the provided string is a valid UUIDv4."""
+    if not id_str or not id_str.strip():
+        raise ValueError(f"Parameter '{param_name}' cannot be empty.")
+    try:
+        uuid.UUID(id_str.strip())
+    except ValueError:
+        raise ValueError(
+            f"Parameter '{param_name}' must be a valid UUID string "
+            f"(e.g., '123e4567-e89b-12d3-a456-426614174000'). Received: '{id_str}'"
+        )
+
 @mcp.tool()
 async def generate_campaign(
     project_id: str,
@@ -71,7 +84,7 @@ async def generate_campaign(
         name: Name of the campaign.
         brand_name: Name of the brand.
         industry: Industry sector (e.g. SaaS, E-commerce, Finance, Healthcare, Real Estate).
-        primary_goal: Goal of the campaign (e.g. awareness, lead_gen, sales, retention).
+        primary_goal: Goal of the campaign. Must be one of: 'awareness', 'lead_gen', 'sales', 'retention'.
         target_audience: Description of the target audience.
         brand_voice: Tone and brand voice directives.
         additional_info: Any additional context or constraints for the campaign.
@@ -80,17 +93,27 @@ async def generate_campaign(
         groq_api_key: Optional Groq API key override.
         tavily_api_key: Optional Tavily API key override.
     """
+    # FAANG level: Enforce strict input validation before initiating network requests
+    validate_uuid(project_id, "project_id")
+    
+    goal_cleaned = primary_goal.strip().lower()
+    allowed_goals = {"awareness", "lead_gen", "sales", "retention"}
+    if goal_cleaned not in allowed_goals:
+        raise ValueError(
+            f"Invalid primary_goal '{primary_goal}'. Must be one of: {sorted(list(allowed_goals))}"
+        )
+
     client = get_client()
     try:
         return await generate_campaign_impl(
             client=client,
-            project_id=project_id,
-            name=name,
-            brand_name=brand_name,
-            industry=industry,
-            primary_goal=primary_goal,
-            target_audience=target_audience,
-            brand_voice=brand_voice,
+            project_id=project_id.strip(),
+            name=name.strip(),
+            brand_name=brand_name.strip(),
+            industry=industry.strip(),
+            primary_goal=goal_cleaned,
+            target_audience=target_audience.strip(),
+            brand_voice=brand_voice.strip(),
             additional_info=additional_info if additional_info.strip() else None,
             openai_api_key=openai_api_key if openai_api_key.strip() else None,
             gemini_api_key=gemini_api_key if gemini_api_key.strip() else None,
@@ -116,11 +139,17 @@ async def run_focus_group(
         copy_text: Optional copy text to evaluate. If empty, the system will automatically extract and evaluate the campaign's generated copy.
         negativity_bias: Score weighting bias toward worst score (0.0 to 1.0). Default is 0.3.
     """
+    # FAANG level: Enforce strict input validation
+    validate_uuid(campaign_id, "campaign_id")
+    
+    if not (0.0 <= negativity_bias <= 1.0):
+        raise ValueError(f"negativity_bias must be between 0.0 and 1.0. Received: {negativity_bias}")
+
     client = get_client()
     try:
         return await run_focus_group_impl(
             client=client,
-            campaign_id=campaign_id,
+            campaign_id=campaign_id.strip(),
             copy_text=copy_text if copy_text.strip() else None,
             negativity_bias=negativity_bias
         )
@@ -139,11 +168,14 @@ async def publish_to_channel(
     Args:
         campaign_id: The UUID of the campaign to publish.
     """
+    # FAANG level: Enforce strict input validation
+    validate_uuid(campaign_id, "campaign_id")
+
     client = get_client()
     try:
         return await publish_to_channel_impl(
             client=client,
-            campaign_id=campaign_id
+            campaign_id=campaign_id.strip()
         )
     except Exception as e:
         logger.error(f"Error in publish_to_channel tool: {str(e)}")

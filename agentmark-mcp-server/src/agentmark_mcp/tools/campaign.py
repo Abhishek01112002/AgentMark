@@ -4,6 +4,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from ..client import AgentMarkClient
 from ..formatters.brief_formatter import format_campaign_brief
+from ..config import POLL_INTERVAL_SECS, CAMPAIGN_TIMEOUT_SECS
 
 logger = logging.getLogger("agentmark-mcp-server")
 
@@ -64,8 +65,8 @@ async def generate_campaign_impl(
     logger.info(f"Campaign {campaign_id} created successfully. Starting execution monitoring.")
 
     # 3. Synchronous polling loop for asynchronous background task
-    max_retries = 180  # 15 minutes max timeout
-    retry_interval = 5  # Poll every 5 seconds
+    retry_interval = POLL_INTERVAL_SECS
+    max_retries = max(1, CAMPAIGN_TIMEOUT_SECS // POLL_INTERVAL_SECS)
     consecutive_failures = 0
     
     for attempt in range(max_retries):
@@ -97,6 +98,6 @@ async def generate_campaign_impl(
             raise RuntimeError(f"Campaign generation failed: {error_msg}")
         
     raise TimeoutError(
-        f"Campaign generation timed out after {max_retries * retry_interval} seconds. "
+        f"Campaign generation timed out after {CAMPAIGN_TIMEOUT_SECS} seconds. "
         "Please check the web dashboard to see the execution status."
     )
