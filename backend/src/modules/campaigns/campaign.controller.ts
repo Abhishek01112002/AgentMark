@@ -631,6 +631,15 @@ export const enhancePrompt = async (req: AuthRequest, res: Response, next: NextF
       }
     }
 
+    if (!llmConfig || typeof llmConfig !== 'object' || !Object.keys(llmConfig).length) {
+      llmConfig = {
+        openai_api_key: process.env.OPENAI_API_KEY || undefined,
+        gemini_api_key: process.env.GEMINI_API_KEY || undefined,
+        groq_api_key: process.env.GROQ_API_KEY || undefined,
+        tavily_api_key: process.env.TAVILY_API_KEY || undefined,
+      };
+    }
+
     const enhancedPrompt = await aiServiceClient.enhancePrompt(prompt, userInput, llmConfig);
     return res.status(200).json({ enhancedPrompt });
   } catch (error: any) {
