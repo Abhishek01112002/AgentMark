@@ -99,7 +99,9 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
                 "human_approval_status": state.human_approval_status,
                 "human_feedback": state.human_feedback,
                 "human_revision_target": state.human_revision_target,
-                "awaiting_human_approval": False
+                "awaiting_human_approval": False,
+                "status": "processing",
+                "error": None,
             },
             as_node="human_approval"
         )
