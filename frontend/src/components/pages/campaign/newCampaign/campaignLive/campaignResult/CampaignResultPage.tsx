@@ -233,10 +233,14 @@ const CampaignResultPage: React.FC = () => {
 
   // Load report when campaign or active copy hash changes
   React.useEffect(() => {
-    if (campaign && copyHash) {
+    if (campaign) {
       const outputs = campaign.aiOutputs || {};
       const outputsMap = outputs.focus_group_outputs || {};
-      const savedReport = outputsMap[copyHash] || (outputs.focus_group_output_hash === copyHash ? outputs.focus_group_output : null);
+      const savedReport =
+        (copyHash ? outputsMap[copyHash] : null) ||
+        (copyHash && outputs.focus_group_output_hash === copyHash ? outputs.focus_group_output : null) ||
+        outputs.focus_group_output ||
+        null;
       
       if (savedReport) {
         setFocusGroupReport(savedReport);
