@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign } from './campaign.controller';
+
+import { verifyApiKeyScope } from '../developer/developer.controller';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(verifyApiKeyScope);
 
 router.post('/', campaignRateLimiter, createCampaign);
 router.post('/test-key', testKey);
@@ -23,5 +26,14 @@ router.get('/:id', getCampaign);
 router.get('/:id/memory-insights', getMemoryInsights);
 router.delete('/:id', deleteCampaign);
 router.post('/:id/approve', approveCampaign);
+router.post('/:id/retry', campaignRateLimiter, retryCampaign);
+
+// FAANG Pattern Routes: Campaign Branching & Revision Budget Reset
+router.post('/:id/fork', campaignRateLimiter, forkCampaign);
+router.post('/:id/reset-revisions', campaignRateLimiter, resetCampaignRevisions);
+
+// Copy Version History Routes (used by MCP revise_copy_with_feedback tool)
+router.post('/:id/copy-versions', campaignRateLimiter, saveCopyVersion);
+router.get('/:id/copy-versions', getCopyVersions);
 
 export default router;

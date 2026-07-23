@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { User, Bell, Key } from 'lucide-react';
+import { User, Bell, Key, Link2 } from 'lucide-react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import Profile from './profile/Profile';
 import Notifications from './notifications/Notifications';
 import ApiKeys from './apiKeys/ApiKeys';
+import Integrations from './integrations/Integrations';
 
 const SettingsContent: React.FC = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'api'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'api' | 'integrations'>('profile');
 
   // Handle navigation from other pages (e.g., "View all activity" from TopNav)
   useEffect(() => {
     const state = location.state as { tab?: string } | null;
     if (state?.tab === 'notifications') {
       setActiveTab('notifications');
+    } else if (state?.tab === 'integrations') {
+      setActiveTab('integrations');
     }
   }, [location.state]);
 
@@ -23,6 +26,7 @@ const SettingsContent: React.FC = () => {
     { id: 'profile' as const, icon: User, label: 'Profile' },
     { id: 'notifications' as const, icon: Bell, label: 'Notifications' },
     { id: 'api' as const, icon: Key, label: 'API Keys' },
+    { id: 'integrations' as const, icon: Link2, label: 'Integrations' },
   ];
 
   return (
@@ -86,6 +90,7 @@ const SettingsContent: React.FC = () => {
                 {activeTab === 'profile' && <Profile />}
                 {activeTab === 'notifications' && <Notifications />}
                 {activeTab === 'api' && <ApiKeys />}
+                {activeTab === 'integrations' && <Integrations />}
               </div>
             </div>
           </div>

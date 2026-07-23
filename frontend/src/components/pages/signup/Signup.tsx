@@ -103,7 +103,7 @@ const SignUp = () => {
         .animate-slide-right { animation: slideInRight 0.5s ease forwards; }
       `}</style>
 
-      <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] font-body-md antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
         {/* LEFT — Form */}
         <div className={`w-full md:w-1/2 bg-[#0A0A0F] overflow-y-auto overflow-x-hidden ${mounted ? 'animate-slide-left' : 'opacity-0'}`}>
           <div className="relative flex flex-col justify-center items-center w-full min-h-screen md:h-full px-6 sm:px-8 lg:px-12 xl:px-14 py-8 lg:py-12">

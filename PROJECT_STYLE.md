@@ -46,34 +46,40 @@
 }
 ```
 
-### Tailwind Config Extension
+### CSS Variable & Utility Token Architecture (`frontend/src/index.css`)
 
-```typescript
-// tailwind.config.ts
-export default {
-  theme: {
-    extend: {
-      colors: {
-        base: '#0A0A0F',
-        surface: '#111118',
-        elevated: '#1A1A24',
-        border: '#2A2A38',
-        accent: '#6366F1',
-        success: '#10B981',
-        warning: '#F59E0B',
-        danger: '#F43F5E',
-      },
-      fontFamily: {
-        sans: ['Sora', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      },
-      animation: {
-        'pulse-dot': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.3s ease forwards',
-        'slide-up': 'slideUp 0.4s ease forwards',
-      }
-    }
-  }
+AgentMark uses a custom Vanilla CSS design system. All design tokens are declared as CSS custom properties on `:root` inside `frontend/src/index.css` for instant theme customization and ultra-fast UI rendering:
+
+```css
+:root {
+  --bg-base: #0A0A0F;
+  --bg-surface: #111118;
+  --bg-elevated: #1A1A24;
+  --bg-border: #2A2A38;
+  --accent-primary: #6366F1;
+  --accent-success: #10B981;
+  --accent-warning: #F59E0B;
+  --accent-danger: #F43F5E;
+}
+```css
+/* Typography & Animation Tokens */
+body {
+  font-family: 'Sora', sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+code, kbd, samp, pre {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 ```
 

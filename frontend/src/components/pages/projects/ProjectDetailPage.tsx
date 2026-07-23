@@ -346,7 +346,7 @@ const handlePageChange = (page: number) => {
                     </p>
                     <div
                       className="text-xs"
-                      style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}
+                      style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
                     >
                       Created {formatDate(project.createdAt)}
                     </div>
@@ -455,11 +455,11 @@ const handlePageChange = (page: number) => {
                             style={{
                               padding: '12px 20px',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#A0A0D2',
+                              color: '#8B8B9E',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -467,7 +467,7 @@ const handlePageChange = (page: number) => {
                             <button
                               onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
                               className="inline-flex items-center gap-1 cursor-pointer bg-transparent border-none p-0"
-                              style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, textTransform: 'uppercase' }}
+                              style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', letterSpacing: '0.05em', fontWeight: 500, textTransform: 'uppercase' }}
                             >
                               Campaign Name
                               {sortOrder === 'asc' ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
@@ -477,11 +477,11 @@ const handlePageChange = (page: number) => {
                             style={{
                               padding: '12px 20px',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#A0A0D2',
+                              color: '#8B8B9E',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -492,11 +492,11 @@ const handlePageChange = (page: number) => {
                             style={{
                               padding: '12px 20px',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#A0A0D2',
+                              color: '#8B8B9E',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -507,11 +507,11 @@ const handlePageChange = (page: number) => {
                             style={{
                               padding: '12px 20px',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#A0A0D2',
+                              color: '#8B8B9E',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                             }}
@@ -522,11 +522,11 @@ const handlePageChange = (page: number) => {
                             style={{
                               padding: '12px 20px',
                               fontFamily: 'JetBrains Mono, monospace',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               lineHeight: '16px',
                               letterSpacing: '0.05em',
                               fontWeight: 500,
-                              color: '#A0A0D2',
+                              color: '#8B8B9E',
                               textTransform: 'uppercase',
                               whiteSpace: 'nowrap',
                               textAlign: 'right',
@@ -589,7 +589,7 @@ const handlePageChange = (page: number) => {
                                     style={{
                                       backgroundColor: '#1A1A24',
                                       border: '1px solid #2A2A38',
-                                      color: '#A0A0D2',
+                                      color: '#8B8B9E',
                                       fontFamily: 'JetBrains Mono, monospace',
                                       fontSize: '12px',
                                       fontWeight: 600,
@@ -658,7 +658,7 @@ const handlePageChange = (page: number) => {
                                   padding: '16px 20px',
                                   fontFamily: 'Sora, sans-serif',
                                   fontSize: '13px',
-                                  color: '#A0A0D2',
+                                  color: '#8B8B9E',
                                 }}
                               >
                                 {formatDate(row.createdAt)}
@@ -668,7 +668,7 @@ const handlePageChange = (page: number) => {
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     onClick={() => handleViewCampaign(row.id, row.status)}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
                                     title="View Details"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseEnter={(e) => {
@@ -684,7 +684,7 @@ const handlePageChange = (page: number) => {
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(row)}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
                                     title="Delete"
                                     style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
                                     onMouseEnter={(e) => {

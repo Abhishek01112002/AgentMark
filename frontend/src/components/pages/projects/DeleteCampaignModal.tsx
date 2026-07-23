@@ -18,10 +18,8 @@ const DeleteCampaignModal: React.FC<DeleteCampaignModalProps> = ({ campaignName,
       >
         {/* Modal */}
         <div
-          className="w-full max-w-md rounded-2xl p-6 modal-content"
+          className="w-full max-w-md rounded-xl p-6 modal-content bg-surface border border-border-base"
           style={{
-            backgroundColor: '#111118',
-            border: '1px solid #2A2A38',
             boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -43,6 +41,7 @@ const DeleteCampaignModal: React.FC<DeleteCampaignModalProps> = ({ campaignName,
               </h2>
             </div>
             <button
+              aria-label="Close"
               onClick={onClose}
               className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
               style={{ color: '#8B8B9E' }}

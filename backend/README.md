@@ -18,4 +18,4 @@ npm run db:push
 npm run dev
 ```
 
-Server will run on http://localhost:5000
+Server will run on http://localhost:5003

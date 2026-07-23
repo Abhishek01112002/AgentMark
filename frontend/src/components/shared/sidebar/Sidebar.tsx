@@ -137,7 +137,7 @@ const Sidebar: React.FC = () => {
              (location.pathname.startsWith('/campaign/') && location.pathname !== '/campaign/new');
     }
     if (path === '/support') {
-      return location.pathname === '/support' || location.pathname === '/docs';
+      return location.pathname === '/support';
     }
     return location.pathname === path;
   };
@@ -220,6 +220,7 @@ const Sidebar: React.FC = () => {
 
         {/* Toggle Button - Desktop only */}
         <button
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           onClick={() => setCollapsed(!collapsed)}
           className="hidden md:flex w-full items-center justify-center p-2 rounded-lg transition-colors mt-2"
           style={{
@@ -357,7 +358,7 @@ const Sidebar: React.FC = () => {
                   <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" />
                   Active Runs
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#4edea3]/5 text-[#4edea3] border border-[#4edea3]/10 font-bold font-mono">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary/5 text-secondary border border-secondary/10 font-bold font-mono">
                   {activeCampaigns.length}
                 </span>
               </div>
@@ -375,7 +376,7 @@ const Sidebar: React.FC = () => {
                       isCollapsed ? 'justify-center' : ''
                     }`}
                     style={{
-                      fontFamily: 'Inter, sans-serif',
+                      fontFamily: 'Sora, sans-serif',
                       backgroundColor: active ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
                       borderLeft: active 
                         ? `2.5px solid ${isAwaitingReview ? '#F59E0B' : '#8083ff'}` 
@@ -409,7 +410,7 @@ const Sidebar: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0 overflow-hidden">
                           <p className="truncate text-xs font-semibold text-[#F1F1F3]">{c.name}</p>
-                          <p className="text-[9px] mt-0.5 truncate flex items-center gap-1 font-mono text-[#8B8B9E] uppercase tracking-wider">
+                          <p className="text-[9px] mt-0.5 truncate flex items-center gap-1 font-label-sm uppercase text-text-secondary">
                             {isAwaitingReview ? 'Awaiting Approval' : 'Processing'}
                           </p>
                         </div>

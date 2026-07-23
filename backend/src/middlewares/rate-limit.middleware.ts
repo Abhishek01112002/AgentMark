@@ -69,3 +69,14 @@ export const campaignRateLimiter = rateLimit({
   passOnStoreError: true,
   message: { error: 'Campaign generation rate limit exceeded. Please try again after 15 minutes.' },
 });
+
+export const developerConnectionRateLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: rateLimitStore('dev-connect'),
+  passOnStoreError: true,
+  message: { error: 'Too many connection attempts. Please try again after 1 minute.' },
+});
+

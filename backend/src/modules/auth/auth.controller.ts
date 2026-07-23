@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { authService } from './auth.service';
 import { AuthRequest } from '../../middlewares/auth.middleware';
@@ -46,7 +46,7 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-export const me = async (req: AuthRequest, res: Response) => {
+export const me = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const user = await authService.getUserById(req.userId!);
     
@@ -56,7 +56,7 @@ export const me = async (req: AuthRequest, res: Response) => {
     
     res.json({ user });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 };
 

@@ -7,6 +7,13 @@ import {
   Plus,
   ArrowRight,
   TrendingUp,
+  Terminal,
+  ExternalLink,
+  Layers,
+  Globe,
+  Cpu,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +24,7 @@ import { llmSettingsService } from '../../../services/llm-settings.service';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import { formatDDMonYYYY } from '../../../utils/formatDate';
+import { io } from 'socket.io-client';
 
 type ProjectRow = {
   id: string;
@@ -72,11 +80,11 @@ function StatCard(props: {
             className="truncate"
             style={{
               fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '11px',
+              fontSize: '12px',
               lineHeight: '16px',
               letterSpacing: '0.05em',
               fontWeight: 500,
-              color: '#A0A0D2',
+              color: '#8B8B9E',
               textTransform: 'uppercase',
               marginBottom: '4px',
             }}
@@ -132,7 +140,7 @@ function StatCard(props: {
               {trend}
             </span>
           )}
-          {trendLabel && <span style={{ color: '#A0A0D2' }}>{trendLabel}</span>}
+          {trendLabel && <span style={{ color: '#8B8B9E' }}>{trendLabel}</span>}
         </div>
       )}
     </div>
@@ -172,6 +180,65 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [hasApiKeys, setHasApiKeys] = useState(true);
 
+  type McpActivityRow = {
+    id: string;
+    toolName: string;
+    campaignId: string | null;
+    createdAt: string;
+  };
+
+  const [mcpActivities, setMcpActivities] = useState<McpActivityRow[]>([]);
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [isTelemetryExpanded, setIsTelemetryExpanded] = useState(false);
+
+  // Helper function to format distances relative to now
+  const formatTimeAgo = (date: Date): string => {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    if (seconds < 5) return 'just now';
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+      auth: { token },
+    });
+
+    socket.on('connect', () => {
+      setSocketConnected(true);
+    });
+
+    socket.on('disconnect', () => {
+      setSocketConnected(false);
+    });
+
+    socket.on('mcp_activity', (newActivity: McpActivityRow) => {
+      setMcpActivities((prev) => {
+        const filtered = prev.filter((act) => act.id !== newActivity.id);
+        const updated = [newActivity, ...filtered];
+        return updated.slice(0, 5);
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user?.id]);
+
   useEffect(() => {
     const settings = llmSettingsService.get(user?.id);
     setHasApiKeys(llmSettingsService.hasValidApiKeys(settings));
@@ -182,11 +249,17 @@ function DashboardContent() {
 
     const fetchDashboardData = async (silent = false) => {
       try {
-        const statsResponse = await api.get('/projects/stats/dashboard');
-        if (active) setMetrics(statsResponse.data);
-        
-        const projectsResponse = await api.get('/projects');
-        if (active) setProjects(projectsResponse.data.projects || []);
+        const [statsResponse, projectsResponse, mcpResponse] = await Promise.all([
+          api.get('/projects/stats/dashboard'),
+          api.get('/projects'),
+          api.get('/developer/mcp-activity'),
+        ]);
+
+        if (active) {
+          setMetrics(statsResponse.data);
+          setProjects(projectsResponse.data.projects || []);
+          setMcpActivities(mcpResponse.data.activities || []);
+        }
       } catch (error: any) {
         console.error('Failed to fetch dashboard data:', error);
         if (!silent) {
@@ -225,7 +298,7 @@ function DashboardContent() {
           }
           .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
         `}</style>
-        <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
+        <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#131318', color: '#F1F1F3' }}>
           <Sidebar />
           <TopNav title="Dashboard" stats={[]} />
           <main className="dashboard-main pt-14 min-h-screen fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
@@ -287,7 +360,7 @@ function DashboardContent() {
     <>
       {dashboardStyles}
 
-      <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
+      <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#131318', color: '#F1F1F3' }}>
         <Sidebar />
         <TopNav
           title="Dashboard"
@@ -478,280 +551,442 @@ function DashboardContent() {
               </div>
             </div>
 
-            <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
-              <div
-                className="p-4 sm:p-5 flex justify-between items-center gap-4"
-                style={{ backgroundColor: '#111118', borderBottom: '1px solid #2A2A38' }}
-              >
-                <h3
-                  className="min-w-0 shrink"
-                  style={{
-                    fontFamily: 'Sora, sans-serif',
-                    fontSize: 'clamp(15px, 2.5vw, 24px)',
-                    lineHeight: '1.4',
-                    fontWeight: 600,
-                    color: '#F1F1F3',
-                    whiteSpace: 'nowrap',
-                  }}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Top Section: Recent Projects Table (spans full width) */}
+              <div className="lg:col-span-3 rounded-xl overflow-hidden flex flex-col" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38', height: 'fit-content' }}>
+                <div
+                  className="p-4 sm:p-5 flex justify-between items-center gap-4"
+                  style={{ backgroundColor: '#111118', borderBottom: '1px solid #2A2A38' }}
                 >
-                  Recent Projects
-                </h3>
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="flex items-center gap-2 px-3 py-3 rounded-lg border transition-all min-h-[44px]"
-                  style={{
-                    borderColor: '#2A2A38',
-                    color: '#F1F1F3',
-                    backgroundColor: '#131318',
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '12px',
-                  }}
-                >
-                  View All
-                  <ArrowRight size={14} />
-                </button>
-              </div>
+                  <h3
+                    className="min-w-0 shrink"
+                    style={{
+                      fontFamily: 'Sora, sans-serif',
+                      fontSize: 'clamp(15px, 2.5vw, 24px)',
+                      lineHeight: '1.4',
+                      fontWeight: 600,
+                      color: '#F1F1F3',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Recent Projects
+                  </h3>
+                  <button
+                    onClick={() => navigate('/projects')}
+                    className="flex items-center gap-2 px-3 py-3 rounded-lg border transition-all min-h-[44px]"
+                    style={{
+                      borderColor: '#2A2A38',
+                      color: '#F1F1F3',
+                      backgroundColor: '#131318',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: '12px',
+                    }}
+                  >
+                    View All
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse" style={{ minWidth: 500 }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#A0A0D2',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Project Name
-                      </th>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#A0A0D2',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Campaigns
-                      </th>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#A0A0D2',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Status
-                      </th>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#A0A0D2',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        Updated
-                      </th>
-                      <th
-                        style={{
-                          padding: '12px 20px',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '11px',
-                          lineHeight: '16px',
-                          letterSpacing: '0.05em',
-                          fontWeight: 500,
-                          color: '#A0A0D2',
-                          textTransform: 'uppercase',
-                          whiteSpace: 'nowrap',
-                          textAlign: 'right',
-                        }}
-                      >
-                        Open
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentProjects.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} style={{ padding: '40px 20px' }}>
-                          <div className="flex flex-col items-center justify-center text-center">
-                            <div
-                              className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-                              style={{ backgroundColor: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}
-                            >
-                              <FolderOpen size={20} className="text-[#6366F1]" />
-                            </div>
-                            <h4 className="text-sm font-semibold mb-1" style={{ color: '#F1F1F3' }}>
-                              No recent projects
-                            </h4>
-                            <p className="text-xs max-w-[280px]" style={{ color: '#8B8B9E', lineHeight: '18px' }}>
-                              Create a project to start launching agent-led campaigns.
-                            </p>
-                          </div>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse" style={{ minWidth: 500 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
+                        <th
+                          style={{
+                            padding: '12px 20px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: '11px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.05em',
+                            fontWeight: 500,
+                            color: '#8B8B9E',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Project Name
+                        </th>
+                        <th
+                          style={{
+                            padding: '12px 20px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: '11px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.05em',
+                            fontWeight: 500,
+                            color: '#8B8B9E',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Campaigns
+                        </th>
+                        <th
+                          style={{
+                            padding: '12px 20px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: '11px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.05em',
+                            fontWeight: 500,
+                            color: '#8B8B9E',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Status
+                        </th>
+                        <th
+                          style={{
+                            padding: '12px 20px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: '11px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.05em',
+                            fontWeight: 500,
+                            color: '#8B8B9E',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          Updated
+                        </th>
+                        <th
+                          style={{
+                            padding: '12px 20px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            fontSize: '11px',
+                            lineHeight: '16px',
+                            letterSpacing: '0.05em',
+                            fontWeight: 500,
+                            color: '#8B8B9E',
+                            textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
+                            textAlign: 'right',
+                          }}
+                        >
+                          Open
+                        </th>
                       </tr>
-                    ) : (
-                      recentProjects.map((row) => {
-                        const timeAgo = formatDDMonYYYY(new Date(row.updatedAt));
-                        return (
-                          <tr
-                            key={row.id}
-                            className="group transition-colors"
-                            style={{ borderBottom: '1px solid #2A2A38' }}
-                            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
-                            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
-                          >
-                            <td style={{ padding: '16px 20px' }}>
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div
-                                  className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
-                                  style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', color: '#F1F1F3' }}
-                                >
-                                  <FolderOpen size={16} />
-                                </div>
-                                <div className="min-w-0">
-                                  <span
-                                    className="truncate block"
-                                    style={{
-                                      fontFamily: 'Sora, sans-serif',
-                                      fontSize: '14px',
-                                      fontWeight: 500,
-                                      color: '#F1F1F3',
-                                    }}
-                                  >
-                                    {row.name}
-                                  </span>
-                                  <span
-                                    className="truncate block"
-                                    style={{
-                                      fontFamily: 'Sora, sans-serif',
-                                      fontSize: '12px',
-                                      color: '#A0A0D2',
-                                      marginTop: '2px',
-                                    }}
-                                  >
-                                    {row.description || 'No description'}
-                                  </span>
-                                </div>
+                    </thead>
+                    <tbody>
+                      {recentProjects.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ padding: '40px 20px' }}>
+                            <div className="flex flex-col items-center justify-center text-center">
+                              <div
+                                className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
+                                style={{ backgroundColor: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}
+                              >
+                                <FolderOpen size={20} className="text-[#6366F1]" />
                               </div>
-                            </td>
-
-                            <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
-                              {row.campaignCount || 0}
-                            </td>
-
-                            <td style={{ padding: '16px 20px' }}>
-                              {row.mostRecentCampaignStatus ? (
-                                <span
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                                  style={{
-                                    backgroundColor: '#1A1A24',
-                                    border: '1px solid #2A2A38',
-                                    color: statusPill[row.mostRecentCampaignStatus]?.text || '#A0A0D2',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    fontSize: '12px',
-                                    letterSpacing: '0.05em',
-                                  }}
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusPill[row.mostRecentCampaignStatus]?.dot || '#8B8B9E' }} />
-                                  {row.mostRecentCampaignStatus.charAt(0).toUpperCase() + row.mostRecentCampaignStatus.slice(1)}
-                                </span>
-                              ) : (
-                                <span
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
-                                  style={{
-                                    backgroundColor: '#1A1A24',
-                                    border: '1px solid #2A2A38',
-                                    color: '#A0A0D2',
-                                    fontFamily: 'JetBrains Mono, monospace',
-                                    fontSize: '12px',
-                                    letterSpacing: '0.05em',
-                                  }}
-                                >
-                                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#8B8B9E' }} />
-                                  No Campaigns
-                                </span>
-                              )}
-                            </td>
-
-                            <td
-                              className="whitespace-nowrap"
-                              style={{
-                                padding: '16px 20px',
-                                fontFamily: 'Sora, sans-serif',
-                                fontSize: '13px',
-                                color: '#A0A0D2',
-                              }}
+                              <h4 className="text-sm font-semibold mb-1" style={{ color: '#F1F1F3' }}>
+                                No recent projects
+                              </h4>
+                              <p className="text-xs max-w-[280px]" style={{ color: '#8B8B9E', lineHeight: '18px' }}>
+                                Create a project to start launching agent-led campaigns.
+                              </p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        recentProjects.map((row) => {
+                          const timeAgo = formatDDMonYYYY(new Date(row.updatedAt));
+                          return (
+                            <tr
+                              key={row.id}
+                              className="group transition-colors"
+                              style={{ borderBottom: '1px solid #2A2A38' }}
+                              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
+                              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
                             >
-                              {timeAgo}
-                            </td>
+                              <td style={{ padding: '16px 20px' }}>
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div
+                                    className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
+                                    style={{ backgroundColor: '#1A1A24', border: '1px solid #2A2A38', color: '#F1F1F3' }}
+                                  >
+                                    <FolderOpen size={16} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <span
+                                      className="truncate block"
+                                      style={{
+                                        fontFamily: 'Sora, sans-serif',
+                                        fontSize: '14px',
+                                        fontWeight: 500,
+                                        color: '#F1F1F3',
+                                      }}
+                                    >
+                                      {row.name}
+                                    </span>
+                                    <span
+                                      className="truncate block"
+                                      style={{
+                                        fontFamily: 'Sora, sans-serif',
+                                        fontSize: '12px',
+                                        color: '#8B8B9E',
+                                        marginTop: '2px',
+                                      }}
+                                    >
+                                      {row.description || 'No description'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
 
-                            <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                              <button
-                                onClick={() => navigate(`/projects/${row.id}`)}
-                                className="inline-flex items-center gap-2 px-3 py-3 rounded-lg transition-colors min-h-[44px]"
+                              <td style={{ padding: '16px 20px', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '12px' }}>
+                                {row.campaignCount || 0}
+                              </td>
+
+                              <td style={{ padding: '16px 20px' }}>
+                                {row.mostRecentCampaignStatus ? (
+                                  <span
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                    style={{
+                                      backgroundColor: '#1A1A24',
+                                      border: '1px solid #2A2A38',
+                                      color: statusPill[row.mostRecentCampaignStatus]?.text || '#A0A0D2',
+                                      fontFamily: 'JetBrains Mono, monospace',
+                                      fontSize: '12px',
+                                      letterSpacing: '0.05em',
+                                    }}
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusPill[row.mostRecentCampaignStatus]?.dot || '#8B8B9E' }} />
+                                    {row.mostRecentCampaignStatus.charAt(0).toUpperCase() + row.mostRecentCampaignStatus.slice(1)}
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+                                    style={{
+                                      backgroundColor: '#1A1A24',
+                                      border: '1px solid #2A2A38',
+                                      color: '#8B8B9E',
+                                      fontFamily: 'JetBrains Mono, monospace',
+                                      fontSize: '12px',
+                                      letterSpacing: '0.05em',
+                                    }}
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#8B8B9E' }} />
+                                    No Campaigns
+                                  </span>
+                                )}
+                              </td>
+
+                              <td
+                                className="whitespace-nowrap"
                                 style={{
-                                  backgroundColor: '#1A1A24',
-                                  color: '#F1F1F3',
-                                  border: '1px solid #2A2A38',
-                                  fontFamily: 'JetBrains Mono, monospace',
-                                  fontSize: '12px',
+                                  padding: '16px 20px',
+                                  fontFamily: 'Sora, sans-serif',
+                                  fontSize: '13px',
+                                  color: '#8B8B9E',
                                 }}
                               >
-                                Open
-                                <ArrowRight size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                                {timeAgo}
+                              </td>
+
+                              <td style={{ padding: '16px 20px', textAlign: 'right' }}>
+                                <button
+                                  onClick={() => navigate(`/projects/${row.id}`)}
+                                  className="inline-flex items-center gap-2 px-3 py-3 rounded-lg transition-colors min-h-[44px]"
+                                  style={{
+                                    backgroundColor: '#1A1A24',
+                                    color: '#F1F1F3',
+                                    border: '1px solid #2A2A38',
+                                    fontFamily: 'JetBrains Mono, monospace',
+                                    fontSize: '12px',
+                                  }}
+                                >
+                                  Open
+                                  <ArrowRight size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 mt-auto" style={{ backgroundColor: '#111118', borderTop: '1px solid #2A2A38' }}>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
+                    Showing {recentProjects.length} of {projects.length} projects
+                  </div>
+                  <button
+                    onClick={() => navigate('/projects')}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors"
+                    style={{
+                      borderColor: '#2A2A38',
+                      backgroundColor: '#131318',
+                      color: '#F1F1F3',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    Manage Projects
+                  </button>
+                </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4" style={{ backgroundColor: '#111118', borderTop: '1px solid #2A2A38' }}>
-                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
-                  Showing {recentProjects.length} of {projects.length} projects
-                </div>
-                <button
-                  onClick={() => navigate('/projects')}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors"
-                  style={{
-                    borderColor: '#2A2A38',
-                    backgroundColor: '#131318',
-                    color: '#F1F1F3',
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '12px',
-                  }}
+              {/* Bottom Section: Claude Activity Log (spans full width) */}
+              <div className="lg:col-span-3 rounded-xl overflow-hidden flex flex-col border border-[#2A2A38] bg-[#111118]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                
+                {/* Panel Header */}
+                {/* Feed Header (Collapsible Accordion) */}
+                <div
+                  onClick={() => setIsTelemetryExpanded((prev) => !prev)}
+                  className="px-5 py-3.5 flex justify-between items-center bg-gradient-to-r from-[#14141E] to-[#111118] cursor-pointer hover:bg-[#161624] transition-all select-none"
                 >
-                  <Plus size={14} />
-                  Manage Projects
-                </button>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 text-[#a5a6ff]">
+                      <Cpu size={16} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xs md:text-sm font-semibold text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                          Developer Telemetry &amp; MCP Logs
+                        </h3>
+                        <span className="bg-[#6366F1]/10 border border-[#6366F1]/25 text-[#a5a6ff] font-mono text-[9px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full hidden sm:inline-flex items-center gap-1">
+                          MCP
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#8B8B9E]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                        {isTelemetryExpanded ? 'Real-time tool invocations from Claude Desktop' : '▼ Click to expand live activity logs'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-[#8B8B9E] hidden md:inline">
+                      {mcpActivities.length} event{mcpActivities.length !== 1 ? 's' : ''}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-medium border transition-all ${
+                        socketConnected
+                          ? 'bg-[#10B981]/10 border-[#10B981]/30 text-[#10B981]'
+                          : 'bg-[#8B8B9E]/10 border-[#8B8B9E]/25 text-[#8B8B9E]'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${socketConnected ? 'bg-[#10B981] animate-pulse' : 'bg-[#8B8B9E]'}`}
+                      />
+                      {socketConnected ? 'LIVE' : 'OFFLINE'}
+                    </span>
+                    <button
+                      className="p-1 rounded-lg hover:bg-[#2A2A38] text-[#8B8B9E] transition-colors"
+                      aria-label="Toggle Telemetry Feed"
+                    >
+                      {isTelemetryExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Operations Feed Log Table (Expanded Only) */}
+                {isTelemetryExpanded && (
+                  <>
+                    <div className="flex-1 overflow-y-auto border-t border-[#2A2A3B]" style={{ minHeight: '260px' }}>
+                      {mcpActivities.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-center p-10 space-y-3 h-full min-h-[260px]">
+                          <div className="p-3 rounded-2xl border border-[#2A2A38] bg-[#0E0E13] text-[#6366F1]">
+                            <Terminal size={18} />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-semibold text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                              Log Stream Idle
+                            </h4>
+                            <p className="text-xs text-[#8B8B9E] max-w-[320px] leading-relaxed" style={{ fontFamily: 'Sora, sans-serif' }}>
+                              No tool invocations recorded yet. Telemetry will automatically stream here when Claude executes AgentMark MCP tools.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-[#2A2A3B] bg-[#14141E]">
+                                <th className="py-2.5 px-5 font-mono text-[10px] uppercase tracking-wider text-[#8B8B9E] font-semibold">Timestamp</th>
+                                <th className="py-2.5 px-4 font-mono text-[10px] uppercase tracking-wider text-[#8B8B9E] font-semibold">Operation / Tool</th>
+                                <th className="py-2.5 px-4 font-mono text-[10px] uppercase tracking-wider text-[#8B8B9E] font-semibold">Context Type</th>
+                                <th className="py-2.5 px-4 font-mono text-[10px] uppercase tracking-wider text-[#8B8B9E] font-semibold">Scope Identifier</th>
+                                <th className="py-2.5 px-5 font-mono text-[10px] uppercase tracking-wider text-[#8B8B9E] font-semibold text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#2A2A38]/40">
+                              {mcpActivities.map((act) => {
+                                const formattedToolName = act.toolName
+                                  .split('_')
+                                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                  .join(' ');
+
+                                const timeAgoText = formatTimeAgo(new Date(act.createdAt));
+
+                                return (
+                                  <tr key={act.id} className="hover:bg-[#161624]/60 transition-colors group">
+                                    <td className="py-3 px-5 font-mono text-xs text-[#94A3B8] whitespace-nowrap">
+                                      {timeAgoText}
+                                    </td>
+                                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                                      <span className="bg-[#181826] border border-[#2E2E42] text-[#c0c1ff] px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 font-medium">
+                                        <Terminal size={11} className="text-[#a5a6ff]" />
+                                        {act.toolName}
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-xs text-[#F1F1F3] font-medium" style={{ fontFamily: 'Sora, sans-serif' }}>
+                                      {formattedToolName}
+                                    </td>
+                                    <td className="py-3 px-4 font-mono text-xs whitespace-nowrap">
+                                      {act.campaignId ? (
+                                        <span className="bg-[#6366F1]/10 border border-[#6366F1]/25 text-[#a5a6ff] px-2 py-0.5 rounded-md inline-flex items-center gap-1 text-[11px]">
+                                          <Layers size={11} className="text-[#6366F1]" />
+                                          campaign:{act.campaignId.slice(0, 8)}
+                                        </span>
+                                      ) : (
+                                        <span className="bg-[#1C1C26] border border-[#2A2A38] text-[#8B8B9E] px-2 py-0.5 rounded-md inline-flex items-center gap-1 text-[11px]">
+                                          <Globe size={11} className="text-[#6B6B80]" />
+                                          system:global
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-5 text-right whitespace-nowrap">
+                                      {act.campaignId ? (
+                                        <button
+                                          onClick={() => navigate(`/campaign/${act.campaignId}/result`)}
+                                          className="px-2.5 py-1 text-xs font-medium bg-[#1E1E2C] hover:bg-[#6366F1] text-[#CBD5E1] hover:text-white border border-[#2E2E40] hover:border-[#6366F1] rounded-lg transition-all inline-flex items-center gap-1.5 cursor-pointer"
+                                          style={{ fontFamily: 'Sora, sans-serif' }}
+                                        >
+                                          <ExternalLink size={12} />
+                                          View Results
+                                        </button>
+                                      ) : (
+                                        <span className="text-xs text-[#4A4A5E] font-mono pr-2">—</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Status Footer */}
+                    <div
+                      className="px-5 py-2.5 flex items-center justify-between border-t border-[#2A2A3B] bg-[#0E0E14] text-[11px] text-[#8B8B9E]"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                        <span>Telemetry Stream: Active</span>
+                      </div>
+                      <div className="text-[10px] text-[#6B6B80]">
+                        Showing {mcpActivities.length} recorded operations
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-Application will run on http://localhost:3000
+Application will run on http://localhost:5001
 
 ## Pages
 

@@ -50,7 +50,7 @@ const PROVIDERS: ProviderMeta[] = [
     name: 'Gemini',
     description: "Google's LLM. Powers all 7 campaign agents (Manager → Publisher).",
     placeholder: 'Paste your Gemini API key\u2026',
-    format: 'AIza... or AQ...',
+    format: 'AIza... or AQ....',
     docs: 'https://aistudio.google.com/app/apikey',
     tag: 'optional',
     usage: 'All 7 agents via SmartClient failover. Position #2 in default chain.',
@@ -141,6 +141,7 @@ const ApiKeys: React.FC = () => {
   const [testStatus, setTestStatus] = useState<Record<string, 'idle' | 'testing' | 'passed' | 'failed'>>({});
   const [deleteTarget, setDeleteTarget] = useState<{ provider: LlmProviderId; index: number } | null>(null);
   const [confirmSave, setConfirmSave] = useState<{ provider: LlmProviderId; value: string; testFirst: boolean } | null>(null);
+
   const order = [...settings.providerOrder, 'tavily' as LlmProviderId].filter((id, index, arr) => arr.indexOf(id) === index);
 
   useEffect(() => {
@@ -315,7 +316,7 @@ const ApiKeys: React.FC = () => {
         document.body
       )}
 
-      <div className="bg-surface border border-border-base rounded-2xl overflow-hidden">
+      <div className="bg-surface border border-border-base rounded-2xl overflow-hidden" style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}>
         <div className="p-5 sm:p-6 border-b border-border-base">
           <h2 className="text-lg font-semibold text-text-primary">API Keys</h2>
           <p className="text-sm text-text-secondary mt-0.5">Add API keys for LLM and search providers.</p>
@@ -340,7 +341,7 @@ const ApiKeys: React.FC = () => {
                       {(() => {
                         const style = TAG_STYLES[meta.tag];
                         return (
-                          <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-xs text-label-xs`}>
+                          <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-sm text-label-sm`}>
                             {style.label}
                           </span>
                         );
@@ -442,7 +443,7 @@ const ApiKeys: React.FC = () => {
                           <button
                             onClick={() => handleSaveNewKey(id)}
                             disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
-                            className="px-4 py-3 min-h-[44px] bg-primary text-on-primary rounded-lg text-xs font-label-md hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center"
+                            className="px-4 py-3 min-h-[44px] bg-primary text-on-primary rounded-lg text-xs font-label-sm hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center"
                           >
                             Save
                           </button>

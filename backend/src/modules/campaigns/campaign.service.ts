@@ -140,6 +140,23 @@ export const campaignService = {
         projectId,
         status: { not: 'deleted' }
       },
+      select: {
+        id: true,
+        name: true,
+        brandName: true,
+        industry: true,
+        primaryGoal: true,
+        targetAudience: true,
+        brandVoice: true,
+        additionalInfo: true,
+        status: true,
+        aiCampaignId: true,
+        reviewScore: true,
+        aiError: true,
+        createdAt: true,
+        updatedAt: true,
+        projectId: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   },

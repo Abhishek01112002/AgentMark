@@ -35,11 +35,16 @@ import json
 from agents.state import CampaignState
 from utils.cancellation import is_campaign_cancelled
 
-# Maximum number of revisions allowed per agent
-MAX_REVISIONS = 3
+# Maximum number of automatic revisions allowed per agent.
+# Set to 1 so the pipeline only retries once for genuinely bad output.
+# The human approval step handles borderline quality — we should NOT
+# silently burn LLM credits on multiple auto-retries without user awareness.
+MAX_REVISIONS = 1
 
-# Minimum quality threshold for individual agents
-MIN_AGENT_SCORE = 75
+# Minimum quality threshold to trigger automatic revision.
+# Raised to 60 (was 75) — output scoring above 60 is considered acceptable
+# and goes to human approval for a decision, rather than auto-revising.
+MIN_AGENT_SCORE = 60
 
 
 def should_continue_after_reviewer(state: CampaignState) -> str:

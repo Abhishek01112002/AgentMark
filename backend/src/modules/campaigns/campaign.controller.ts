@@ -1,4 +1,5 @@
-import { Response, NextFunction } from 'express';
+import { Response, NextFunction, Request } from 'express';
+import crypto from 'crypto';
 import { z } from 'zod';
 import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
@@ -16,7 +17,7 @@ import { redis } from '../../utils/redis';
 // through every route handler signature.
 let _io: SocketIOServer | null = null;
 export const setSocketIO = (io: SocketIOServer) => { _io = io; };
-const getIO = (): SocketIOServer | null => _io;
+export const getIO = (): SocketIOServer | null => _io;
 
 const createCampaignSchema = z.object({
   projectId: z.string().uuid(),
@@ -44,6 +45,10 @@ const approveCampaignSchema = z.object({
 });
 
 const hasExplicitApiKeys = (llmConfig: any): boolean => {
+  const envKeys = [process.env.OPENAI_API_KEY, process.env.GEMINI_API_KEY, process.env.GROQ_API_KEY, process.env.TAVILY_API_KEY];
+  if (envKeys.some((k) => k && k.trim().length > 0)) {
+    return true;
+  }
   if (!llmConfig || typeof llmConfig !== 'object') return false;
   const providerKeys = ['openai_api_key', 'gemini_api_key', 'groq_api_key', 'tavily_api_key'];
   return providerKeys.some((key) => {
@@ -69,38 +74,134 @@ const formatFriendlyError = (message: string) => {
   return 'We could not generate this campaign right now. Please try again.';
 };
 
+const RETRYABLE_ERROR_PATTERNS = [
+  'timeout', 'timed out', 'econnrefused', 'econnreset', 'enotfound',
+  'eai_again', 'etimedout', 'network', '5', 'ai service',
+  'unavailable', 'service unavailable', 'too many requests',
+  'rate limit', '429', '503', '502', '504',
+];
+
+function isRetryableError(error: Error): boolean {
+  const msg = error.message.toLowerCase();
+  return RETRYABLE_ERROR_PATTERNS.some((pattern) => msg.includes(pattern));
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function checkCancellation(campaignId: string): Promise<boolean> {
+  try {
+    const exists = await redis.get(`cancel:${campaignId}`);
+    return exists === 'true';
+  } catch {
+    return false;
+  }
+}
+
+async function emitCampaignFailed(
+  dbCampaignId: string,
+  errorMessage: string,
+  io: SocketIOServer
+): Promise<void> {
+  io.to(`campaign:${dbCampaignId}`).emit('campaign_failed', {
+    campaign_id: dbCampaignId,
+    agent: 'system',
+    status: 'failed',
+    error: errorMessage ?? 'AI service is unavailable. Please try again.',
+    timestamp: new Date().toISOString(),
+  });
+}
+
+const MAX_RETRIES = 3;
+const RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
+
 /**
- * Background AI workflow runner.
+ * Background AI workflow runner with exponential backoff retry.
  *
- * Called after the 201 response has already been sent. Any HTTP-level failure
- * (FastAPI down, network error) updates the DB directly to "failed" AND emits
- * a campaign_failed socket event so the live page shows an error immediately
- * instead of hanging forever.
+ * Called after the 201 response has already been sent. On transient failures
+ * (network errors, AI service 5xx, timeouts) the workflow is retried up to
+ * MAX_RETRIES times with increasing delays. The Redis cancellation flag
+ * (set on campaign delete) is checked before each retry attempt.
+ *
+ * Non-retryable errors (validation failures, API key errors) are reported
+ * immediately without retry.
  */
 async function runAIWorkflowBackground(
   dbCampaignId: string,
   payload: AIServiceCampaignRequest,
   io: SocketIOServer
 ): Promise<void> {
-  try {
-    console.log(`AI workflow started in background | campaign=${dbCampaignId}`);
-    await aiServiceClient.createCampaign(payload);
-    console.log(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
-  } catch (err: any) {
-    console.error(`AI workflow HTTP error | campaign=${dbCampaignId} | error=${err.message}`);
-    try {
-      await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', err.message);
-    } catch (dbErr: any) {
-      console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const cancelled = await checkCancellation(dbCampaignId);
+      if (cancelled) {
+        console.log(`Campaign ${dbCampaignId} cancelled by user — aborting retry`);
+        return;
+      }
+      const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+      console.log(`Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      await sleep(delayMs);
+
+      const cancelledAgain = await checkCancellation(dbCampaignId);
+      if (cancelledAgain) {
+        console.log(`Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
+        return;
+      }
     }
-    io.to(`campaign:${dbCampaignId}`).emit('campaign_failed', {
-      campaign_id: dbCampaignId,
-      agent: 'system',
-      status: 'failed',
-      error: err.message ?? 'AI service is unavailable. Please try again.',
-      timestamp: new Date().toISOString(),
-    });
+
+    try {
+      if (attempt === 0) {
+        console.log(`AI workflow started in background | campaign=${dbCampaignId}`);
+      } else {
+        console.log(`AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
+      }
+
+      await aiServiceClient.createCampaign(payload);
+      console.log(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
+      return;
+    } catch (err: any) {
+      lastError = err;
+      const errorMessage = err.message ?? 'Unknown error';
+      console.error(`AI workflow error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
+
+      if (!isRetryableError(err)) {
+        console.log(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
+        try {
+          await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', errorMessage);
+        } catch (dbErr: any) {
+          console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+        }
+        await emitCampaignFailed(dbCampaignId, errorMessage, io);
+        return;
+      }
+
+      if (attempt < MAX_RETRIES) {
+        try {
+          await prisma.campaign.update({
+            where: { id: dbCampaignId },
+            data: {
+              status: 'processing',
+              aiError: `Retrying (${attempt + 1}/${MAX_RETRIES}): ${errorMessage}`,
+            },
+          });
+        } catch {
+          // Best-effort status update
+        }
+      }
+    }
   }
+
+  const finalError = lastError?.message ?? 'AI service is unavailable. Please try again.';
+  console.error(`AI workflow permanent failure | campaign=${dbCampaignId} | error=${finalError}`);
+  try {
+    await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', finalError);
+  } catch (dbErr: any) {
+    console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+  }
+  await emitCampaignFailed(dbCampaignId, finalError, io);
 }
 
 export const createCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -177,6 +278,13 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
       } catch {
         memoryContext = null;
       }
+      const effectiveLlmConfig = {
+        openai_api_key: llmConfig?.openai_api_key || process.env.OPENAI_API_KEY,
+        gemini_api_key: llmConfig?.gemini_api_key || process.env.GEMINI_API_KEY,
+        groq_api_key: llmConfig?.groq_api_key || process.env.GROQ_API_KEY,
+        tavily_api_key: llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
+      };
+
       void runAIWorkflowBackground(campaign.id, {
         campaign_name: campaign.name,
         brand_name: campaign.brandName || brandName,
@@ -185,7 +293,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
         target_audience: campaign.targetAudience,
         brand_voice: campaign.brandVoice,
         brief: briefParts.length > 0 ? briefParts.join('. ') : undefined,
-        llm_config: llmConfig,
+        llm_config: effectiveLlmConfig,
         campaign_id: campaign.id,
         client_memory_context: memoryContext?.formattedText ?? null,
       }, io);
@@ -226,7 +334,7 @@ export const getCampaigns = async (req: AuthRequest, res: Response, next: NextFu
   }
 };
 
-export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
+export const getActiveCampaigns = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const campaigns = await prisma.campaign.findMany({
       where: {
@@ -244,8 +352,7 @@ export const getActiveCampaigns = async (req: AuthRequest, res: Response) => {
     });
     res.json({ campaigns });
   } catch (error) {
-    console.error('Failed to fetch active campaigns:', error);
-    res.status(500).json({ error: 'Failed to fetch active campaigns' });
+    next(error);
   }
 };
 
@@ -319,7 +426,7 @@ export const deleteCampaign = async (req: AuthRequest, res: Response, next: Next
   }
 };
 
-export const approveCampaign = async (req: AuthRequest, res: Response) => {
+export const approveCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { action, feedback, revisionTarget } = approveCampaignSchema.parse(req.body);
@@ -405,56 +512,113 @@ export const approveCampaign = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    // Send 200 response immediately
+    // Send 200 response immediately — do NOT do DB or AI work after this point
     res.json({ message: 'Campaign approval submitted', campaign: updatedCampaign });
 
-    // Call FastAPI in background to execute publisher agent
-    const io = getIO();
-    if (io) {
-      const memoryContext = await getClientMemory(campaign.projectId);
-      
-      void runAIWorkflowBackground(campaign.id, {
-        campaign_name: campaign.name,
-        brand_name: campaign.brandName || campaign.project.name,
-        industry: campaign.industry,
-        primary_goal: campaign.primaryGoal,
-        target_audience: campaign.targetAudience,
-        brand_voice: campaign.brandVoice,
-        campaign_id: campaign.id,
-        llm_config: llmConfig,
-        client_memory_context: memoryContext?.formattedText ?? null,
-        // Pass existing outputs as strings (use modified currentOutputs)
-        manager_output: currentOutputs.manager_output ? JSON.stringify(currentOutputs.manager_output) : null,
-        research_output: currentOutputs.research_output ? JSON.stringify(currentOutputs.research_output) : null,
-        strategy_output: currentOutputs.strategy_output ? JSON.stringify(currentOutputs.strategy_output) : null,
-        copy_output: currentOutputs.copy_output ? JSON.stringify(currentOutputs.copy_output) : null,
-        image_output: currentOutputs.image_output ? JSON.stringify(currentOutputs.image_output) : null,
-        review_output: currentOutputs.review_output ? JSON.stringify(currentOutputs.review_output) : null,
-        // HITL fields - Pass from database
-        human_approval_status: action === 'approve' ? 'approved' : 'rejected',
-        human_feedback: feedback || null,
-        human_revision_target: revisionTarget || null,
-        research_revision_count: campaign.researchRevisionCount || 0,
-        strategy_revision_count: campaign.strategyRevisionCount || 0,
-        copy_revision_count: campaign.copyRevisionCount || 0,
-        image_revision_count: campaign.imageRevisionCount || 0,
-      }, io);
-    }
+    // Fire background workflow asynchronously — errors are handled inside, never touch res
+    void runApprovalBackground(campaign.id, {
+      projectId: campaign.projectId,
+      campaignName: campaign.name,
+      brandName: campaign.brandName || campaign.project.name,
+      industry: campaign.industry,
+      primaryGoal: campaign.primaryGoal,
+      targetAudience: campaign.targetAudience,
+      brandVoice: campaign.brandVoice,
+      action,
+      feedback: feedback ?? null,
+      revisionTarget: revisionTarget ?? null,
+      researchRevisionCount: campaign.researchRevisionCount ?? 0,
+      strategyRevisionCount: campaign.strategyRevisionCount ?? 0,
+      copyRevisionCount: campaign.copyRevisionCount ?? 0,
+      imageRevisionCount: campaign.imageRevisionCount ?? 0,
+      currentOutputs,
+      llmConfig,
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Campaign approval error:', error);
-    res.status(500).json({ error: 'Failed to submit campaign approval' });
+    next(error);
   }
 };
+
+async function runApprovalBackground(
+  campaignId: string,
+  context: {
+    projectId: string;
+    campaignName: string;
+    brandName: string;
+    industry: string;
+    primaryGoal: string;
+    targetAudience: string;
+    brandVoice: string;
+    action: string;
+    feedback: string | null;
+    revisionTarget: string | null;
+    researchRevisionCount: number;
+    strategyRevisionCount: number;
+    copyRevisionCount: number;
+    imageRevisionCount: number;
+    currentOutputs: Record<string, any>;
+    llmConfig: any;
+  }
+): Promise<void> {
+  try {
+    const io = getIO();
+    if (!io) {
+      console.warn(`[Campaign] Socket.io not initialised — cannot emit events for campaign approval background | campaign=${campaignId}`);
+      return;
+    }
+
+    let memoryContext;
+    try {
+      memoryContext = await getClientMemory(context.projectId);
+    } catch {
+      memoryContext = null;
+    }
+
+    const effectiveLlmConfig = {
+      openai_api_key: context.llmConfig?.openai_api_key || process.env.OPENAI_API_KEY,
+      gemini_api_key: context.llmConfig?.gemini_api_key || process.env.GEMINI_API_KEY,
+      groq_api_key: context.llmConfig?.groq_api_key || process.env.GROQ_API_KEY,
+      tavily_api_key: context.llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
+    };
+
+    await runAIWorkflowBackground(campaignId, {
+      campaign_name: context.campaignName,
+      brand_name: context.brandName,
+      industry: context.industry,
+      primary_goal: context.primaryGoal,
+      target_audience: context.targetAudience,
+      brand_voice: context.brandVoice,
+      campaign_id: campaignId,
+      llm_config: effectiveLlmConfig,
+      client_memory_context: memoryContext?.formattedText ?? null,
+      manager_output: context.currentOutputs.manager_output ? JSON.stringify(context.currentOutputs.manager_output) : null,
+      research_output: context.currentOutputs.research_output ? JSON.stringify(context.currentOutputs.research_output) : null,
+      strategy_output: context.currentOutputs.strategy_output ? JSON.stringify(context.currentOutputs.strategy_output) : null,
+      copy_output: context.currentOutputs.copy_output ? JSON.stringify(context.currentOutputs.copy_output) : null,
+      image_output: context.currentOutputs.image_output ? JSON.stringify(context.currentOutputs.image_output) : null,
+      review_output: context.currentOutputs.review_output ? JSON.stringify(context.currentOutputs.review_output) : null,
+      human_approval_status: context.action === 'approve' ? 'approved' : 'rejected',
+      human_feedback: context.feedback,
+      human_revision_target: context.revisionTarget,
+      research_revision_count: context.researchRevisionCount,
+      strategy_revision_count: context.strategyRevisionCount,
+      copy_revision_count: context.copyRevisionCount,
+      image_revision_count: context.imageRevisionCount,
+    }, io);
+  } catch (err: any) {
+    console.error(`Campaign approval background error | campaign=${campaignId} | error=${err.message}`);
+  }
+}
 
 const enhancePromptSchema = z.object({
   prompt: z.string().min(1),
   userInput: z.string().optional(),
 });
 
-export const enhancePrompt = async (req: AuthRequest, res: Response) => {
+export const enhancePrompt = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { prompt, userInput } = enhancePromptSchema.parse(req.body);
     const llmConfigHeader = req.headers['x-llm-config'];
@@ -473,12 +637,11 @@ export const enhancePrompt = async (req: AuthRequest, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Prompt enhancement error:', error);
-    res.status(500).json({ error: error.message || 'Failed to enhance prompt' });
+    next(error);
   }
 };
 
-export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
+export const getMemoryInsights = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const campaign = await prisma.campaign.findUnique({
       where: { id: req.params.id },
@@ -514,12 +677,11 @@ export const getMemoryInsights = async (req: AuthRequest, res: Response) => {
 
     res.json({ insights, count: snapshots.length });
   } catch (error) {
-    console.error('Memory insights fetch failed:', error);
-    res.status(500).json({ error: 'Failed to fetch memory insights' });
+    next(error);
   }
 };
 
-export const getProjectMemoryHub = async (req: AuthRequest, res: Response) => {
+export const getProjectMemoryHub = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.params;
     const project = await prisma.project.findFirst({
@@ -598,12 +760,11 @@ export const getProjectMemoryHub = async (req: AuthRequest, res: Response) => {
 
     res.json({ snapshots: formatted, count: snapshots.length, aggregated });
   } catch (error) {
-    console.error('Project memory hub fetch failed:', error);
-    res.status(500).json({ error: 'Failed to fetch memory hub data' });
+    next(error);
   }
 };
 
-export const testKey = async (req: AuthRequest, res: Response) => {
+export const testKey = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { provider, apiKey } = req.body;
     if (!provider || !apiKey) {
@@ -612,8 +773,7 @@ export const testKey = async (req: AuthRequest, res: Response) => {
     const result = await aiServiceClient.testKey(provider, apiKey);
     return res.status(200).json(result);
   } catch (error: any) {
-    console.error('Test key error:', error);
-    res.status(500).json({ success: false, message: error.message || 'Failed to test API key' });
+    return res.status(500).json({ success: false, message: error.message || 'Key validation failed' });
   }
 };
 
@@ -628,7 +788,7 @@ const updateCopyVariantMetaSchema = z.object({
   action: z.enum(['pin', 'hide', 'unhide']),
 });
 
-export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
+export const generateCopyVariant = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
     const { channel, steeringNote } = generateCopyVariantSchema.parse(req.body);
@@ -679,6 +839,13 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
         try { llmConfig = JSON.parse(llmConfigHeader); } catch { /* ignore */ }
       }
 
+      const effectiveLlmConfig = {
+        openai_api_key: llmConfig?.openai_api_key || process.env.OPENAI_API_KEY,
+        gemini_api_key: llmConfig?.gemini_api_key || process.env.GEMINI_API_KEY,
+        groq_api_key: llmConfig?.groq_api_key || process.env.GROQ_API_KEY,
+        tavily_api_key: llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
+      };
+
       const response = await aiServiceClient.generateCopyVariant({
         campaign_id: campaign.id,
         channel,
@@ -688,15 +855,18 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
         brief: campaign.additionalInfo || '',
         brand_voice: campaign.brandVoice,
         target_audience: campaign.targetAudience,
-        llm_config: llmConfig,
+        llm_config: effectiveLlmConfig,
       });
 
       const uuid = crypto.randomUUID();
       const tags: string[] = [];
-      const headline = response.copy_data.headline || '';
-      const body = response.copy_data.body || response.copy_data.body_copy || '';
-      const bodyLower = body.toLowerCase();
-      const headlineLower = headline.toLowerCase();
+      const copyData = response?.copy_data || response || {};
+      const headline = copyData.headline || copyData.headline_copy || copyData.subject || copyData.title || '';
+      const body = copyData.body || copyData.body_copy || copyData.content || copyData.text || (typeof copyData === 'string' ? copyData : '');
+      const ctas = copyData.ctas || copyData.cta || copyData.call_to_action || {};
+
+      const bodyLower = String(body).toLowerCase();
+      const headlineLower = String(headline).toLowerCase();
 
       if (bodyLower.includes('story') || bodyLower.includes('narrative')) tags.push('🎭 Storytelling');
       if (body.length < 100 && body.length > 0) tags.push('⚡ Punchy');
@@ -706,9 +876,9 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
 
       const newVariant = {
         id: uuid,
-        headline: response.copy_data.headline || '',
-        body_copy: response.copy_data.body || response.copy_data.body_copy || '',
-        ctas: response.copy_data.ctas || {},
+        headline: headline || 'New Angle Copy Variant',
+        body_copy: body || 'Fresh creative copy generated based on user steering instructions.',
+        ctas: typeof ctas === 'object' ? ctas : { primary: String(ctas) },
         tags,
         isChampion: false,
         isHidden: false,
@@ -731,23 +901,25 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response) => {
         : {};
 
       return res.json({
+        success: true,
         channel,
+        variant: newVariant,
         variants: parsedUpdatedOutputs.copy_variants?.[channel] || [],
       });
     } catch (err: any) {
       await redis.del(lockKey);
-      throw err;
+      console.error(`Error in generateCopyVariant for campaign ${id} / channel ${channel}:`, err);
+      return res.status(500).json({ error: `Failed to generate copy variant: ${err.message || 'AI service error'}` });
     }
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Error generating copy variant:', error);
-    res.status(500).json({ error: 'Failed to generate copy variant' });
+    next(error);
   }
 };
 
-export const updateCopyVariantMeta = async (req: AuthRequest, res: Response) => {
+export const updateCopyVariantMeta = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
     const { channel, variantId, action } = updateCopyVariantMetaSchema.parse(req.body);
@@ -816,7 +988,415 @@ export const updateCopyVariantMeta = async (req: AuthRequest, res: Response) => 
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Error updating copy variant metadata:', error);
-    res.status(500).json({ error: 'Failed to update copy variant' });
+    next(error);
   }
 };
+
+const saveCopyVersionSchema = z.object({
+  feedbackUsed: z.string().max(500).optional(),
+});
+
+// ── Copy Version History ─────────────────────────────────────────────────────
+// Saves the current copy_output as a versioned snapshot (max 5 versions).
+// Called by the MCP revise_copy_with_feedback tool before triggering a revision.
+
+export const saveCopyVersion = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { feedbackUsed } = saveCopyVersionSchema.parse(req.body);
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      select: { aiOutputs: true, project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const currentOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs as string)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const copyOutput = currentOutputs.copy_output;
+    if (!copyOutput) {
+      res.status(400).json({ error: 'No copy output available to snapshot' });
+      return;
+    }
+
+    // Extract scores from existing outputs
+    const focusGroupOutput = currentOutputs.focus_group_output as Record<string, any> | undefined;
+    const focusGroupScore: number | null = (focusGroupOutput?.overall_score as number) ?? null;
+
+    const reviewOutput = currentOutputs.review_output as Record<string, any> | undefined;
+    const agentScores = reviewOutput?.agent_scores as Record<string, number> | undefined;
+    const copyScore: number | null = agentScores?.copywriter ?? null;
+
+    const existingVersions: any[] = (currentOutputs.copy_versions as any[]) || [];
+    const versionNumber = existingVersions.length + 1;
+
+    const newVersion = {
+      version: versionNumber,
+      timestamp: new Date().toISOString(),
+      copy: copyOutput,
+      focus_group_score: focusGroupScore,
+      copy_score: copyScore,
+      feedback_used: feedbackUsed || null,
+    };
+
+    // Keep last 5 versions only
+    const updatedVersions = [...existingVersions, newVersion].slice(-5);
+
+    const updatedOutputs = {
+      ...currentOutputs,
+      copy_versions: updatedVersions,
+    };
+
+    await prisma.campaign.update({
+      where: { id },
+      data: { aiOutputs: updatedOutputs as any },
+    });
+
+    res.json({
+      success: true,
+      version: versionNumber,
+      totalVersions: updatedVersions.length,
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: 'Validation failed', details: err.errors });
+      return;
+    }
+    next(err);
+  }
+};
+
+export const getCopyVersions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      select: { aiOutputs: true, project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const aiOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs as string)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const copyVersions: any[] = (aiOutputs.copy_versions as any[]) || [];
+
+    res.json({ success: true, versions: copyVersions, totalVersions: copyVersions.length });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/campaigns/:id/fork
+ * FAANG Pattern: Git-style Campaign Branching.
+ * Clones existing campaign research/strategy and creates a new version with fresh revision budget.
+ */
+export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { updatedBrief, newName, startStage, startFrom } = req.body;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      include: { project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const selectedStage = startStage || startFrom || null;
+
+    // Parse parent outputs safely
+    const parentOutputs: Record<string, any> = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs)
+      : {};
+
+    const forkedOutputs: Record<string, any> = {};
+
+    if (selectedStage === 'copywriter') {
+      if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
+      if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
+      if (parentOutputs.strategy_output) forkedOutputs.strategy_output = parentOutputs.strategy_output;
+    } else if (selectedStage === 'image_prompt') {
+      if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
+      if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
+      if (parentOutputs.strategy_output) forkedOutputs.strategy_output = parentOutputs.strategy_output;
+      if (parentOutputs.copy_output) forkedOutputs.copy_output = parentOutputs.copy_output;
+    } else if (selectedStage === 'strategy') {
+      if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
+      if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
+    } else if (selectedStage === 'fresh' || selectedStage === 'research') {
+      // Re-run everything from scratch
+    } else {
+      // Legacy backward-compatibility fallback
+      Object.assign(forkedOutputs, parentOutputs);
+    }
+
+    const isRerunningAI = selectedStage && ['copywriter', 'image_prompt', 'strategy', 'fresh', 'research'].includes(selectedStage);
+    const initialStatus = isRerunningAI ? 'processing' : 'awaiting_human_approval';
+
+    // Create cloned version
+    const clonedCampaign = await prisma.campaign.create({
+      data: {
+        name: newName || `${campaign.name} (v2)`,
+        brandName: campaign.brandName,
+        industry: campaign.industry,
+        primaryGoal: campaign.primaryGoal,
+        targetAudience: updatedBrief?.targetAudience || campaign.targetAudience,
+        brandVoice: updatedBrief?.brandVoice || campaign.brandVoice,
+        additionalInfo: updatedBrief?.additionalInfo || campaign.additionalInfo,
+        status: initialStatus,
+        projectId: campaign.projectId,
+        aiOutputs: forkedOutputs,
+        researchRevisionCount: 0,
+        strategyRevisionCount: 0,
+        copyRevisionCount: 0,
+        imageRevisionCount: 0,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Campaign variant created successfully!',
+      campaign: clonedCampaign,
+      isRerunningAI: !!isRerunningAI,
+    });
+
+    // Dispatch background AI execution if stage re-generation requested
+    if (isRerunningAI) {
+      const io = getIO();
+      if (io) {
+        let memoryContext;
+        try {
+          memoryContext = await getClientMemory(campaign.projectId);
+        } catch {
+          memoryContext = null;
+        }
+
+        const llmConfigHeader = req.headers['x-llm-config'];
+        let llmConfig: any = undefined;
+        if (typeof llmConfigHeader === 'string') {
+          try { llmConfig = JSON.parse(llmConfigHeader); } catch {}
+        }
+
+        const effectiveLlmConfig = {
+          openai_api_key: llmConfig?.openai_api_key || process.env.OPENAI_API_KEY,
+          gemini_api_key: llmConfig?.gemini_api_key || process.env.GEMINI_API_KEY,
+          groq_api_key: llmConfig?.groq_api_key || process.env.GROQ_API_KEY,
+          tavily_api_key: llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
+        };
+
+        const brandName = clonedCampaign.brandName || '';
+        const briefParts: string[] = [];
+        if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(clonedCampaign.industry.trim().toLowerCase())) {
+          briefParts.push(`Custom industry: ${clonedCampaign.industry}`);
+        }
+        if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(clonedCampaign.primaryGoal.trim().toLowerCase())) {
+          briefParts.push(`Custom goal: ${clonedCampaign.primaryGoal}`);
+        }
+        if (clonedCampaign.additionalInfo?.trim()) {
+          briefParts.push(`Additional Context: ${clonedCampaign.additionalInfo.trim()}`);
+        }
+
+        void runAIWorkflowBackground(clonedCampaign.id, {
+          campaign_name: clonedCampaign.name,
+          brand_name: brandName,
+          industry: clonedCampaign.industry,
+          primary_goal: clonedCampaign.primaryGoal,
+          target_audience: clonedCampaign.targetAudience,
+          brand_voice: clonedCampaign.brandVoice,
+          brief: briefParts.length > 0 ? briefParts.join('. ') : undefined,
+          llm_config: effectiveLlmConfig,
+          campaign_id: clonedCampaign.id,
+          client_memory_context: memoryContext?.formattedText ?? null,
+          manager_output: forkedOutputs.manager_output ? JSON.stringify(forkedOutputs.manager_output) : null,
+          research_output: forkedOutputs.research_output ? JSON.stringify(forkedOutputs.research_output) : null,
+          strategy_output: forkedOutputs.strategy_output ? JSON.stringify(forkedOutputs.strategy_output) : null,
+          copy_output: forkedOutputs.copy_output ? JSON.stringify(forkedOutputs.copy_output) : null,
+          image_output: forkedOutputs.image_output ? JSON.stringify(forkedOutputs.image_output) : null,
+          human_revision_target: selectedStage === 'fresh' || selectedStage === 'research' ? null : selectedStage,
+        }, io);
+      }
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/campaigns/:id/reset-revisions
+ * FAANG Pattern: Dynamic Revision Cap Extension.
+ * Resets revision counters back to 0 without losing generated outputs.
+ */
+export const resetCampaignRevisions = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      include: { project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const updatedCampaign = await prisma.campaign.update({
+      where: { id },
+      data: {
+        researchRevisionCount: 0,
+        strategyRevisionCount: 0,
+        copyRevisionCount: 0,
+        imageRevisionCount: 0,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: 'Revision budget reset successfully! You now have 3 fresh revisions available.',
+      campaign: updatedCampaign,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * POST /api/campaigns/:id/retry
+ * Retries execution of a failed campaign without recreating the database record.
+ * Resets status to 'processing', clears aiError, and re-triggers background AI workflow.
+ */
+export const retryCampaign = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    const campaign = await prisma.campaign.findUnique({
+      where: { id },
+      include: { project: { select: { userId: true, name: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
+    const llmConfigHeader = req.headers['x-llm-config'];
+    let llmConfig: any = undefined;
+    if (typeof llmConfigHeader === 'string') {
+      try {
+        llmConfig = JSON.parse(llmConfigHeader);
+      } catch {
+        llmConfig = undefined;
+      }
+    }
+
+    // Reset campaign in DB: status='processing', aiError=null
+    const updatedCampaign = await prisma.campaign.update({
+      where: { id },
+      data: {
+        status: 'processing',
+        aiError: null,
+        updatedAt: new Date(),
+      },
+    });
+
+    console.log(`[CampaignRetry] Campaign ${id} status reset to processing for retry.`);
+
+    // Respond 200 immediately
+    res.json({
+      success: true,
+      message: 'Campaign retry initiated',
+      campaign: updatedCampaign,
+    });
+
+    // Fire AI workflow in background
+    const io = getIO();
+    if (io) {
+      let memoryContext;
+      try {
+        memoryContext = await getClientMemory(campaign.projectId);
+      } catch {
+        memoryContext = null;
+      }
+
+      const effectiveLlmConfig = {
+        openai_api_key: llmConfig?.openai_api_key || process.env.OPENAI_API_KEY,
+        gemini_api_key: llmConfig?.gemini_api_key || process.env.GEMINI_API_KEY,
+        groq_api_key: llmConfig?.groq_api_key || process.env.GROQ_API_KEY,
+        tavily_api_key: llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
+      };
+
+      const brandName = campaign.brandName || campaign.project.name;
+      const briefParts: string[] = [];
+      if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(campaign.industry.trim().toLowerCase())) {
+        briefParts.push(`Custom industry: ${campaign.industry}`);
+      }
+      if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(campaign.primaryGoal.trim().toLowerCase())) {
+        briefParts.push(`Custom goal: ${campaign.primaryGoal}`);
+      }
+      if (campaign.additionalInfo?.trim()) {
+        briefParts.push(`Additional Context: ${campaign.additionalInfo.trim()}`);
+      }
+
+      void runAIWorkflowBackground(campaign.id, {
+        campaign_name: campaign.name,
+        brand_name: brandName,
+        industry: campaign.industry,
+        primary_goal: campaign.primaryGoal,
+        target_audience: campaign.targetAudience,
+        brand_voice: campaign.brandVoice,
+        brief: briefParts.length > 0 ? briefParts.join('. ') : undefined,
+        llm_config: effectiveLlmConfig,
+        campaign_id: campaign.id,
+        client_memory_context: memoryContext?.formattedText ?? null,
+      }, io);
+    } else {
+      console.warn(`[CampaignRetry] Socket.io not initialised — retry background runner will not emit socket events | campaign=${campaign.id}`);
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+

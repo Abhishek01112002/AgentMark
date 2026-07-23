@@ -23,6 +23,14 @@ const SupportContent: React.FC = () => {
 
   const faqs: FAQItem[] = [
     {
+      question: 'How does the Synthetic Focus Group simulation evaluate my campaign copy?',
+      answer: 'Our Focus Group engine runs parallel LLM persona agents representing diverse demographic and psychographic consumer segments. It analyzes your copy for sentiment score (0–100%), click-intent probability, primary objections, and actionable rewrite recommendations before you spend ad budget.',
+    },
+    {
+      question: 'How do I connect AgentMark to Claude Desktop or Cursor IDE via MCP?',
+      answer: 'Go to Settings > Integrations and click "Connect Claude Desktop". Our system automatically writes the required configuration to your local claude_desktop_config.json file. Once added, completely restart Claude Desktop from your taskbar/tray to use AgentMark tools inside your chat assistant.',
+    },
+    {
       question: 'How long does campaign generation take?',
       answer: 'Most multi-channel campaigns are generated within 45 to 90 seconds. Complex strategies requiring deep research may take up to 3 minutes as our agents traverse web data and internal knowledge bases.',
     },
@@ -187,18 +195,29 @@ const SupportContent: React.FC = () => {
 
               {/* Top Row Resource Cards */}
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <a className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer" href="/docs">
+                <div className="glass-card p-6 rounded-xl flex flex-col items-start group">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
                     <BookOpen size={32} style={{ color: '#c0c1ff' }} />
                   </div>
                   <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Documentation</h3>
                   <p className="text-sm mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                    Comprehensive guides on setting up workflows and scaling agents.
+                    Comprehensive guides on setting up workflows, Focus Groups, and Claude MCP.
                   </p>
-                  <span className="mt-auto flex items-center text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>
-                    Explore Docs <ArrowRight size={18} className="ml-1" />
-                  </span>
-                </a>
+                  
+                  {/* Quick Feature Shortcuts */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <a href="/docs#focus-groups" className="px-2.5 py-1 bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1] rounded text-xs font-mono text-[#a5b4fc] transition-all">
+                      Focus Groups Guide →
+                    </a>
+                    <a href="/docs#mcp" className="px-2.5 py-1 bg-[#1A1A24] border border-[#2A2A38] hover:border-[#6366F1] rounded text-xs font-mono text-[#a5b4fc] transition-all">
+                      Claude MCP Setup →
+                    </a>
+                  </div>
+
+                  <a href="/docs" className="mt-auto flex items-center text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#c0c1ff' }}>
+                    Explore All Docs <ArrowRight size={18} className="ml-1" />
+                  </a>
+                </div>
 
                 <button 
                   onClick={() => setShowTutorialModal(true)}

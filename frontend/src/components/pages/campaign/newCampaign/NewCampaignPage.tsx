@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Briefcase, Target, Mic, Zap, Smile, Flame, Crown, Coffee, FolderOpen, Plus, Loader2, AlertTriangle, Sparkles, Heart, ShieldCheck, PlusCircle, AlignLeft } from 'lucide-react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../shared/sidebar/Sidebar';
@@ -34,6 +34,7 @@ const VOICE_ICONS: Record<string, any> = {
 
 const NewCampaignContent: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
@@ -94,19 +95,19 @@ const NewCampaignContent: React.FC = () => {
   };
 
   useEffect(() => {
-    if (formData.industry === 'other') {
+    if (formData.industry === 'other' && window.innerWidth >= 768) {
       customIndustryRef.current?.focus();
     }
   }, [formData.industry]);
 
   useEffect(() => {
-    if (formData.goal === 'other') {
+    if (formData.goal === 'other' && window.innerWidth >= 768) {
       customGoalRef.current?.focus();
     }
   }, [formData.goal]);
 
   useEffect(() => {
-    if (formData.brandVoice === 'other') {
+    if (formData.brandVoice === 'other' && window.innerWidth >= 768) {
       customBrandVoiceRef.current?.focus();
     }
   }, [formData.brandVoice]);
@@ -117,6 +118,43 @@ const NewCampaignContent: React.FC = () => {
       setFormData((prev) => ({ ...prev, projectId: projectIdFromUrl }));
     }
   }, [searchParams]);
+
+  // Support pre-filling brief details when retrying/editing a failed campaign
+  const initialValuesHandledRef = useRef(false);
+  useEffect(() => {
+    const initial = location.state?.initialValues;
+    if (initial && !initialValuesHandledRef.current) {
+      initialValuesHandledRef.current = true;
+      const rawInd = initial.industry || '';
+      const rawGoal = initial.primaryGoal || initial.goal || '';
+      const rawVoice = initial.brandVoice || 'professional';
+
+      const stdIndustries = ['saas', 'ecommerce', 'finance', 'healthcare'];
+      const stdGoals = ['awareness', 'lead_gen', 'sales', 'retention'];
+      const stdVoices = ['professional', 'friendly', 'bold', 'luxury', 'casual', 'inspirational', 'empathetic', 'trustworthy'];
+
+      const isCustomInd = rawInd && !stdIndustries.includes(rawInd.toLowerCase());
+      const isCustomGoal = rawGoal && !stdGoals.includes(rawGoal.toLowerCase());
+      const isCustomVoice = rawVoice && !stdVoices.includes(rawVoice.toLowerCase());
+
+      setFormData((prev) => ({
+        ...prev,
+        projectId: initial.projectId || prev.projectId,
+        campaignName: initial.name || initial.campaignName || prev.campaignName,
+        brandName: initial.brandName || initial.brand_name || prev.brandName,
+        industry: isCustomInd ? 'other' : rawInd,
+        customIndustry: isCustomInd ? rawInd : '',
+        goal: isCustomGoal ? 'other' : rawGoal,
+        customGoal: isCustomGoal ? rawGoal : '',
+        targetAudience: initial.targetAudience || prev.targetAudience,
+        brandVoice: isCustomVoice ? 'other' : rawVoice,
+        customBrandVoice: isCustomVoice ? rawVoice : '',
+        additionalInfo: initial.additionalInfo || prev.additionalInfo,
+      }));
+
+      toast.success('Pre-filled brief from your previous campaign', { icon: '✏️' });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (didFetchProjectsRef.current) return;
@@ -670,7 +708,7 @@ const NewCampaignContent: React.FC = () => {
               <div className="h-16 w-16 bg-[#FFB020]/10 rounded-full flex items-center justify-center mb-4 ring-8 ring-[#FFB020]/5">
                 <AlertTriangle className="text-[#FFB020]" size={32} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">Duplicate Detected</h3>
+              <h3 className="text-xl font-bold text-white mb-2 font-display-lg tracking-tight">Duplicate Detected</h3>
               <p className="text-[#A1A1AA] text-sm leading-relaxed">
                 You have already generated a campaign with these exact details. Do you want to relaunch a new campaign anyway?
               </p>
@@ -716,7 +754,7 @@ const NewCampaignContent: React.FC = () => {
               <div className="h-16 w-16 bg-[#FFB020]/10 rounded-full flex items-center justify-center mb-4 ring-8 ring-[#FFB020]/5">
                 <AlertTriangle className="text-[#FFB020]" size={32} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2 font-display tracking-tight">API Keys Required</h3>
+              <h3 className="text-xl font-bold text-white mb-2 font-display-lg tracking-tight">API Keys Required</h3>
               <p className="text-[#A1A1AA] text-sm leading-relaxed">
                 Add at least one valid API key in Settings &gt; API Keys before launching a campaign. Campaigns will not start until a provider key is configured.
               </p>
@@ -734,7 +772,7 @@ const NewCampaignContent: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setShowApiKeysModal(false);
-                  window.location.href = '/settings';
+                  navigate('/settings');
                 }}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5355D1] hover:to-[#7A4DD6] text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-[#6366F1]/20 flex items-center justify-center"
               >

@@ -527,6 +527,7 @@ const ProjectsContent: React.FC = () => {
                         View
                       </button>
                       <button
+                        aria-label="Rename project"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRenameClick(project);
@@ -562,6 +563,7 @@ const ProjectsContent: React.FC = () => {
                         <Edit3 size={14} />
                       </button>
                       <button
+                        aria-label="Delete project"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteClick(project);

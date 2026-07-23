@@ -19,6 +19,8 @@ model User {
   
   projects  Project[]
   notifications Notification[]
+  apiKeys   ApiKey[]
+  mcpActivities McpActivity[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -125,4 +127,47 @@ model CampaignMemorySnapshot {
 
   @@index([projectId, completedAt])
   @@map("campaign_memory_snapshots")
+}
+
+// ── Developer API Keys ─────────────────────────────────────────────────────────
+// Stores long-lived programmatic API keys for MCP server and third-party integrations.
+// The raw key is NEVER stored — only its SHA-256 hash. The raw key is shown once
+// at creation time (returned in the POST /api/developer/keys response) and discarded.
+
+model ApiKey {
+  id         String    @id @default(uuid())
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // SHA-256 hex digest of the raw key. Used for constant-time lookup during auth.
+  keyHash    String    @unique
+
+  // Human-readable label (e.g. "Claude Desktop - MacBook Pro").
+  label      String
+
+  // Soft-delete flag. Revocation sets this to false; the record is retained for audit.
+  isActive   Boolean   @default(true)
+
+  // Updated asynchronously after each successful authentication to enable usage auditing.
+  lastUsedAt DateTime?
+
+  createdAt  DateTime  @default(now())
+
+  @@map("api_keys")
+  @@index([userId])
+}
+
+model McpActivity {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolName    String
+  campaignId  String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  @@map("mcp_activities")
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([campaignId])
 }

@@ -1,12 +1,14 @@
-import React, { useState, useEffect, Suspense, lazy, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, lazy, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, Users, LucideIcon, Loader2 } from 'lucide-react';
+import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, Users, LucideIcon, Loader2, FolderOpen, RotateCcw, GitBranch } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { io, Socket } from 'socket.io-client';
 import { ChannelIcon } from '../../../../../shared/ChannelIcon';
 import api from '../../../../../../services/api';
 import Sidebar, { SidebarProvider } from '../../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../../shared/topNav/TopNav';
 import MemoryInsightsCard from './MemoryInsightsCard';
+import CreateVariantModal from './CreateVariantModal';
 
 // Lazy-load each tab's content so its JS chunk is only fetched when the tab
 // is first opened — shaves ~250 KB from the initial parse budget.
@@ -58,6 +60,14 @@ interface Campaign {
   updatedAt: string;
 }
 
+// Helper to capitalize error messages (e.g. "fetch failed" -> "Fetch failed")
+const formatErrorText = (msg: string | null | undefined): string => {
+  if (!msg) return '';
+  const trimmed = msg.trim();
+  if (!trimmed) return '';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
 const tabs: Tab[] = [
   { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
   { id: 'research',    label: 'Research',     icon: FileText },
@@ -79,6 +89,7 @@ const CampaignResultPage: React.FC = () => {
   const [memoryCount, setMemoryCount] = useState<number>(0);
 
   // HITL Modal State
+  const decisionMadeRef = useRef(false);
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true); // Default to true so results view is visible
   const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');
@@ -98,6 +109,7 @@ const CampaignResultPage: React.FC = () => {
   }>({ research: null, strategy: null, copywriter: null, image_prompt: null });
   const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
   const [reviewerNotes, setReviewerNotes] = useState<{ feedback: string; issues: string[] } | null>(null);
+  const [showVariantModal, setShowVariantModal] = useState(false);
 
   // ── Focus Group Simulation State ──────────────────────────────────────────
   const [focusGroupReport, setFocusGroupReport] = useState<any>(null);
@@ -105,6 +117,9 @@ const CampaignResultPage: React.FC = () => {
   const [focusGroupError, setFocusGroupError] = useState<string | null>(null); // Fix #2
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_focusGroupFetched, setFocusGroupFetched] = useState(false);
+  const [focusGroupUpdatedViaMcp, setFocusGroupUpdatedViaMcp] = useState(false);
+  const [isRetryingCampaign, setIsRetryingCampaign] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
   // Fix #1: canonical copy slice length — must match what backend hashes
   const COPY_SLICE_LENGTH = 4000;
@@ -339,7 +354,7 @@ const CampaignResultPage: React.FC = () => {
         const campaignData = response.data.campaign;
         setCampaign(campaignData);
 
-        if (campaignData && campaignData.status === 'awaiting_human_approval') {
+        if (campaignData && campaignData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
           setShowHumanReview(true);
           setRevisionCounts({
             research: campaignData.researchRevisionCount || 0,
@@ -416,6 +431,95 @@ const CampaignResultPage: React.FC = () => {
     fetchMemoryInsights();
   }, [campaignId]);
 
+  // ── Socket.io: Real-time updates from MCP tools ─────────────────────────────
+  useEffect(() => {
+    if (!campaignId) return;
+
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 2000,
+      reconnectionAttempts: 5,
+      auth: { token },
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      socket.emit('join_campaign', campaignId);
+    });
+
+    // Focus group results arrived (via MCP run_focus_group or revise_copy_with_feedback)
+    socket.on('focus_group_complete', (data: any) => {
+      if (data?.report) {
+        setFocusGroupReport(data.report);
+        setFocusGroupFetched(true);
+        setFocusGroupError(null);
+        setFocusGroupUpdatedViaMcp(true);
+
+        // Update local campaign state so tab data is consistent
+        setCampaign(prev => {
+          if (!prev) return null;
+          const currentOutputs = prev.aiOutputs || {};
+          const currentOutputsMap = currentOutputs.focus_group_outputs || {};
+          const hashKey = data.hashKey || currentOutputs.focus_group_output_hash || 'mcp';
+          return {
+            ...prev,
+            aiOutputs: {
+              ...currentOutputs,
+              focus_group_output: data.report,
+              focus_group_output_hash: hashKey,
+              focus_group_outputs: { ...currentOutputsMap, [hashKey]: data.report },
+            },
+          };
+        });
+
+        const score = data.score ?? data.report?.overall_score;
+        toast.success(
+          score != null
+            ? `Focus Group updated — Score: ${score}/100`
+            : 'Focus Group results updated',
+          { duration: 4000, icon: '\uD83D\uDCCA' }
+        );
+      }
+    });
+
+    // General campaign data updated (copy revision, any MCP-driven change)
+    socket.on('campaign_data_updated', async (data: any) => {
+      if (data?.campaignId === campaignId && data?.updatedField !== 'focus_group') {
+        // Re-fetch campaign to pick up latest aiOutputs
+        try {
+          const response = await api.get(`/campaigns/${campaignId}`);
+          setCampaign(response.data.campaign);
+        } catch (err) {
+          console.error('Failed to refresh campaign after MCP update:', err);
+        }
+      }
+    });
+
+    // Campaign status changed (e.g., revision completed, back to awaiting_human_approval)
+    socket.on('human_approval_required', async () => {
+      try {
+        const response = await api.get(`/campaigns/${campaignId}`);
+        const campaignData = response.data.campaign;
+        setCampaign(campaignData);
+        setShowHumanReview(true);
+        if (campaignData.reviewScore) setQualityScore(campaignData.reviewScore);
+        toast.success('Copy revision complete — ready for review', { duration: 4000, icon: '\u2705' });
+      } catch (err) {
+        console.error('Failed to refresh campaign after revision:', err);
+      }
+    });
+
+    return () => {
+      socket.emit('leave_campaign', campaignId);
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [campaignId]);
+
   const handleCopyVariantsUpdate = (updatedCopyVariants: any) => {
     setCampaign(prev => {
       if (!prev) return null;
@@ -434,7 +538,9 @@ const CampaignResultPage: React.FC = () => {
 
   const handleApprove = async () => {
     try {
+      decisionMadeRef.current = true;
       setShowHumanReview(false);
+      setIsMinimized(true);
       await api.post(`/campaigns/${campaignId}/approve`, {
         action: 'approve',
       });
@@ -442,6 +548,7 @@ const CampaignResultPage: React.FC = () => {
       toast.success('Campaign approved! Resuming publisher...');
       navigate(`/campaign/${campaignId}/live`, { state: { initialActiveAgent: 'publisher' } });
     } catch (error) {
+      decisionMadeRef.current = false;
       console.error('Failed to submit approval:', error);
       toast.error('Failed to submit approval decision');
     }
@@ -454,7 +561,9 @@ const CampaignResultPage: React.FC = () => {
     }
     
     try {
+      decisionMadeRef.current = true;
       setShowHumanReview(false);
+      setIsMinimized(true);
       await api.post(`/campaigns/${campaignId}/approve`, {
         action: 'reject',
         revisionTarget: selectedAgent,
@@ -466,11 +575,17 @@ const CampaignResultPage: React.FC = () => {
       setRevisionFeedback('');
       navigate(`/campaign/${campaignId}/live`, { state: { initialActiveAgent: selectedAgent } });
     } catch (error: any) {
+      decisionMadeRef.current = false;
       console.error('Failed to request revision:', error);
       toast.error(error.response?.data?.error || 'Failed to submit revision request');
       setShowHumanReview(true);
     }
   };
+
+  const handleVariantCreated = useCallback((newCampaignId: string, projectId: string) => {
+    setShowVariantModal(false);
+    navigate(`/campaign/${newCampaignId}/result?projectId=${projectId}`);
+  }, [navigate]);
 
   const isTabCompleted = React.useCallback((tabId: TabId) => {
     if (!campaign) return false;
@@ -576,6 +691,36 @@ const CampaignResultPage: React.FC = () => {
   }
 
   if (campaign.status === 'failed') {
+    const handleRetryCampaign = async () => {
+      setIsRetryingCampaign(true);
+      try {
+        await api.post(`/campaigns/${campaign.id}/retry`);
+        toast.success('Retrying campaign pipeline... Agents are running!', { icon: '⚡' });
+        navigate(`/campaign/${campaign.id}/live`, { state: { initialActiveAgent: 'manager' } });
+      } catch (err: any) {
+        console.error('Failed to retry campaign:', err);
+        toast.error(err.response?.data?.error || 'Failed to retry campaign.');
+        setIsRetryingCampaign(false);
+      }
+    };
+
+    const handleEditBrief = () => {
+      navigate(`/campaign/new?projectId=${campaign.projectId}`, {
+        state: {
+          initialValues: {
+            projectId: campaign.projectId,
+            name: campaign.name,
+            brandName: campaign.brandName || (campaign as any).brand_name,
+            industry: campaign.industry,
+            primaryGoal: campaign.primaryGoal,
+            targetAudience: campaign.targetAudience,
+            brandVoice: campaign.brandVoice,
+            additionalInfo: (campaign as any).additionalInfo,
+          },
+        },
+      });
+    };
+
     return (
       <SidebarProvider>
         <div className="min-h-screen bg-[#0A0A0F] text-[#F1F1F3] flex">
@@ -601,15 +746,45 @@ const CampaignResultPage: React.FC = () => {
                       Error Details
                     </span>
                     <p className="text-sm text-red-300 font-mono break-words whitespace-pre-wrap">
-                      {campaign.aiError}
+                      {formatErrorText(campaign.aiError)}
                     </p>
                   </div>
                 )}
-                <div className="pt-4">
+                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    onClick={handleRetryCampaign}
+                    disabled={isRetryingCampaign}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#8083ff] text-white text-sm font-medium transition-all shadow-lg shadow-[#6366F1]/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
+                  >
+                    {isRetryingCampaign ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Retrying...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw size={16} />
+                        Retry Campaign
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleEditBrief}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-sm font-medium hover:bg-surface hover:border-[#6366F1]/50 text-gray-200 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
+                  >
+                    <PenTool size={15} />
+                    Edit Brief & Retry
+                  </button>
+
                   <button
                     onClick={() => navigate(`/projects/${campaign.projectId}`)}
-                    className="px-5 py-2.5 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-sm font-medium hover:bg-surface hover:border-[#6366F1]/50 transition-all cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#13131A] border border-[#2A2A3A] text-sm font-medium text-gray-300 hover:text-white hover:bg-[#1A1A24] hover:border-[#3A3A4E] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
                   >
+                    <FolderOpen size={15} className="text-[#8B8B9E]" />
                     Return to Project
                   </button>
                 </div>
@@ -773,6 +948,29 @@ const CampaignResultPage: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                  <div className="flex-shrink-0 flex items-start">
+                    <button
+                      onClick={() => setShowVariantModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all w-full sm:w-auto justify-center"
+                      style={{
+                        backgroundColor: '#1A1A24',
+                        color: '#c0c1ff',
+                        border: '1px solid #2A2A38',
+                        fontFamily: 'JetBrains Mono, monospace',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = '#2A2A38';
+                        (e.currentTarget as HTMLElement).style.borderColor = '#6366F180';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
+                        (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
+                      }}
+                    >
+                      <GitBranch size={16} />
+                      Create Variant
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -795,7 +993,10 @@ const CampaignResultPage: React.FC = () => {
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          if (tab.id === 'focus-group') setFocusGroupUpdatedViaMcp(false);
+                        }}
                         className="flex items-center gap-2 px-4 py-3 rounded-xl transition-all relative whitespace-nowrap border"
                         style={{
                           fontFamily: 'JetBrains Mono, monospace',
@@ -816,11 +1017,16 @@ const CampaignResultPage: React.FC = () => {
                       >
                         <Icon size={16} />
                         {tab.label}
-                        <span 
-                          className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
-                            isCompleted ? 'bg-[#4edea3] shadow-[0_0_8px_rgba(78,222,163,0.4)]' : 'bg-[#4A4A5E]'
-                          }`} 
-                        />
+                        {/* Pulsing notification dot when Focus Group updated via MCP while on another tab */}
+                        {tab.id === 'focus-group' && focusGroupUpdatedViaMcp && activeTab !== 'focus-group' ? (
+                          <span className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)] flex-shrink-0" />
+                        ) : (
+                          <span 
+                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
+                              isCompleted ? 'bg-[#4edea3] shadow-[0_0_8px_rgba(78,222,163,0.4)]' : 'bg-[#4A4A5E]'
+                            }`} 
+                          />
+                        )}
                       </button>
                     );
                   })}
@@ -1410,6 +1616,14 @@ const CampaignResultPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showVariantModal && campaign && (
+        <CreateVariantModal
+          campaign={{ id: campaign.id, name: campaign.name, projectId: campaign.projectId }}
+          onClose={() => setShowVariantModal(false)}
+          onCreated={handleVariantCreated}
+        />
+      )}
     </>
   );
 };

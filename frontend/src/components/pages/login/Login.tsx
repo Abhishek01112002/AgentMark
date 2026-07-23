@@ -81,7 +81,7 @@ const Login = () => {
     <>
       {loginStyles}
 
-      <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`min-h-screen md:h-screen flex flex-col md:flex-row bg-[#0A0A0F] font-body-md antialiased overflow-y-auto overflow-x-hidden md:overflow-hidden transition-opacity duration-500 ${flipped ? 'opacity-0' : 'opacity-100'}`}>
         {/* LEFT — Brand panel (desktop) */}
         <div className={`hidden md:flex md:w-1/2 border-r border-[#1C1C26] overflow-y-auto overflow-x-hidden ${mounted ? 'animate-slide-left' : 'opacity-0'}`}>
           <div className="relative flex flex-col justify-between min-h-full w-full p-6 sm:p-8 lg:p-12 xl:p-16 gap-8">

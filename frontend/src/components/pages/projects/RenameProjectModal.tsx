@@ -32,10 +32,8 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
         onClick={onClose}
       >
         <div
-          className="w-full max-w-md rounded-2xl p-6 modal-content"
+          className="w-full max-w-md rounded-xl p-6 modal-content bg-surface border border-border-base"
           style={{
-            backgroundColor: '#111118',
-            border: '1px solid #2A2A38',
             boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -57,6 +55,7 @@ const RenameProjectModal: React.FC<RenameProjectModalProps> = ({ currentName, on
             </div>
             {/* Close button — hover via Tailwind, no JS handlers */}
             <button
+              aria-label="Close"
               onClick={onClose}
               className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors text-[#8B8B9E] hover:bg-[#1A1A24] hover:text-[#F1F1F3]"
             >

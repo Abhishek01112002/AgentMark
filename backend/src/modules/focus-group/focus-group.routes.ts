@@ -1,7 +1,10 @@
-import { Router } from 'express';
-import { authMiddleware } from '../../middlewares/auth.middleware';
+import { Router, Response, NextFunction } from 'express';
+import { authMiddleware, AuthRequest } from '../../middlewares/auth.middleware';
 import axios from 'axios';
 import prisma from '../../db';
+import fs from 'fs';
+import path from 'path';
+import { getIO } from '../campaigns/campaign.controller';
 
 const router = Router();
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
@@ -19,12 +22,42 @@ const getHeaders = () => {
 // Protect all focus group simulation endpoints with authMiddleware
 router.use(authMiddleware);
 
+let activeSimulations = 0;
+const MAX_CONCURRENT_SIMULATIONS = 3;
+
 /**
  * POST /api/focus-group/simulate
  * Proxies the request to the Python AI service to execute the focus group critiques.
  */
-router.post('/simulate', async (req, res, next) => {
+router.post('/simulate', async (req: AuthRequest, res, next) => {
+  const campaignId = req.body.campaign_id;
+  if (!campaignId || typeof campaignId !== 'string') {
+    res.status(400).json({ error: 'campaign_id is required' });
+    return;
+  }
+
+  if (activeSimulations >= MAX_CONCURRENT_SIMULATIONS) {
+    res.status(429).json({ error: 'Server busy: Too many concurrent focus group simulations are running. Please retry in a few seconds.' });
+    return;
+  }
+
+  activeSimulations++;
   try {
+    // Secure Check: Campaign must exist and belong to the authenticated user
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
     const response = await axios.post(
       `${AI_SERVICE_URL}/focus-group/simulate`,
       req.body,
@@ -35,11 +68,9 @@ router.post('/simulate', async (req, res, next) => {
     );
 
     // Save the simulation report to Postgres in the campaign's aiOutputs column
-    const campaignId = req.body.campaign_id;
     const copyText = req.body.copy_text || '';
-    if (campaignId && copyText) {
+    if (copyText) {
       try {
-        const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
         if (campaign) {
           const currentOutputs = campaign.aiOutputs
             ? (typeof campaign.aiOutputs === 'string'
@@ -47,10 +78,13 @@ router.post('/simulate', async (req, res, next) => {
               : campaign.aiOutputs) as Record<string, any>
             : {};
           
+          // Normalize Unicode (NFC) and Unix newlines (\n) to ensure identical hash matching
+          const normalizedCopy = copyText.normalize('NFC').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
           // Compute simple hash
           let hashNum = 0;
-          for (let i = 0; i < copyText.length; i++) {
-            const chr = copyText.charCodeAt(i);
+          for (let i = 0; i < normalizedCopy.length; i++) {
+            const chr = normalizedCopy.charCodeAt(i);
             hashNum = ((hashNum << 5) - hashNum) + chr;
             hashNum |= 0;
           }
@@ -74,6 +108,24 @@ router.post('/simulate', async (req, res, next) => {
             data: { aiOutputs: updatedOutputs },
           });
           console.log(`[FocusGroupProxy] Successfully persisted focus group report under hash ${hashKey} to DB for campaign: ${campaignId}`);
+
+          // Emit real-time socket events so the frontend updates instantly
+          const io = getIO();
+          if (io) {
+            const eventPayload = {
+              campaignId,
+              report: response.data,
+              hashKey,
+              score: response.data?.overall_score ?? null,
+              timestamp: new Date().toISOString(),
+            };
+            io.to(`campaign:${campaignId}`).emit('focus_group_complete', eventPayload);
+            io.to(`campaign:${campaignId}`).emit('campaign_data_updated', {
+              campaignId,
+              updatedField: 'focus_group',
+              timestamp: new Date().toISOString(),
+            });
+          }
         }
       } catch (dbErr: any) {
         console.error('[FocusGroupProxy] Failed to save simulation report to DB:', dbErr.message);
@@ -92,6 +144,8 @@ router.post('/simulate', async (req, res, next) => {
     } else {
       next(err);
     }
+  } finally {
+    activeSimulations--;
   }
 });
 
@@ -99,8 +153,29 @@ router.post('/simulate', async (req, res, next) => {
  * POST /api/focus-group/interview
  * Proxies the custom question query to the Python AI service for deterministic panel responses.
  */
-router.post('/interview', async (req, res, next) => {
+router.post('/interview', async (req: AuthRequest, res, next) => {
   try {
+    const campaignId = req.body.campaign_id;
+    if (!campaignId || typeof campaignId !== 'string') {
+      res.status(400).json({ error: 'campaign_id is required' });
+      return;
+    }
+
+    // Secure Check: Campaign must exist and belong to the authenticated user
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { project: { select: { userId: true } } },
+    });
+
+    if (!campaign) {
+      res.status(404).json({ error: 'Campaign not found' });
+      return;
+    }
+    if (campaign.project.userId !== req.userId) {
+      res.status(403).json({ error: 'Access denied' });
+      return;
+    }
+
     const response = await axios.post(
       `${AI_SERVICE_URL}/focus-group/interview`,
       req.body,
@@ -111,11 +186,9 @@ router.post('/interview', async (req, res, next) => {
     );
 
     // Fix #8: Persist interview Q&A to DB under aiOutputs.focus_group_interviews[]
-    const campaignId = req.body.campaign_id;
     const question = req.body.question || '';
-    if (campaignId && question) {
+    if (question) {
       try {
-        const campaign = await prisma.campaign.findUnique({ where: { id: campaignId } });
         if (campaign) {
           const currentOutputs = campaign.aiOutputs
             ? (typeof campaign.aiOutputs === 'string'
@@ -156,6 +229,68 @@ router.post('/interview', async (req, res, next) => {
     } else {
       next(err);
     }
+  }
+});
+
+/**
+ * GET /api/focus-group/personas
+ * Returns unique focus group personas used in previous campaigns, or falls back
+ * to a high-quality default roster.
+ */
+router.get('/personas', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Attempt to extract simulated personas from recent completed campaigns in PostgreSQL
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        status: 'completed',
+        project: { userId: req.userId! },
+      },
+      take: 5,
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const uniquePersonas: Record<string, any> = {};
+
+    for (const c of campaigns) {
+      const outputs = c.aiOutputs as any;
+      if (outputs && outputs.focus_group_output && Array.isArray(outputs.focus_group_output.persona_critiques)) {
+        for (const crit of outputs.focus_group_output.persona_critiques) {
+          const id = crit.persona_id;
+          if (id && !uniquePersonas[id]) {
+            // Reconstruct a realistic profile matching schema/simulation.py specifications
+            const nameParts = id.split('-');
+            const age = parseInt(nameParts[1]) || 28;
+            const occupation = nameParts.slice(2).join(' ') || 'Professional';
+            uniquePersonas[id] = {
+              id,
+              name: nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1),
+              age,
+              occupation: occupation.charAt(0).toUpperCase() + occupation.slice(1),
+              description: crit.verdict || `Objection: ${crit.objection}`
+            };
+          }
+        }
+      }
+    }
+
+    let personasList = Object.values(uniquePersonas);
+
+    // Fallback to default high-quality consumer personas if no simulations have been run yet
+    if (personasList.length === 0) {
+      try {
+        const sharedJsonPath = path.resolve(process.cwd(), '../default_personas.json');
+        if (fs.existsSync(sharedJsonPath)) {
+          const rawData = fs.readFileSync(sharedJsonPath, 'utf-8');
+          personasList = JSON.parse(rawData);
+        }
+      } catch (err: any) {
+        console.error('[FocusGroupRoutes] Failed to read default_personas.json:', err.message);
+      }
+    }
+
+    res.json({ personas: personasList });
+  } catch (error: any) {
+    next(error);
   }
 });
 

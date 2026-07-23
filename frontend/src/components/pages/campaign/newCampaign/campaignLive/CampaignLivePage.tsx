@@ -12,9 +12,9 @@
  *   manager, research, strategy, copywriter, image_prompt, reviewer, publisher
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { CheckCircle, Loader2, XCircle, Trash } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../shared/topNav/TopNav';
@@ -59,6 +59,14 @@ interface AgentUpdatePayload {
   copy_revision_count?: number;
   image_revision_count?: number;
 }
+
+// Helper to capitalize error messages (e.g. "fetch failed" -> "Fetch failed")
+const formatErrorText = (msg: string | null | undefined): string => {
+  if (!msg) return '';
+  const trimmed = msg.trim();
+  if (!trimmed) return '';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
 
 // ── Initial agent pipeline definition ─────────────────────────────────────────
 
@@ -136,6 +144,7 @@ const CampaignLivePage: React.FC = () => {
     return !location.state?.initialActiveAgent;
   });
 
+  const decisionMadeRef = useRef(false);
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -150,6 +159,36 @@ const CampaignLivePage: React.FC = () => {
   const [failedError, setFailedError] = useState<string>('');
   const [socketAuthError, setSocketAuthError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
+  const [isRetryingInLive, setIsRetryingInLive] = useState(false);
+
+  const handleLiveRetry = async () => {
+    if (!campaignId) return;
+    setIsRetryingInLive(true);
+    try {
+      await api.post(`/campaigns/${campaignId}/retry`);
+      toast.success('Retrying campaign pipeline... Agents are running!', { icon: '⚡' });
+      setCampaignFailed(false);
+      setFailedError('');
+      setAgents(INITIAL_AGENTS.map((a) => a.key === 'manager' ? { ...a, status: 'running', description: RUNNING_DESCRIPTIONS.manager } : { ...a, status: 'pending' }));
+      checkCampaignStatus();
+    } catch (err: any) {
+      console.error('Failed to retry campaign from live view:', err);
+      toast.error(err.response?.data?.error || 'Failed to retry campaign.');
+    } finally {
+      setIsRetryingInLive(false);
+    }
+  };
+
+  const handleLiveEditBrief = () => {
+    const projectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId') || '';
+    navigate(`/campaign/new?projectId=${projectId}`, {
+      state: {
+        initialValues: campaignPreviewData || {
+          projectId,
+        },
+      },
+    });
+  };
 
   const handleCancelCampaign = async () => {
     const confirmCancel = window.confirm("Are you sure you want to cancel and delete this campaign pipeline?");
@@ -234,181 +273,181 @@ const CampaignLivePage: React.FC = () => {
   const socketRef = useRef<Socket | null>(null);
   const projectIdRef = useRef<string>('');
 
-  useEffect(() => {
+  const checkCampaignStatus = useCallback(async () => {
     if (!campaignId) return;
-
-    const checkCampaignStatus = async () => {
-      try {
-        const response = await api.get(`/campaigns/${campaignId}`);
-        const { campaign } = response.data;
-        if (campaign) {
-          projectIdRef.current = campaign.projectId;
+    try {
+      const response = await api.get(`/campaigns/${campaignId}`);
+      const { campaign } = response.data;
+      if (campaign) {
+        projectIdRef.current = campaign.projectId;
+        
+        if (campaign.status === 'completed') {
+          navigate(`/campaign/${campaignId}/result?projectId=${campaign.projectId}`);
+        } else if (campaign.status === 'failed') {
+          setCampaignFailed(true);
+          setFailedError(campaign.aiError || 'Campaign failed during processing.');
+          setShowHumanReview(false);
           
-          if (campaign.status === 'completed') {
-            navigate(`/campaign/${campaignId}/result?projectId=${campaign.projectId}`);
-          } else if (campaign.status === 'failed') {
-            setCampaignFailed(true);
-            setFailedError(campaign.aiError || 'Campaign failed during processing.');
-            setShowHumanReview(false);
-            
-            // Restore pipeline progress and mark active agent as failed
-            const outputs = campaign.aiOutputs 
-              ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs)
-              : {};
-            const completedAgents = outputs.completed_agents || [];
-            const activeAgentKey = outputs.active_agent || 'manager'; // Default to manager if none specified
+          const outputs = campaign.aiOutputs 
+            ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs)
+            : {};
+          const completedAgents = outputs.completed_agents || [];
+          const activeAgentKey = outputs.active_agent || 'manager';
 
-            setAgents((prev) =>
-              prev.map((a) => {
-                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
-                const activeIdx = pipelineKeys.indexOf(activeAgentKey);
-                const currentIdx = pipelineKeys.indexOf(a.key);
+          setAgents((prev) =>
+            prev.map((a) => {
+              const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+              const activeIdx = pipelineKeys.indexOf(activeAgentKey);
+              const currentIdx = pipelineKeys.indexOf(a.key);
 
-                if (a.key === activeAgentKey) {
-                  return {
-                    ...a,
-                    status: 'failed' as AgentStatus,
-                    description: campaign.aiError || 'Failed during processing',
-                  };
+              if (a.key === activeAgentKey) {
+                return {
+                  ...a,
+                  status: 'failed' as AgentStatus,
+                  description: campaign.aiError || 'Failed during processing',
+                };
+              }
+
+              if (completedAgents.includes(a.key) || (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx)) {
+                return {
+                  ...a,
+                  status: 'completed' as AgentStatus,
+                  description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                };
+              }
+
+              return {
+                ...a,
+                status: 'pending' as AgentStatus,
+                description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
+              };
+            })
+          );
+        } else if (campaign.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
+          setShowHumanReview(true);
+          setRevisionCounts({
+            research: campaign.researchRevisionCount || 0,
+            strategy: campaign.strategyRevisionCount || 0,
+            copywriter: campaign.copyRevisionCount || 0,
+            image_prompt: campaign.imageRevisionCount || 0,
+          });
+          if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
+          
+          if (campaign.reviewOutput) {
+            try {
+              const reviewData = JSON.parse(campaign.reviewOutput);
+              setAgentScores({
+                research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
+                strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
+                copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
+                image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
+              });
+
+              let lowestAgent = 'copywriter';
+              let lowestScore = 999;
+              const rawScores = {
+                research: reviewData.research_review?.score ?? null,
+                strategy: reviewData.strategy_review?.score ?? null,
+                copywriter: reviewData.copy_review?.score ?? null,
+                image_prompt: reviewData.image_review?.score ?? null,
+              };
+              Object.entries(rawScores).forEach(([agent, val]) => {
+                if (val !== null && val < lowestScore) {
+                  lowestScore = val;
+                  lowestAgent = agent;
                 }
+              });
+              setSelectedAgent(lowestAgent);
 
-                if (completedAgents.includes(a.key) || (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx)) {
-                  return {
-                    ...a,
-                    status: 'completed' as AgentStatus,
-                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
-                  };
-                }
+              const overallReview = reviewData.overall || {};
+              setReviewerNotes({
+                feedback: overallReview.summary || reviewData.copy_review?.feedback || '',
+                issues: [
+                  ...(reviewData.copy_review?.action_items || []),
+                  ...(reviewData.image_review?.action_items || []),
+                ].slice(0, 4),
+              });
+            } catch (e) {
+              console.error('Failed to parse reviewOutput for agent scores:', e);
+            }
+          }
+          setCampaignPreviewData(campaign);
+          setAgents((prev) =>
+            prev.map((a) => {
+              if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
+              if (a.key === 'publisher') return { ...a, status: 'pending', description: 'Awaiting human approval' };
+              return { ...a, status: 'completed' };
+            })
+          );
+        } else if (campaign.status === 'processing') {
+          const outputs = campaign.aiOutputs || {};
+          const completedAgents = outputs.completed_agents || [];
+          const activeAgentKey = outputs.active_agent || null;
 
+          setAgents((prev) =>
+            prev.map((a) => {
+              const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+              const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
+              const currentIdx = pipelineKeys.indexOf(a.key);
+
+              if (activeIdx !== -1 && currentIdx !== -1 && currentIdx > activeIdx) {
+                const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
                 return {
                   ...a,
                   status: 'pending' as AgentStatus,
-                  description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
+                  description: initialAgent?.description ?? 'Pending...',
+                  duration: undefined,
                 };
-              })
-            );
-          } else if (campaign.status === 'awaiting_human_approval') {
-            setShowHumanReview(true);
-            setRevisionCounts({
-              research: campaign.researchRevisionCount || 0,
-              strategy: campaign.strategyRevisionCount || 0,
-              copywriter: campaign.copyRevisionCount || 0,
-              image_prompt: campaign.imageRevisionCount || 0,
-            });
-            if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
-            
-            // Extract individual agent scores from reviewOutput
-            if (campaign.reviewOutput) {
-              try {
-                const reviewData = JSON.parse(campaign.reviewOutput);
-                setAgentScores({
-                  research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
-                  strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
-                  copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
-                  image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
-                });
-
-                // Find lowest scoring agent to pre-select by default
-                let lowestAgent = 'copywriter';
-                let lowestScore = 999;
-                const rawScores = {
-                  research: reviewData.research_review?.score ?? null,
-                  strategy: reviewData.strategy_review?.score ?? null,
-                  copywriter: reviewData.copy_review?.score ?? null,
-                  image_prompt: reviewData.image_review?.score ?? null,
-                };
-                Object.entries(rawScores).forEach(([agent, val]) => {
-                  if (val !== null && val < lowestScore) {
-                    lowestScore = val;
-                    lowestAgent = agent;
-                  }
-                });
-                setSelectedAgent(lowestAgent);
-
-                // Extract reviewer notes for the drawer
-                const overallReview = reviewData.overall || {};
-                setReviewerNotes({
-                  feedback: overallReview.summary || reviewData.copy_review?.feedback || '',
-                  issues: [
-                    ...(reviewData.copy_review?.action_items || []),
-                    ...(reviewData.image_review?.action_items || []),
-                  ].slice(0, 4),
-                });
-              } catch (e) {
-                console.error('Failed to parse reviewOutput for agent scores:', e);
               }
-            }
-            // Store full campaign data for draft preview
-            setCampaignPreviewData(campaign);
-            setAgents((prev) =>
-              prev.map((a) => {
-                if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
-                if (a.key === 'publisher') return { ...a, status: 'pending', description: 'Awaiting human approval' };
-                return { ...a, status: 'completed' };
-              })
-            );
-          } else if (campaign.status === 'processing') {
-            // Restore pipeline progress status from campaign.aiOutputs completed_agents/active_agent
-            const outputs = campaign.aiOutputs || {};
-            const completedAgents = outputs.completed_agents || [];
-            const activeAgentKey = outputs.active_agent || null;
 
-            setAgents((prev) =>
-              prev.map((a) => {
-                const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
-                const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
-                const currentIdx = pipelineKeys.indexOf(a.key);
+              if (completedAgents.includes(a.key)) {
+                return {
+                  ...a,
+                  status: 'completed',
+                  description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                };
+              }
 
-                // If downstream of the active agent, it must be pending
-                if (activeIdx !== -1 && currentIdx !== -1 && currentIdx > activeIdx) {
-                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
-                  return {
-                    ...a,
-                    status: 'pending' as AgentStatus,
-                    description: initialAgent?.description ?? 'Pending...',
-                    duration: undefined,
-                  };
-                }
+              if (a.key === activeAgentKey) {
+                return {
+                  ...a,
+                  status: 'running',
+                  description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
+                };
+              }
+              
+              if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
+                return {
+                  ...a,
+                  status: 'completed',
+                  description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                };
+              }
 
-                if (completedAgents.includes(a.key)) {
-                  return {
-                    ...a,
-                    status: 'completed',
-                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
-                  };
-                }
-
-                if (a.key === activeAgentKey) {
-                  return {
-                    ...a,
-                    status: 'running',
-                    description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
-                  };
-                }
-                
-                // If the agent is pending but is upstream of the active agent, mark as completed
-                if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
-                  return {
-                    ...a,
-                    status: 'completed',
-                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
-                  };
-                }
-
-                return a;
-              })
-            );
-          }
+              return a;
+            })
+          );
         }
-      } catch (error) {
-        console.error('Failed to fetch campaign status on mount:', error);
-      } finally {
-        setIsInitialLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch campaign status:', error);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, [campaignId, navigate]);
+
+  useEffect(() => {
+    if (!campaignId || showHumanReview || campaignFailed) return;
 
     checkCampaignStatus();
-  }, [campaignId, navigate]);
+
+    // Re-sync fallback: periodic safety-net polling every 6s while active
+    const interval = setInterval(() => {
+      checkCampaignStatus();
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [campaignId, checkCampaignStatus, showHumanReview, campaignFailed]);
 
   const progress = (agents.filter((a) => a.status === 'completed').length / agents.length) * 100;
   const activeAgent = agents.find((a) => a.status === 'running');
@@ -418,10 +457,7 @@ const CampaignLivePage: React.FC = () => {
   useEffect(() => {
     if (!campaignId) return;
 
-    // Port must match backend PORT in .env (5001).
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
-
-    // Pass JWT so the server can verify ownership before joining the room.
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {
@@ -442,6 +478,8 @@ const CampaignLivePage: React.FC = () => {
       setIsConnected(true);
       setSocketAuthError('');
       socket.emit('join_campaign', campaignId);
+      // Re-sync fallback: re-fetch latest DB status when socket connects/reconnects
+      void checkCampaignStatus();
     });
 
     socket.on('disconnect', () => {
@@ -655,7 +693,9 @@ const CampaignLivePage: React.FC = () => {
 
   const handleApprove = async () => {
     try {
+      decisionMadeRef.current = true;
       setShowHumanReview(false);
+      setIsMinimized(true);
       setAgents((prev) =>
         prev.map((a) =>
           a.key === 'publisher'
@@ -669,6 +709,7 @@ const CampaignLivePage: React.FC = () => {
       window.dispatchEvent(new Event('campaign_status_changed'));
       toast.success('Campaign approved! Resuming publisher...');
     } catch (error) {
+      decisionMadeRef.current = false;
       console.error('Failed to submit approval:', error);
       toast.error('Failed to submit approval decision');
     }
@@ -681,7 +722,9 @@ const CampaignLivePage: React.FC = () => {
     }
     
     try {
+      decisionMadeRef.current = true;
       setShowHumanReview(false);
+      setIsMinimized(true);
       
       // Determine which agents will re-run based on the selected agent
       const agentsToReRun: string[] = [selectedAgent];
@@ -916,10 +959,60 @@ const CampaignLivePage: React.FC = () => {
 
               {/* Error banner */}
               {campaignFailed && (
-                <div className="mb-6 p-4 rounded-lg border border-[#F43F5E]/30 bg-[#F43F5E]/10">
-                  <p className="text-sm text-[#F43F5E]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                    Campaign failed: {failedError}
-                  </p>
+                <div className="mb-6 p-6 rounded-2xl border border-red-500/20 bg-red-500/5 space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-red-400 font-semibold text-base">
+                        <XCircle size={20} className="text-red-500" />
+                        Campaign Generation Failed
+                      </div>
+                      <p className="text-xs text-gray-400 font-mono">
+                        {formatErrorText(failedError) || 'An error occurred during AI agent execution.'}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={handleLiveRetry}
+                        disabled={isRetryingInLive}
+                        className="px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#8083ff] text-white text-xs font-medium transition-all shadow-md shadow-[#6366F1]/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        style={{ fontFamily: 'Sora, sans-serif' }}
+                      >
+                        {isRetryingInLive ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Retrying...
+                          </>
+                        ) : (
+                          <>
+                            <RotateCcw size={14} />
+                            Retry Campaign
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={handleLiveEditBrief}
+                        className="px-4 py-2 rounded-xl bg-[#1A1A24] border border-[#2A2A38] text-xs font-medium hover:bg-surface hover:border-[#6366F1]/50 text-gray-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                        style={{ fontFamily: 'Sora, sans-serif' }}
+                      >
+                        <PenTool size={14} />
+                        Edit Brief & Retry
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const projectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
+                          if (projectId) navigate(`/projects/${projectId}`);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-[#13131A] border border-[#2A2A3A] text-xs font-medium text-gray-300 hover:text-white hover:bg-[#1A1A24] hover:border-[#3A3A4E] transition-all flex items-center gap-1.5 cursor-pointer"
+                        style={{ fontFamily: 'Sora, sans-serif' }}
+                      >
+                        <FolderOpen size={14} className="text-[#8B8B9E]" />
+                        Return to Project
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1058,7 +1151,7 @@ const CampaignLivePage: React.FC = () => {
 
                       {campaignFailed && (
                         <div style={{ color: '#F43F5E' }}>
-                          &#x2717; Campaign failed: {failedError}
+                          &#x2717; Campaign failed: {formatErrorText(failedError)}
                         </div>
                       )}
                     </div>
@@ -1112,7 +1205,7 @@ const CampaignLivePage: React.FC = () => {
             }}
           >
             <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#6EE7B7] animate-ping' : 'bg-[#A5B6FC] animate-pulse'}`} />
-            <span className="text-xs font-medium" style={{ fontFamily: 'Inter, sans-serif', color: isMinimized ? '#6EE7B7' : '#A5B6FC' }}>
+            <span className="text-xs font-medium" style={{ fontFamily: 'Sora, sans-serif', color: isMinimized ? '#6EE7B7' : '#A5B6FC' }}>
               {isMinimized 
                 ? 'Review Pending — Click to Expand' 
                 : 'Human Review Required — Click outside to minimize & inspect page'}
@@ -1135,13 +1228,13 @@ const CampaignLivePage: React.FC = () => {
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ background: '#6EE7B7', boxShadow: '0 0 6px rgba(110,231,183,0.5)' }} />
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Human-in-the-Loop</p>
-                <h2 className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#EDEDF5' }}>Inspector Panel</h2>
+                <p className="text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Human-in-the-Loop</p>
+                <h2 className="text-sm font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#EDEDF5' }}>Inspector Panel</h2>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {qualityScore !== null && (
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', background: qualityScore >= 7 ? 'rgba(110,231,183,0.1)' : 'rgba(252,165,165,0.1)', color: qualityScore >= 7 ? '#6EE7B7' : '#FCA5A5', border: `1px solid ${qualityScore >= 7 ? 'rgba(110,231,183,0.15)' : 'rgba(252,165,165,0.15)'}` }}>
+                <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold" style={{ fontFamily: 'Sora, sans-serif', background: qualityScore >= 7 ? 'rgba(110,231,183,0.1)' : 'rgba(252,165,165,0.1)', color: qualityScore >= 7 ? '#6EE7B7' : '#FCA5A5', border: `1px solid ${qualityScore >= 7 ? 'rgba(110,231,183,0.15)' : 'rgba(252,165,165,0.15)'}` }}>
                   {qualityScore.toFixed(1)}/10
                 </span>
               )}
@@ -1167,7 +1260,7 @@ const CampaignLivePage: React.FC = () => {
                 onClick={() => setDrawerTab(key)}
                 className="relative flex items-center gap-1.5 px-3.5 py-2.5 text-[11px] font-medium transition-all duration-200 rounded-lg"
                 style={{
-                  fontFamily: 'Inter, sans-serif',
+                  fontFamily: 'Sora, sans-serif',
                   color: drawerTab === key ? '#EDEDF5' : '#5A5A6E',
                   background: drawerTab === key ? 'rgba(192,193,255,0.06)' : 'transparent',
                 }}
@@ -1207,15 +1300,15 @@ const CampaignLivePage: React.FC = () => {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.02em', color: '#EDEDF5' }}>
+                      <span className="text-xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em', color: '#EDEDF5' }}>
                         {qualityScore !== null ? qualityScore.toFixed(1) : '—'}
                       </span>
                       <span className="text-[8px] font-medium" style={{ color: '#5A5A6E' }}>/10</span>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Overall Quality</p>
-                    <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: qualityScore !== null && qualityScore >= 8.5 ? '#6EE7B7' : qualityScore !== null && qualityScore >= 7 ? '#FCD34D' : '#8B8B9E' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Overall Quality</p>
+                    <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: qualityScore !== null && qualityScore >= 8.5 ? '#6EE7B7' : qualityScore !== null && qualityScore >= 7 ? '#FCD34D' : '#8B8B9E' }}>
                       {qualityScore !== null && qualityScore >= 8.5
                         ? 'Excellent — content meets all quality benchmarks.'
                         : qualityScore !== null && qualityScore >= 7
@@ -1230,7 +1323,7 @@ const CampaignLivePage: React.FC = () => {
                 {/* Per-Agent Score Bars */}
                 <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Agent Quality Breakdown</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Agent Quality Breakdown</p>
                   </div>
                   <div className="p-4 space-y-4">
                     {([
@@ -1247,9 +1340,9 @@ const CampaignLivePage: React.FC = () => {
                           <div className="flex items-center justify-between mb-1.5">
                             <div className="flex items-center gap-2">
                               <span className="material-symbols-outlined text-[13px]" style={{ color }}>{icon}</span>
-                              <span className="text-[11px] font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{label}</span>
+                              <span className="text-[11px] font-medium" style={{ fontFamily: 'Sora, sans-serif', color: '#9B9BAF' }}>{label}</span>
                             </div>
-                            <span className="text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color }}>
+                            <span className="text-[11px] font-semibold" style={{ fontFamily: 'Sora, sans-serif', color }}>
                               {score !== null ? `${score.toFixed(1)}/10` : '—'}
                             </span>
                           </div>
@@ -1269,24 +1362,24 @@ const CampaignLivePage: React.FC = () => {
                 {reviewerNotes && (
                   <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>AI Reviewer Summary</p>
+                      <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>AI Reviewer Summary</p>
                     </div>
                     <div className="p-4 space-y-3">
                       {reviewerNotes.feedback && (
-                        <p className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{reviewerNotes.feedback}</p>
+                        <p className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#9B9BAF' }}>{reviewerNotes.feedback}</p>
                       )}
                       {reviewerNotes.issues.length > 0 && (
                         <ul className="space-y-2">
                           {reviewerNotes.issues.map((issue, i) => (
                             <li key={i} className="flex items-start gap-2">
                               <span className="w-1 h-1 rounded-full mt-2 flex-shrink-0" style={{ background: '#FCA5A5' }} />
-                              <span className="text-xs leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{issue}</span>
+                              <span className="text-xs leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>{issue}</span>
                             </li>
                           ))}
                         </ul>
                       )}
                       {!reviewerNotes.feedback && reviewerNotes.issues.length === 0 && (
-                        <p className="text-xs" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>No specific notes from the reviewer.</p>
+                        <p className="text-xs" style={{ color: '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>No specific notes from the reviewer.</p>
                       )}
                     </div>
                   </div>
@@ -1295,7 +1388,7 @@ const CampaignLivePage: React.FC = () => {
                 {/* Revision counter pills */}
                 <div className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)' }}>
                   <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Revision Budget Used</p>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Revision Budget Used</p>
                   </div>
                   <div className="p-4 grid grid-cols-2 gap-2">
                     {Object.entries(revisionCounts).map(([key, count]) => {
@@ -1305,7 +1398,7 @@ const CampaignLivePage: React.FC = () => {
                       const dotColor = isMax ? '#FCA5A5' : count === MAX - 1 ? '#FCD34D' : '#6EE7B7';
                       return (
                         <div key={key} className="flex items-center justify-between px-3 py-2.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                          <span className="text-[11px] font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#9B9BAF' }}>{label}</span>
+                          <span className="text-[11px] font-medium" style={{ fontFamily: 'Sora, sans-serif', color: '#9B9BAF' }}>{label}</span>
                           <span className="flex items-center gap-1">
                             {[0,1,2].map(i => (
                               <span key={i} className="w-[6px] h-[6px] rounded-full" style={{ background: i < count ? dotColor : 'rgba(255,255,255,0.06)' }} />
@@ -1320,7 +1413,7 @@ const CampaignLivePage: React.FC = () => {
                 <button
                   onClick={() => setDrawerTab('inspect')}
                   className="w-full py-3 min-h-[44px] rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
-                  style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
+                  style={{ fontFamily: 'Sora, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                 >
                   <span className="material-symbols-outlined text-[15px]">article</span>
                   Review Full Drafts
@@ -1332,7 +1425,7 @@ const CampaignLivePage: React.FC = () => {
             {/* TAB 2 — Inspect Drafts */}
             {drawerTab === 'inspect' && (
               <div className="p-5 space-y-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Generated Campaign Artifacts</p>
+                <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Generated Campaign Artifacts</p>
 
                 {parsedPreviewOutputs ? (() => {
                   const { copyData, strategyData, imageData, managerData } = parsedPreviewOutputs;
@@ -1346,16 +1439,16 @@ const CampaignLivePage: React.FC = () => {
                         <div className="space-y-2">
                           {strategyData.positioning && (
                             <div>
-                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Positioning</p>
-                              <p className="text-xs leading-relaxed" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{strategyData.positioning}</p>
+                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>Positioning</p>
+                              <p className="text-xs leading-relaxed" style={{ color: '#9B9BAF', fontFamily: 'Sora, sans-serif' }}>{strategyData.positioning}</p>
                             </div>
                           )}
                           {strategyData.key_messages && strategyData.key_messages.length > 0 && (
                             <div>
-                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Key Messages</p>
+                              <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1" style={{ color: '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>Key Messages</p>
                               <ul className="space-y-1">
                                 {strategyData.key_messages.slice(0, 3).map((msg: string, i: number) => (
-                                  <li key={i} className="text-xs flex items-start gap-2" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>
+                                  <li key={i} className="text-xs flex items-start gap-2" style={{ color: '#9B9BAF', fontFamily: 'Sora, sans-serif' }}>
                                     <span className="text-[#A5B6FC] flex-shrink-0 mt-0.5">→</span>{msg}
                                   </li>
                                 ))}
@@ -1395,11 +1488,11 @@ const CampaignLivePage: React.FC = () => {
                             if (!hasCopy) {
                               return (
                                 <div key={ch} className="p-3 rounded-lg" style={{ border: '1px solid rgba(252,165,165,0.15)', background: 'rgba(252,165,165,0.04)' }}>
-                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#FCA5A5', fontFamily: 'Inter, sans-serif' }}>
+                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#FCA5A5', fontFamily: 'Sora, sans-serif' }}>
                                     <ChannelIcon channel={ch} size={10} />
                                     <span>{ch.replace('_', ' ')}</span>
                                   </p>
-                                  <p className="text-xs" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                                  <p className="text-xs" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
                                     Copywriter agent did not generate content for this channel.
                                   </p>
                                 </div>
@@ -1408,12 +1501,12 @@ const CampaignLivePage: React.FC = () => {
                             
                             return (
                                 <div key={ch} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#6EE7B7', fontFamily: 'Inter, sans-serif' }}>
+                                  <p className="text-[9px] font-medium uppercase tracking-[0.08em] mb-1.5 flex items-center gap-1.5" style={{ color: '#6EE7B7', fontFamily: 'Sora, sans-serif' }}>
                                     <ChannelIcon channel={ch} size={10} />
                                     <span>{ch.replace('_', ' ')}</span>
                                   </p>
-                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#EDEDF5', fontFamily: 'Inter, sans-serif' }}>{headline}</p>}
-                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
+                                  {headline && <p className="text-xs font-semibold mb-1" style={{ color: '#EDEDF5', fontFamily: 'Sora, sans-serif' }}>{headline}</p>}
+                                  {body && <p className="text-[11px] leading-relaxed line-clamp-3" style={{ color: '#9B9BAF', fontFamily: 'Sora, sans-serif' }}>{typeof body === 'string' ? body : JSON.stringify(body).slice(0, 200)}</p>}
                                 </div>
                             );
                           })}
@@ -1431,14 +1524,14 @@ const CampaignLivePage: React.FC = () => {
                           {imageData.image_prompts.map((p: any, i: number) => (
                             <div key={i} className="p-3 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                               <div className="flex items-center justify-between mb-1.5">
-                                <p className="text-[9px] font-medium uppercase tracking-[0.08em]" style={{ color: '#FCD34D', fontFamily: 'Inter, sans-serif' }}>
+                                <p className="text-[9px] font-medium uppercase tracking-[0.08em]" style={{ color: '#FCD34D', fontFamily: 'Sora, sans-serif' }}>
                                   {p.deliverable_name || `Prompt ${i + 1}`}
                                 </p>
-                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: 'rgba(252,211,77,0.08)', color: '#FCD34D', fontFamily: 'Inter, sans-serif' }}>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded font-medium" style={{ background: 'rgba(252,211,77,0.08)', color: '#FCD34D', fontFamily: 'Sora, sans-serif' }}>
                                   {p.aspect_ratio || '1:1'}
                                 </span>
                               </div>
-                              <p className="text-[11px] leading-relaxed line-clamp-4" style={{ color: '#9B9BAF', fontFamily: 'Inter, sans-serif' }}>{p.prompt}</p>
+                              <p className="text-[11px] leading-relaxed line-clamp-4" style={{ color: '#9B9BAF', fontFamily: 'Sora, sans-serif' }}>{p.prompt}</p>
                             </div>
                           ))}
                         </div>
@@ -1450,7 +1543,7 @@ const CampaignLivePage: React.FC = () => {
                     return (
                       <div className="flex flex-col items-center justify-center py-16 text-center">
                         <span className="material-symbols-outlined text-[36px] mb-3" style={{ color: '#3A3A4E' }}>article</span>
-                        <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Campaign drafts are not yet available.</p>
+                        <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>Campaign drafts are not yet available.</p>
                       </div>
                     );
                   }
@@ -1461,7 +1554,7 @@ const CampaignLivePage: React.FC = () => {
                         <div key={label} className="rounded-xl" style={{ border: '1px solid rgba(255,255,255,0.04)', background: '#0c0c14' }}>
                           <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                             <span className="material-symbols-outlined text-[15px]" style={{ color }}>{icon}</span>
-                            <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Inter, sans-serif', color }}>{label}</p>
+                            <p className="text-[10px] font-medium uppercase tracking-[0.08em]" style={{ fontFamily: 'Sora, sans-serif', color }}>{label}</p>
                           </div>
                           <div className="p-4">{content}</div>
                         </div>
@@ -1470,7 +1563,7 @@ const CampaignLivePage: React.FC = () => {
                       <button
                         onClick={() => navigate(`/campaign/${campaignId}/result`)}
                         className="w-full py-3 min-h-[44px] rounded-xl text-xs font-medium flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-110"
-                        style={{ fontFamily: 'Inter, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
+                        style={{ fontFamily: 'Sora, sans-serif', background: 'rgba(192,193,255,0.06)', color: '#A5A6F0', border: '1px solid rgba(192,193,255,0.1)' }}
                       >
                         <span className="material-symbols-outlined text-[15px]">open_in_new</span>
                         Open Full Results Page
@@ -1480,7 +1573,7 @@ const CampaignLivePage: React.FC = () => {
                 })() : (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <span className="material-symbols-outlined text-[36px] mb-3" style={{ color: '#3A3A4E' }}>hourglass_empty</span>
-                    <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>Loading campaign data...</p>
+                    <p className="text-sm" style={{ color: '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>Loading campaign data...</p>
                   </div>
                 )}
               </div>
@@ -1492,7 +1585,7 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Agent Selector */}
                 <div>
-                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2.5" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Select Agent to Revise</label>
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2.5" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Select Agent to Revise</label>
                   <div className="grid grid-cols-2 gap-2">
                     {([
                       { key: 'research', label: 'Research', icon: 'search', downstream: 'Re-runs Strategy → Copy → Image → Reviewer' },
@@ -1518,12 +1611,12 @@ const CampaignLivePage: React.FC = () => {
                           }}
                         >
                           <span className="material-symbols-outlined text-[16px] mb-2" style={{ color: isSelected ? '#A5A6F0' : '#5A5A6E' }}>{icon}</span>
-                          <span className="text-[11px] font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: isSelected ? '#EDEDF5' : '#9B9BAF' }}>{label}</span>
+                          <span className="text-[11px] font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: isSelected ? '#EDEDF5' : '#9B9BAF' }}>{label}</span>
                           <div className="flex items-center gap-1.5 mt-2">
                             {[0,1,2].map(i => (
                               <span key={i} className="w-[5px] h-[5px] rounded-full" style={{ background: i < count ? '#FCA5A5' : 'rgba(255,255,255,0.06)' }} />
                             ))}
-                            <span className="text-[9px] ml-0.5 font-medium" style={{ color: isMax ? '#FCA5A5' : '#5A5A6E', fontFamily: 'Inter, sans-serif' }}>{count}/3</span>
+                            <span className="text-[9px] ml-0.5 font-medium" style={{ color: isMax ? '#FCA5A5' : '#5A5A6E', fontFamily: 'Sora, sans-serif' }}>{count}/3</span>
                           </div>
                         </button>
                       );
@@ -1534,11 +1627,11 @@ const CampaignLivePage: React.FC = () => {
                 {/* Downstream Impact */}
                 {selectedAgent && (
                   <div className="p-3.5 rounded-xl" style={{ background: 'rgba(165,182,252,0.04)', border: '1px solid rgba(165,182,252,0.1)' }}>
-                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#A5B6FC' }}>
+                    <p className="text-[10px] font-medium uppercase tracking-[0.08em] mb-1" style={{ fontFamily: 'Sora, sans-serif', color: '#A5B6FC' }}>
                       <span className="material-symbols-outlined text-[12px] align-middle mr-1">bolt</span>
                       Downstream Impact
                     </p>
-                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                    <p className="text-[11px] leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
                       {selectedAgent === 'research' && 'Revising Research will cascade to Strategy → Copywriter → Image Prompt → Reviewer. All downstream agents will re-run.'}
                       {selectedAgent === 'strategy' && 'Revising Strategy will cascade to Copywriter → Image Prompt → Reviewer.'}
                       {selectedAgent === 'copywriter' && 'Revising Copywriter will cascade to Image Prompt → Reviewer.'}
@@ -1549,7 +1642,7 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Feedback Textarea */}
                 <div>
-                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>Revision Instructions</label>
+                  <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Revision Instructions</label>
                   <textarea
                     value={revisionFeedback}
                     onChange={(e) => setRevisionFeedback(e.target.value)}
@@ -1560,12 +1653,12 @@ const CampaignLivePage: React.FC = () => {
                       background: 'rgba(255,255,255,0.02)',
                       border: '1px solid rgba(255,255,255,0.06)',
                       color: '#EDEDF5',
-                      fontFamily: 'Inter, sans-serif',
+                      fontFamily: 'Sora, sans-serif',
                     }}
                     onFocus={(e) => { e.target.style.border = '1px solid rgba(165,182,252,0.3)'; e.target.style.boxShadow = '0 0 0 3px rgba(165,182,252,0.06)'; }}
                     onBlur={(e) => { e.target.style.border = '1px solid rgba(255,255,255,0.06)'; e.target.style.boxShadow = 'none'; }}
                   />
-                  <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>
+                  <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>
                     Tip: Be specific — mention what's wrong and what tone/direction you prefer.
                   </p>
                 </div>
@@ -1575,7 +1668,7 @@ const CampaignLivePage: React.FC = () => {
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
                   className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
                   style={{
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'Sora, sans-serif',
                     background: '#DC2626',
                     color: '#FFFFFF',
                     border: 'none',
@@ -1624,7 +1717,7 @@ const CampaignLivePage: React.FC = () => {
                 onClick={handleApprove}
                 className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98]"
                 style={{
-                fontFamily: 'Inter, sans-serif',
+                fontFamily: 'Sora, sans-serif',
                 background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 100%)',
                 color: '#0A0A0F',
                 boxShadow: '0 4px 24px rgba(110,231,183,0.25)',
@@ -1638,7 +1731,7 @@ const CampaignLivePage: React.FC = () => {
               <span className="material-symbols-outlined text-[19px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Approve &amp; Publish Campaign
             </button>
-            <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Inter, sans-serif', color: '#5A5A6E' }}>
+            <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>
               This will trigger the Publisher Agent to finalize all deliverables.
             </p>
           </div>

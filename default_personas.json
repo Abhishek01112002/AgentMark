@@ -1,0 +1,37 @@
+[
+  {
+    "id": "arjun-24-software-developer",
+    "name": "Arjun",
+    "age": 24,
+    "occupation": "Software Developer",
+    "description": "Tech-savvy early adopter concerned about device specs, low latency, and build quality. Avoids marketing fluff."
+  },
+  {
+    "id": "priya-29-marketing-manager",
+    "name": "Priya",
+    "age": 29,
+    "occupation": "Marketing Manager",
+    "description": "Professional consumer focused on premium design, aesthetics, battery life, and high-quality call clarity for meetings."
+  },
+  {
+    "id": "vikram-32-fitness-trainer",
+    "name": "Vikram",
+    "age": 32,
+    "occupation": "Fitness Trainer",
+    "description": "Active commuter focused on secure-fit ergonomics, IPX sweat-proof durability, and punchy high-energy bass output."
+  },
+  {
+    "id": "sneha-22-graduate-student",
+    "name": "Sneha",
+    "age": 22,
+    "occupation": "Graduate Student",
+    "description": "Value-oriented younger buyer looking for budget-friendly alternatives with ANC capability for study focus."
+  },
+  {
+    "id": "rohan-38-accountant",
+    "name": "Rohan",
+    "age": 38,
+    "occupation": "Accountant",
+    "description": "Analytical B2B buyer prioritizing long-term hardware reliability, product warranty, and post-sales customer support."
+  }
+]

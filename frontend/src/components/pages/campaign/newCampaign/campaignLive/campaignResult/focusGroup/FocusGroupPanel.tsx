@@ -466,12 +466,11 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
   return (
     <div
-      className="fgp-fadeInUp"
+      className="fgp-fadeInUp p-4 sm:p-5"
       style={{
         backgroundColor: 'rgba(23, 23, 37, 0.7)',
         border: '1px solid rgba(255, 255, 255, 0.06)',
         borderRadius: 16,
-        padding: 20,
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
@@ -489,52 +488,54 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
       }}
     >
       {/* Profile Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            background: avatarGradient,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#ffffff',
-            fontWeight: 700,
-            fontSize: 15,
-            flexShrink: 0,
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-          }}
-        >
-          {initials}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minWidth: 0 }}>
-          <span
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
             style={{
-              fontFamily: "'Sora', sans-serif",
-              fontSize: 14,
-              fontWeight: 600,
-              color: COLORS.textPrimary,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: avatarGradient,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffffff',
+              fontWeight: 700,
+              fontSize: 15,
+              flexShrink: 0,
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
             }}
           >
-            {displayName}
-          </span>
-          <span
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 11,
-              color: COLORS.textMuted,
-            }}
-          >
-            Virtual Persona
-          </span>
+            {initials}
+          </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span
+              style={{
+                fontFamily: "'Sora', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                color: COLORS.textPrimary,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {displayName}
+            </span>
+            <span
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 11,
+                color: COLORS.textMuted,
+              }}
+            >
+              Virtual Persona
+            </span>
+          </div>
         </div>
         
         {/* Click Intent & Channel Origin badges */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-wrap">
           <span
             style={{
               fontSize: 11,
@@ -1080,12 +1081,11 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error }) => (
         { title: "Predict Click Rates", desc: "Estimate click decisions and audience resonance ratings across key buyer demographics." },
         { title: "Optimize Conversions", desc: "Verify copy revisions in real-time by directly interviewing the simulated consumer panel." }
       ].map((item, idx) => (
-        <div key={idx} style={{
+        <div key={idx} className="w-full sm:w-[170px] flex-grow sm:flex-grow-0" style={{
           backgroundColor: COLORS.bg3,
           border: `1px solid ${COLORS.border}`,
           borderRadius: 12,
           padding: '12px 16px',
-          width: 170,
           textAlign: 'left',
           display: 'flex',
           flexDirection: 'column',
@@ -1216,11 +1216,7 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
 
             {/* Split Content: Issue vs. proposed fix */}
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: 16,
-              }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
             >
               {/* Friction Section */}
               <div
@@ -1319,12 +1315,12 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
 
   return (
     <div
+      className="p-4 sm:p-6"
       style={{
         backgroundColor: COLORS.bg,
         fontFamily: "'Sora', sans-serif",
         color: COLORS.textPrimary,
         minHeight: '100%',
-        padding: 24,
         display: 'flex',
         flexDirection: 'column',
         gap: 24,
@@ -1336,11 +1332,11 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
 
       {/* ── Section 1: Header ── */}
       <div
+        className="p-4 sm:p-6"
         style={{
           backgroundColor: COLORS.bg4,
           border: `1px solid ${COLORS.border}`,
           borderRadius: 16,
-          padding: '20px 24px',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
@@ -1387,11 +1383,11 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
       {/* ── Section 1.5: Onboarding Guide (Show only when report is loaded) ── */}
       {report && !isLoading && (
         <div
+          className="p-4 sm:p-6"
           style={{
             backgroundColor: COLORS.bg4,
             border: `1px solid ${COLORS.border}`,
             borderRadius: 16,
-            padding: '18px 24px',
             fontSize: 13,
             color: COLORS.textMuted,
             lineHeight: 1.6,
@@ -1457,12 +1453,7 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
         <>
           {/* ── Metric Summary Badges ── */}
           <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 16,
-              marginBottom: 8
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2"
           >
             {/* Resonance Score Card */}
             <div
@@ -1591,9 +1582,9 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
                 Persona Panel
               </h3>
               
-              <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'stretch' }}>
+              <div className="flex flex-col md:flex-row gap-6 items-stretch">
                 {/* Left side: Persona list stack */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: 280, flexShrink: 0 }}>
+                <div className="flex flex-col gap-2.5 w-full md:w-[280px] shrink-0">
                   {report.persona_critiques.map((critique, idx) => {
                     const isActive = idx === selectedPersonaIdx;
                     // Extract display name
@@ -1679,7 +1670,7 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
                 </div>
 
                 {/* Right side: Detailed Persona Critique View */}
-                <div style={{ flex: 1, minWidth: 300 }}>
+                <div className="flex-1 min-w-0 w-full">
                   <PersonaCard
                     critique={report.persona_critiques[selectedPersonaIdx]}
                     index={selectedPersonaIdx}

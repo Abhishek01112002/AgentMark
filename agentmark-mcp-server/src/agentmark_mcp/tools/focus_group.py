@@ -1,87 +1,222 @@
+"""
+focus_group.py — run_focus_group Tool Implementation
+
+Simulates how the campaign's target audience would react to the generated copy
+by proxying a request to POST /api/focus-group/simulate on the Express backend,
+which in turn calls the Python AI service.
+
+Auto-extraction flow (when copy_text is not supplied):
+  1. Fetch the campaign via GET /api/campaigns/:id  (unwrapped by get_campaign())
+  2. Parse aiOutputs.copy_output.copies to build a structured copy string
+  3. Build campaign_context from campaign metadata for persona calibration
+  4. POST to /api/focus-group/simulate with extracted copy + context
+  5. Format the FocusGroupReport into Markdown via fg_formatter
+
+The backend proxy has a 90-second timeout to the AI service (focus-group.routes.ts).
+Progress is emitted via on_progress callback to give the host client a heartbeat
+during that wait window.
+"""
+
+import json
 import logging
-from typing import Dict, Any, Optional
+import re
+from typing import Any, Callable, Dict, Optional
+import unicodedata
+
 from ..client import AgentMarkClient
 from ..formatters.fg_formatter import format_focus_group_report
 
 logger = logging.getLogger("agentmark-mcp-server")
 
+
 async def run_focus_group_impl(
     client: AgentMarkClient,
     campaign_id: str,
     copy_text: Optional[str] = None,
-    negativity_bias: float = 0.3
+    negativity_bias: float = 0.3,
+    on_progress: Optional[Callable[[str], None]] = None,
 ) -> str:
     """
-    Asynchronous implementation for synthetic focus group simulation.
-    If copy_text is not provided, it fetches the campaign details from the backend,
-    auto-extracts generated copy channels, and constructs the simulation context.
-    """
-    # 1. Fetch campaign details if copy_text or context is missing
-    logger.info(f"Retrieving details for campaign {campaign_id}")
-    campaign_details = await client.get(f"/api/campaigns/{campaign_id}")
-    
-    brand_name = campaign_details.get("brandName") or campaign_details.get("brand_name") or "Unnamed Brand"
-    industry = campaign_details.get("industry") or "Unknown"
-    primary_goal = campaign_details.get("primaryGoal") or "Unknown"
-    target_audience = campaign_details.get("targetAudience") or "Unknown"
+    Execute a synthetic focus group simulation for the given campaign.
 
-    campaign_context = {
+    Args:
+        client:          Shared AgentMarkClient instance from the server lifespan.
+        campaign_id:     UUID of the campaign to evaluate.
+        copy_text:       Optional explicit copy text to test. When omitted, the
+                         function auto-extracts all channel copy from the campaign's
+                         aiOutputs and concatenates them into a structured string.
+        negativity_bias: Score weighting toward the worst persona score.
+                         0.0 = pure average. 1.0 = pure minimum. Default 0.3.
+        on_progress:     Optional callback invoked with status strings during the
+                         wait. Prepares for future FastMCP streaming support.
+    """
+    # ── 1. Fetch campaign details ─────────────────────────────────────────────
+    logger.info("Fetching campaign details for focus group | campaign=%s", campaign_id)
+    campaign = await client.get_campaign(campaign_id)
+
+    brand_name = campaign.get("brandName") or campaign.get("brand_name") or "Unnamed Brand"
+    industry = campaign.get("industry") or "Unknown"
+    primary_goal = campaign.get("primaryGoal") or "Unknown"
+    target_audience = campaign.get("targetAudience") or "Unknown"
+
+    campaign_context: Dict[str, Any] = {
         "brand_name": brand_name,
         "brand": brand_name,
         "industry": industry,
         "goal": primary_goal,
         "target_audience": target_audience,
-        "audience": target_audience
+        "audience": target_audience,
     }
 
-    # Extract copy if not explicitly provided
+    # ── 2. Auto-extract copy if not explicitly provided ───────────────────────
     if not copy_text:
-        ai_outputs = campaign_details.get("aiOutputs") or {}
+        logger.info(
+            "No copy_text provided — extracting from campaign aiOutputs | campaign=%s",
+            campaign_id,
+        )
+        ai_outputs: Any = campaign.get("aiOutputs") or {}
         if isinstance(ai_outputs, str):
-            import json
             try:
                 ai_outputs = json.loads(ai_outputs)
-            except Exception as e:
-                logger.error(f"Failed to parse stringified aiOutputs: {str(e)}")
+            except (json.JSONDecodeError, ValueError) as exc:
+                logger.error(
+                    "Failed to parse stringified aiOutputs for campaign %s: %s",
+                    campaign_id,
+                    exc,
+                )
                 ai_outputs = {}
-                
-        copywriter = ai_outputs.get("copywriter") or {}
-        copies = copywriter.get("copies") or {}
-        
-        extracted_copy_parts = []
-        for channel, copy_obj in copies.items():
-            if not copy_obj:
-                continue
-            headline = copy_obj.get("headline", "")
-            body = copy_obj.get("body", "")
-            subject = copy_obj.get("subject", "")
-            
-            part = f"--- {channel.upper()} CHANNEL ---\n"
-            if subject:
-                part += f"Subject: {subject}\n"
-            if headline:
-                part += f"Headline: {headline}\n"
-            if body:
-                part += f"Body:\n{body}\n"
-            extracted_copy_parts.append(part)
-            
-        if not extracted_copy_parts:
-            raise ValueError(
-                "No generated copy found in the campaign. "
-                "Please generate campaign content first, or provide copy_text explicitly."
-            )
-        copy_text = "\n".join(extracted_copy_parts)
 
-    # 2. Call simulate endpoint
-    payload = {
+        # Support both key conventions used across the codebase
+        copywriter: Dict[str, Any] = (
+            ai_outputs.get("copy_output") or ai_outputs.get("copywriter") or {}
+        )
+        if isinstance(copywriter, str):
+            try:
+                copywriter = json.loads(copywriter)
+            except (json.JSONDecodeError, ValueError):
+                copywriter = {}
+
+        # Construct channels set maintaining frontend insertion order
+        channels = []
+        seen = set()
+
+        def add_channel(ch: str):
+            if not isinstance(ch, str):
+                return
+            ch_low = ch.lower().strip()
+            if ch_low and ch_low not in seen:
+                if ch_low not in ('copies', 'messaging_framework', 'strategic_alignment', 'copy_readiness'):
+                    seen.add(ch_low)
+                    channels.append(ch_low)
+
+        # 1. Add channels from manager_output
+        manager_output = ai_outputs.get("manager_output") or {}
+        if isinstance(manager_output, str):
+            try:
+                manager_output = json.loads(manager_output)
+            except Exception:
+                manager_output = {}
+        for ch in manager_output.get("channels", []):
+            add_channel(ch)
+
+        # 2. Add channels from copywriter (legacy copies)
+        copywriter = ai_outputs.get("copy_output") or ai_outputs.get("copywriter") or {}
+        if isinstance(copywriter, str):
+            try:
+                copywriter = json.loads(copywriter)
+            except Exception:
+                copywriter = {}
+
+        flat_copy_data = copywriter.copy()
+        if isinstance(copywriter.get("copies"), dict):
+            flat_copy_data.update(copywriter["copies"])
+
+        for key in flat_copy_data.keys():
+            if isinstance(flat_copy_data[key], dict):
+                add_channel(key)
+
+        # 3. Add channels from copy_variants
+        copy_variants = ai_outputs.get("copy_variants") or {}
+        if isinstance(copy_variants, str):
+            try:
+                copy_variants = json.loads(copy_variants)
+            except Exception:
+                copy_variants = {}
+        for key, val in copy_variants.items():
+            if isinstance(val, list) and len(val) > 0:
+                add_channel(key)
+
+        # Build champion texts exactly matching CampaignResultPage.tsx
+        champion_texts = []
+        for channel in channels:
+            variants = copy_variants.get(channel) or copy_variants.get(channel.upper()) or []
+            champion = None
+            if isinstance(variants, list) and len(variants) > 0:
+                for v in variants:
+                    if isinstance(v, dict) and (v.get("isChampion") or v.get("is_champion")):
+                        champion = v
+                        break
+                if not champion and isinstance(variants[0], dict):
+                    champion = variants[0]
+
+            if champion:
+                headline = champion.get("headline") or champion.get("subject") or ""
+                body = champion.get("body_copy") or champion.get("body") or ""
+                champion_texts.append(f"[{channel.upper()}] Headline: {headline}\nBody: {body}")
+            else:
+                legacy_copy = flat_copy_data.get(channel) or flat_copy_data.get(channel.upper())
+                if isinstance(legacy_copy, dict):
+                    headline = legacy_copy.get("headline") or legacy_copy.get("subject") or ""
+                    body = legacy_copy.get("body") or legacy_copy.get("body_copy") or legacy_copy.get("caption") or ""
+                    champion_texts.append(f"[{channel.upper()}] Headline: {headline}\nBody: {body}")
+
+        if not champion_texts:
+            raise ValueError(
+                "No generated copy found in campaign '%s'. "
+                "Please generate the campaign first (run generate_campaign), "
+                "or supply copy_text explicitly." % campaign_id
+            )
+
+        copy_text = "\n\n".join(champion_texts)
+
+    # ── 3. Normalize Unicode to NFC and newlines to Unix style before payload send ─
+    copy_text = unicodedata.normalize('NFC', copy_text)
+    copy_text = copy_text.replace('\r\n', '\n').replace('\r', '\n')
+    logger.info(
+        "Extracted copy from %d channels for campaign %s",
+        len(champion_texts),
+        campaign_id,
+    )
+
+    # ── 3. Emit pre-simulation progress ───────────────────────────────────────
+    if on_progress:
+        on_progress(
+            "[AgentMark] [Focus Group] Simulating audience reaction — "
+            "this typically takes 30–90 seconds..."
+        )
+
+    # ── 4. POST to the backend simulate endpoint ──────────────────────────────
+    payload: Dict[str, Any] = {
         "campaign_id": campaign_id,
-        "copy_text": copy_text[:4000],  # safety cap
+        "copy_text": copy_text[:4000],  # Safety cap below the 5000-char validator limit
         "campaign_context": campaign_context,
-        "negativity_bias": negativity_bias
+        "negativity_bias": negativity_bias,
     }
 
-    logger.info(f"Triggering focus group simulation | campaign={campaign_id}")
+    logger.info(
+        "Triggering focus group simulation | campaign=%s | copy_chars=%d | bias=%.2f",
+        campaign_id,
+        len(payload["copy_text"]),
+        negativity_bias,
+    )
+
     simulation_response = await client.post("/api/focus-group/simulate", payload)
-    
-    # 3. Format and return
+
+    logger.info("Focus group simulation complete | campaign=%s", campaign_id)
+
+    if on_progress:
+        overall = simulation_response.get("overall_score", "N/A")
+        on_progress("[AgentMark] [Focus Group] Simulation complete. Overall score: %s/100" % overall)
+
+    # ── 5. Format and return ──────────────────────────────────────────────────
     return format_focus_group_report(simulation_response)

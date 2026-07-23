@@ -123,11 +123,18 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
       });
     }
 
-    const statusCounts = await prisma.campaign.groupBy({
-      by: ['status'],
-      where: { projectId: { in: ids } },
-      _count: { status: true },
-    });
+    const [statusCounts, scoreAgg] = await Promise.all([
+      prisma.campaign.groupBy({
+        by: ['status'],
+        where: { projectId: { in: ids } },
+        _count: { status: true },
+      }),
+      prisma.campaign.aggregate({
+        where: { projectId: { in: ids }, reviewScore: { not: null } },
+        _avg: { reviewScore: true },
+        _count: { reviewScore: true },
+      }),
+    ]);
 
     const statusMap: Record<string, number> = {};
     for (const s of statusCounts) {
@@ -140,11 +147,6 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
     const awaitingApprovalCampaigns = statusMap['awaiting_human_approval'] || 0;
     const totalCampaignsCount = completedCampaigns + runningCampaigns + failedCampaigns + awaitingApprovalCampaigns;
 
-    const scoreAgg = await prisma.campaign.aggregate({
-      where: { projectId: { in: ids }, reviewScore: { not: null } },
-      _avg: { reviewScore: true },
-      _count: { reviewScore: true },
-    });
     const avgReviewScore = scoreAgg._avg.reviewScore
       ? parseFloat(Number(scoreAgg._avg.reviewScore).toFixed(1))
       : 0;
@@ -167,7 +169,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-export const getMemoryStatus = async (req: AuthRequest, res: Response) => {
+export const getMemoryStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const project = await prisma.project.findFirst({
@@ -184,7 +186,6 @@ export const getMemoryStatus = async (req: AuthRequest, res: Response) => {
 
     res.json({ hasMemory: count > 0, campaignCount: count });
   } catch (error) {
-    console.error('Memory status check failed:', error);
-    res.status(500).json({ error: 'Failed to check memory status' });
+    next(error);
   }
 };

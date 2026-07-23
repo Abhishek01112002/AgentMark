@@ -18,6 +18,7 @@ import constantsRoutes from './modules/constants/constants.routes';
 import imagekitRoutes from './modules/imagekit/imagekit.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
 import focusGroupRoutes from './modules/focus-group/focus-group.routes';
+import developerRoutes from './modules/developer/developer.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import prisma from './db';
 import { notificationService } from './modules/notifications/notification.service';
@@ -25,6 +26,9 @@ import { initRedisSubscriber, shutdownRedisSubscriber } from './utils/redis-subs
 import { verifyToken } from './utils/jwt';
 import { setSocketIO } from './modules/campaigns/campaign.controller';
 import { globalRateLimiter } from './middlewares/rate-limit.middleware';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { redis } from './utils/redis';
+import { mcpLoggerMiddleware } from './middlewares/mcp-logger.middleware';
 
 
 export const app = express();
@@ -41,6 +45,8 @@ app.use(globalRateLimiter);
 
 // 1 MB limit — prevents oversized JSON payloads from OOM-ing the server.
 app.use(express.json({ limit: '1mb' }));
+
+app.use(mcpLoggerMiddleware);
 
 app.get('/health', async (req, res) => {
   try {
@@ -67,6 +73,7 @@ app.use('/api/constants', constantsRoutes);
 app.use('/api/imagekit', imagekitRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/focus-group', focusGroupRoutes);
+app.use('/api/developer', developerRoutes);
 
 app.use(errorHandler);
 
@@ -88,6 +95,27 @@ setSocketIO(io);
 
 io.on('connection', (socket) => {
   console.log(`[Socket.io] Client connected: ${socket.id}`);
+
+  // Authenticate socket on connection — disconnect immediately if token is invalid
+  try {
+    const token = socket.handshake.auth?.token as string | undefined;
+    if (token) {
+      const decoded = verifyToken(token);
+      const userRoom = `user:${decoded.userId}`;
+      void socket.join(userRoom);
+      console.log(`[Socket.io] Socket ${socket.id} securely joined user room: ${userRoom}`);
+    } else {
+      socket.emit('auth_error', { message: 'Authentication required' });
+      socket.disconnect(true);
+      console.log(`[Socket.io] Socket ${socket.id} disconnected: no token provided`);
+      return;
+    }
+  } catch (err) {
+    socket.emit('auth_error', { message: 'Unauthorized connection' });
+    socket.disconnect(true);
+    console.log(`[Socket.io] Socket ${socket.id} disconnected: invalid token`);
+    return;
+  }
 
   /**
    * join_campaign — client requests real-time updates for a specific campaign.
@@ -154,6 +182,22 @@ const ensureAvatarColumn = async () => {
 
 const startServer = async () => {
   await ensureAvatarColumn();
+
+  // Create duplicate Redis connections for Socket.io adapter pub/sub
+  const pubClient = redis.duplicate();
+  const subClient = redis.duplicate();
+
+  pubClient.on('error', (err) => console.error('[Redis Socket.io Adapter Pub Client Error]', err));
+  subClient.on('error', (err) => console.error('[Redis Socket.io Adapter Sub Client Error]', err));
+
+  try {
+    await Promise.all([pubClient.connect(), subClient.connect()]);
+    io.adapter(createAdapter(pubClient, subClient));
+    console.log('[Redis PubSub] Successfully attached Redis adapter to Socket.io');
+  } catch (err: any) {
+    console.warn(`[Redis PubSub] Redis adapter initialization failed (non-fatal): ${err.message}`);
+    console.warn('[Redis PubSub] Real-time multi-node synchronization will not function.');
+  }
 
   // Initialize Redis Pub/Sub subscriber (passes the socket.io instance).
   // Any Redis connection errors are handled gracefully inside initRedisSubscriber.

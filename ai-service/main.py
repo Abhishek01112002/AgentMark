@@ -74,8 +74,8 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router)
 app.include_router(campaign_router, dependencies=[Depends(verify_internal_secret)])
-# Focus Group router: user-triggered (not internal), exposed under /api prefix via reverse proxy
-app.include_router(focus_group_router)
+# Focus Group router: secured internal requests proxied from Node.js Express backend
+app.include_router(focus_group_router, dependencies=[Depends(verify_internal_secret)])
 
 
 if __name__ == "__main__":

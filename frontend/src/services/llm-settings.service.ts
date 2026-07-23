@@ -31,10 +31,10 @@ const defaultProvider = (): LlmProviderState => ({
 });
 
 export const KEY_PATTERNS: Record<LlmProviderId, RegExp> = {
-  gemini: /^(AIza|AQ\.)[0-9A-Za-z_-]{30,}$/,
-  groq: /^gsk_[0-9A-Za-z_-]{40,}$/,
-  openai: /^sk-[0-9A-Za-z]{32,}$/,
-  tavily: /^tvly-[A-Za-z0-9_-]+$/,
+  gemini: /^(AIza|AQ)[0-9A-Za-z._-]{20,}$/,
+  groq: /^gsk_[0-9A-Za-z._-]{20,}$/,
+  openai: /^sk-[0-9A-Za-z._-]{20,}$/,
+  tavily: /^tvly-[A-Za-z0-9._-]+$/,
 };
 
 export const PROVIDER_RPM: Record<LlmProviderId, number> = {

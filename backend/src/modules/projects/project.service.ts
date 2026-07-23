@@ -21,7 +21,12 @@ export const projectService = {
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: {
-        campaigns: true,
+        campaigns: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
     });
 

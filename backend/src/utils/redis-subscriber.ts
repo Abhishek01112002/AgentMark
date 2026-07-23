@@ -35,10 +35,19 @@ class PromiseQueue {
   add(fn: () => Promise<any>): void {
     this.queue = this.queue
       .then(async () => {
-        try {
-          await fn();
-        } catch (err: any) {
-          console.error('[PromiseQueue] Task error:', err.message || err);
+        let attempts = 0;
+        const maxAttempts = 3;
+        while (attempts < maxAttempts) {
+          try {
+            attempts++;
+            await fn();
+            break;
+          } catch (err: any) {
+            console.error(`[PromiseQueue] Task error (attempt ${attempts}/${maxAttempts}):`, err.message || err);
+            if (attempts < maxAttempts) {
+              await new Promise((res) => setTimeout(res, 500 * attempts));
+            }
+          }
         }
       })
       .catch((err) => {

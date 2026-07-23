@@ -77,48 +77,66 @@ async def run_focus_group_simulation(
 ) -> FocusGroupReport:
     """
     Runs individual persona audits concurrently with isolation, timeouts, and retries.
+    Enforces automatic fallback to alternate provider if key is available.
     """
-    provider = get_focus_group_model_provider(campaign_provider)
-    logger.info("Executing Focus Group simulation using provider: %s", provider)
+    primary_provider = get_focus_group_model_provider(campaign_provider)
+    providers_to_try = [primary_provider]
     
-    client = get_llm_client(provider)
-    
-    # ── Step 1: Run Isolate Persona Audits in Parallel ─────────────────────
-    async def run_isolated_task(persona: PersonaProfile):
-        # Wrap each persona critique in a 12s timeout guard
-        return await asyncio.wait_for(
-            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, copy_output)),
-            timeout=12.0
-        )
-    
-    tasks = [run_isolated_task(persona) for persona in personas]
-    
-    # return_exceptions=True prevents 1 failure from crashing the other 4
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-    
-    valid_critiques: List[PersonaCritique] = []
-    for idx, res in enumerate(results):
-        if isinstance(res, Exception):
-            logger.error(
-                "Persona %s critique failed to execute (non-fatal): %s", 
-                personas[idx].id, 
-                res
-            )
-            continue
-        valid_critiques.append(res)
-
-    # Fail-safe: Ensure we have at least 1 critique to compile the report
-    if not valid_critiques:
-        raise RuntimeError("All focus group persona critiques failed to execute.")
+    # If both keys are set, add the other one as fallback
+    openai_key = os.getenv("OPENAI_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if openai_key and gemini_key:
+        fallback_provider = "gemini" if primary_provider == "openai" else "openai"
+        providers_to_try.append(fallback_provider)
         
-    logger.info("Compiled %d/%d valid persona critiques.", len(valid_critiques), len(personas))
-    
-    # ── Step 2: Synthesize Report via Analyst Agent ─────────────────────────
-    # Run analyst task with retry logic, passing personas for Fix #3
-    report = await _run_with_retry(
-        lambda: _run_analyst_synthesis(client, valid_critiques, copy_output, personas, negativity_bias)
-    )
-    return report
+    last_error = None
+    for provider in providers_to_try:
+        try:
+            logger.info("Executing Focus Group simulation using provider: %s", provider)
+            client = get_llm_client(provider)
+            
+            # ── Step 1: Run Isolate Persona Audits in Parallel ─────────────────────
+            async def run_isolated_task(persona: PersonaProfile):
+                # Wrap each persona critique in a 12s timeout guard
+                return await asyncio.wait_for(
+                    _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, copy_output)),
+                    timeout=12.0
+                )
+            
+            tasks = [run_isolated_task(persona) for persona in personas]
+            
+            # return_exceptions=True prevents 1 failure from crashing the other 4
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            valid_critiques: List[PersonaCritique] = []
+            for idx, res in enumerate(results):
+                if isinstance(res, Exception):
+                    logger.error(
+                        "Persona %s critique failed to execute (non-fatal): %s", 
+                        personas[idx].id, 
+                        res
+                    )
+                    continue
+                valid_critiques.append(res)
+
+            # Fail-safe: Ensure we have at least 1 critique to compile the report
+            if not valid_critiques:
+                raise RuntimeError("All focus group persona critiques failed to execute.")
+                
+            logger.info("Compiled %d/%d valid persona critiques.", len(valid_critiques), len(personas))
+            
+            # ── Step 2: Synthesize Report via Analyst Agent ─────────────────────────
+            # Run analyst task with retry logic, passing personas for Fix #3
+            report = await _run_with_retry(
+                lambda: _run_analyst_synthesis(client, valid_critiques, copy_output, personas, negativity_bias)
+            )
+            return report
+        except Exception as exc:
+            logger.warning("Focus group simulation failed under provider %s: %s", provider, exc)
+            last_error = exc
+            
+    # If all providers fail, re-raise the last exception
+    raise last_error or RuntimeError("Focus group simulation failed across all configured providers.")
 
 
 async def _run_single_persona_critique(
