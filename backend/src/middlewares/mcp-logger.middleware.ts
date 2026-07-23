@@ -40,6 +40,11 @@ export const mcpLoggerMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // Only log mutating HTTP operations (POST, PUT, PATCH, DELETE) — skip read-only background polling GET calls
+  if (req.method === 'GET') {
+    return next();
+  }
+
   const rawToolName = req.headers['x-mcp-tool-name'];
 
   if (rawToolName && typeof rawToolName === 'string') {
@@ -81,12 +86,10 @@ export const mcpLoggerMiddleware = async (
 
     if (userId) {
       const sanitizedUserId = userId;
-      // Sanitize and limit toolName length to prevent header spamming
       const toolName = rawToolName.trim().slice(0, 100);
 
       if (toolName) {
-        // Safely extract campaign_id if present in body or params
-        const campaignId =
+        let extractedCampaignId =
           req.params.id && typeof req.params.id === 'string' && req.params.id.match(/^[0-9a-fA-F-]{36}$/)
             ? req.params.id
             : req.body?.campaign_id && typeof req.body.campaign_id === 'string' && req.body.campaign_id.match(/^[0-9a-fA-F-]{36}$/)
@@ -95,41 +98,52 @@ export const mcpLoggerMiddleware = async (
             ? req.body.campaignId
             : null;
 
-        // Extract metadata safely, omitting huge fields like copy_text
+        // Intercept res.json to capture created campaign ID from response body for POST /api/campaigns
+        const originalJson = res.json;
+        res.json = function (body: any) {
+          if (!extractedCampaignId && body && typeof body === 'object') {
+            const createdId = body.campaign?.id || body.id;
+            if (createdId && typeof createdId === 'string' && createdId.match(/^[0-9a-fA-F-]{36}$/)) {
+              extractedCampaignId = createdId;
+            }
+          }
+          return originalJson.call(this, body);
+        };
+
         const rawMetadata = req.body || {};
         const metadata: Record<string, any> = {};
-
-        // Keep lightweight metadata only to save DB space and prevent leakage
         if (rawMetadata.name) metadata.name = String(rawMetadata.name).slice(0, 200);
         if (rawMetadata.brandName) metadata.brandName = String(rawMetadata.brandName).slice(0, 200);
         if (rawMetadata.primaryGoal) metadata.primaryGoal = String(rawMetadata.primaryGoal).slice(0, 100);
         if (rawMetadata.feedback) metadata.feedback = String(rawMetadata.feedback).slice(0, 300);
 
-        // Async logging to avoid blocking the Express request execution pipeline
-        setImmediate(async () => {
-          try {
-            const activity = await prisma.mcpActivity.create({
-              data: {
-                userId: sanitizedUserId,
-                toolName,
-                campaignId,
-                metadata,
-              },
-              select: {
-                id: true,
-                toolName: true,
-                campaignId: true,
-                createdAt: true,
-              },
-            });
+        res.on('finish', () => {
+          if (res.statusCode >= 200 && res.statusCode < 400) {
+            setImmediate(async () => {
+              try {
+                const activity = await prisma.mcpActivity.create({
+                  data: {
+                    userId: sanitizedUserId,
+                    toolName,
+                    campaignId: extractedCampaignId,
+                    metadata,
+                  },
+                  select: {
+                    id: true,
+                    toolName: true,
+                    campaignId: true,
+                    createdAt: true,
+                  },
+                });
 
-            // Emit to Socket.io user-specific room
-            const io = getIO();
-            if (io) {
-              io.to(`user:${sanitizedUserId}`).emit('mcp_activity', activity);
-            }
-          } catch (err) {
-            console.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
+                const io = getIO();
+                if (io) {
+                  io.to(`user:${sanitizedUserId}`).emit('mcp_activity', activity);
+                }
+              } catch (err) {
+                console.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
+              }
+            });
           }
         });
       }
