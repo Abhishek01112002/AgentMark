@@ -521,17 +521,15 @@ def publisher_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
 
-    # Gate on explicit can_publish flag, or fall back to legacy status check
-    can_publish = review_data.get("can_publish")
-    if can_publish is None:
-        # Legacy: Reviewer output doesn't have can_publish field
-        # Use status field as the publishing gate
-        can_publish = review_data.get("status", "revision_required") == "approved"
+    # Gate on explicit human approval or can_publish flag from Reviewer
+    human_approved = getattr(state, "human_approval_status", None) == "approved"
+    can_publish = human_approved or review_data.get("can_publish")
+    if can_publish is None or human_approved:
+        can_publish = human_approved or (review_data.get("status", "revision_required") == "approved")
 
-    # Critically low quality should still produce a structured HOLD package so
-    # the UI can show a clear final decision instead of a broken workflow.
+    # Critically low quality should still produce a structured HOLD package unless human user explicitly approved
     quality_score = review_data.get("overall_quality_score", 0) or review_data.get("overall", {}).get("quality_score")
-    if quality_score is not None and quality_score < 60:
+    if not human_approved and quality_score is not None and quality_score < 60:
         return _write_hold_output(
             state,
             channels,
