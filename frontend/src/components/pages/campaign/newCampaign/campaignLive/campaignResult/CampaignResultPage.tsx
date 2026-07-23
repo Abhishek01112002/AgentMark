@@ -1162,7 +1162,7 @@ const CampaignResultPage: React.FC = () => {
 
           {/* Drawer Tabs */}
           <div className="flex border-b border-[#1e1e2b] px-2 overflow-x-auto scrollbar-none min-w-max w-full">
-            <button className={`drawer-tab-btn ${drawerTab === 'scores' ? 'active' : ''}`} onClick={() => setDrawerTab('scores')}>Review Scores</button>
+            <button className={`drawer-tab-btn ${drawerTab === 'scores' ? 'active' : ''}`} onClick={() => setDrawerTab('scores')}>Technical Audit</button>
             <button className={`drawer-tab-btn ${drawerTab === 'inspect' ? 'active' : ''}`} onClick={() => setDrawerTab('inspect')}>Inspect Drafts</button>
             <button className={`drawer-tab-btn ${drawerTab === 'revise' ? 'active' : ''}`} onClick={() => setDrawerTab('revise')}>Request Revision</button>
           </div>
@@ -1588,6 +1588,9 @@ const CampaignResultPage: React.FC = () => {
                   </svg>
                   Request Revision
                 </button>
+                <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
+                  ✏️ Request Revision edits and updates content inside this current campaign draft
+                </p>
               </div>
             )}
           </div>

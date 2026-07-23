@@ -243,7 +243,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
             } else if (status === 'awaiting_human_approval') {
               const campaign = await prisma.campaign.findUnique({
                 where: { id: campaign_id },
-                select: { aiOutputs: true, name: true, projectId: true, status: true },
+                select: { aiOutputs: true, name: true, projectId: true, status: true, humanFeedback: true, humanRevisionTarget: true },
               });
               const currentOutputs = campaign?.aiOutputs 
                 ? (typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : campaign.aiOutputs) as Record<string, any>
@@ -260,19 +260,28 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 aiOutputs: mergedOutputs as any,
               };
               
-              // Extract and save revision counts if present in outputs
+              // Extract and save revision counts:
+              // For initial campaign run (no human feedback or revision target yet), human revision counts start at 0.
               if (outputs) {
-                if (typeof outputs.research_revision_count === 'number') {
-                  updateData.researchRevisionCount = outputs.research_revision_count;
-                }
-                if (typeof outputs.strategy_revision_count === 'number') {
-                  updateData.strategyRevisionCount = outputs.strategy_revision_count;
-                }
-                if (typeof outputs.copy_revision_count === 'number') {
-                  updateData.copyRevisionCount = outputs.copy_revision_count;
-                }
-                if (typeof outputs.image_revision_count === 'number') {
-                  updateData.imageRevisionCount = outputs.image_revision_count;
+                const isHumanRevision = !!(campaign as any)?.humanFeedback || !!(campaign as any)?.humanRevisionTarget || !!(outputs as any)?.human_feedback;
+                if (isHumanRevision) {
+                  if (typeof outputs.research_revision_count === 'number') {
+                    updateData.researchRevisionCount = outputs.research_revision_count;
+                  }
+                  if (typeof outputs.strategy_revision_count === 'number') {
+                    updateData.strategyRevisionCount = outputs.strategy_revision_count;
+                  }
+                  if (typeof outputs.copy_revision_count === 'number') {
+                    updateData.copyRevisionCount = outputs.copy_revision_count;
+                  }
+                  if (typeof outputs.image_revision_count === 'number') {
+                    updateData.imageRevisionCount = outputs.image_revision_count;
+                  }
+                } else {
+                  updateData.researchRevisionCount = 0;
+                  updateData.strategyRevisionCount = 0;
+                  updateData.copyRevisionCount = 0;
+                  updateData.imageRevisionCount = 0;
                 }
                 
                 // Extract review score from review_output

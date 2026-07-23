@@ -186,7 +186,7 @@ const CreateVariantModal: React.FC<CreateVariantModalProps> = ({ campaign, onClo
                 Create Variant
               </h2>
               <p className="text-xs mt-0.5" style={{ color: '#8B8B9E' }}>
-                Choose where to continue from to experiment efficiently
+                Branch off a parallel variant for A/B testing without altering Baseline V1
               </p>
             </div>
           </div>
