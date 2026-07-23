@@ -31,7 +31,7 @@ from .tools.campaign import generate_campaign_impl
 from .tools.focus_group import run_focus_group_impl
 from .tools.publish import publish_to_channel_impl
 from .tools.project import create_project_impl
-from .tools.revision import revise_copy_with_feedback_impl, get_campaign_status_impl
+from .tools.revision import revise_copy_with_feedback_impl, get_campaign_status_impl, revise_image_prompts_impl
 
 # Configure standard stream logging to stderr (stdout is reserved for MCP protocol)
 logging.basicConfig(
@@ -391,6 +391,51 @@ async def revise_copy_with_feedback(
         )
     except Exception as exc:
         logger.error("Error in revise_copy_with_feedback tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: revise_image_prompts ────────────────────────────────────────────────
+
+@mcp.tool()
+async def revise_image_prompts(
+    ctx: Context,
+    campaign_id: str,
+    feedback: str,
+) -> str:
+    """
+    Revise visual image prompts for a campaign using specific feedback or quality requirements.
+    Use this when the user asks to re-run or improve image prompts (e.g. 'Ensure at least one prompt scores above 95 with photorealistic details').
+
+    Prerequisites:
+        Requires campaign_id in 'awaiting_human_approval' status and feedback text.
+
+    Side Effects:
+        Triggers the Image Prompt agent re-run with feedback and updates campaign image outputs.
+
+    Args:
+        campaign_id: UUID of the campaign to revise.
+        feedback:    Specific instructions or quality criteria for the Image Prompt agent.
+    """
+    validate_uuid(campaign_id, "campaign_id")
+
+    if not feedback or not feedback.strip():
+        raise ValueError("feedback cannot be empty. Provide specific image prompt revision instructions.")
+
+    client = get_client()
+    client.set_active_tool("revise_image_prompts")
+    _on_progress = _make_progress_callback(ctx)
+
+    try:
+        return await revise_image_prompts_impl(
+            client=client,
+            campaign_id=campaign_id.strip(),
+            feedback=feedback.strip(),
+            on_progress=_on_progress,
+        )
+    except Exception as exc:
+        logger.error("Error in revise_image_prompts tool: %s", exc)
         raise
     finally:
         client.set_active_tool(None)

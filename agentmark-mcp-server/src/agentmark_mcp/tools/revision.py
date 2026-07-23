@@ -203,6 +203,110 @@ async def revise_copy_with_feedback_impl(
     return "".join(result_parts)
 
 
+async def revise_image_prompts_impl(
+    client: AgentMarkClient,
+    campaign_id: str,
+    feedback: str,
+    on_progress: Optional[Callable[[str], None]] = None,
+) -> str:
+    """
+    Revise visual image prompts for a campaign using specific feedback or quality criteria.
+    (e.g., 'Ensure at least one prompt scores above 95 with rich photorealistic lighting and detail').
+
+    Args:
+        client:      Shared AgentMarkClient.
+        campaign_id: UUID of the campaign to revise.
+        feedback:    Feedback for the image prompt agent.
+        on_progress: Optional progress callback.
+    """
+    if on_progress:
+        on_progress("[AgentMark] [Image Revision] Triggering Image Prompt agent re-run with feedback...")
+
+    try:
+        await client.post(
+            f"/api/campaigns/{campaign_id}/approve",
+            {
+                "action": "reject",
+                "revisionTarget": "image_prompt",
+                "feedback": feedback[:2000],
+            }
+        )
+        logger.info("Image prompt revision triggered | campaign=%s", campaign_id)
+    except Exception as exc:
+        logger.error("Failed to trigger image prompt revision: %s", exc)
+        raise RuntimeError(
+            "Failed to trigger image prompt revision for campaign '%s'. Error: %s"
+            % (campaign_id, exc)
+        ) from exc
+
+    max_attempts = max(1, REVISION_TIMEOUT_SECS // POLL_INTERVAL_SECS)
+    consecutive_failures = 0
+    elapsed = 0.0
+
+    for attempt in range(max_attempts):
+        await asyncio.sleep(POLL_INTERVAL_SECS)
+        elapsed += POLL_INTERVAL_SECS
+
+        try:
+            campaign = await client.get_campaign(campaign_id)
+            consecutive_failures = 0
+        except Exception as exc:
+            consecutive_failures += 1
+            if consecutive_failures >= 5:
+                raise RuntimeError("Lost connection while waiting for image prompt revision to complete.") from exc
+            continue
+
+        status = campaign.get("status", "processing").lower()
+        logger.info("Image revision poll | campaign=%s | status=%s | elapsed=%.0fs", campaign_id, status, elapsed)
+
+        if status in ("awaiting_human_approval", "completed"):
+            ai_outputs = _parse_ai_outputs(campaign)
+            image_data = ai_outputs.get("image_prompt_output") or ai_outputs.get("image_output") or {}
+            if isinstance(image_data, str):
+                try:
+                    image_data = json.loads(image_data)
+                except Exception:
+                    image_data = {}
+            
+            image_prompts = image_data.get("image_prompts") or []
+            
+            lines = [
+                "# ✅ Image Prompt Revision Complete\n\n",
+                f"**Campaign ID:** `{campaign_id}`\n",
+                f"**Feedback Applied:** {feedback[:300]}{'...' if len(feedback) > 300 else ''}\n\n",
+                "## 🎨 Revised Image Prompts & Visual Directions\n\n"
+            ]
+            
+            visual_dir = image_data.get("visual_direction") or {}
+            if visual_dir.get("mood"):
+                lines.append(f"**Visual Mood:** {_sanitize_md(visual_dir.get('mood'))}\n\n")
+
+            for idx, ip in enumerate(image_prompts, 1):
+                p_text = ip.get("prompt", "")
+                ratio = ip.get("aspect_ratio", "1:1")
+                style = ip.get("style", "Advertising Photography")
+                overlay = ip.get("text_overlay") or {}
+                headline = overlay.get("headline", "")
+                cta = overlay.get("cta", "")
+                lines.append(f"### Image Prompt #{idx} ({ratio} | {style})\n")
+                lines.append(f"**Prompt:** `{_sanitize_md(p_text)}`  \n")
+                if headline or cta:
+                    lines.append(f"**Text Overlay:** \"{_sanitize_md(headline)}\" (CTA: `{_sanitize_md(cta)}`)\n")
+                lines.append("\n")
+
+            lines.append("## 📋 Next Steps\n")
+            lines.append("- Review the updated visual prompts above.\n")
+            lines.append("- If satisfied, call `publish_to_channel` to approve and publish.\n")
+            lines.append(f"- View full results on your dashboard: `/campaign/{campaign_id}/result`\n")
+            return "".join(lines)
+
+        elif status in ("failed", "error", "cancelled"):
+            error_msg = campaign.get("aiError") or "Unknown error during revision"
+            raise RuntimeError("Image prompt revision failed: %s" % error_msg)
+
+    raise TimeoutError("Image prompt revision did not complete within %d seconds." % REVISION_TIMEOUT_SECS)
+
+
 async def get_campaign_status_impl(
     client: AgentMarkClient,
     campaign_id: str,
