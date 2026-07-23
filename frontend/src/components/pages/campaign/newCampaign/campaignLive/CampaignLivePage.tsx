@@ -380,6 +380,8 @@ const CampaignLivePage: React.FC = () => {
             })
           );
         } else if (campaign.status === 'processing') {
+          setCampaignFailed(false);
+          setFailedError('');
           const outputs = campaign.aiOutputs || {};
           const completedAgents = outputs.completed_agents || [];
           const activeAgentKey = outputs.active_agent || null;
