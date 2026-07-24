@@ -18,23 +18,25 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
 
   const steps = [
     {
-      label: 'Open Integrations',
-      desc: 'Verify that the local AgentMark server is running.',
+      label: 'Open Integrations Settings',
+      desc: isLocal ? 'Verify that AgentMark server is running locally on port 5003.' : 'Verify AgentMark Cloud instance is active.',
       done: true,
     },
     {
-      label: isLocal ? 'Connect Claude Desktop' : 'Download Configuration',
-      desc: isLocal ? 'Click the primary CTA to write config files.' : 'Download and drop config in the Claude folder.',
+      label: isLocal ? '1-Click Auto Connect' : 'Download & Copy Local Config',
+      desc: isLocal
+        ? 'Click "Connect Claude Desktop" to automatically write the local config file.'
+        : 'Download settings file and place in %APPDATA%\\Claude\\ (Win) or ~/Library/Application Support/Claude/ (Mac).',
       done: status === 'Connected' || status === 'Configuration Outdated',
     },
     {
-      label: 'Restart Claude Desktop',
-      desc: 'Quit Claude from the system tray, then restart the app.',
+      label: 'Relaunch Claude Desktop',
+      desc: 'Completely quit Claude from system tray or menu bar, then relaunch.',
       done: status === 'Connected',
     },
     {
-      label: 'Verify Tools',
-      desc: 'Type "Run a focus group for my campaign" or "Create a project" in Claude to test tools.',
+      label: 'Verify Live Tools',
+      desc: 'Type "Run a focus group for my campaign" or "Synthesize brand memory" in Claude to test live MCP tools.',
       done: status === 'Connected',
     },
   ];

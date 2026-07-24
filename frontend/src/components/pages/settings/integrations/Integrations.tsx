@@ -8,7 +8,9 @@ import {
   AlertTriangle,
   AlertCircle,
   Info,
-  X
+  X,
+  Activity,
+  ShieldCheck
 } from 'lucide-react';
 import api from '../../../../services/api';
 import toast from 'react-hot-toast';
@@ -38,6 +40,9 @@ export const Integrations: React.FC = () => {
   const [newlyGeneratedKey, setNewlyGeneratedKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedConfig, setCopiedConfig] = useState(false);
+  const [copiedPath, setCopiedPath] = useState(false);
+  const [selectedOs, setSelectedOs] = useState<'windows' | 'mac' | 'linux'>('windows');
+  const [selectedClient, setSelectedClient] = useState<'claude' | 'cursor'>('claude');
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -283,6 +288,29 @@ export const Integrations: React.FC = () => {
         {/* Left main controls column */}
         <div className="lg:col-span-2 space-y-6">
           
+          {/* Cloud vs Local Environment Notice */}
+          {!isLocal && (
+            <div className="flex items-start gap-3 p-4 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-xs text-indigo-200 shadow-md">
+              <Info size={18} className="shrink-0 text-indigo-400 mt-0.5" />
+              <div className="space-y-1.5">
+                <p className="font-bold text-white flex items-center gap-2">
+                  <span>☁️ Hosted Cloud Environment Detected</span>
+                  <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
+                    Manual Local Setup Required
+                  </span>
+                </p>
+                <p className="text-[11px] leading-relaxed text-zinc-300">
+                  Cloud hosted instances running on remote servers cannot access your local computer's filesystem. To connect Claude Desktop or Cursor on your laptop to this AgentMark instance:
+                </p>
+                <ol className="list-decimal list-inside text-[11px] space-y-1 text-zinc-300 font-mono">
+                  <li>Click <strong className="text-white">"Download Settings"</strong> or <strong className="text-white">"Copy Config JSON"</strong> below.</li>
+                  <li>Save the file to your local Claude folder: <code className="text-indigo-300">%APPDATA%\Claude\claude_desktop_config.json</code> (Win) or <code className="text-indigo-300">~/Library/Application Support/Claude/claude_desktop_config.json</code> (Mac).</li>
+                  <li>Completely quit and restart Claude Desktop.</li>
+                </ol>
+              </div>
+            </div>
+          )}
+
           {/* Dynamic Situation-based Alert Banner */}
           {showRestartAlert ? (
             <div className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-[#F59E0B]/20 bg-[#F59E0B]/5 text-xs text-[#ffc875]">
@@ -340,38 +368,46 @@ export const Integrations: React.FC = () => {
               </div>
 
               <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <button
                     onClick={handlePing}
                     disabled={pinging}
-                    className="px-2.5 py-1 text-[11px] font-mono font-semibold rounded-lg bg-[#181824] border border-[#2A2A38] hover:bg-[#222232] text-indigo-300 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-3 py-1.5 text-xs font-mono font-medium rounded-lg bg-[#161622] border border-[#2E2E42] hover:bg-[#1E1E2E] hover:border-indigo-500/50 text-indigo-300 transition-all flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
                   >
-                    <RefreshCw size={11} className={pinging ? 'animate-spin' : ''} />
-                    {pinging ? 'Pinging...' : 'Test Connection'}
+                    <Activity size={13} className={pinging ? 'animate-spin text-indigo-400' : 'text-indigo-400'} />
+                    {pinging ? 'Verifying...' : 'Verify Connection'}
                   </button>
 
                   {/* Real-time Live Connection Badge */}
                   {status?.isLiveConnected ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[11px] font-mono font-semibold">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span>Active (Connected)</span>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-semibold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                      </span>
+                      <span>MCP ACTIVE</span>
                     </div>
                   ) : status?.status === 'Connected' ? (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[11px] font-mono font-semibold" title="Config file is valid. Waiting for Claude tool request or restart.">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span>Configured (Idle)</span>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono font-semibold" title="Config file is valid. Waiting for Claude tool request or restart.">
+                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                      <span>CONFIGURED (STANDBY)</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[11px] font-mono font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span>Disconnected</span>
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-mono font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                      <span>UNCONFIGURED</span>
                     </div>
                   )}
                 </div>
 
-                {status?.lastActiveAt && (
+                {status?.lastActiveAt ? (
+                  <span className="text-[10px] font-mono text-[#8B8B9E] flex items-center gap-1">
+                    <ShieldCheck size={11} className="text-emerald-400" />
+                    Last live ping: {new Date(status.lastActiveAt).toLocaleTimeString()}
+                  </span>
+                ) : (
                   <span className="text-[10px] font-mono text-[#8B8B9E]">
-                    Last activity: {new Date(status.lastActiveAt).toLocaleTimeString()}
+                    Awaiting initial tool execution
                   </span>
                 )}
               </div>
@@ -510,27 +546,132 @@ export const Integrations: React.FC = () => {
             </div>
           )}
 
-          {/* JSON configuration preview terminal box */}
-          <div className="p-6 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-3">
-            <div className="flex items-center justify-between border-b border-[#2A2A38]/40 pb-3">
-              <h4 className="font-semibold text-xs uppercase tracking-wider text-text-secondary" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>
-                JSON Config Block
-              </h4>
-              <button
-                onClick={() => copyToClipboard(configJsonString, setCopiedConfig)}
-                className="px-2.5 py-1.5 bg-[#1B1B25] hover:bg-[#252535] border border-[#2A2A38] rounded-md text-[10px] font-semibold transition-all flex items-center gap-1.5"
-                style={{ color: '#F1F1F3', cursor: 'pointer' }}
-              >
-                {copiedConfig ? <Check size={11} className="text-[#10B981]" /> : <Copy size={11} />}
-                Copy JSON
-              </button>
-            </div>
+          {/* Interactive DX OS & Client Config Helper Box */}
+          <div className="p-6 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-4">
             
-            <div className="rounded-lg overflow-hidden border border-[#2A2A38]/50 bg-[#0E0E13]">
-              <pre className="p-4 text-[11px] font-mono text-[#E2E8F0] overflow-x-auto leading-relaxed select-all">
-                {configJsonString}
-              </pre>
+            {/* Header with Client Switcher */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2A2A38]/40 pb-3 gap-3">
+              <div>
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-text-secondary" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>
+                  Manual Configuration Builder
+                </h4>
+                <p className="text-[11px] text-[#8B8B9E] mt-0.5">
+                  Select your AI client and OS to get exact file paths & formatted JSON.
+                </p>
+              </div>
+
+              {/* Client Selector Tabs */}
+              <div className="flex items-center gap-1 bg-[#0E0E13] p-1 rounded-lg border border-[#2A2A38]/60">
+                <button
+                  type="button"
+                  onClick={() => setSelectedClient('claude')}
+                  className={`px-3 py-1 text-xs font-mono font-medium rounded-md transition-all cursor-pointer ${
+                    selectedClient === 'claude'
+                      ? 'bg-[#6366F1] text-white font-semibold'
+                      : 'text-[#8B8B9E] hover:text-white'
+                  }`}
+                >
+                  Claude Desktop
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedClient('cursor')}
+                  className={`px-3 py-1 text-xs font-mono font-medium rounded-md transition-all cursor-pointer ${
+                    selectedClient === 'cursor'
+                      ? 'bg-[#6366F1] text-white font-semibold'
+                      : 'text-[#8B8B9E] hover:text-white'
+                  }`}
+                >
+                  Cursor IDE
+                </button>
+              </div>
             </div>
+
+            {/* OS Path Guidance Bar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono text-zinc-400">
+                  Target Config Directory ({selectedClient === 'claude' ? 'Claude' : 'Cursor'}):
+                </span>
+                
+                {/* OS Selector Pills */}
+                <div className="flex items-center gap-1">
+                  {(['windows', 'mac', 'linux'] as const).map((osKey) => (
+                    <button
+                      key={osKey}
+                      type="button"
+                      onClick={() => setSelectedOs(osKey)}
+                      className={`px-2.5 py-0.5 text-[10px] font-mono rounded-full uppercase font-bold transition-all cursor-pointer ${
+                        selectedOs === osKey
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40'
+                          : 'text-[#8B8B9E] hover:text-white'
+                      }`}
+                    >
+                      {osKey === 'mac' ? 'macOS' : osKey}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Copyable Path Row */}
+              <div className="flex items-center gap-2 bg-[#0E0E13] border border-[#2A2A38] px-3 py-2 rounded-lg font-mono text-[11px] text-[#E2E8F0]">
+                <span className="truncate flex-1 select-all text-indigo-300">
+                  {selectedClient === 'claude'
+                    ? selectedOs === 'windows'
+                      ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+                      : selectedOs === 'mac'
+                      ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+                      : '~/.config/Claude/claude_desktop_config.json'
+                    : selectedOs === 'windows'
+                      ? '%APPDATA%\\Cursor\\User\\globalStorage\\mcp.json'
+                      : selectedOs === 'mac'
+                      ? '~/Library/Application Support/Cursor/User/globalStorage/mcp.json'
+                      : '~/.config/Cursor/User/globalStorage/mcp.json'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const targetPath = selectedClient === 'claude'
+                      ? selectedOs === 'windows'
+                        ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+                        : selectedOs === 'mac'
+                        ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+                        : '~/.config/Claude/claude_desktop_config.json'
+                      : selectedOs === 'windows'
+                        ? '%APPDATA%\\Cursor\\User\\globalStorage\\mcp.json'
+                        : selectedOs === 'mac'
+                        ? '~/Library/Application Support/Cursor/User/globalStorage/mcp.json'
+                        : '~/.config/Cursor/User/globalStorage/mcp.json';
+                    copyToClipboard(targetPath, setCopiedPath);
+                  }}
+                  className="px-2.5 py-1 bg-[#1B1B25] hover:bg-[#252535] border border-[#2A2A38] rounded text-[10px] font-mono text-white flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  {copiedPath ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                  Copy Path
+                </button>
+              </div>
+            </div>
+
+            {/* Code Block with Copy JSON Button */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400">
+                <span>Configuration Snippet:</span>
+                <button
+                  onClick={() => copyToClipboard(configJsonString, setCopiedConfig)}
+                  className="px-2.5 py-1 bg-[#1B1B25] hover:bg-[#252535] border border-[#2A2A38] rounded-md text-[10px] font-semibold transition-all flex items-center gap-1.5 text-white cursor-pointer"
+                >
+                  {copiedConfig ? <Check size={11} className="text-[#10B981]" /> : <Copy size={11} />}
+                  Copy JSON
+                </button>
+              </div>
+              
+              <div className="rounded-lg overflow-hidden border border-[#2A2A38]/50 bg-[#0E0E13]">
+                <pre className="p-4 text-[11px] font-mono text-[#E2E8F0] overflow-x-auto leading-relaxed select-all">
+                  {configJsonString}
+                </pre>
+              </div>
+            </div>
+
           </div>
 
         </div>
