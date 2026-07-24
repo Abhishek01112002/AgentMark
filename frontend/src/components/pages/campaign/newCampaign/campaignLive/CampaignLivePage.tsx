@@ -166,7 +166,7 @@ const CampaignLivePage: React.FC = () => {
     setIsRetryingInLive(true);
     try {
       await api.post(`/campaigns/${campaignId}/retry`);
-      toast.success('Retrying campaign pipeline... Agents are running!', { icon: '⚡' });
+      toast.success('Retrying campaign pipeline... Agents are running!');
       setCampaignFailed(false);
       setFailedError('');
       setAgents(INITIAL_AGENTS.map((a) => a.key === 'manager' ? { ...a, status: 'running', description: RUNNING_DESCRIPTIONS.manager } : { ...a, status: 'pending' }));

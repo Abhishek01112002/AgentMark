@@ -36,7 +36,7 @@ from schemas.campaign import (
 from llm.factory import set_llm_config, get_llm_client
 from utils.redis_publisher import publish_agent_event
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Any, Dict
 from agents.copywriter import copywriter_agent
 
 logger = logging.getLogger("agentmark.campaigns")
@@ -101,7 +101,7 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
                 "human_revision_target": state.human_revision_target,
                 "awaiting_human_approval": False,
                 "status": "processing",
-                "error": None,
+                "error": "",
             },
             as_node="human_approval"
         )
@@ -170,6 +170,16 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
 
     _require_explicit_provider_keys(payload.llm_config, context="campaign")
 
+    def _to_str(val: Any) -> Optional[str]:
+        if val is None:
+            return None
+        if isinstance(val, str):
+            return val
+        try:
+            return json.dumps(val)
+        except Exception:
+            return str(val)
+
     # Build initial state — campaign_id flows through all nodes for Redis publishing.
     state = CampaignState(
         campaign_id=campaign_id,
@@ -180,13 +190,13 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         target_audience=payload.target_audience,
         brand_voice=payload.brand_voice,
         brief=payload.brief,
-        manager_output=payload.manager_output,
-        research_output=payload.research_output,
-        strategy_output=payload.strategy_output,
-        copy_output=payload.copy_output,
-        image_output=payload.image_output,
-        review_output=payload.review_output,
-        publisher_output=payload.publisher_output,
+        manager_output=_to_str(payload.manager_output),
+        research_output=_to_str(payload.research_output),
+        strategy_output=_to_str(payload.strategy_output),
+        copy_output=_to_str(payload.copy_output),
+        image_output=_to_str(payload.image_output),
+        review_output=_to_str(payload.review_output),
+        publisher_output=_to_str(payload.publisher_output),
         human_approval_status=payload.human_approval_status,
         human_feedback=payload.human_feedback,
         human_revision_target=payload.human_revision_target,
@@ -441,6 +451,17 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
         if payload.steering_note
         else "Generate a fresh alternative with different angle/tone."
     )
+
+    # If focus group context is provided, prepend it as mandatory constraints
+    focus_group_section = ""
+    if payload.focus_group_context:
+        focus_group_section = (
+            "\n\n⚠️ MANDATORY FOCUS GROUP REQUIREMENTS — Apply ALL of the following before writing:\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"{payload.focus_group_context}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "Every single point above MUST be addressed in the copy. The copy will be re-evaluated by the same focus group.\n"
+        )
     
     state.human_feedback = (
         f"Generate a NEW variant for {payload.channel} channel only. "
@@ -448,6 +469,7 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
         f"Make this meaningfully different from prior variants. "
         f"Keep other channels unchanged. "
         f"Return ONLY the {payload.channel} channel copy in the copies dict."
+        f"{focus_group_section}"
         f"{existing_variants_section}"
     )
     state.human_revision_target = "copywriter"

@@ -45,6 +45,7 @@ CAMPAIGN CHANNELS:
 2. BRAND VOICE: Apply ONLY the "{brand_voice}" voice style. Do not default to a B2B corporate tone unless the brand_voice explicitly requires it.
 3. CHANNEL EXCLUSIVITY: Write copy ONLY for channels listed in {channels} above. Do NOT generate copy for any channel not in the list. For any channel not listed in {channels}, you MUST set its corresponding field in the JSON schema to null, and set its flag in copy_readiness to false.
 4. TARGET AUDIENCE: All copy must be written for the target audience defined in the brief — do not assume a generic enterprise/B2B audience.
+5. EMOJI USAGE STRICTLY FORBIDDEN: Do NOT include any emojis in the copy text. The only exception is Instagram and TikTok captions where up to 2 emojis maximum are allowed — and they must be extremely common ones like ❤️ or 😊, nothing flashy or AI-looking (no 📲 🚀 ✨ 💫 🔮 💎 🤖 🎯 📊 💡 👀). For all other channels (Email, LinkedIn, Facebook, Twitter, YouTube, Google Ads): zero emojis.
 
 COPYWRITING INSTRUCTIONS:
 
@@ -70,13 +71,13 @@ You MUST generate realistic, comprehensive, and detailed copy. Do NOT use short 
      * A strong hook statement in the first line
      * 2-3 body paragraphs outlining the challenges/pain points and how {brand_name} solves them
      * A bulleted list highlighting key advantages
-     * Spacing/emojis for high readability
+      * Spacing for high readability — no emojis (see EMOJI USAGE STRICTLY FORBIDDEN)
 
 3. INSTAGRAM & TIKTOK (Engaging Captions):
    - body: Generate a detailed caption of at least 100-150 words.
    - It MUST include:
-     * Emojis, a call-to-engagement (e.g., "Drop a comment below..."), and scene/visual context suggestions
-     * A clean block of relevant hashtags at the bottom
+      * A call-to-engagement (e.g., "Drop a comment below..."), scene/visual context suggestions — up to 2 emojis allowed only here (see EMOJI USAGE STRICTLY FORBIDDEN — Instagram/TikTok exception)
+      * A clean block of relevant hashtags at the bottom
 
 4. YOUTUBE (Video Outline & Description):
    - body: Generate a detailed description of at least 150-200 words.

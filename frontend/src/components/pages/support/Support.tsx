@@ -81,6 +81,28 @@ const SupportContent: React.FC = () => {
       ]
     },
     {
+      title: 'Running Synthetic Focus Group Simulations',
+      duration: '2:15',
+      videoUrl: '/create_campaign.mp4',
+      description: 'Simulate audience segment reactions, objections, and click-intent scores before launch.',
+      steps: [
+        'Open any generated campaign and navigate to the Focus Group tab.',
+        'Select target personas or use the default panel.',
+        'Click "Run Simulation" to gather persona critiques, clash quotes, and rewrite suggestions.'
+      ]
+    },
+    {
+      title: 'Connecting Claude Desktop & Cursor via MCP',
+      duration: '1:45',
+      videoUrl: '/setup_api_keys.mp4',
+      description: 'Set up Model Context Protocol integration to control AgentMark directly from your AI desktop assistant.',
+      steps: [
+        'Go to Settings > Integrations in the AgentMark web app.',
+        'Click "Connect Claude Desktop" to issue a Developer API Key and auto-generate configuration.',
+        'Restart Claude Desktop completely to use natural language tools like generate_campaign and run_focus_group.'
+      ]
+    },
+    {
       title: 'Reviewing & Sharing Copy Variants',
       duration: '1:04',
       videoUrl: '/customize_copy.mp4',

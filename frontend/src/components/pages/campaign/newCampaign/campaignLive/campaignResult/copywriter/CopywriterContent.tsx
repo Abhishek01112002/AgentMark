@@ -75,14 +75,74 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
   const strategicAlignment = flatData?.strategic_alignment || {};
   const copyReadiness = flatData?.copy_readiness || {};
 
-  // Extract copy version history from campaign aiOutputs
+  // Extract copy version history from campaign aiOutputs and include current active draft
   const copyVersions: any[] = React.useMemo(() => {
     if (!campaign?.aiOutputs) return [];
     const outputs = typeof campaign.aiOutputs === 'string'
       ? (() => { try { return JSON.parse(campaign.aiOutputs); } catch { return {}; } })()
       : campaign.aiOutputs;
-    return outputs?.copy_versions || [];
-  }, [campaign?.aiOutputs]);
+    
+    const rawVersions = (outputs?.copy_versions || []) as any[];
+
+    // Ensure all saved versions have normalized numerical scores
+    const versions = rawVersions.map((v: any) => {
+      const fgScore = v.focus_group_score != null ? Number(v.focus_group_score) : null;
+      const cpScore = v.copy_score != null ? Number(v.copy_score) : null;
+      return {
+        ...v,
+        focus_group_score: (fgScore != null && !isNaN(fgScore)) ? Math.round(fgScore) : null,
+        copy_score: (cpScore != null && !isNaN(cpScore)) ? Math.round(cpScore) : null,
+      };
+    });
+
+    // Extract current FG score ONLY if focus_group_output_hash matches current copy_output hash,
+    // or if a report exists for current copy hash in focus_group_outputs map
+    let currentFgScore: number | null = null;
+    if (outputs?.copy_output) {
+      const copyStr = typeof outputs.copy_output === 'string' ? outputs.copy_output : JSON.stringify(outputs.copy_output);
+      let hash = 0;
+      for (let i = 0; i < Math.min(copyStr.length, 500); i++) {
+        const chr = copyStr.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0;
+      }
+      const currentCopyHash = 'h_' + Math.abs(hash).toString(36);
+      const outputsMap = outputs.focus_group_outputs || {};
+      const matchingReport = outputsMap[currentCopyHash] || (outputs.focus_group_output_hash === currentCopyHash ? outputs.focus_group_output : null);
+      
+      if (matchingReport) {
+        const parsedFg = typeof matchingReport === 'string' ? (() => { try { return JSON.parse(matchingReport); } catch { return null; } })() : matchingReport;
+        const rawFgScore = parsedFg?.overall_score;
+        if (rawFgScore != null && !isNaN(Number(rawFgScore))) {
+          currentFgScore = Math.round(Number(rawFgScore));
+        }
+      }
+    }
+
+    // Extract current reviewer copy score
+    const reviewOutput = outputs?.review_output;
+    const parsedReview = typeof reviewOutput === 'string' ? (() => { try { return JSON.parse(reviewOutput); } catch { return null; } })() : reviewOutput;
+    const rawCpScore = parsedReview?.agent_scores?.copywriter ?? parsedReview?.copy_review?.score ?? parsedReview?.overall?.quality_score;
+    const currentCopyScore: number | null = rawCpScore != null && !isNaN(Number(rawCpScore)) ? Math.round(Number(rawCpScore)) : null;
+
+    // Always include current active draft as the latest entry
+    const lastSavedVerNum = versions.length > 0 ? (versions[versions.length - 1]?.version || 0) : 0;
+    const currentVerNum = lastSavedVerNum + 1;
+
+    const currentDraft = {
+      version: currentVerNum,
+      timestamp: (campaign as any).updatedAt || new Date().toISOString(),
+      copy: outputs?.copy_output,
+      focus_group_score: currentFgScore,
+      copy_score: currentCopyScore,
+      feedback_used: outputs?.latest_human_feedback || outputs?.last_feedback_used || 'Current Active Copy',
+      isCurrentDraft: true,
+    };
+
+    // Only show if there's at least one version OR the current draft has copy content
+    if (versions.length === 0 && !outputs?.copy_output) return [];
+    return [...versions, currentDraft];
+  }, [campaign?.aiOutputs, (campaign as any)?.updatedAt, flatData]);
 
   // Get available platforms from data
   const availablePlatforms = platforms.filter(p => flatData?.[p.id]);
@@ -1075,29 +1135,43 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
       {/* Copy Version History */}
       {copyVersions.length > 0 && (
-        <div className="mt-6 bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-          <h3 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <GitBranch size={18} className="text-[#6366F1]" />
-            Copy Version History
-            <span className="ml-auto px-2 py-0.5 rounded-full text-xs" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366F1', fontFamily: 'JetBrains Mono, monospace' }}>
-              {copyVersions.length}/5 versions
+        <div className="mt-8 rounded-2xl p-6 border shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(18, 18, 28, 0.8) 0%, rgba(12, 12, 18, 0.9) 100%)', borderColor: '#262638' }}>
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-sm font-bold flex items-center gap-2.5 tracking-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#F8FAFC' }}>
+              <div className="w-7 h-7 rounded-lg bg-[#6366F1]/15 border border-[#6366F1]/30 flex items-center justify-center">
+                <GitBranch size={15} className="text-[#818cf8]" />
+              </div>
+              Copy Version History & Score Progression
+            </h3>
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase" style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', fontFamily: 'JetBrains Mono, monospace' }}>
+              {copyVersions.length}/5 versions archived
             </span>
-          </h3>
+          </div>
 
           {/* Score Progression Bar */}
-          {copyVersions.length > 1 && (() => {
-            const firstFG = copyVersions[0]?.focus_group_score;
-            const lastFG  = copyVersions[copyVersions.length - 1]?.focus_group_score;
-            const delta   = (firstFG != null && lastFG != null) ? Math.round(lastFG - firstFG) : null;
-            return delta !== null ? (
-              <div className="mb-4 flex items-center gap-3 px-3 py-2 rounded-lg" style={{ background: delta > 0 ? 'rgba(78,222,163,0.08)' : delta < 0 ? 'rgba(239,68,68,0.08)' : 'rgba(99,102,241,0.08)', border: `1px solid ${delta > 0 ? 'rgba(78,222,163,0.2)' : delta < 0 ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)'}` }}>
-                {delta > 0 ? <TrendingUp size={16} className="text-[#4edea3]" /> : delta < 0 ? <TrendingDown size={16} className="text-red-400" /> : <Minus size={16} className="text-[#6366F1]" />}
-                <span className="text-xs font-medium" style={{ fontFamily: 'Inter, sans-serif', color: delta > 0 ? '#4edea3' : delta < 0 ? '#f87171' : '#A0A0D2' }}>
-                  Focus Group score: {firstFG}/100 → {lastFG}/100
-                  {delta > 0 ? ` (+${delta} improvement 🎯)` : delta < 0 ? ` (${delta} — needs more work)` : ' (no change)'}
+          {copyVersions.length >= 1 && (() => {
+            // Find oldest and newest versions that have a non-null FG score
+            const versionsWithScore = copyVersions.filter((v: any) => v.focus_group_score != null);
+            if (versionsWithScore.length < 1) return null;
+
+            const firstFG = versionsWithScore[0]?.focus_group_score;
+            const lastFG  = versionsWithScore[versionsWithScore.length - 1]?.focus_group_score;
+            const delta   = versionsWithScore.length > 1 ? Math.round(lastFG - firstFG) : null;
+
+            return (
+              <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-inner" style={{ background: delta != null && delta > 0 ? 'rgba(52,211,153,0.06)' : delta != null && delta < 0 ? 'rgba(244,63,94,0.06)' : 'rgba(99,102,241,0.06)', borderColor: delta != null && delta > 0 ? 'rgba(52,211,153,0.25)' : delta != null && delta < 0 ? 'rgba(244,63,94,0.25)' : 'rgba(99,102,241,0.25)' }}>
+                {delta == null
+                  ? <span style={{ fontSize: 16 }}>👥</span>
+                  : delta > 0 ? <TrendingUp size={18} className="text-[#34d399]" /> : delta < 0 ? <TrendingDown size={18} className="text-[#f43f5e]" /> : <Minus size={18} className="text-[#818cf8]" />
+                }
+                <span className="text-xs font-semibold tracking-wide" style={{ fontFamily: 'Inter, sans-serif', color: delta != null && delta > 0 ? '#34d399' : delta != null && delta < 0 ? '#f43f5e' : '#A0A0D2' }}>
+                  {delta == null
+                    ? `Focus Group score: ${Math.round(lastFG)}/100`
+                    : `Focus Group Score Progression: ${Math.round(firstFG)}/100 → ${Math.round(lastFG)}/100${delta > 0 ? ` (+${delta} Improvement 🎯)` : delta < 0 ? ` (${delta} — Needs Offer Tuning)` : ' (No change)'}`
+                  }
                 </span>
               </div>
-            ) : null;
+            );
           })()}
 
           {/* Version Timeline */}
@@ -1110,41 +1184,45 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
               const cpScore: number | null = ver.copy_score;
               const feedback: string = ver.feedback_used || 'Initial version';
 
-              const fgColor = fgScore != null ? (fgScore >= 70 ? '#4edea3' : fgScore >= 50 ? '#f59e0b' : '#f87171') : '#8B8B9E';
+              const fgColor = fgScore != null ? (fgScore >= 70 ? '#34d399' : fgScore >= 50 ? '#fbbf24' : '#f43f5e') : '#64748B';
 
               return (
-                <div key={vNum} className="flex items-start gap-3 p-3 rounded-lg transition-colors" style={{ background: isLatest ? 'rgba(99,102,241,0.08)' : 'rgba(10,10,15,0.6)', border: `1px solid ${isLatest ? 'rgba(99,102,241,0.25)' : '#1A1A24'}` }}>
+                <div key={vNum} className="flex items-start gap-3.5 p-3.5 rounded-xl transition-all" style={{ background: isLatest ? 'linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(168,85,247,0.04) 100%)' : 'rgba(10,10,16,0.6)', border: `1px solid ${isLatest ? 'rgba(99,102,241,0.3)' : '#1E1E2C'}` }}>
                   {/* Version badge */}
-                  <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: isLatest ? 'rgba(99,102,241,0.2)' : 'rgba(42,42,56,0.8)' }}>
-                    <span className="text-xs font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: isLatest ? '#6366F1' : '#8B8B9E' }}>V{vNum}</span>
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shadow-inner" style={{ background: isLatest ? 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(168,85,247,0.2) 100%)' : 'rgba(30,30,44,0.8)', color: isLatest ? '#a5a6ff' : '#94A3B8', fontFamily: 'JetBrains Mono, monospace' }}>
+                    V{vNum}
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                       {isLatest && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold" style={{ background: 'rgba(99,102,241,0.2)', color: '#6366F1', fontFamily: 'JetBrains Mono, monospace' }}>CURRENT</span>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider uppercase" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.3)', fontFamily: 'JetBrains Mono, monospace' }}>CURRENT ACTIVE</span>
                       )}
-                      <span className="text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{ts}</span>
+                      <span className="text-[10px] text-[#64748B]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{ts}</span>
 
                       {/* Scores */}
                       <div className="ml-auto flex items-center gap-2">
                         {cpScore != null && (
-                          <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: 'rgba(99,102,241,0.1)', color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>
-                            ✍ {Math.round(cpScore)}/100
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium" style={{ background: 'rgba(99,102,241,0.12)', color: '#a5a6ff', border: '1px solid rgba(99,102,241,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>
+                            ✍ Quality: {Math.round(cpScore)}/100
                           </span>
                         )}
-                        {fgScore != null && (
-                          <span className="text-[10px] px-2 py-0.5 rounded font-semibold" style={{ background: `${fgColor}18`, color: fgColor, fontFamily: 'JetBrains Mono, monospace' }}>
-                            👥 {Math.round(fgScore)}/100
+                        {fgScore != null ? (
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-bold" style={{ background: `${fgColor}18`, color: fgColor, border: `1px solid ${fgColor}35`, fontFamily: 'JetBrains Mono, monospace' }}>
+                            👥 Focus Group: {Math.round(fgScore)}/100
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium text-[#64748B] border border-[#27273A]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            👥 Pending Evaluation
                           </span>
                         )}
                       </div>
                     </div>
 
                     {/* Feedback preview */}
-                    <p className="text-xs line-clamp-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-                      {feedback.length > 120 ? feedback.slice(0, 120) + '…' : feedback}
+                    <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                      {feedback.length > 130 ? feedback.slice(0, 130) + '…' : feedback}
                     </p>
                   </div>
                 </div>

@@ -70,14 +70,72 @@ const sections: Section[] = [
       <>
         <p>Specialized AI workers, each with a defined role and output format:</p>
         <div className="agent-grid">
-          <div className="agent-card"><div className="agent-icon"><PenLine size={16} /></div><h5>Copywriter</h5><p>Ad copy, email body, SMS text, landing pages. Brand voice can be set at the campaign level.</p></div>
-          <div className="agent-card"><div className="agent-icon"><Image size={16} /></div><h5>Image Prompt</h5><p>Detailed prompts for AI image generation. Configure style, aspect ratio, and references.</p></div>
-          <div className="agent-card"><div className="agent-icon"><Globe size={16} /></div><h5>Research</h5><p>Market context, competitor intel, and citations from web sources and stored knowledge.</p></div>
-          <div className="agent-card"><div className="agent-icon"><Waypoints size={16} /></div><h5>Strategy</h5><p>Campaign structure and agent execution sequence.</p></div>
           <div className="agent-card"><div className="agent-icon"><Hammer size={16} /></div><h5>Manager</h5><p>Coordinates agent execution and handoffs across the pipeline.</p></div>
-          <div className="agent-card"><div className="agent-icon"><Eye size={16} /></div><h5>Reviewer</h5><p>Evaluates outputs for tone, clarity, policy compliance. Produces a scorecard with feedback.</p></div>
+          <div className="agent-card"><div className="agent-icon"><Globe size={16} /></div><h5>Research</h5><p>Market context, competitor intel, and citations from web sources using Tavily real-time search.</p></div>
+          <div className="agent-card"><div className="agent-icon"><Waypoints size={16} /></div><h5>Strategy</h5><p>Campaign structure, messaging pillars, and agent execution sequence.</p></div>
+          <div className="agent-card"><div className="agent-icon"><PenLine size={16} /></div><h5>Copywriter</h5><p>Ad copy, email body, SMS text, landing pages, social posts across all selected channels.</p></div>
+          <div className="agent-card"><div className="agent-icon"><Image size={16} /></div><h5>Image Prompt</h5><p>Detailed prompts for DALL-E 3, Midjourney, Imagen 3, and Flux image generators.</p></div>
+          <div className="agent-card"><div className="agent-icon"><Eye size={16} /></div><h5>Reviewer</h5><p>Evaluates outputs for tone, clarity, policy compliance. Produces a quality score (0–100).</p></div>
           <div className="agent-card"><div className="agent-icon"><Share2 size={16} /></div><h5>Publisher</h5><p>Produces a structured publishing plan with calendar, asset checklist, and projected metrics.</p></div>
         </div>
+      </>
+    )
+  },
+  {
+    id: 'hitl', title: 'Human-in-the-Loop', icon: <ShieldCheck size={16} />,
+    content: (
+      <>
+        <p className="lead">After the Reviewer agent completes, the workflow pauses at the <strong>Human Approval Gate</strong> so you can inspect outputs and request targeted revisions.</p>
+        <div className="steps-list">
+          <div className="step-item"><div className="step-num">1</div><div>Reviewer agent completes scoring. Campaign status moves to <span className="tag tag-blue">Awaiting Approval</span>.</div></div>
+          <div className="step-item"><div className="step-num">2</div><div>Inspect agent outputs and choose <strong>Approve</strong> or <strong>Request Changes</strong>.</div></div>
+          <div className="step-item"><div className="step-num">3</div><div>When requesting changes, select a target agent (Research, Strategy, Copywriter, or Image Prompt) and specify feedback.</div></div>
+        </div>
+      </>
+    )
+  },
+  {
+    id: 'focus-groups', title: 'Focus Groups', icon: <Eye size={16} />,
+    content: (
+      <>
+        <p className="lead">Simulate target audience segment reactions to your campaign copy before spending budget.</p>
+        <h4>Simulation & Interview</h4>
+        <ul>
+          <li><strong>Run Simulation:</strong> Parallel persona agents evaluate copy for resonance, objections, clash quotes, and click intent.</li>
+          <li><strong>Interactive Q&A:</strong> Ask custom questions to the persona panel in real time.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    id: 'copy-variants', title: 'Copy Variants', icon: <PenLine size={16} />,
+    content: (
+      <>
+        <p className="lead">Generate alternative copy for specific channels on demand with custom steering notes.</p>
+        <p>Outputs maintain version history and can be individually submitted to Synthetic Focus Group simulations.</p>
+      </>
+    )
+  },
+  {
+    id: 'mcp', title: 'MCP Integration', icon: <Waypoints size={16} />,
+    content: (
+      <>
+        <p className="lead">Connect Claude Desktop, Cursor, or Windsurf directly to AgentMark via Model Context Protocol.</p>
+        <h4>Key Tools</h4>
+        <ul>
+          <li><code>generate_campaign</code>: Execute multi-agent campaign generation via chat.</li>
+          <li><code>run_focus_group</code>: Run persona simulation on campaign copy.</li>
+          <li><code>publish_to_channel</code>: Approve HITL gate and launch Publisher agent.</li>
+        </ul>
+      </>
+    )
+  },
+  {
+    id: 'api-keys', title: 'Developer API Keys', icon: <ShieldCheck size={16} />,
+    content: (
+      <>
+        <p className="lead">Generate long-lived <code>am_&lt;hex&gt;</code> keys under <strong>Settings → Integrations</strong> for MCP and external API integrations.</p>
+        <p>API keys are securely hashed (SHA-256) at rest. Key management actions require an active JWT session.</p>
       </>
     )
   },
@@ -85,7 +143,7 @@ const sections: Section[] = [
     id: 'publishing', title: 'Publishing', icon: <Share2 size={16} />,
     content: (
       <>
-        <p>The Publisher agent generates a structured <strong>publishing plan</strong> as part of campaign output. This includes a publishing decision, content calendar, asset checklist, and projected metrics. Actual dispatch to external platforms is not yet implemented — the plan serves as a handoff document.</p>
+        <p>The Publisher agent generates a structured <strong>publishing plan</strong> as part of campaign output. This includes a publishing decision, content calendar, asset checklist, and projected metrics.</p>
       </>
     )
   },
@@ -94,65 +152,6 @@ const sections: Section[] = [
     content: (
       <>
         <p>Memory Hub stores brand voice details, tone configurations, and revision history across campaigns to maintain long-term brand consistency.</p>
-        <div className="feature-grid">
-          <div className="feature-card"><div className="feature-icon"><Brain size={18} /></div><div><strong>Brand Voice & Tone</strong><span>Learned style parameters automatically injected into new agent prompts</span></div></div>
-          <div className="feature-card"><div className="feature-icon"><Layers size={18} /></div><div><strong>Historical Insights</strong><span>Aggregated scores, approval rates, and revision hotspots</span></div></div>
-        </div>
-
-        <h4 className="mt-6">Dashboard Metrics</h4>
-        <ul>
-          <li><strong>Average Quality Score:</strong> The average rating score computed across all completed campaigns.</li>
-          <li><strong>Approved on 1st Try:</strong> The percentage of campaigns that were approved directly by the human reviewer without revisions.</li>
-          <li><strong>Revision Focus:</strong> The agent that received the most human feedback instructions, highlighting improvement areas.</li>
-        </ul>
-
-        <h4>Campaign Memory Timeline Indicators</h4>
-        <table>
-          <thead>
-            <tr>
-              <th>Indicator</th>
-              <th>Status</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Numeric Value</strong> (e.g., 93)</td>
-              <td>Finalized</td>
-              <td>The final review score given to the campaign upon successful completion.</td>
-            </tr>
-            <tr>
-              <td><strong>Dash</strong> (—)</td>
-              <td>In Progress / Paused</td>
-              <td>Displays when a campaign is active, processing, or awaiting human approval (no final score is saved yet).</td>
-            </tr>
-            <tr>
-              <td><strong>Green Dot with Check</strong></td>
-              <td>Direct Approval</td>
-              <td>The campaign was approved on the first attempt without any human feedback revisions.</td>
-            </tr>
-            <tr>
-              <td><strong>Red/Orange Dot with Cross</strong></td>
-              <td>Revised</td>
-              <td>Human revisions were requested and processed before the campaign was finalized.</td>
-            </tr>
-            <tr>
-              <td><strong>Green Color Code</strong></td>
-              <td>Quality Score &ge; 80</td>
-              <td>Indicates high quality outputs meeting the top tier evaluation baseline.</td>
-            </tr>
-            <tr>
-              <td><strong>Orange Color Code</strong></td>
-              <td>Quality Score &ge; 60</td>
-              <td>Indicates average quality outputs.</td>
-            </tr>
-            <tr>
-              <td><strong>Red Color Code</strong></td>
-              <td>Quality Score &lt; 60</td>
-              <td>Indicates low score threshold or an incomplete campaign run.</td>
-            </tr>
-          </tbody>
-        </table>
       </>
     )
   },
@@ -160,10 +159,8 @@ const sections: Section[] = [
     id: 'settings', title: 'Settings', icon: <Hammer size={16} />,
     content: (
       <>
-        <h4>API Keys</h4>
-        <p>Configure provider API keys for LLM and search services. Keys are stored locally in your browser and sent per-request via headers. Available providers: OpenAI, Gemini, Groq, Tavily.</p>
-        <h4>Notifications</h4>
-        <p>Configure alerts for campaign events: generation complete, review required, publish status, agent failures.</p>
+        <h4>API Keys & Integrations</h4>
+        <p>Configure LLM provider credentials and manage Claude Desktop MCP connections.</p>
       </>
     )
   },
@@ -174,15 +171,10 @@ const sections: Section[] = [
         <table>
           <thead><tr><th>Issue</th><th>Try</th></tr></thead>
           <tbody>
-            <tr><td>Campaign stuck on "Generating"</td><td>Refresh. Disable non-essential agents and retry if persistent.</td></tr>
-            <tr><td>Agent shows error state</td><td>Restart from campaign view. Provider pool auto-fails over to next available LLM.</td></tr>
-            <tr><td>Output quality below expectations</td><td>Provide clearer audience descriptions and brand references.</td></tr>
+            <tr><td>Campaign stuck on "Generating"</td><td>Refresh page or check agent connection status.</td></tr>
+            <tr><td>Claude Desktop not connecting</td><td>Verify API key and restart Claude Desktop completely.</td></tr>
           </tbody>
         </table>
-        <div className="help-box">
-          <HelpCircle size={18} />
-          <div><strong>When contacting support</strong><span>Include campaign ID, browser/OS version, screenshots, and steps to reproduce.</span></div>
-        </div>
       </>
     )
   },

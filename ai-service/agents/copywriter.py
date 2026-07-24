@@ -274,12 +274,31 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     }
     voice_keywords = voice_keywords_map.get(brand_voice, f"{brand_voice}, authentic, natural")
 
-    is_human_revision = bool(
-        (state.human_feedback and state.human_revision_target == "copywriter") or
-        (state.status == "copy_revision_required")
+    is_focus_group_rewrite = bool(state.human_feedback and "MANDATORY FOCUS GROUP REQUIREMENTS" in state.human_feedback)
+    is_surgical_revision = bool(
+        not is_focus_group_rewrite and (
+            (state.human_feedback and state.human_revision_target == "copywriter") or
+            (state.status == "copy_revision_required") or
+            (state.human_revision_target == "copywriter")
+        )
     )
+    is_human_revision = bool(is_focus_group_rewrite or is_surgical_revision)
+
     human_feedback_section = ""
-    if is_human_revision:
+    if is_focus_group_rewrite:
+        feedback_text = state.human_feedback or ""
+        human_feedback_section = (
+            "\n" + "="*80 + "\n"
+            "⚠️ MANDATORY FOCUS GROUP REVISION MODE — ALL CHANNELS:\n"
+            "You are creating a NEW campaign copy variant to fix Focus Group critiques.\n"
+            "CRITICAL VARIANT GENERATION RULES — MUST FOLLOW:\n"
+            "  1. Review ALL Focus Group recommendations below and apply them across EVERY channel.\n"
+            "  2. Generate fresh, high-performing copy for ALL channels.\n"
+            "  3. Do NOT copy old copy character-for-character — improve and elevate messaging everywhere to achieve a 90+ Focus Group score.\n"
+            f"{feedback_text}\n"
+            + "="*80
+        )
+    elif is_surgical_revision:
         existing_copy_section = ""
         if state.copy_output:
             existing_copy_section = (
@@ -341,15 +360,8 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     )
 
     logger.info("   Querying LLM with structured output...")
-    # Revision runs use lower temperature (less drift) and higher token budget
-    # (feedback section adds extra tokens, need headroom for full output)
-    revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 6000 if is_human_revision else 4000
-
-    if is_human_revision:
-        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
-
-    # Cache-aware LLM call
+    revision_temperature = 0.0 if is_surgical_revision else 0.7
+    revision_max_tokens = 6000 if (is_surgical_revision or is_focus_group_rewrite) else 4000
     cache_key = make_key(
         "Copywriter",
         prompt=prompt,

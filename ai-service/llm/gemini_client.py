@@ -34,7 +34,7 @@ def _ensure_event_loop():
 class GeminiClient(BaseLLMClient):
     """Gemini API client with fail-fast provider-pool semantics."""
 
-    def __init__(self, api_key: str = None, model: str = "gemini-3.1-flash-lite"):
+    def __init__(self, api_key: str = None, model: str = "gemini-3.6-flash"):
         super().__init__()
         _ensure_event_loop()
 

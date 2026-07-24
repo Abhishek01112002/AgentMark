@@ -211,8 +211,14 @@ def route_after_human_approval(state: CampaignState) -> str:
         logger.info(f"Campaign {state.campaign_id} cancelled during Human Approval routing — halting graph")
         return "cancelled"
     
+    # Clear prior error state if human user has given an approval/rejection decision
+    if state.human_approval_status:
+        if state.status == "error":
+            state.status = "processing"
+        state.error = ""
+
     # Check for upstream errors to prevent infinite loops
-    if state.status == "error" or state.error:
+    if state.status == "error" or (state.error and len(str(state.error).strip()) > 0):
         logger.info("💥 Upstream error detected - ending workflow")
         return "end"
         
@@ -234,10 +240,11 @@ def route_after_human_approval(state: CampaignState) -> str:
         # CRITICAL: Go directly to publisher, do NOT go back through reviewer
         return "publish"
     
-    elif human_status == "rejected":
-        target = state.human_revision_target
-        logger.info(f"⚠️  HUMAN REJECTED - Routing to {target.upper()} for revision")
-        logger.info(f"   Human Feedback: {state.human_feedback}")
+    elif human_status == "rejected" or bool(state.human_revision_target):
+        target = state.human_revision_target or "copywriter"
+        logger.info(f"⚠️  REVISION REQUESTED - Routing to {target.upper()} for revision")
+        if state.human_feedback:
+            logger.info(f"   Feedback: {state.human_feedback}")
         
         # Route to appropriate agent
         if target == "research":

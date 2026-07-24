@@ -506,7 +506,12 @@ def human_approval_wrapper(state: CampaignState) -> dict:
     logger.info("👤 LANGGRAPH: EXECUTING HUMAN APPROVAL NODE")
     logger.info("="*80)
     
-    if state.error or state.status == "error":
+    if state.human_approval_status:
+        if state.status == "error":
+            state.status = "processing"
+        state.error = ""
+
+    if state.status == "error" or (state.error and len(str(state.error).strip()) > 0):
         logger.info("⏭️ Skipping Human Approval Node due to upstream error")
         return {}
     

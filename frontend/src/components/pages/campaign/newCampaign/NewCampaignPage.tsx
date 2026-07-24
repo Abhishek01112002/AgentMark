@@ -152,7 +152,7 @@ const NewCampaignContent: React.FC = () => {
         additionalInfo: initial.additionalInfo || prev.additionalInfo,
       }));
 
-      toast.success('Pre-filled brief from your previous campaign', { icon: '✏️' });
+      toast.success('Pre-filled brief from your previous campaign');
     }
   }, [location.state]);
 

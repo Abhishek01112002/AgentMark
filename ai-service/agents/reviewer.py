@@ -148,8 +148,8 @@ def _fallback_review_analysis(
     image_issues = []
     image_actions = []
     visual_direction = image_data.get("visual_direction") or {}
-    if not isinstance(visual_direction, dict) or not visual_direction.get("overall_style") or len(str(visual_direction.get("overall_style", ""))) < 20:
-        image_issues.append("visual_direction is incomplete or too short")
+    if not isinstance(visual_direction, dict) or not visual_direction.get("overall_style") or len(str(visual_direction.get("overall_style", ""))) < 5:
+        image_issues.append("visual_direction is incomplete or missing")
         image_actions.append("Provide detailed visual_direction with style, palette, mood, and themes")
     if not image_data.get("image_prompts"):
         image_issues.append("image_prompts array is empty - no visual assets defined")
@@ -812,18 +812,23 @@ def _compute_objective_score(agent_data: dict, agent_type: str) -> int:
         prompts = agent_data.get("image_prompts", [])
         if prompts:
             prompt_score = 50
-            incomplete = 0
+            incomplete = 0.0
             for p in prompts:
-                if not p.get("deliverable_name"):
-                    incomplete += 1
-                elif len(str(p.get("prompt", ""))) < 80:
-                    incomplete += 1
-                elif len(str(p.get("rationale", ""))) < 50:
-                    incomplete += 1
-                elif len(p.get("visual_elements", [])) < 3:
-                    incomplete += 1
-                elif len(p.get("style_keywords", [])) < 4:
-                    incomplete += 1
+                prompt_str = str(p.get("prompt", ""))
+                deliverable = str(p.get("deliverable_name", ""))
+                rationale = str(p.get("rationale", ""))
+                visual_elems = p.get("visual_elements", [])
+                keywords = p.get("style_keywords", [])
+
+                if not deliverable or len(prompt_str) < 30:
+                    incomplete += 1.0
+                elif len(rationale) < 15:
+                    incomplete += 0.5
+                elif not visual_elems:
+                    incomplete += 0.5
+                elif not keywords:
+                    incomplete += 0.5
+
             prompt_score -= round((incomplete / len(prompts)) * 50)
         else:
             prompt_score = 0

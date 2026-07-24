@@ -96,11 +96,38 @@ router.post('/simulate', async (req: AuthRequest, res, next) => {
             [hashKey]: response.data
           };
 
+          const rawScore = response.data?.overall_score;
+          const fgScore = rawScore != null && !isNaN(Number(rawScore)) ? Math.round(Number(rawScore)) : null;
+
+          let updatedVersions = (currentOutputs.copy_versions as any[]) || [];
+          if (fgScore != null) {
+            if (updatedVersions.length > 0) {
+              const lastIdx = updatedVersions.length - 1;
+              updatedVersions = [
+                ...updatedVersions.slice(0, lastIdx),
+                {
+                  ...updatedVersions[lastIdx],
+                  focus_group_score: fgScore,
+                }
+              ];
+            } else if (currentOutputs.copy_output) {
+              updatedVersions = [{
+                version: 1,
+                timestamp: new Date().toISOString(),
+                copy: currentOutputs.copy_output,
+                focus_group_score: fgScore,
+                copy_score: null,
+                feedback_used: 'Initial Version',
+              }];
+            }
+          }
+
           const updatedOutputs = {
             ...currentOutputs,
             focus_group_output: response.data, // Fallback active report
             focus_group_output_hash: hashKey,
-            focus_group_outputs: updatedOutputsMap
+            focus_group_outputs: updatedOutputsMap,
+            copy_versions: updatedVersions,
           };
 
           await prisma.campaign.update({

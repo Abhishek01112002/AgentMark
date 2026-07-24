@@ -261,6 +261,7 @@ class AIServiceClient {
     brand_voice: string;
     target_audience: string;
     llm_config?: any;
+    focus_group_context?: string | null;
   }): Promise<{ channel: string; copy_data: any }> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);

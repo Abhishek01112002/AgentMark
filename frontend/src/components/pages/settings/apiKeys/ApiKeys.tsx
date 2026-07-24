@@ -211,33 +211,23 @@ const ApiKeys: React.FC = () => {
     });
   }, [settings]);
 
-  const handleSaveNewKey = useCallback((provider: LlmProviderId, skipTest = false) => {
+  const handleSaveNewKey = useCallback(async (provider: LlmProviderId) => {
     const val = newKeyValues[provider].trim();
     if (!val) { toast.error('Enter an API key first'); return; }
 
-    // Tavily: no test confirmation, save directly
     if (provider === 'tavily') {
       doSaveKey(provider, val);
       return;
     }
 
-    if (!skipTest && confirmSave?.provider !== provider) {
-      setConfirmSave({ provider, value: val, testFirst: true });
-      return;
-    }
-
-    if (!skipTest) {
-      testKey(provider, val, `${provider}-new`).then((passed) => {
-        if (passed) {
-          doSaveKey(provider, val);
-        } else {
-          setConfirmSave({ provider, value: val, testFirst: false });
-        }
-      });
-    } else {
+    setConfirmSave(null);
+    const passed = await testKey(provider, val, `${provider}-new`);
+    if (passed) {
       doSaveKey(provider, val);
+    } else {
+      setConfirmSave({ provider, value: val, testFirst: false });
     }
-  }, [newKeyValues, confirmSave, testKey, doSaveKey]);
+  }, [newKeyValues, testKey, doSaveKey]);
 
   const addEmptyKey = useCallback((provider: LlmProviderId) => {
     const lastKey = settings[provider].keys.length;
@@ -260,57 +250,12 @@ const ApiKeys: React.FC = () => {
       {confirmSave && createPortal(
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm modal-overlay" onClick={() => setConfirmSave(null)}>
           <div className="bg-surface border border-border-base rounded-xl p-6 shadow-2xl max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
-            {confirmSave.testFirst ? (
-              <>
-                <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">
-                  {testStatus[`${confirmSave.provider}-new`] === 'testing' ? 'Testing connection...' : 'Test this key first?'}
-                </h3>
-                <p className="font-body-sm text-body-sm text-text-secondary mb-6">
-                  {testStatus[`${confirmSave.provider}-new`] === 'testing'
-                    ? 'Making a test API call to verify the key works before saving. This may take a few seconds...'
-                    : "We'll make a test API call to verify the key is working before saving."}
-                </p>
-                <div className="flex gap-3 justify-end">
-                  <button
-                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
-                    onClick={() => { setConfirmSave(null); }}
-                    className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
-                    onClick={() => handleSaveNewKey(confirmSave.provider, false)}
-                    className="px-4 py-2 bg-primary text-on-primary rounded-lg hover:opacity-90 transition-all text-sm flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    {testStatus[`${confirmSave.provider}-new`] === 'testing' ? (
-                      <>
-                        <RefreshCw size={14} className="animate-spin" />
-                        Testing...
-                      </>
-                    ) : (
-                      'Test & Save'
-                    )}
-                  </button>
-                  <button
-                    disabled={testStatus[`${confirmSave.provider}-new`] === 'testing'}
-                    onClick={() => handleSaveNewKey(confirmSave.provider, true)}
-                    className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm disabled:opacity-50"
-                  >
-                    Save Anyway
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">Test failed</h3>
-                <p className="font-body-sm text-body-sm text-text-secondary mb-6">The API key test failed. Do you still want to save it?</p>
-                <div className="flex gap-3 justify-end">
-                  <button onClick={() => { setConfirmSave(null); }} className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm">Cancel</button>
-                  <button onClick={() => handleSaveNewKey(confirmSave.provider, true)} className="px-4 py-2 bg-danger text-on-danger rounded-lg hover:opacity-90 transition-all text-sm">Save Anyway</button>
-                </div>
-              </>
-            )}
+            <h3 className="font-headline-sm text-headline-sm text-text-primary mb-2">Test failed</h3>
+            <p className="font-body-sm text-body-sm text-text-secondary mb-6">The API key test failed. Do you still want to save it?</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => { setConfirmSave(null); }} className="px-4 py-2 border border-border-base rounded-lg text-text-secondary hover:bg-surface-container-high transition-all text-sm">Cancel</button>
+              <button onClick={() => { setConfirmSave(null); doSaveKey(confirmSave.provider, confirmSave.value); }} className="px-4 py-2 bg-danger text-on-danger rounded-lg hover:opacity-90 transition-all text-sm">Save Anyway</button>
+            </div>
           </div>
         </div>,
         document.body

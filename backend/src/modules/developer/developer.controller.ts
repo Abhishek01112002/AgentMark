@@ -508,16 +508,27 @@ export const disconnectClaude = async (
 };
 
 /**
- * Role-scoping guard: Ensures that requests using API key credentials
- * are restricted strictly to allowed MCP scopes (read_projects, simulate_campaigns, read_activity).
- * Prevents API keys from performing administrative or workspace mutation actions.
+ * Campaign-level scope gate for developer API keys.
+ *
+ * API keys intentionally carry the same campaign-level access as a JWT session.
+ * This is required because MCP tools (create_campaign, approve_campaign,
+ * revise_copy_with_feedback, run_focus_group, etc.) all perform write operations.
+ * Restricting keys to read-only would break the entire MCP integration.
+ *
+ * The privilege boundary that DOES matter is enforced in developer.routes.ts:
+ *   - The `jwtOnly` middleware blocks API keys from creating, listing, or revoking
+ *     other API keys — preventing a leaked key from bootstrapping new credentials.
+ *   - Key-management routes (POST/GET/DELETE /api/developer/keys) require a live
+ *     JWT session and cannot be reached with an API key.
+ *
+ * If per-key scoping is needed in the future, add a `scope` column to the ApiKey
+ * model and enforce it here based on `req.authMethod === 'api_key'`.
  */
 export const verifyApiKeyScope = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): void => {
-  // Developer API keys have full access to manage projects, campaigns, focus groups, and publications
   next();
 };
 

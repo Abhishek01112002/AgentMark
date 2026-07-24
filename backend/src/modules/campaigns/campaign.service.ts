@@ -96,10 +96,31 @@ export const campaignService = {
       ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs) as Record<string, any>
       : {};
 
-    const mergedOutputs = {
+    const mergedOutputs: Record<string, any> = {
       ...currentOutputs,
       ...aiOutputs,
     };
+
+    // Auto-record new copy version if copy_output changed and copy_versions history exists
+    if (aiOutputs.copy_output && currentOutputs.copy_versions && Array.isArray(currentOutputs.copy_versions)) {
+      const existingVersions: any[] = currentOutputs.copy_versions;
+      const lastVer = existingVersions[existingVersions.length - 1];
+      const newCopyStr = typeof aiOutputs.copy_output === 'string' ? aiOutputs.copy_output : JSON.stringify(aiOutputs.copy_output);
+      const lastCopyStr = lastVer?.copy ? (typeof lastVer.copy === 'string' ? lastVer.copy : JSON.stringify(lastVer.copy)) : '';
+
+      if (newCopyStr !== lastCopyStr) {
+        const nextVerNum = (lastVer?.version || existingVersions.length) + 1;
+        const newVerEntry = {
+          version: nextVerNum,
+          timestamp: new Date().toISOString(),
+          copy: aiOutputs.copy_output,
+          focus_group_score: null,
+          copy_score: null,
+          feedback_used: 'AI Rewrite (Focus Group Injected)',
+        };
+        mergedOutputs.copy_versions = [...existingVersions, newVerEntry].slice(-5);
+      }
+    }
 
     const campaign = await prisma.campaign.update({
       where: { id: campaignId },

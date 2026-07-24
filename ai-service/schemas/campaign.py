@@ -5,7 +5,7 @@ Request/response models and enums for campaign creation.
 """
 
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
 # ── Request Model ─────────────────────────────────────────────────────────────
@@ -14,44 +14,44 @@ class CampaignCreateRequest(BaseModel):
     """Input payload for creating a new campaign."""
 
     campaign_name: str = Field(
-        min_length=2,
-        max_length=140,
+        min_length=1,
+        max_length=255,
         description="Name of the marketing campaign",
         examples=["Black Friday Mega Sale 2024"],
     )
     brand_name: str = Field(
         min_length=1,
-        max_length=80,
+        max_length=255,
         description="Brand name",
         examples=["TechGadgets Pro"],
     )
     industry: str = Field(
         min_length=1,
-        max_length=80,
+        max_length=255,
         description="Industry sector or custom industry text",
         examples=["ecommerce", "Sports Entertainment"],
     )
     primary_goal: str = Field(
         min_length=1,
-        max_length=120,
+        max_length=255,
         description="Primary campaign objective or custom goal text",
         examples=["sales", "Increase Popularity"],
     )
     target_audience: str = Field(
-        min_length=10,
-        max_length=500,
+        min_length=1,
+        max_length=2000,
         description="Detailed description of the target audience",
         examples=["Tech enthusiasts aged 25-45, early adopters with disposable income"],
     )
     brand_voice: str = Field(
         min_length=1,
-        max_length=80,
+        max_length=255,
         description="Brand voice style",
         examples=["bold", "friendly"],
     )
     brief: Optional[str] = Field(
         default=None,
-        max_length=1000,
+        max_length=10000,
         description="Campaign brief (optional — auto-generated if omitted)",
         examples=["Drive 100 free trial signups in 30 days targeting Product Managers."],
     )
@@ -63,13 +63,13 @@ class CampaignCreateRequest(BaseModel):
         ...,
         description="PostgreSQL campaign UUID passed from Express. Used as the Redis channel ID for real-time status updates.",
     )
-    manager_output: Optional[str] = Field(default=None)
-    research_output: Optional[str] = Field(default=None)
-    strategy_output: Optional[str] = Field(default=None)
-    copy_output: Optional[str] = Field(default=None)
-    image_output: Optional[str] = Field(default=None)
-    review_output: Optional[str] = Field(default=None)
-    publisher_output: Optional[str] = Field(default=None)
+    manager_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    research_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    strategy_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    copy_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    image_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    review_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    publisher_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     human_approval_status: Optional[str] = Field(default=None)
     human_feedback: Optional[str] = Field(default=None)
     human_revision_target: Optional[str] = Field(default=None)
@@ -134,3 +134,4 @@ class CopyVariantRequest(BaseModel):
     brand_voice: str = "professional"
     target_audience: str = ""
     llm_config: Optional[dict] = None
+    focus_group_context: Optional[str] = None  # Stringified focus group recommendations to inject into variant prompt

@@ -238,9 +238,7 @@ const CampaignResultPage: React.FC = () => {
       const outputsMap = outputs.focus_group_outputs || {};
       const savedReport =
         (copyHash ? outputsMap[copyHash] : null) ||
-        (copyHash && outputs.focus_group_output_hash === copyHash ? outputs.focus_group_output : null) ||
-        outputs.focus_group_output ||
-        null;
+        (copyHash && outputs.focus_group_output_hash === copyHash ? outputs.focus_group_output : null);
       
       if (savedReport) {
         setFocusGroupReport(savedReport);
@@ -485,7 +483,7 @@ const CampaignResultPage: React.FC = () => {
           score != null
             ? `Focus Group updated — Score: ${score}/100`
             : 'Focus Group results updated',
-          { duration: 4000, icon: '\uD83D\uDCCA' }
+          { duration: 4000 }
         );
       }
     });
@@ -511,7 +509,7 @@ const CampaignResultPage: React.FC = () => {
         setCampaign(campaignData);
         setShowHumanReview(true);
         if (campaignData.reviewScore) setQualityScore(campaignData.reviewScore);
-        toast.success('Copy revision complete — ready for review', { duration: 4000, icon: '\u2705' });
+        toast.success('Copy revision complete — ready for review', { duration: 4000 });
       } catch (err) {
         console.error('Failed to refresh campaign after revision:', err);
       }
@@ -586,9 +584,11 @@ const CampaignResultPage: React.FC = () => {
     }
   };
 
-  const handleVariantCreated = useCallback((newCampaignId: string, projectId: string) => {
+  const handleVariantCreated = useCallback((newCampaignId: string, projectId: string, selectedStage?: string) => {
     setShowVariantModal(false);
-    navigate(`/campaign/${newCampaignId}/result?projectId=${projectId}`);
+    navigate(`/campaign/${newCampaignId}/live?projectId=${projectId}`, {
+      state: { initialActiveAgent: selectedStage || 'copywriter' }
+    });
   }, [navigate]);
 
   const isTabCompleted = React.useCallback((tabId: TabId) => {
@@ -699,7 +699,7 @@ const CampaignResultPage: React.FC = () => {
       setIsRetryingCampaign(true);
       try {
         await api.post(`/campaigns/${campaign.id}/retry`);
-        toast.success('Retrying campaign pipeline... Agents are running!', { icon: '⚡' });
+        toast.success('Retrying campaign pipeline... Agents are running!');
         navigate(`/campaign/${campaign.id}/live`, { state: { initialActiveAgent: 'manager' } });
       } catch (err: any) {
         console.error('Failed to retry campaign:', err);

@@ -855,6 +855,36 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response, next:
         tavily_api_key: llmConfig?.tavily_api_key || process.env.TAVILY_API_KEY,
       };
 
+      // Extract focus group recommendations to inject into the variant as mandatory constraints
+      let focusGroupContext: string | null = null;
+      const fgOutput = aiOutputs.focus_group_output;
+      if (fgOutput) {
+        const fgData = typeof fgOutput === 'string' ? (() => { try { return JSON.parse(fgOutput); } catch { return null; } })() : fgOutput;
+        if (fgData) {
+          const recommendations: string[] = [];
+          // Overall summary recommendations
+          if (fgData.overall_summary) recommendations.push(`📊 Overall: ${fgData.overall_summary}`);
+          // Per-persona recommendations
+          if (Array.isArray(fgData.participants)) {
+            fgData.participants.forEach((p: any) => {
+              if (p.recommendations?.length) {
+                recommendations.push(...p.recommendations.map((r: string) => `• ${r}`));
+              }
+            });
+          }
+          // Consolidated recommendations block
+          if (Array.isArray(fgData.recommendations)) {
+            recommendations.push(...fgData.recommendations.map((r: string) => `• ${r}`));
+          }
+          if (Array.isArray(fgData.key_recommendations)) {
+            recommendations.push(...fgData.key_recommendations.map((r: string) => `• ${r}`));
+          }
+          if (recommendations.length > 0) {
+            focusGroupContext = [...new Set(recommendations)].slice(0, 15).join('\n');
+          }
+        }
+      }
+
       const response = await aiServiceClient.generateCopyVariant({
         campaign_id: campaign.id,
         channel,
@@ -865,6 +895,7 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response, next:
         brand_voice: campaign.brandVoice,
         target_audience: campaign.targetAudience,
         llm_config: effectiveLlmConfig,
+        focus_group_context: focusGroupContext,
       });
 
       const uuid = crypto.randomUUID();
@@ -1040,13 +1071,19 @@ export const saveCopyVersion = async (req: AuthRequest, res: Response, next: Nex
       return;
     }
 
-    // Extract scores from existing outputs
-    const focusGroupOutput = currentOutputs.focus_group_output as Record<string, any> | undefined;
+    // Extract scores from existing outputs (handling both object and JSON-stringified forms)
+    const rawFg = currentOutputs.focus_group_output || (currentOutputs.focus_group_outputs ? Object.values(currentOutputs.focus_group_outputs).pop() : undefined);
+    const focusGroupOutput = typeof rawFg === 'string'
+      ? (() => { try { return JSON.parse(rawFg); } catch { return undefined; } })()
+      : rawFg as Record<string, any> | undefined;
     const focusGroupScore: number | null = (focusGroupOutput?.overall_score as number) ?? null;
 
-    const reviewOutput = currentOutputs.review_output as Record<string, any> | undefined;
+    const rawReview = currentOutputs.review_output;
+    const reviewOutput = typeof rawReview === 'string'
+      ? (() => { try { return JSON.parse(rawReview); } catch { return undefined; } })()
+      : rawReview as Record<string, any> | undefined;
     const agentScores = reviewOutput?.agent_scores as Record<string, number> | undefined;
-    const copyScore: number | null = agentScores?.copywriter ?? null;
+    const copyScore: number | null = agentScores?.copywriter ?? reviewOutput?.copy_review?.score ?? reviewOutput?.overall?.quality_score ?? null;
 
     const existingVersions: any[] = (currentOutputs.copy_versions as any[]) || [];
     const versionNumber = existingVersions.length + 1;
@@ -1157,11 +1194,30 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
       if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
       if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
       if (parentOutputs.strategy_output) forkedOutputs.strategy_output = parentOutputs.strategy_output;
+      if (parentOutputs.focus_group_outputs) forkedOutputs.focus_group_outputs = parentOutputs.focus_group_outputs;
+      
+      const parentCopyVersions: any[] = (parentOutputs.copy_versions as any[]) || [];
+      if (parentCopyVersions.length > 0) {
+        forkedOutputs.copy_versions = parentCopyVersions;
+      } else if (parentOutputs.copy_output) {
+        const parsedFg = parentOutputs.focus_group_output ? (typeof parentOutputs.focus_group_output === 'string' ? (() => { try { return JSON.parse(parentOutputs.focus_group_output); } catch { return null; } })() : parentOutputs.focus_group_output) : null;
+        const fgScore = parsedFg?.overall_score ?? null;
+        forkedOutputs.copy_versions = [{
+          version: 1,
+          timestamp: campaign.updatedAt || campaign.createdAt,
+          copy: parentOutputs.copy_output,
+          focus_group_score: fgScore != null ? Math.round(Number(fgScore)) : null,
+          copy_score: null,
+          feedback_used: 'Initial Version (Parent Campaign)',
+        }];
+      }
     } else if (selectedStage === 'image_prompt') {
       if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
       if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
       if (parentOutputs.strategy_output) forkedOutputs.strategy_output = parentOutputs.strategy_output;
       if (parentOutputs.copy_output) forkedOutputs.copy_output = parentOutputs.copy_output;
+      if (parentOutputs.focus_group_output) forkedOutputs.focus_group_output = parentOutputs.focus_group_output;
+      if (parentOutputs.copy_versions) forkedOutputs.copy_versions = parentOutputs.copy_versions;
     } else if (selectedStage === 'strategy') {
       if (parentOutputs.manager_output) forkedOutputs.manager_output = parentOutputs.manager_output;
       if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
@@ -1184,7 +1240,7 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
         primaryGoal: campaign.primaryGoal,
         targetAudience: updatedBrief?.targetAudience || campaign.targetAudience,
         brandVoice: updatedBrief?.brandVoice || campaign.brandVoice,
-        additionalInfo: updatedBrief?.additionalInfo || campaign.additionalInfo,
+        additionalInfo: updatedBrief?.additionalInfo || req.body.additionalInfo || campaign.additionalInfo,
         status: initialStatus,
         projectId: campaign.projectId,
         aiOutputs: forkedOutputs,
@@ -1238,6 +1294,34 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
           briefParts.push(`Additional Context: ${clonedCampaign.additionalInfo.trim()}`);
         }
 
+        // Extract focus group recommendations to inject into the variant copywriter execution
+        let focusGroupFeedback: string | undefined = undefined;
+        const fgOutput = parentOutputs.focus_group_output;
+        if (fgOutput) {
+          const fgData = typeof fgOutput === 'string' ? (() => { try { return JSON.parse(fgOutput); } catch { return null; } })() : fgOutput;
+          if (fgData) {
+            const recs: string[] = [];
+            if (fgData.overall_summary) recs.push(`📊 Overall: ${fgData.overall_summary}`);
+            if (Array.isArray(fgData.participants)) {
+              fgData.participants.forEach((p: any) => {
+                if (p.recommendations?.length) recs.push(...p.recommendations.map((r: string) => `• ${r}`));
+              });
+            }
+            if (Array.isArray(fgData.recommendations)) recs.push(...fgData.recommendations.map((r: string) => `• ${r}`));
+            if (Array.isArray(fgData.key_recommendations)) recs.push(...fgData.key_recommendations.map((r: string) => `• ${r}`));
+            if (recs.length > 0) {
+              const recsText = [...new Set(recs)].slice(0, 15).join('\n');
+              focusGroupFeedback = (
+                "⚠️ MANDATORY FOCUS GROUP REQUIREMENTS — Apply ALL of the following before writing:\n" +
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                `${recsText}\n` +
+                "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+                "Every single point above MUST be addressed in the copy."
+              );
+            }
+          }
+        }
+
         void runAIWorkflowBackground(clonedCampaign.id, {
           campaign_name: clonedCampaign.name,
           brand_name: brandName,
@@ -1254,6 +1338,7 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
           strategy_output: forkedOutputs.strategy_output ? JSON.stringify(forkedOutputs.strategy_output) : null,
           copy_output: forkedOutputs.copy_output ? JSON.stringify(forkedOutputs.copy_output) : null,
           image_output: forkedOutputs.image_output ? JSON.stringify(forkedOutputs.image_output) : null,
+          human_feedback: focusGroupFeedback,
           human_revision_target: selectedStage === 'fresh' || selectedStage === 'research' ? null : selectedStage,
         }, io);
       }
