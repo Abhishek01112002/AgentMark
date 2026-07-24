@@ -437,12 +437,12 @@ Behavior: Concurrent requests for the same channel return HTTP 429 immediately.`
           <tbody>
             <tr>
               <td><strong>JWT Bearer Token</strong></td>
-              <td>`Authorization: Bearer <jwt_token>`</td>
+              <td><code>Authorization: Bearer &lt;jwt_token&gt;</code></td>
               <td>Full access — including key creation, key revocation, project deletion, and user account settings.</td>
             </tr>
             <tr>
               <td><strong>Developer API Key</strong></td>
-              <td>`Authorization: Bearer am_<hex>`</td>
+              <td><code>Authorization: Bearer am_&lt;hex&gt;</code></td>
               <td>Campaign-level access — create/read campaigns, run focus groups, trigger publisher. <strong>Blocked from key management routes (`jwtOnly`).</strong></td>
             </tr>
           </tbody>
