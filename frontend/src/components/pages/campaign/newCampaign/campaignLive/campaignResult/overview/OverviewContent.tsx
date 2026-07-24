@@ -53,10 +53,16 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
   const primaryGoal = data?.primary_goal || campaign?.primaryGoal || '';
   const targetAudience = data?.target_audience || campaign?.targetAudience || '';
   const brandVoice = data?.brand_voice || campaign?.brandVoice || '';
-  const channels = data?.channels || [];
-  const deliverables = data?.deliverables || [];
+  const rawChannels = data?.channels || data?.manager_output?.channels || campaign?.channels || [];
+  const strategyChannels = data?.strategy_output?.channels || data?.strategy_output?.recommended_channels || [];
+  const channelCards: string[] = (Array.isArray(rawChannels) && rawChannels.length > 0 && rawChannels[0] !== 'Not specified')
+    ? rawChannels
+    : (Array.isArray(strategyChannels) && strategyChannels.length > 0)
+    ? strategyChannels
+    : [];
+
+  const deliverables = data?.deliverables || data?.manager_output?.deliverables || [];
   const displayGoal = formatGoalLabel(primaryGoal);
-  const channelCards = channels.length > 0 ? channels : ['Not specified'];
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -212,7 +218,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           <div>
             <span className="text-xs uppercase mb-1 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Channels</span>
             <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>
-              {channels.length || 0}
+              {channelCards.length || 0}
             </p>
           </div>
           <div>

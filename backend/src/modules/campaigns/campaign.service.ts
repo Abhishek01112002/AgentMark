@@ -114,13 +114,26 @@ export const campaignService = {
           version: nextVerNum,
           timestamp: new Date().toISOString(),
           copy: aiOutputs.copy_output,
-          focus_group_score: null,
-          copy_score: null,
           feedback_used: 'AI Rewrite (Focus Group Injected)',
         };
         mergedOutputs.copy_versions = [...existingVersions, newVerEntry].slice(-5);
       }
     }
+
+    // Ensure manager_output channels and deliverables are intelligently populated
+    const strategyChannels = mergedOutputs.strategy_output?.channels || mergedOutputs.strategy_output?.recommended_channels || [];
+    const existingChannels = mergedOutputs.manager_output?.channels || mergedOutputs.channels || [];
+    const effectiveChannels = (Array.isArray(existingChannels) && existingChannels.length > 0)
+      ? existingChannels
+      : (Array.isArray(strategyChannels) && strategyChannels.length > 0)
+      ? strategyChannels
+      : [];
+
+    if (!mergedOutputs.manager_output || typeof mergedOutputs.manager_output !== 'object') {
+      mergedOutputs.manager_output = {};
+    }
+    mergedOutputs.manager_output.channels = effectiveChannels;
+    mergedOutputs.channels = effectiveChannels;
 
     const campaign = await prisma.campaign.update({
       where: { id: campaignId },
