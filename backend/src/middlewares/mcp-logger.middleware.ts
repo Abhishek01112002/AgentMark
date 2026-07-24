@@ -52,108 +52,108 @@ export const mcpLoggerMiddleware = async (
     return next();
   }
 
-  if (rawToolName && typeof rawToolName === 'string') {
-    // ── Invocation ID deduplication ──────────────────────────────────────
-    const invocationId = req.headers['x-mcp-invocation-id'];
-    if (invocationId && typeof invocationId === 'string') {
-      if (recentInvocations.has(invocationId)) {
-        // Already logged this tool invocation — skip duplicate
-        return next();
-      }
-      recentInvocations.set(invocationId, Date.now());
-    }
-
-    // Resolve userId directly inside middleware if not set by authMiddleware yet
-    let userId = req.userId;
-    if (!userId) {
-      const authHeader = req.headers.authorization;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.substring(7);
+  // Resolve userId directly inside middleware if not set by authMiddleware yet
+  let userId = req.userId;
+  if (!userId) {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const decoded = verifyToken(token);
+        userId = decoded.userId;
+      } catch {
         try {
-          const decoded = verifyToken(token);
-          userId = decoded.userId;
-        } catch {
-          try {
-            const keyHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
-            const apiKey = await prisma.apiKey.findUnique({
-              where: { keyHash },
-              select: { userId: true, isActive: true },
-            });
-            if (apiKey && apiKey.isActive) {
-              userId = apiKey.userId;
-            }
-          } catch {
-            // Ignore lookup failures
+          const keyHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+          const apiKey = await prisma.apiKey.findUnique({
+            where: { keyHash },
+            select: { userId: true, isActive: true },
+          });
+          if (apiKey && apiKey.isActive) {
+            userId = apiKey.userId;
           }
+        } catch {
+          // Ignore lookup failures
         }
       }
     }
+  }
 
-    if (userId) {
-      const sanitizedUserId = userId;
-      userLastMcpActivity.set(sanitizedUserId, Date.now());
-      const toolName = rawToolName.trim().slice(0, 100);
+  // Always update real-time MCP activity timestamp for live connection tracking
+  if (userId) {
+    userLastMcpActivity.set(userId, Date.now());
+  }
 
-      if (toolName) {
-        let extractedCampaignId =
-          req.params.id && typeof req.params.id === 'string' && req.params.id.match(/^[0-9a-fA-F-]{36}$/)
-            ? req.params.id
-            : req.body?.campaign_id && typeof req.body.campaign_id === 'string' && req.body.campaign_id.match(/^[0-9a-fA-F-]{36}$/)
-            ? req.body.campaign_id
-            : req.body?.campaignId && typeof req.body.campaignId === 'string' && req.body.campaignId.match(/^[0-9a-fA-F-]{36}$/)
-            ? req.body.campaignId
-            : null;
+  // ── Invocation ID deduplication for audit logging ─────────────────────────
+  const invocationId = req.headers['x-mcp-invocation-id'];
+  if (invocationId && typeof invocationId === 'string') {
+    if (recentInvocations.has(invocationId)) {
+      // Already logged this tool invocation — skip duplicate DB audit log
+      return next();
+    }
+    recentInvocations.set(invocationId, Date.now());
+  }
 
-        // Intercept res.json to capture created campaign ID from response body for POST /api/campaigns
-        const originalJson = res.json;
-        res.json = function (body: any) {
-          if (!extractedCampaignId && body && typeof body === 'object') {
-            const createdId = body.campaign?.id || body.id;
-            if (createdId && typeof createdId === 'string' && createdId.match(/^[0-9a-fA-F-]{36}$/)) {
-              extractedCampaignId = createdId;
-            }
-          }
-          return originalJson.call(this, body);
-        };
+  const toolName = rawToolName.trim().slice(0, 100);
 
-        const rawMetadata = req.body || {};
-        const metadata: Record<string, any> = {};
-        if (rawMetadata.name) metadata.name = String(rawMetadata.name).slice(0, 200);
-        if (rawMetadata.brandName) metadata.brandName = String(rawMetadata.brandName).slice(0, 200);
-        if (rawMetadata.primaryGoal) metadata.primaryGoal = String(rawMetadata.primaryGoal).slice(0, 100);
-        if (rawMetadata.feedback) metadata.feedback = String(rawMetadata.feedback).slice(0, 300);
+  if (toolName && userId) {
+    const activeUserId = userId;
+    let extractedCampaignId =
+      req.params.id && typeof req.params.id === 'string' && req.params.id.match(/^[0-9a-fA-F-]{36}$/)
+        ? req.params.id
+        : req.body?.campaign_id && typeof req.body.campaign_id === 'string' && req.body.campaign_id.match(/^[0-9a-fA-F-]{36}$/)
+        ? req.body.campaign_id
+        : req.body?.campaignId && typeof req.body.campaignId === 'string' && req.body.campaignId.match(/^[0-9a-fA-F-]{36}$/)
+        ? req.body.campaignId
+        : null;
 
-        res.on('finish', () => {
-          if (res.statusCode >= 200 && res.statusCode < 400) {
-            setImmediate(async () => {
-              try {
-                const activity = await prisma.mcpActivity.create({
-                  data: {
-                    userId: sanitizedUserId,
-                    toolName,
-                    campaignId: extractedCampaignId,
-                    metadata,
-                  },
-                  select: {
-                    id: true,
-                    toolName: true,
-                    campaignId: true,
-                    createdAt: true,
-                  },
-                });
+    // Intercept res.json to capture created campaign ID from response body for POST /api/campaigns
+    const originalJson = res.json;
+    res.json = function (body: any) {
+      if (!extractedCampaignId && body && typeof body === 'object') {
+        const createdId = body.campaign?.id || body.id;
+        if (createdId && typeof createdId === 'string' && createdId.match(/^[0-9a-fA-F-]{36}$/)) {
+          extractedCampaignId = createdId;
+        }
+      }
+      return originalJson.call(this, body);
+    };
 
-                const io = getIO();
-                if (io) {
-                  io.to(`user:${sanitizedUserId}`).emit('mcp_activity', activity);
-                }
-              } catch (err) {
-                console.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
-              }
+    const rawMetadata = req.body || {};
+    const metadata: Record<string, any> = {};
+    if (rawMetadata.name) metadata.name = String(rawMetadata.name).slice(0, 200);
+    if (rawMetadata.brandName) metadata.brandName = String(rawMetadata.brandName).slice(0, 200);
+    if (rawMetadata.primaryGoal) metadata.primaryGoal = String(rawMetadata.primaryGoal).slice(0, 100);
+    if (rawMetadata.feedback) metadata.feedback = String(rawMetadata.feedback).slice(0, 300);
+
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 400) {
+        setImmediate(async () => {
+          try {
+            const activity = await prisma.mcpActivity.create({
+              data: {
+                userId: activeUserId,
+                toolName,
+                campaignId: extractedCampaignId,
+                metadata,
+              },
+              select: {
+                id: true,
+                toolName: true,
+                campaignId: true,
+                createdAt: true,
+              },
             });
+
+            const io = getIO();
+            if (io) {
+              io.to(`user:${activeUserId}`).emit('mcp_activity', activity);
+            }
+          } catch (err) {
+            console.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
           }
         });
       }
-    }
+    });
   }
 
   next();

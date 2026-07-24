@@ -1,4 +1,4 @@
-﻿/**
+/**
  * auth.middleware.ts — Dual-Mode Authentication Middleware
  *
  * Accepts two mutually exclusive credential types on the same
@@ -29,6 +29,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { verifyToken } from '../utils/jwt';
 import prisma from '../db';
+import { userLastMcpActivity } from './mcp-logger.middleware';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -86,6 +87,9 @@ export const authMiddleware = async (
 
     req.userId = apiKey.userId;
     req.authMethod = 'api_key';
+
+    // Track real-time live activity for integration status
+    userLastMcpActivity.set(apiKey.userId, Date.now());
 
     // Fire-and-forget: update lastUsedAt without blocking the request.
     // If this write fails (e.g., transient DB error), it is non-fatal —
