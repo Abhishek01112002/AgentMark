@@ -52,7 +52,13 @@ async def run_focus_group_impl(
     """
     # ── 1. Fetch campaign details ─────────────────────────────────────────────
     logger.info("Fetching campaign details for focus group | campaign=%s", campaign_id)
-    campaign = await client.get_campaign(campaign_id)
+    try:
+        campaign = await client.get_campaign(campaign_id)
+    except Exception as exc:
+        logger.error("Failed to fetch campaign for focus group | campaign=%s | error=%s", campaign_id, exc)
+        raise RuntimeError(
+            "Could not retrieve campaign '%s' for focus group simulation: %s" % (campaign_id, exc)
+        ) from exc
 
     brand_name = campaign.get("brandName") or campaign.get("brand_name") or "Unnamed Brand"
     industry = campaign.get("industry") or "Unknown"
@@ -182,9 +188,11 @@ async def run_focus_group_impl(
     # ── 3. Normalize Unicode to NFC and newlines to Unix style before payload send ─
     copy_text = unicodedata.normalize('NFC', copy_text)
     copy_text = copy_text.replace('\r\n', '\n').replace('\r', '\n')
+    # Log channel count only if we extracted copy automatically (champion_texts built above)
+    channel_count = len(champion_texts) if 'champion_texts' in dir() else 'N/A (caller-supplied)'
     logger.info(
-        "Extracted copy from %d channels for campaign %s",
-        len(champion_texts),
+        "Extracted copy from %s channels for campaign %s",
+        channel_count,
         campaign_id,
     )
 
@@ -210,7 +218,22 @@ async def run_focus_group_impl(
         negativity_bias,
     )
 
-    simulation_response = await client.post("/api/focus-group/simulate", payload)
+    try:
+        simulation_response = await client.post("/api/focus-group/simulate", payload)
+    except Exception as exc:
+        logger.error(
+            "Focus group simulation POST failed | campaign=%s | error=%s", campaign_id, exc
+        )
+        raise RuntimeError(
+            "Focus group simulation failed for campaign '%s': %s" % (campaign_id, exc)
+        ) from exc
+
+    if not isinstance(simulation_response, dict):
+        raise RuntimeError(
+            "Focus group simulation returned an unexpected response type (%s) for campaign '%s'. "
+            "Expected a JSON object."
+            % (type(simulation_response).__name__, campaign_id)
+        )
 
     logger.info("Focus group simulation complete | campaign=%s", campaign_id)
 
@@ -219,4 +242,17 @@ async def run_focus_group_impl(
         on_progress("[AgentMark] [Focus Group] Simulation complete. Overall score: %s/100" % overall)
 
     # ── 5. Format and return ──────────────────────────────────────────────────
-    return format_focus_group_report(simulation_response)
+    try:
+        return format_focus_group_report(simulation_response)
+    except Exception as exc:
+        logger.error(
+            "Failed to format focus group report | campaign=%s | error=%s", campaign_id, exc
+        )
+        # Return raw score summary instead of losing the result entirely
+        overall = simulation_response.get("overall_score", "N/A")
+        return (
+            f"# Focus Group Simulation Complete\n\n"
+            f"**Campaign ID:** `{campaign_id}`\n"
+            f"**Overall Score:** {overall}/100\n\n"
+            f"Full report formatting failed ({exc}). Raw result is saved to the campaign record."
+        )

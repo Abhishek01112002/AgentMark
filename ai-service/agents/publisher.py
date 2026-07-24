@@ -243,6 +243,9 @@ def _write_hold_output(
     state.status = "completed"
     state.workflow_finished = True
     state.error = None
+    return state  # Critical: must return state so orchestrator receives updated CampaignState
+
+
 def _fallback_publisher_output(
     channels: list[str],
     deliverables: list[str],

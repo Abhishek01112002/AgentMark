@@ -321,9 +321,15 @@ async def get_campaign_status_impl(
     Returns:
         A formatted Markdown status summary.
     """
-    campaign = await client.get_campaign(campaign_id)
+    try:
+        campaign = await client.get_campaign(campaign_id)
+    except Exception as exc:
+        logger.error("Failed to fetch campaign status | campaign=%s | error=%s", campaign_id, exc)
+        raise RuntimeError(
+            "Could not retrieve status for campaign '%s': %s" % (campaign_id, exc)
+        ) from exc
 
-    status = campaign.get("status", "unknown")
+    status = str(campaign.get("status") or "unknown")
     review_score = campaign.get("reviewScore")
     human_status = campaign.get("humanApprovalStatus") or "N/A"
     name = campaign.get("name", "Unnamed Campaign")
@@ -370,10 +376,12 @@ async def get_campaign_status_impl(
         lines.append("| Version | Timestamp | Copy Score | FG Score | Feedback Used |\n")
         lines.append("|---|---|---|---|---|\n")
         for v in copy_versions:
-            ts = v.get("timestamp", "?")[:19].replace("T", " ")
+            # Safe coerce: timestamp may be None or non-string if schema changes
+            ts_raw = v.get("timestamp", "?")
+            ts = str(ts_raw)[:19].replace("T", " ") if ts_raw else "?"
             cs = v.get("copy_score") or "N/A"
             fgs = v.get("focus_group_score") or "N/A"
-            fb_raw = v.get("feedback_used") or "Initial version"
+            fb_raw = str(v.get("feedback_used") or "Initial version")
             fb = _sanitize_md(fb_raw[:50]) + ("…" if len(fb_raw) > 50 else "")
             lines.append(f"| V{v.get('version', '?')} | {ts} | {cs} | {fgs} | {fb} |\n")
         lines.append("\n")
@@ -388,8 +396,10 @@ async def get_campaign_status_impl(
     if image_prompts:
         lines.append("## 🎨 Generated Image Prompts & Visual Directions\n\n")
         visual_dir = image_data.get("visual_direction") or {}
-        if visual_dir.get("mood"):
-            lines.append(f"**Visual Mood:** {_sanitize_md(visual_dir.get('mood'))}\n\n")
+        raw_mood = visual_dir.get("mood")
+        # Guard: mood may be a non-string truthy value (dict, list) if schema is malformed
+        if raw_mood and isinstance(raw_mood, str):
+            lines.append(f"**Visual Mood:** {_sanitize_md(raw_mood)}\n\n")
         for idx, ip in enumerate(image_prompts, 1):
             p_text = ip.get("prompt", "")
             ratio = ip.get("aspect_ratio", "1:1")

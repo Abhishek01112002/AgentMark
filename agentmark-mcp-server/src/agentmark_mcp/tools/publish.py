@@ -150,7 +150,8 @@ async def publish_to_channel_impl(
                 ) from exc
             continue
 
-        status = campaign.get("status", "processing").lower()
+        raw_status = campaign.get("status", "processing")
+        status = str(raw_status).lower() if raw_status is not None else "processing"
 
         # ── Terminal: success ──────────────────────────────────────────────
         if status == "completed":
@@ -181,7 +182,21 @@ async def publish_to_channel_impl(
             if on_progress:
                 on_progress("[AgentMark] [Publisher] Distribution plan assembled.")
 
-            return format_publisher_report(publisher_output, campaign_id)
+            try:
+                return format_publisher_report(publisher_output, campaign_id)
+            except Exception as fmt_err:
+                logger.error(
+                    "format_publisher_report failed after successful publish | campaign=%s | error=%s",
+                    campaign_id, fmt_err,
+                )
+                decision = publisher_output.get("publishing_decision", "APPROVED") if isinstance(publisher_output, dict) else "APPROVED"
+                return (
+                    f"# Publisher Workflow Complete\n\n"
+                    f"**Campaign ID:** `{campaign_id}`\n"
+                    f"**Decision:** {decision}\n\n"
+                    f"Campaign is live. Full report available at `/campaign/{campaign_id}/result`.\n"
+                    f"(Report formatting error: {fmt_err})"
+                )
 
         # ── Terminal: failure ──────────────────────────────────────────────
         if status in ("failed", "error", "cancelled"):

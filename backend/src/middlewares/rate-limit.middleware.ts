@@ -20,11 +20,15 @@ const sendCommand = async (...args: string[]): Promise<any> => {
     throw new Error('Redis rate limit store is disabled in test');
   }
   
-  // If connection is in progress, wait for the ready event instead of throwing immediately
+  // If connection is in progress, wait for the ready event instead of throwing immediately.
+  // Race with a 5-second timeout so a permanently-stuck Redis never blocks every request forever.
   if (redisClient.status === 'connecting') {
-    await new Promise<void>((resolve) => {
-      redisClient.once('ready', () => resolve());
-    });
+    await Promise.race([
+      new Promise<void>((resolve) => { redisClient.once('ready', resolve); }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Redis not ready after 5s timeout')), 5000)
+      ),
+    ]);
   }
 
   if (redisClient.status !== 'ready') {

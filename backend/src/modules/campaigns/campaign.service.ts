@@ -43,30 +43,35 @@ export const campaignService = {
     let reviewScore: number | null = null;
     
     if (aiOutputs.review_output) {
-      const reviewOutput = typeof aiOutputs.review_output === 'string'
-        ? JSON.parse(aiOutputs.review_output)
-        : aiOutputs.review_output;
-      
-      const scores: number[] = [];
-      
-      if (reviewOutput.research_review?.score !== undefined && reviewOutput.research_review?.score !== null) {
-        scores.push(reviewOutput.research_review.score);
-      }
-      if (reviewOutput.strategy_review?.score !== undefined && reviewOutput.strategy_review?.score !== null) {
-        scores.push(reviewOutput.strategy_review.score);
-      }
-      if (reviewOutput.copy_review?.score !== undefined && reviewOutput.copy_review?.score !== null) {
-        scores.push(reviewOutput.copy_review.score);
-      }
-      if (reviewOutput.image_review?.score !== undefined && reviewOutput.image_review?.score !== null) {
-        scores.push(reviewOutput.image_review.score);
-      }
-      
-      if (scores.length > 0) {
-        const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
-        reviewScore = parseFloat(avgScore100.toFixed(1));
-      } else if (reviewOutput.overall_quality_score !== undefined && reviewOutput.overall_quality_score !== null) {
-        reviewScore = parseFloat(reviewOutput.overall_quality_score.toFixed(1));
+      try {
+        const reviewOutput = typeof aiOutputs.review_output === 'string'
+          ? JSON.parse(aiOutputs.review_output)
+          : aiOutputs.review_output;
+        
+        const scores: number[] = [];
+        
+        if (reviewOutput.research_review?.score !== undefined && reviewOutput.research_review?.score !== null) {
+          scores.push(reviewOutput.research_review.score);
+        }
+        if (reviewOutput.strategy_review?.score !== undefined && reviewOutput.strategy_review?.score !== null) {
+          scores.push(reviewOutput.strategy_review.score);
+        }
+        if (reviewOutput.copy_review?.score !== undefined && reviewOutput.copy_review?.score !== null) {
+          scores.push(reviewOutput.copy_review.score);
+        }
+        if (reviewOutput.image_review?.score !== undefined && reviewOutput.image_review?.score !== null) {
+          scores.push(reviewOutput.image_review.score);
+        }
+        
+        if (scores.length > 0) {
+          const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
+          reviewScore = parseFloat(avgScore100.toFixed(1));
+        } else if (reviewOutput.overall_quality_score !== undefined && reviewOutput.overall_quality_score !== null) {
+          reviewScore = parseFloat(reviewOutput.overall_quality_score.toFixed(1));
+        }
+      } catch (err) {
+        console.error(`[CampaignService] Failed to parse review_output for score extraction (campaign: ${campaignId}):`, err);
+        // reviewScore stays null — campaign still saves without a score
       }
     }
 
@@ -92,9 +97,17 @@ export const campaignService = {
       return existing as any;
     }
 
-    const currentOutputs = existing?.aiOutputs
-      ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs) as Record<string, any>
-      : {};
+    let currentOutputs: Record<string, any> = {};
+    if (existing?.aiOutputs) {
+      try {
+        currentOutputs = (typeof existing.aiOutputs === 'string'
+          ? JSON.parse(existing.aiOutputs)
+          : existing.aiOutputs) as Record<string, any>;
+      } catch (err) {
+        console.error(`[CampaignService] Failed to parse existing aiOutputs for campaign ${campaignId}:`, err);
+        // Fall back to empty object — new outputs will overwrite
+      }
+    }
 
     const mergedOutputs: Record<string, any> = {
       ...currentOutputs,
@@ -148,16 +161,20 @@ export const campaignService = {
 
     const statusChanged = existing?.status !== status;
     if (statusChanged) {
-      const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
-      if (project) {
-        await notificationService.create(project.userId, {
-          type: status === 'completed' ? 'success' : 'error',
-          title: status === 'completed' ? 'Campaign completed' : 'Campaign failed',
-          message:
-            status === 'completed'
-              ? `Campaign "${campaign.name}" completed successfully.`
-              : `Campaign "${campaign.name}" failed during processing.`,
-        });
+      try {
+        const project = await prisma.project.findUnique({ where: { id: campaign.projectId } });
+        if (project) {
+          await notificationService.create(project.userId, {
+            type: status === 'completed' ? 'success' : 'error',
+            title: status === 'completed' ? 'Campaign completed' : 'Campaign failed',
+            message:
+              status === 'completed'
+                ? `Campaign "${campaign.name}" completed successfully.`
+                : `Campaign "${campaign.name}" failed during processing.`,
+          });
+        }
+      } catch (err) {
+        console.error(`[CampaignService] Failed to create status-change notification for campaign ${campaignId}:`, err);
       }
     }
 
@@ -234,11 +251,16 @@ export const campaignService = {
 
     const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (project) {
-      await notificationService.create(project.userId, {
-        type: 'warning',
-        title: 'Campaign deleted',
-        message: `Campaign "${campaign.name}" was removed.`,
-      });
+      // Notification is fire-and-forget: a failure must NOT surface a 500 after successful deletion
+      try {
+        await notificationService.create(project.userId, {
+          type: 'warning',
+          title: 'Campaign deleted',
+          message: `Campaign "${campaign.name}" was removed.`,
+        });
+      } catch (err) {
+        console.error(`[CampaignService] Failed to create campaign-deleted notification for campaign ${id}:`, err);
+      }
     }
     return campaign;
   },

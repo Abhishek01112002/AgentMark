@@ -204,7 +204,8 @@ async def generate_campaign_impl(
             continue
 
         # ── Inspect campaign status ────────────────────────────────────────────
-        status = campaign_details.get("status", "processing").lower()
+        raw_status = campaign_details.get("status", "processing")
+        status = str(raw_status).lower() if raw_status is not None else "processing"
 
         if status == "completed":
             # Extract and emit reviewer score if available for progress feedback
@@ -216,18 +217,35 @@ async def generate_campaign_impl(
                 "Campaign generation completed | id=%s | elapsed=%.0fs | score=%s",
                 campaign_id, elapsed_secs, review_score
             )
-            return format_campaign_brief(campaign_details)
+            try:
+                return format_campaign_brief(campaign_details)
+            except Exception as fmt_err:
+                logger.error("format_campaign_brief failed after successful generation | id=%s | error=%s", campaign_id, fmt_err)
+                return (
+                    f"# Campaign Generated Successfully\n\n"
+                    f"**Campaign Name:** {campaign_name}\n"
+                    f"**Campaign ID:** `{campaign_id}`\n"
+                    f"**Review Score:** {review_score}/100\n\n"
+                    f"Campaign is ready in AgentMark Dashboard at `/campaign/{campaign_id}/result`.\n"
+                    f"(Report formatting error: {fmt_err})"
+                )
 
         elif status == "awaiting_human_approval":
-            # This status means the campaign generated successfully and is awaiting
-            # human-in-the-loop review in the AgentMark web UI.
-            # From the MCP perspective, we treat this as a successful generation
-            # and return the brief with a clear note about the approval step.
             logger.info(
                 "Campaign reached human approval gate | id=%s | elapsed=%.0fs",
                 campaign_id, elapsed_secs
             )
-            return format_campaign_brief(campaign_details, awaiting_approval=True)
+            try:
+                return format_campaign_brief(campaign_details, awaiting_approval=True)
+            except Exception as fmt_err:
+                logger.error("format_campaign_brief (approval) failed | id=%s | error=%s", campaign_id, fmt_err)
+                return (
+                    f"# Campaign Awaiting Your Approval\n\n"
+                    f"**Campaign Name:** {campaign_name}\n"
+                    f"**Campaign ID:** `{campaign_id}`\n\n"
+                    f"Review and approve at `/campaign/{campaign_id}/result`.\n"
+                    f"(Report formatting error: {fmt_err})"
+                )
 
         elif status in ("failed", "error", "cancelled"):
             error_msg = (

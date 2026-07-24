@@ -136,6 +136,7 @@ const CampaignLivePage: React.FC = () => {
   });
 
   const decisionMadeRef = useRef(false);
+  const humanReviewShownRef = useRef(false);
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -334,6 +335,7 @@ const CampaignLivePage: React.FC = () => {
             })
           );
         } else if (campaign.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
+          humanReviewShownRef.current = true;
           setShowHumanReview(true);
           setRevisionCounts({
             research: campaign.researchRevisionCount || 0,

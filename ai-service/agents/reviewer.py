@@ -670,20 +670,20 @@ def _add_explicit_validation_checks(
     
     if strategy_goal and copy_goal and strategy_goal != copy_goal:
         issue = f"Copy inferred_goal '{copy_goal}' doesn't match strategy inferred_goal '{strategy_goal}'"
-        if issue not in copy_review.issues:
+        if issue not in (copy_review.issues or []):
+            copy_review.issues = copy_review.issues or []
             copy_review.issues.append(issue)
-            if not copy_review.action_items:
-                copy_review.action_items = []
+            copy_review.action_items = copy_review.action_items or []
             copy_review.action_items.append(f"Change copy inferred_goal to '{strategy_goal}' to match strategy")
             
     # Check 1b: Strategy inferred_goal must be valid
     valid_goals = {"awareness", "lead_gen", "sales", "retention"}
     if strategy_goal and strategy_goal not in valid_goals:
         issue = f"Strategy inferred_goal '{strategy_goal}' is invalid. Must be one of: {', '.join(valid_goals)}"
-        if issue not in strategy_review.issues:
+        if issue not in (strategy_review.issues or []):
+            strategy_review.issues = strategy_review.issues or []
             strategy_review.issues.append(issue)
-            if not strategy_review.action_items:
-                strategy_review.action_items = []
+            strategy_review.action_items = strategy_review.action_items or []
             strategy_review.action_items.append("Change strategy inferred_goal to one of awareness, lead_gen, sales, retention")
             strategy_review.score = max(0, strategy_review.score - 10)
             
@@ -693,10 +693,10 @@ def _add_explicit_validation_checks(
         subject = email_data.get("subject", "")
         if subject and len(subject) > 60:
             issue = f"Email subject too long ({len(subject)} chars). Must be under 60 characters."
-            if issue not in copy_review.issues:
+            if issue not in (copy_review.issues or []):
+                copy_review.issues = copy_review.issues or []
                 copy_review.issues.append(issue)
-                if not copy_review.action_items:
-                    copy_review.action_items = []
+                copy_review.action_items = copy_review.action_items or []
                 copy_review.action_items.append("Shorten email subject to be under 60 characters")
                 copy_review.score = max(0, copy_review.score - 5)
 
@@ -704,10 +704,10 @@ def _add_explicit_validation_checks(
     image_prompts = image_data.get("image_prompts", [])
     if not image_prompts or len(image_prompts) == 0:
         issue = "image_prompts array is empty - no visual assets defined"
-        if issue not in image_review.issues:
+        if issue not in (image_review.issues or []):
+            image_review.issues = image_review.issues or []
             image_review.issues.append(issue)
-            if not image_review.action_items:
-                image_review.action_items = []
+            image_review.action_items = image_review.action_items or []
             image_review.action_items.append("Create at least 3 image prompts for key campaign deliverables")
 
 

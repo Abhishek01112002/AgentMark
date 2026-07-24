@@ -7,11 +7,16 @@ export const projectService = {
       data: { ...data, userId },
     });
 
-    await notificationService.create(userId, {
-      type: 'success',
-      title: 'Project created',
-      message: `Project "${project.name}" is ready for campaigns.`,
-    });
+    // Notification is fire-and-forget: a failure must NOT roll back project creation
+    try {
+      await notificationService.create(userId, {
+        type: 'success',
+        title: 'Project created',
+        message: `Project "${project.name}" is ready for campaigns.`,
+      });
+    } catch (err) {
+      console.error('[ProjectService] Failed to create project-created notification:', err);
+    }
 
     return project;
   },
@@ -30,7 +35,7 @@ export const projectService = {
       },
     });
 
-    // Auto-update project status in the database ONLY if it has actually changed, avoiding N+1 write operations on every call
+    // Auto-update project status — best-effort write, never fail the read on update error
     const projectsToUpdate = projects.filter(project => {
       const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
       const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
@@ -38,16 +43,21 @@ export const projectService = {
     });
 
     if (projectsToUpdate.length > 0) {
-      await Promise.all(
-        projectsToUpdate.map(project => {
-          const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
-          const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
-          return prisma.project.update({
-            where: { id: project.id },
-            data: { status: newStatus },
-          });
-        })
-      );
+      try {
+        await Promise.all(
+          projectsToUpdate.map(project => {
+            const hasProcessingCampaigns = project.campaigns.some((c: any) => c.status === 'processing');
+            const newStatus = hasProcessingCampaigns ? 'active' : 'idle';
+            return prisma.project.update({
+              where: { id: project.id },
+              data: { status: newStatus },
+            });
+          })
+        );
+      } catch (err) {
+        // Status sync is non-critical — never fail the read because of a write error
+        console.error('[ProjectService] Non-fatal: failed to sync project statuses:', err);
+      }
     }
 
     const updatedProjects = projects.map(project => {
@@ -88,12 +98,17 @@ export const projectService = {
       data,
     });
 
+    // Notification is fire-and-forget: a failure must NOT roll back the rename
     if (data.name && data.name !== project.name) {
-      await notificationService.create(userId, {
-        type: 'info',
-        title: 'Project renamed',
-        message: `Project "${project.name}" was renamed to "${data.name}".`,
-      });
+      try {
+        await notificationService.create(userId, {
+          type: 'info',
+          title: 'Project renamed',
+          message: `Project "${project.name}" was renamed to "${data.name}".`,
+        });
+      } catch (err) {
+        console.error('[ProjectService] Failed to create project-renamed notification:', err);
+      }
     }
 
     return updated;
@@ -106,20 +121,24 @@ export const projectService = {
 
     if (!project) return null;
 
-    // Manually delete dependent records to prevent database foreign key constraint failures
-    await prisma.campaignMemorySnapshot.deleteMany({
-      where: { projectId: id },
-    });
-    await prisma.campaign.deleteMany({
-      where: { projectId: id },
-    });
-    await prisma.project.delete({ where: { id } });
+    // Run deletions in a transaction to prevent partial-deletion orphan data
+    await prisma.$transaction([
+      prisma.campaignMemorySnapshot.deleteMany({ where: { projectId: id } }),
+      prisma.campaign.deleteMany({ where: { projectId: id } }),
+      prisma.project.delete({ where: { id } }),
+    ]);
 
-    await notificationService.create(userId, {
-      type: 'warning',
-      title: 'Project deleted',
-      message: `Project "${project.name}" was removed from your workspace.`,
-    });
+    // Notification is fire-and-forget: a failure must NOT surface a 500 after successful deletion
+    try {
+      await notificationService.create(userId, {
+        type: 'warning',
+        title: 'Project deleted',
+        message: `Project "${project.name}" was removed from your workspace.`,
+      });
+    } catch (err) {
+      console.error('[ProjectService] Failed to create project-deleted notification:', err);
+    }
+
     return project;
   },
 };

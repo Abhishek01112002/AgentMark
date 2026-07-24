@@ -190,9 +190,13 @@ def research_agent(state: CampaignState) -> CampaignState:
     ]
     
     # Incorporate additional_info context to ensure search relevance
+    # additional_info comes from state.brief or additional_context stored by the manager
+    additional_info = getattr(state, "additional_info", None) or (
+        manager_data.get("additional_info") or manager_data.get("brief") or ""
+    )
     extra_keywords = ""
-    if additional_info and len(additional_info.strip()) > 0:
-        kw_words = [w for w in additional_info.strip().split() if len(w) > 3][:4]
+    if additional_info and len(str(additional_info).strip()) > 0:
+        kw_words = [w for w in str(additional_info).strip().split() if len(w) > 3][:4]
         if kw_words:
             extra_keywords = " " + " ".join(kw_words)
 
