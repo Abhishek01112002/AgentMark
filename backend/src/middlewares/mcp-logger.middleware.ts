@@ -16,6 +16,11 @@ import { getIO } from '../modules/campaigns/campaign.controller';
 const recentInvocations = new Map<string, number>();
 const INVOCATION_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * Real-time map tracking the last active timestamp (Date.now()) of MCP requests per user.
+ */
+export const userLastMcpActivity = new Map<string, number>();
+
 // Periodic cleanup every 2 minutes to remove expired entries
 setInterval(() => {
   const now = Date.now();
@@ -86,6 +91,7 @@ export const mcpLoggerMiddleware = async (
 
     if (userId) {
       const sanitizedUserId = userId;
+      userLastMcpActivity.set(sanitizedUserId, Date.now());
       const toolName = rawToolName.trim().slice(0, 100);
 
       if (toolName) {

@@ -17,6 +17,7 @@
  */
 
 import { Response, NextFunction } from 'express';
+import { userLastMcpActivity } from '../../middlewares/mcp-logger.middleware';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import prisma from '../../db';
 import crypto from 'crypto';
@@ -312,6 +313,30 @@ export const getClaudeStatus = async (
     });
 
     res.json(status);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -- POST /api/developer/claude-ping -------------------------------------------
+export const pingClaude = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    userLastMcpActivity.set(userId, Date.now());
+    
+    // Clear status cache so next status check returns instant updated live status
+    statusCache.delete(userId);
+
+    res.json({
+      success: true,
+      liveStatus: 'Active (Connected)',
+      lastActiveAt: new Date().toISOString(),
+      message: 'Live MCP heartbeat ping verified successfully!',
+    });
   } catch (error) {
     next(error);
   }

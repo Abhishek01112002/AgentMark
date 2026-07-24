@@ -4,6 +4,8 @@ import path from 'path';
 import os from 'os';
 import { execSync } from 'child_process';
 
+import { userLastMcpActivity } from '../middlewares/mcp-logger.middleware';
+
 function resolveUvxPath(): string {
   try {
     const output = execSync('where.exe uvx', { encoding: 'utf8' }).trim();
@@ -21,6 +23,9 @@ function resolveUvxPath(): string {
 
 export interface ClaudeConfigStatus {
   status: 'Connected' | 'Not Connected' | 'Configuration Outdated' | 'Configuration Error';
+  liveStatus: 'Active (Connected)' | 'Configured (Idle)' | 'Disconnected' | 'Configuration Error';
+  isLiveConnected: boolean;
+  lastActiveAt: string | null;
   mcpStatus: 'Running' | 'Stopped';
   path: string;
   maskedKey: string | null;
@@ -112,6 +117,9 @@ export async function getClaudeConfigStatus(
     } catch {
       return {
         status: 'Not Connected',
+        liveStatus: 'Disconnected',
+        isLiveConnected: false,
+        lastActiveAt: null,
         mcpStatus,
         path: configPath,
         maskedKey: null,
@@ -125,6 +133,9 @@ export async function getClaudeConfigStatus(
     } catch {
       return {
         status: 'Configuration Error',
+        liveStatus: 'Configuration Error',
+        isLiveConnected: false,
+        lastActiveAt: null,
         mcpStatus,
         path: configPath,
         maskedKey: null,
@@ -136,6 +147,9 @@ export async function getClaudeConfigStatus(
     if (!server) {
       return {
         status: 'Not Connected',
+        liveStatus: 'Disconnected',
+        isLiveConnected: false,
+        lastActiveAt: null,
         mcpStatus,
         path: configPath,
         maskedKey: null,
@@ -146,6 +160,9 @@ export async function getClaudeConfigStatus(
     if (!apiKey || typeof apiKey !== 'string') {
       return {
         status: 'Configuration Error',
+        liveStatus: 'Configuration Error',
+        isLiveConnected: false,
+        lastActiveAt: null,
         mcpStatus,
         path: configPath,
         maskedKey: null,
@@ -160,6 +177,9 @@ export async function getClaudeConfigStatus(
     if (!isValid) {
       return {
         status: 'Configuration Error',
+        liveStatus: 'Disconnected',
+        isLiveConnected: false,
+        lastActiveAt: null,
         mcpStatus,
         path: configPath,
         maskedKey: maskApiKey(apiKey),
@@ -169,11 +189,17 @@ export async function getClaudeConfigStatus(
       };
     }
 
+    // Real-time active status tracking
+    const lastActiveTimestamp = userLastMcpActivity.get(userId);
+    const now = Date.now();
+    const isLiveConnected = Boolean(lastActiveTimestamp && (now - lastActiveTimestamp < 120_000));
+    const liveStatus = isLiveConnected ? 'Active (Connected)' : 'Configured (Idle)';
+    const lastActiveAt = lastActiveTimestamp ? new Date(lastActiveTimestamp).toISOString() : null;
+
     // Verify command parameters and server target configurations
     const expectedUrl = `http://localhost:${process.env.PORT || 5003}`;
     const actualUrl = server.env?.AGENTMARK_API_URL || '';
     const actualCmd = server.command || '';
-    const actualArgs = Array.isArray(server.args) ? server.args.join(' ') : '';
 
     const isCmdOutdated = (!actualCmd.includes('python') && !actualCmd.includes('uvx')) || !server.env?.APPDATA;
     const isUrlOutdated = actualUrl.replace(/\/$/, '') !== expectedUrl.replace(/\/$/, '');
@@ -181,6 +207,9 @@ export async function getClaudeConfigStatus(
     if (isCmdOutdated || isUrlOutdated) {
       return {
         status: 'Configuration Outdated',
+        liveStatus,
+        isLiveConnected,
+        lastActiveAt,
         mcpStatus,
         path: configPath,
         maskedKey: maskApiKey(apiKey),
@@ -192,6 +221,9 @@ export async function getClaudeConfigStatus(
 
     return {
       status: 'Connected',
+      liveStatus,
+      isLiveConnected,
+      lastActiveAt,
       mcpStatus,
       path: configPath,
       maskedKey: maskApiKey(apiKey),
@@ -199,6 +231,9 @@ export async function getClaudeConfigStatus(
   } catch (err: any) {
     return {
       status: 'Configuration Error',
+      liveStatus: 'Configuration Error',
+      isLiveConnected: false,
+      lastActiveAt: null,
       mcpStatus,
       path: configPath,
       maskedKey: null,

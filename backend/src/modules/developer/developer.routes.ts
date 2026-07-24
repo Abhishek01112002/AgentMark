@@ -25,6 +25,7 @@ import {
   disconnectClaude,
   verifyApiKeyScope,
   connectClaudeFlow,
+  pingClaude,
 } from './developer.controller';
 import { developerConnectionRateLimiter } from '../../middlewares/rate-limit.middleware';
 
@@ -53,6 +54,7 @@ router.delete('/keys/:id', revokeApiKey);
 
 // Claude Desktop Connection Endpoints
 router.get('/claude-status', developerConnectionRateLimiter, getClaudeStatus);
+router.post('/claude-ping', developerConnectionRateLimiter, pingClaude);
 router.post('/claude-connect', developerConnectionRateLimiter, connectClaude);
 router.get('/claude-connect-flow', developerConnectionRateLimiter, connectClaudeFlow);
 router.post('/claude-regenerate', developerConnectionRateLimiter, regenerateClaudeKey);

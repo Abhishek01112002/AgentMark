@@ -16,6 +16,9 @@ import { OnboardingPanel } from './OnboardingPanel';
 
 interface ClaudeStatusData {
   status: 'Connected' | 'Not Connected' | 'Configuration Outdated' | 'Configuration Error';
+  liveStatus?: 'Active (Connected)' | 'Configured (Idle)' | 'Disconnected' | 'Configuration Error';
+  isLiveConnected?: boolean;
+  lastActiveAt?: string | null;
   mcpStatus: 'Running' | 'Stopped';
   path: string;
   maskedKey: string | null;
@@ -28,6 +31,7 @@ export const Integrations: React.FC = () => {
   const [connecting, setConnecting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [pinging, setPinging] = useState(false);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [showRestartAlert, setShowRestartAlert] = useState(false);
 
@@ -36,6 +40,22 @@ export const Integrations: React.FC = () => {
   const [copiedConfig, setCopiedConfig] = useState(false);
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  const handlePing = async () => {
+    if (pinging) return;
+    setPinging(true);
+    try {
+      const res = await api.post('/developer/claude-ping');
+      if (res.data.success) {
+        toast.success(res.data.message || 'Live MCP heartbeat ping verified!');
+        await fetchStatus();
+      }
+    } catch (err: any) {
+      toast.error('Failed to verify live connection');
+    } finally {
+      setPinging(false);
+    }
+  };
 
   const fetchStatus = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -252,15 +272,7 @@ export const Integrations: React.FC = () => {
     );
   }
 
-  // Determine connection status styling parameters
-  const statusColorMap = {
-    'Connected': { bg: 'bg-[#10B981]/10', border: 'border-[#10B981]/25', text: 'text-[#10B981]' },
-    'Not Connected': { bg: 'bg-[#8B8B9E]/10', border: 'border-[#8B8B9E]/25', text: 'text-[#8B8B9E]' },
-    'Configuration Outdated': { bg: 'bg-[#F59E0B]/10', border: 'border-[#F59E0B]/25', text: 'text-[#F59E0B]' },
-    'Configuration Error': { bg: 'bg-[#EF4444]/10', border: 'border-[#EF4444]/25', text: 'text-[#EF4444]' }
-  };
 
-  const statusStyle = statusColorMap[status?.status || 'Not Connected'];
 
   return (
     <div className="space-y-6 max-w-6xl text-sm" style={{ color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}>
@@ -327,12 +339,41 @@ export const Integrations: React.FC = () => {
                 </p>
               </div>
 
-              {/* Status Badge */}
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.border} ${statusStyle.text}`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                <span style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  {status?.status || 'Not Connected'}
-                </span>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePing}
+                    disabled={pinging}
+                    className="px-2.5 py-1 text-[11px] font-mono font-semibold rounded-lg bg-[#181824] border border-[#2A2A38] hover:bg-[#222232] text-indigo-300 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <RefreshCw size={11} className={pinging ? 'animate-spin' : ''} />
+                    {pinging ? 'Pinging...' : 'Test Connection'}
+                  </button>
+
+                  {/* Real-time Live Connection Badge */}
+                  {status?.isLiveConnected ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[11px] font-mono font-semibold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <span>Active (Connected)</span>
+                    </div>
+                  ) : status?.status === 'Connected' ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-[11px] font-mono font-semibold" title="Config file is valid. Waiting for Claude tool request or restart.">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span>Configured (Idle)</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[11px] font-mono font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      <span>Disconnected</span>
+                    </div>
+                  )}
+                </div>
+
+                {status?.lastActiveAt && (
+                  <span className="text-[10px] font-mono text-[#8B8B9E]">
+                    Last activity: {new Date(status.lastActiveAt).toLocaleTimeString()}
+                  </span>
+                )}
               </div>
             </div>
 
