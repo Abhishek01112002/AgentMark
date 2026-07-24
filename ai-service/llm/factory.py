@@ -131,6 +131,29 @@ class SmartClient(BaseLLMClient):
                         continue
 
                     if "unauthorized" in error_str or "denied" in error_str or "api key" in error_str:
+                        # Guard: "models permission" 401s mean the key lacks models.read
+                        # but is still valid for inference. The OpenAIClient already
+                        # converts these to NonRetryableLLMError (no cooldown) before
+                        # reaching here, but check again for defence-in-depth.
+                        is_models_permission = (
+                            "models` permission" in error_str
+                            or "models permission" in error_str
+                            or ("models" in error_str and "required to access this endpoint" in error_str)
+                        )
+                        if is_models_permission:
+                            # Do NOT put on cooldown — this key works for inference.
+                            # Blacklist it for this request only so the pool tries the next key.
+                            logger.warning(
+                                "%s[%s] lacks models.read permission (key is valid for inference) "
+                                "— skipping for this request without cooldown",
+                                provider, key_id,
+                            )
+                            request_blacklist.add(key_id)
+                            last_error = exc
+                            if len(request_blacklist) >= max_attempts:
+                                raise last_error
+                            continue
+
                         logger.warning("%s[%s] unauthorized/permission denied, trying next provider...", provider, key_id)
                         self._pool.mark_failed(key_id)
                         last_error = exc
