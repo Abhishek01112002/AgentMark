@@ -1,7 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
-import { BookOpen, PlayCircle, ChevronDown, Mail, MessageCircle, X, ArrowRight, Play } from 'lucide-react';
+import { BookOpen, PlayCircle, ChevronDown, Mail, X, ArrowRight, Play } from 'lucide-react';
+
+// Authentic Green WhatsApp SVG Icon Component
+const WhatsAppLogo: React.FC<{ size?: number; className?: string }> = ({ size = 20, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={`shrink-0 ${className}`}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12.012 2C6.48 2 2 6.48 2 12.012c0 1.966.568 3.805 1.554 5.362L2 22l4.745-1.52A9.957 9.957 0 0 0 12.012 22c5.53 0 10.012-4.48 10.012-10.012C22.024 6.48 17.542 2 12.012 2zm0 18.022a8.005 8.005 0 0 1-4.088-1.123l-.293-.174-2.82.903.916-2.748-.19-.303A7.986 7.986 0 0 1 4.012 12c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8.022-8 8.022zm4.386-6.012c-.24-.12-1.423-.702-1.644-.782-.22-.08-.38-.12-.54.12-.16.24-.622.782-.762.942-.14.16-.28.18-.52.06a6.55 6.55 0 0 1-1.933-1.193 7.227 7.227 0 0 1-1.338-1.666c-.14-.24-.015-.37.105-.49.108-.108.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.195-.467-.393-.404-.54-.412l-.46-.008c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2.002s.86 2.32 1 2.502c.14.18 1.69 2.58 4.095 3.62.572.247 1.018.395 1.366.505.574.183 1.096.157 1.509.095.46-.069 1.423-.582 1.624-1.143.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28z"/>
+  </svg>
+);
 
 interface FAQItem {
   question: string;
@@ -304,12 +318,12 @@ const SupportContent: React.FC = () => {
                     href="https://wa.me/916366411798"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#2A2A38] rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#464554]"
+                    className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#25D366]/30 rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#25D366]/60"
                     style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    <MessageCircle size={24} style={{ color: '#4edea3' }} />
+                    <WhatsAppLogo size={24} className="text-[#25D366]" />
                     <div className="text-left">
-                      <div className="text-xs mb-1" style={{ color: '#8B8B9E' }}>Live Chat</div>
+                      <div className="text-xs mb-1" style={{ color: '#25D366' }}>WhatsApp Support</div>
                       <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>+91 63664 11798</div>
                     </div>
                   </a>
