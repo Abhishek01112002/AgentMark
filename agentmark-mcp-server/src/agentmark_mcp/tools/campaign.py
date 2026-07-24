@@ -246,12 +246,16 @@ async def generate_campaign_impl(
         # Still processing — continue polling
         logger.debug("Campaign still processing | id=%s | status=%s", campaign_id, status)
 
-    # If we reach here, the campaign exceeded the timeout
-    raise TimeoutError(
-        f"Campaign '{campaign_name}' (id={campaign_id}) did not complete within "
-        f"{CAMPAIGN_TIMEOUT_SECS} seconds. "
-        f"The pipeline may still be running in the background. "
-        f"Check your AgentMark dashboard at: /campaign/{campaign_id}/result"
+    # If polling window completes while AI pipeline is still running in background:
+    return (
+        f"# Campaign Generation In Progress\n\n"
+        f"**Campaign Name:** {campaign_name}\n"
+        f"**Campaign ID:** `{campaign_id}`\n"
+        f"**Status:** `processing` (AI multi-agent workflow active)\n\n"
+        f"The AI multi-agent workflow (Manager, Research, Strategy, Copywriter, Reviewer) is processing in the background.\n\n"
+        f"**Next Steps:**\n"
+        f"- Call `get_campaign(campaign_id=\"{campaign_id}\")` in 30 seconds to retrieve final brief.\n"
+        f"- Or view live progress in AgentMark Dashboard at `/campaign/{campaign_id}/result`."
     )
 
 

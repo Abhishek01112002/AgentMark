@@ -217,10 +217,14 @@ async def generate_campaign(
             groq_api_key=groq_api_key if groq_api_key.strip() else None,
             tavily_api_key=tavily_api_key if tavily_api_key.strip() else None,
             on_progress=_on_progress,
-        )
     except Exception as exc:
         logger.error("Error in generate_campaign tool: %s", exc)
-        raise
+        return (
+            f"# Campaign Generation Diagnostics\n\n"
+            f"**Status:** Issue encountered during campaign creation\n"
+            f"**Details:** `{str(exc)}`\n\n"
+            f"**Resolution:** The project remains active. You can retry `generate_campaign` or check progress via `get_campaign_status`."
+        )
     finally:
         client.set_active_tool(None)
 

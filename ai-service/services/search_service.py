@@ -1,3 +1,4 @@
+import concurrent.futures
 import datetime
 import hashlib
 import json
@@ -174,19 +175,24 @@ def search_web(
             continue
 
         try:
-            try:
-                response = client.search(
-                    query=query,
-                    max_results=max_results,
-                    search_depth="basic",
-                    timeout=5,
-                )
-            except TypeError:
-                response = client.search(
-                    query=query,
-                    max_results=max_results,
-                    search_depth="basic",
-                )
+            def _do_search():
+                try:
+                    return client.search(
+                        query=query,
+                        max_results=max_results,
+                        search_depth="basic",
+                        timeout=8,
+                    )
+                except TypeError:
+                    return client.search(
+                        query=query,
+                        max_results=max_results,
+                        search_depth="basic",
+                    )
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_do_search)
+                response = future.result(timeout=10)
 
             results = response.get("results", []) if isinstance(response, dict) else []
             snippets = [

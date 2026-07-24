@@ -189,16 +189,23 @@ def research_agent(state: CampaignState) -> CampaignState:
         "lune & coast", "hot_wears", "new brand", "brand name", "my brand", "placeholder", "test brand", "lune and coast", "hot wears"
     ]
     
+    # Incorporate additional_info context to ensure search relevance
+    extra_keywords = ""
+    if additional_info and len(additional_info.strip()) > 0:
+        kw_words = [w for w in additional_info.strip().split() if len(w) > 3][:4]
+        if kw_words:
+            extra_keywords = " " + " ".join(kw_words)
+
     if is_placeholder_brand:
         logger.info(f"   ℹ️ Placeholder/New brand detected ('{product_name}') — running generic industry search queries for '{industry}'")
-        query_1 = f"{industry} industry trends {target_audience} {current_year}"
-        query_2 = f"{industry} market analysis top competitors"
+        query_1 = f"{industry}{extra_keywords} market trends {target_audience} {current_year}"
+        query_2 = f"{industry}{extra_keywords} top competitors market analysis"
     else:
         query_brand = product_name
         if industry and industry.lower() != 'other':
             query_brand = f"{product_name} {industry}"
-        query_1 = f"{query_brand} industry trends {target_audience} {current_year}"
-        query_2 = f"{query_brand} top competitors market analysis"
+        query_1 = f"{query_brand}{extra_keywords} market trends {target_audience} {current_year}"
+        query_2 = f"{query_brand}{extra_keywords} top competitors market analysis"
 
     # Pass None as redis_client to let search_web automatically use the shared pool
     result_1 = search_web(query_1, redis_client=None, max_results=3, api_key=tavily_api_key)
