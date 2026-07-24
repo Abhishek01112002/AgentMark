@@ -41,9 +41,11 @@ class ProviderPool:
             if provider not in provider_order:
                 provider_order.append(provider)
 
+        import hashlib
         for provider in provider_order:
             for i, key in enumerate(keys_by_provider[provider]):
-                self.providers.append((provider, key, f"{provider}-{i}"))
+                key_hash = hashlib.md5(key.encode("utf-8")).hexdigest()[:8]
+                self.providers.append((provider, key, f"{provider}-{i}-{key_hash}"))
 
         if not self.providers:
             raise ValueError("No LLM API keys found - add a key in Settings or .env")
@@ -53,18 +55,23 @@ class ProviderPool:
             ", ".join(f"{provider}[{key_id}]" for provider, _, key_id in self.providers),
         )
 
-    def get_available(self) -> tuple[str, str, str] | None:
+    def get_available(self, blacklist: set[str] = None) -> tuple[str, str, str] | None:
         limiter = get_rate_limiter()
+        blacklist = blacklist or set()
         for provider, key, key_id in self.providers:
-            if limiter.can_make_request(key_id, provider):
+            if key_id not in blacklist and limiter.can_make_request(key_id, provider):
                 return provider, key, key_id
         return None
 
     def mark_used(self, key_id: str):
         get_rate_limiter().record_request(key_id)
 
-    def mark_failed(self, key_id: str):
-        get_rate_limiter().mark_cooldown(key_id)
+    def mark_failed(self, key_id: str, duration: float = 30.0):
+        get_rate_limiter().mark_cooldown(key_id, duration=duration)
+
+    def soonest_cooldown_wait(self) -> float | None:
+        """Seconds until the soonest key exits cooldown. None if nothing is cooling."""
+        return get_rate_limiter().soonest_available()
 
     @property
     def total_keys(self) -> int:

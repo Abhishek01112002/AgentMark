@@ -83,12 +83,13 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
       {(researchReview.score || strategyReview.score || copyReview.score || imageReview.score) && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {researchReview.score && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+            <div className="card-elevate bg-[#0A1628] border border-[#2A2A38] rounded-xl p-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0EA5E9] to-transparent" />
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Research Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${researchReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: researchReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#0EA5E9' }}>
                 {researchReview.score}
               </div>
               <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{researchReview.feedback}</p>
@@ -108,12 +109,13 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
             </div>
           )}
           {strategyReview.score && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+            <div className="card-elevate bg-[#0A0A1C] border border-[#2A2A38] rounded-xl p-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent" />
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Strategy Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${strategyReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: strategyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>
                 {strategyReview.score}
               </div>
               <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{strategyReview.feedback}</p>
@@ -133,37 +135,66 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
             </div>
           )}
           {copyReview.score && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+            <div className="card-elevate bg-[#0A0A1C] border border-[#2A2A38] rounded-xl p-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] to-transparent" />
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Copy Agent</h4>
                 <span className={`w-2 h-2 rounded-full ${copyReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: copyReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#8B5CF6' }}>
                 {copyReview.score}
               </div>
               <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{copyReview.feedback}</p>
             </div>
           )}
           {imageReview.score && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Image Agent</h4>
-                <span className={`w-2 h-2 rounded-full ${imageReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
+            <div className="card-elevate bg-gradient-to-br from-[#1C0A0A] to-[#0A0A0F] border border-[#E11D48]/25 rounded-xl p-5 relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#E11D48] via-[#FB7185] to-transparent" />
+              <div className="absolute -top-6 -right-6 w-24 h-24 bg-[#E11D48]/5 blur-[50px] rounded-full pointer-events-none" />
+              <div className="flex items-center justify-between mb-3 relative z-10">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#E11D48]/15 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FB7185" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                  </div>
+                  <h4 className="text-sm font-medium" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Image Agent</h4>
+                </div>
+                <span className={`w-2.5 h-2.5 rounded-full ${imageReview.approved ? 'bg-[#FB7185]' : 'bg-[#F59E0B]'}`} />
               </div>
-              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: imageReview.score >= 70 ? '#4edea3' : '#F59E0B' }}>
-                {imageReview.score}
+              <div className="flex items-end gap-2 mb-2 relative z-10">
+                <span className="text-3xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#FB7185' }}>
+                  {imageReview.score}
+                </span>
+                <span className="text-xs mb-1.5" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>/ 100</span>
               </div>
-              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{imageReview.feedback}</p>
+              <p className="text-xs leading-relaxed relative z-10" style={{ fontFamily: 'Inter, sans-serif', color: '#B0B0C0' }}>{imageReview.feedback}</p>
             </div>
           )}
         </div>
       )}
 
       {status && (
-        <div className={`rounded-xl p-4 border ${status === 'approved' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
-          <p className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: status === 'approved' ? '#4edea3' : '#F59E0B' }}>
-            Status: {status === 'approved' ? 'Approved' : 'Revision Required'}
-          </p>
+        <div className={`relative overflow-hidden rounded-2xl ${status === 'approved' ? 'bg-gradient-to-r from-[#4edea3]/10 via-[#4edea3]/5 to-transparent' : 'bg-gradient-to-r from-[#F59E0B]/10 via-[#F59E0B]/5 to-transparent'} border ${status === 'approved' ? 'border-[#4edea3]/20' : 'border-[#F59E0B]/20'}`}>
+          <div className={`absolute top-0 left-0 w-full h-0.5 ${status === 'approved' ? 'bg-gradient-to-r from-[#4edea3] to-transparent' : 'bg-gradient-to-r from-[#F59E0B] to-transparent'}`} />
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${status === 'approved' ? 'bg-[#4edea3]/15' : 'bg-[#F59E0B]/15'}`}>
+              {status === 'approved' ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={status === 'approved' ? '#4edea3' : '#F59E0B'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: status === 'approved' ? '#F1F1F3' : '#F1F1F3' }}>
+                {status === 'approved' ? 'Approved' : 'Revision Required'}
+              </p>
+              <p className="text-xs mt-0.5" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                {status === 'approved' ? 'This campaign has passed all review checks.' : 'Some items need attention before approval.'}
+              </p>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-semibold ${status === 'approved' ? 'bg-[#4edea3]/15 text-[#4edea3]' : 'bg-[#F59E0B]/15 text-[#F59E0B]'}`} style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              {status === 'approved' ? 'PASSED' : 'PENDING'}
+            </div>
+          </div>
         </div>
       )}
 
@@ -209,31 +240,33 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
 
       {/* Core Strengths + Areas for Refinement row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6">
+        <div className="card-elevate bg-[#0A1628] border border-[#2A2A38] rounded-xl p-5 md:p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0284C7] to-transparent" />
           <div className="flex items-center gap-2 mb-6 border-b border-[#2A2A38] pb-4">
-            <span className="w-8 h-8 rounded-md bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3]"><Award size={18} /></span>
+            <span className="w-8 h-8 rounded-md bg-[#0284C7]/10 flex items-center justify-center text-[#0284C7]"><Award size={18} /></span>
             <h3 className="text-lg font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Core Strengths</h3>
           </div>
           <ul className="space-y-4">
             {(Array.isArray(strengths) && strengths.length > 0 ? strengths : defaultStrengths).slice(0, 5).map((strength: any, idx: number) => (
               <li key={idx} className="flex items-start gap-3">
-                <span className="text-[#4edea3] mt-0.5 flex-shrink-0">+</span>
+                <span className="text-[#0284C7] mt-0.5 flex-shrink-0">+</span>
                 <span className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#c7c4d7' }}>{typeof strength === 'string' ? strength : strength.text || strength.description}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="card-elevate-amber bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/5 blur-[40px] rounded-full pointer-events-none" />
+        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 md:p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F43F5E] to-transparent" />
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#F43F5E]/5 blur-[40px] rounded-full pointer-events-none" />
           <div className="flex items-center gap-2 mb-6 border-b border-[#2A2A38] pb-4 relative z-10">
-            <span className="w-8 h-8 rounded-md bg-[#F59E0B]/10 flex items-center justify-center text-[#F59E0B]"><AlertCircle size={18} /></span>
+            <span className="w-8 h-8 rounded-md bg-[#F43F5E]/10 flex items-center justify-center text-[#F43F5E]"><AlertCircle size={18} /></span>
             <h3 className="text-lg font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Areas for Refinement</h3>
           </div>
           <ul className="space-y-4 relative z-10">
             {(Array.isArray(improvements) && improvements.length > 0 ? improvements : defaultImprovements).slice(0, 5).map((item: any, idx: number) => (
               <li key={idx} className="flex items-start gap-3 group">
-                <span className="text-[#F59E0B] mt-0.5 flex-shrink-0">-</span>
+                <span className="text-[#F43F5E] mt-0.5 flex-shrink-0">-</span>
                 <div className="min-w-0">
                   <span className="text-sm leading-relaxed block" style={{ fontFamily: 'Inter, sans-serif', color: '#c7c4d7' }}>{typeof item === 'string' ? item : item.text || item.description}</span>
                   {item.action && (

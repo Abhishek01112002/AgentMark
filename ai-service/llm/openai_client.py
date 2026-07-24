@@ -31,7 +31,17 @@ class OpenAIClient(BaseLLMClient):
             raise ValueError("OPENAI_API_KEY not found")
 
         self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        self.client = OpenAI(api_key=self.api_key, max_retries=0)
+        
+        base_url = os.getenv("OPENAI_BASE_URL")
+        if not base_url and (self.api_key.startswith("github_pat_") or self.api_key.startswith("ghp_")):
+            base_url = "https://models.inference.ai.azure.com"
+            logger.info("🔑 GitHub Models PAT detected — routing OpenAI client to free GitHub Inference Endpoint")
+
+        kwargs = {"api_key": self.api_key, "max_retries": 0}
+        if base_url:
+            kwargs["base_url"] = base_url
+
+        self.client = OpenAI(**kwargs)
 
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         try:

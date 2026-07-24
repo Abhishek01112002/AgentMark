@@ -186,14 +186,8 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
           <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               ref={bellRef}
-              className="relative transition-colors"
+              className="relative transition-colors hover:text-[#c0c1ff]"
               style={{ color: openDropdown === 'notification' ? '#c0c1ff' : '#c7c4d7' }}
-              onMouseEnter={(e) => {
-                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
-              }}
-              onMouseLeave={(e) => {
-                if (openDropdown !== 'notification') (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
-              }}
               onClick={() => handleDropdownToggle('notification')}
               aria-label="Notifications"
             >

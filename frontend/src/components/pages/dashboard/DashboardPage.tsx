@@ -246,13 +246,14 @@ function DashboardContent() {
 
   useEffect(() => {
     let active = true;
+    const abortController = new AbortController();
 
     const fetchDashboardData = async (silent = false) => {
       try {
         const [statsResponse, projectsResponse, mcpResponse] = await Promise.all([
-          api.get('/projects/stats/dashboard'),
-          api.get('/projects'),
-          api.get('/developer/mcp-activity'),
+          api.get('/projects/stats/dashboard', { signal: abortController.signal }),
+          api.get('/projects', { signal: abortController.signal }),
+          api.get('/developer/mcp-activity', { signal: abortController.signal }),
         ]);
 
         if (active) {
@@ -261,6 +262,7 @@ function DashboardContent() {
           setMcpActivities(mcpResponse.data.activities || []);
         }
       } catch (error: any) {
+        if (error.name === 'CanceledError') return;
         console.error('Failed to fetch dashboard data:', error);
         if (!silent) {
           toast.error('Failed to load dashboard data');
@@ -281,6 +283,7 @@ function DashboardContent() {
 
     return () => {
       active = false;
+      abortController.abort();
       window.removeEventListener('focus', handleFocus);
     };
   }, []);
@@ -395,18 +398,12 @@ function DashboardContent() {
                   <button
                     type="button"
                     onClick={() => navigate('/settings')}
-                    className="inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition-colors"
+                    className="inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition-colors hover:bg-[#1B1B29]"
                     style={{
                       borderColor: '#2A2A38',
                       color: '#F1F1F3',
                       backgroundColor: '#131318',
                       fontFamily: 'JetBrains Mono, monospace',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1B1B29';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#131318';
                     }}
                   >
                     Add API Keys
@@ -496,7 +493,7 @@ function DashboardContent() {
               <div className="relative z-10 flex-shrink-0 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={() => navigate('/projects')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all hover:bg-[rgba(255,255,255,0.06)] hover:border-[rgba(192,193,255,0.3)]"
                   style={{
                     backgroundColor: 'rgba(255, 255, 255, 0.03)',
                     color: '#F1F1F3',
@@ -509,14 +506,6 @@ function DashboardContent() {
                     borderRadius: '8px',
                     cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(192, 193, 255, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
-                    (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                  }}
                 >
                   <FolderOpen size={18} />
                   View Projects
@@ -524,7 +513,7 @@ function DashboardContent() {
                 
                 <button
                   onClick={() => navigate('/campaign/new')}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all text-white font-medium"
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 transition-all text-white font-medium hover:bg-[#8083ff] hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]"
                   style={{
                     backgroundColor: '#6366F1',
                     fontFamily: 'JetBrains Mono, monospace',
@@ -535,14 +524,6 @@ function DashboardContent() {
                     borderRadius: '8px',
                     border: 'none',
                     cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.4)';
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
                   }}
                 >
                   <Plus size={18} />
@@ -695,10 +676,8 @@ function DashboardContent() {
                           return (
                             <tr
                               key={row.id}
-                              className="group transition-colors"
+                              className="group transition-colors hover:bg-[#1b1b20]"
                               style={{ borderBottom: '1px solid #2A2A38' }}
-                              onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')}
-                              onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')}
                             >
                               <td style={{ padding: '16px 20px' }}>
                                 <div className="flex items-center gap-3 min-w-0">

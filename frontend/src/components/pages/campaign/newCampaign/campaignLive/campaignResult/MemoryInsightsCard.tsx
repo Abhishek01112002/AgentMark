@@ -32,9 +32,11 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
   return (
     <div
       data-project-id={projectId}
-      className="rounded-2xl border overflow-hidden transition-all duration-300"
+      className="rounded-2xl border relative overflow-hidden transition-all duration-300"
       style={{ background: '#111118', borderColor: open ? 'rgba(99,102,241,0.25)' : '#2A2A38' }}
     >
+      {/* Gradient bar */}
+      <div className="absolute top-0 left-0 w-full h-[2px]" style={{ background: 'linear-gradient(90deg, #6366F1, #818CF8)' }} />
       {/* Header */}
       <button
         onClick={() => setOpen(!open)}
@@ -63,13 +65,17 @@ const MemoryInsightsCard: React.FC<MemoryInsightsCardProps> = ({ insights, count
               { icon: <Hash size={12} />, label: 'Campaigns', value: count, color: '#818CF8' },
               { icon: <CheckCircle2 size={12} />, label: 'First-try approvals', value: firstTryCount, color: '#4edea3' },
               { icon: <TrendingUp size={12} />, label: 'Avg score', value: avgScore > 0 ? `${Math.round(avgScore)}/100` : '—', color: '#F59E0B' },
-            ].map((stat, i) => (
-              <div key={i} className="rounded-lg px-3 py-2.5 text-center" style={{ background: '#1A1A24', border: '1px solid #2A2A38' }}>
+            ].map((stat, i) => {
+              const accentColors = ['#0EA5E9', '#10B981', '#F59E0B'];
+              return (
+              <div key={i} className="rounded-lg px-3 py-2.5 text-center relative overflow-hidden" style={{ background: '#1A1A24', border: '1px solid #2A2A38' }}>
+                <div className="absolute left-0 top-0 w-[3px] h-full" style={{ background: accentColors[i], borderRadius: '3px 0 0 3px' }} />
                 <div className="flex items-center justify-center gap-1 mb-1" style={{ color: stat.color }}>{stat.icon}</div>
                 <div className="text-sm font-bold" style={{ color: stat.color, fontFamily: 'Inter, sans-serif' }}>{stat.value}</div>
                 <div className="text-[10px] mt-0.5" style={{ color: '#6B6B7E', fontFamily: 'Inter, sans-serif' }}>{stat.label}</div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Rejection learnings */}

@@ -8,7 +8,13 @@ import logging
 import os
 from typing import Type, TypeVar
 
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+import json_repair
 import google.generativeai as genai
+
 from pydantic import BaseModel
 
 from .base import (
@@ -34,7 +40,7 @@ def _ensure_event_loop():
 class GeminiClient(BaseLLMClient):
     """Gemini API client with fail-fast provider-pool semantics."""
 
-    def __init__(self, api_key: str = None, model: str = "gemini-3.6-flash"):
+    def __init__(self, api_key: str = None, model: str = None):
         super().__init__()
         _ensure_event_loop()
 
@@ -42,13 +48,13 @@ class GeminiClient(BaseLLMClient):
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY not found")
 
-        self.model_name = model
+        self.model_name = model or os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
         from google.generativeai.client import _ClientManager
 
         client_manager = _ClientManager()
         client_manager.configure(api_key=self.api_key)
 
-        self.model = genai.GenerativeModel(model)
+        self.model = genai.GenerativeModel(self.model_name)
         self.model._client = client_manager.get_default_client("generative")
         self.model._async_client = client_manager.get_default_client("generative_async")
 
@@ -95,6 +101,7 @@ IMPORTANT:
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": max_tokens,
+                    "response_mime_type": "application/json",
                 },
             )
             self._record_success()
@@ -111,9 +118,15 @@ IMPORTANT:
             if not response_text:
                 raise ValueError("Gemini returned empty response")
 
-            return response_model.model_validate_json(response_text)
+            try:
+                return response_model.model_validate_json(response_text)
+            except Exception as parse_exc:
+                logger.warning(f"Initial JSON validation failed ({parse_exc}), attempting json_repair...")
+                repaired = json_repair.repair_json(response_text)
+                return response_model.model_validate_json(repaired)
         except Exception as exc:
             self._raise_typed_error(exc)
+
 
     def _raise_typed_error(self, exc: Exception):
         if isinstance(exc, (NonRetryableLLMError, RateLimitedLLMError)):

@@ -12,6 +12,7 @@ CAMPAIGN METADATA:
 - Brand Voice: {brand_voice}
 - Target Audience: {target_audience}
 - Campaign Brief: {brief}
+- Additional Context: {additional_context} (If "None", ignore this field)
 
 CAMPAIGN CHANNELS (publish for ALL of these, and ONLY these):
 {channels}

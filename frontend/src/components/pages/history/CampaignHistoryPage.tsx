@@ -72,11 +72,13 @@ const CampaignHistoryContent: React.FC = () => {
     if (didFetchRef.current) return;
     didFetchRef.current = true;
 
+    const controller = new AbortController();
+
     const fetchCampaigns = async () => {
       try {
         const [projectsResponse, campaignsResponse] = await Promise.all([
-          api.get('/projects'),
-          api.get('/campaigns/all')
+          api.get('/projects', { signal: controller.signal }),
+          api.get('/campaigns/all', { signal: controller.signal })
         ]);
         
         const projectsData = projectsResponse.data.projects || [];
@@ -85,13 +87,20 @@ const CampaignHistoryContent: React.FC = () => {
         const allCampaigns = campaignsResponse.data.campaigns || [];
         setCampaigns(allCampaigns);
       } catch (error: any) {
-        console.error('Failed to fetch campaigns:', error);
-        toast.error('Failed to load campaign history');
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch campaigns:', error);
+          toast.error('Failed to load campaign history');
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchCampaigns();
+    
+    return () => {
+      controller.abort();
+      didFetchRef.current = false;
+    };
   }, []);
 
   const filteredCampaigns = campaigns.filter((c) => {
@@ -410,10 +419,8 @@ const CampaignHistoryContent: React.FC = () => {
                             return (
                               <tr
                                 key={campaign.id}
-                                className="transition-colors stagger-enter"
+                                className="transition-colors stagger-enter hover:bg-[rgba(27,27,32,0.3)]"
                                 style={{ borderBottom: '1px solid rgba(42,42,56,0.5)' }}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(27,27,32,0.3)')}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                               >
                                 <td style={{ padding: '16px 20px' }}>
                                   <div>
@@ -463,17 +470,9 @@ const CampaignHistoryContent: React.FC = () => {
                                         navigate(`/campaign/${campaign.id}/result?projectId=${campaign.projectId}`);
                                       }
                                     }}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]"
                                     title="View Details"
-                                    style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
-                                    onMouseEnter={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                                   >
                                     <Eye size={16} />
                                   </button>

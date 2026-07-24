@@ -40,14 +40,17 @@ def get_current_llm_config() -> dict:
     return CURRENT_LLM_CONFIG.get() or {}
 
 
-def _create_client(provider: str, api_key: str) -> BaseLLMClient:
+def _create_client(provider: str, api_key: str, low_complexity: bool = False) -> BaseLLMClient:
     provider = provider.lower()
     if provider == "openai":
         return OpenAIClient(api_key=api_key)
     if provider == "gemini":
         return GeminiClient(api_key=api_key)
     if provider == "groq":
-        return GroqClient(api_key=api_key)
+        # Hybrid Split: 8b-instant for fast low-complexity tasks (14,400 RPD quota shield),
+        # 70b-versatile for complex reasoning/strategy tasks (1,000 RPD master planner).
+        groq_model = "llama-3.1-8b-instant" if low_complexity else "llama-3.3-70b-versatile"
+        return GroqClient(api_key=api_key, model=groq_model)
     raise ValueError(f"Unsupported provider: {provider}")
 
 
@@ -57,8 +60,9 @@ class SmartClient(BaseLLMClient):
     rate limits, payload limits, bad keys, or provider-specific errors.
     """
 
-    def __init__(self, pool: RateAwarePool):
+    def __init__(self, pool: RateAwarePool, low_complexity: bool = False):
         self._pool = pool
+        self._low_complexity = low_complexity
         self._last_call_time: float = 0.0
 
     def _call_with_failover(self, fn, *args, **kwargs):
@@ -69,47 +73,100 @@ class SmartClient(BaseLLMClient):
 
         max_attempts = self._pool.total_keys
         last_error: Exception | None = None
+        # Per-request blacklist for keys that returned 413 (payload too large).
+        # These will ALWAYS fail for the same payload, so retrying is pointless.
+        request_blacklist: set[str] = set()
+        # Total wait budget for cooldown waits (prevents infinite loops)
+        max_cooldown_wait = 90.0
+        total_waited = 0.0
 
-        for _ in range(max_attempts):
-            selected = self._pool.get_available()
-            if selected is None:
+        while True:
+            attempted_this_round = 0
+            for _ in range(max_attempts):
+                selected = self._pool.get_available(request_blacklist)
+                if selected is None:
+                    break  # No keys available right now, will wait below
+
+                provider, key, key_id = selected
+                attempted_this_round += 1
+                try:
+                    client = _create_client(provider, key, low_complexity=self._low_complexity)
+                    result = fn(client, *args, **kwargs)
+                    self._pool.mark_used(key_id)
+                    self._last_call_time = time.time()
+                    return result
+                except Exception as exc:
+                    if isinstance(exc, NonRetryableLLMError) or is_payload_too_large_error(exc):
+                        # Payload too large is DETERMINISTIC — retrying the same provider
+                        # with the same payload will ALWAYS fail. Permanently exclude this
+                        # key for the current request (no timed cooldown).
+                        logger.warning(
+                            "Payload too large for %s[%s] — permanently skipping for this request",
+                            provider, key_id,
+                        )
+                        request_blacklist.add(key_id)
+                        last_error = exc
+                        # Check if ALL keys are now blacklisted
+                        if len(request_blacklist) >= max_attempts:
+                            raise last_error
+                        continue
+
+                    if isinstance(exc, RateLimitedLLMError) or is_rate_limit_error(exc):
+                        logger.warning("%s[%s] rate limited, trying next provider...", provider, key_id)
+                        self._pool.mark_failed(key_id)
+                        last_error = exc
+                        continue
+
+                    error_str = str(exc).lower()
+
+                    # Pydantic validation errors contain "invalid" but are NOT auth failures.
+                    # They indicate the LLM returned malformed JSON — retry on next provider
+                    # WITHOUT a cooldown so the key remains available for future agents.
+                    is_validation_error = "validation error" in error_str or "json_invalid" in error_str or "eof while parsing" in error_str
+                    if is_validation_error:
+                        logger.warning("%s[%s] returned invalid JSON (validation error), trying next provider (no cooldown)...", provider, key_id)
+                        # Record as a normal request (not a failure) — no cooldown
+                        self._pool.mark_used(key_id)
+                        last_error = exc
+                        continue
+
+                    if "unauthorized" in error_str or "denied" in error_str or "api key" in error_str:
+                        logger.warning("%s[%s] unauthorized/permission denied, trying next provider...", provider, key_id)
+                        self._pool.mark_failed(key_id)
+                        last_error = exc
+                        continue
+
+                    # Generic transient errors — short cooldown (15s instead of 30s)
+                    logger.warning("%s[%s] failed: %s, trying next provider (short cooldown)...", provider, key_id, exc)
+                    self._pool.mark_failed(key_id, duration=15.0)
+                    last_error = exc
+                    continue
+
+            # All providers were either unavailable or failed this round.
+            # If every key is blacklisted (413), no point waiting — fail fast
+            if len(request_blacklist) >= max_attempts:
+                raise last_error or AllProvidersRateLimitedError(
+                    "All providers returned payload-too-large errors for this request."
+                )
+
+            # Check if we can wait for a non-blacklisted key to exit cooldown.
+            wait_time = self._pool.soonest_cooldown_wait()
+            if wait_time is not None and total_waited + wait_time < max_cooldown_wait:
+                wait_time = min(wait_time + 1.0, max_cooldown_wait - total_waited)  # +1s buffer
+                logger.info(
+                    "⏳ All providers cooling — waiting %.1fs for next key (%.1fs/%.1fs budget used)",
+                    wait_time, total_waited, max_cooldown_wait,
+                )
+                time.sleep(wait_time)
+                total_waited += wait_time
+                continue  # Retry the whole loop
+            else:
+                # Exhausted wait budget or no cooldowns pending (keys genuinely exhausted)
+                if last_error:
+                    raise last_error
                 raise AllProvidersRateLimitedError(
                     "All LLM providers are currently rate-limited. Try again later or add more API keys."
                 )
-
-            provider, key, key_id = selected
-            try:
-                client = _create_client(provider, key)
-                result = fn(client, *args, **kwargs)
-                self._pool.mark_used(key_id)
-                self._last_call_time = time.time()
-                return result
-            except Exception as exc:
-                if isinstance(exc, NonRetryableLLMError) or is_payload_too_large_error(exc):
-                    logger.warning("Payload too large for %s[%s], trying next provider...", provider, key_id)
-                    self._pool.mark_failed(key_id)
-                    last_error = exc
-                    continue
-
-                if isinstance(exc, RateLimitedLLMError) or is_rate_limit_error(exc):
-                    logger.warning("%s[%s] rate limited, trying next provider...", provider, key_id)
-                    self._pool.mark_failed(key_id)
-                    last_error = exc
-                    continue
-
-                error_str = str(exc).lower()
-                if "invalid" in error_str or "unauthorized" in error_str or "denied" in error_str:
-                    logger.warning("%s[%s] unauthorized/permission denied, trying next provider...", provider, key_id)
-                    self._pool.mark_failed(key_id)
-                    last_error = exc
-                    continue
-
-                logger.warning("%s[%s] failed: %s, trying next provider...", provider, key_id, exc)
-                self._pool.mark_failed(key_id)
-                last_error = exc
-                continue
-
-        raise last_error or RuntimeError("All provider attempts exhausted")
 
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
         return self._call_with_failover(
@@ -142,7 +199,7 @@ def get_llm_client(provider: str = None, low_complexity: bool = False) -> BaseLL
             if pool is None:
                 pool = RateAwarePool(config, custom_order=["groq", "gemini", "openai"])
                 _PER_REQUEST_LOW_COMPLEXITY_POOL.set(pool)
-            return SmartClient(pool)
+            return SmartClient(pool, low_complexity=True)
         
         pool = _PER_REQUEST_RATE_POOL.get()
         if pool is None:

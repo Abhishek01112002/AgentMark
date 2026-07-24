@@ -40,12 +40,12 @@ export const mcpLoggerMiddleware = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  // Only log mutating HTTP operations (POST, PUT, PATCH, DELETE) — skip read-only background polling GET calls
-  if (req.method === 'GET') {
+  const rawToolName = req.headers['x-mcp-tool-name'];
+
+  // Skip requests that do not carry the X-MCP-Tool-Name header
+  if (!rawToolName || typeof rawToolName !== 'string') {
     return next();
   }
-
-  const rawToolName = req.headers['x-mcp-tool-name'];
 
   if (rawToolName && typeof rawToolName === 'string') {
     // ── Invocation ID deduplication ──────────────────────────────────────

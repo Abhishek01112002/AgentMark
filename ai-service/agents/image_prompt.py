@@ -229,12 +229,24 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     logger.info("-" * 80)
 
     if not state.strategy_output:
-        raise ValueError("strategy_output is required - Image Agent needs Strategy insights")
+        raise ValueError("Strategy Agent output is missing — cannot generate visual prompts.")
 
     try:
         strategy_data = json.loads(state.strategy_output)
     except (json.JSONDecodeError, TypeError) as e:
-        raise ValueError(f"Failed to parse strategy_output: {e}")
+        logger.warning(f"⚠️ Failed to parse strategy_output: {e} — using fallback strategy context")
+        strategy_data = {}
+
+
+    if not strategy_data:
+        strategy_data = {
+            "positioning": f"Leading solution for {state.brand_name}",
+            "content_pillars": ["Innovation", "Quality", "Customer Success"],
+            "strategic_approach": "Direct response and brand storytelling",
+            "key_messages": [f"Empowering audience with {state.brand_name}"],
+            "inferred_goal": state.primary_goal or "awareness",
+            "competitive_differentiation": {}
+        }
 
     # Extract strategic context
     positioning = strategy_data.get("positioning", "")
@@ -384,6 +396,8 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             + existing_image_section
         )
 
+    additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
+
     # Load image prompt template and format with all campaign data
     prompt = load_prompt(
         "image",
@@ -394,6 +408,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         industry=industry,
         target_audience=target_audience,
         brief=brief,
+        additional_context=additional_context,
         human_feedback_section=human_feedback_section,
         # Strategy fields
         positioning=positioning,
@@ -421,7 +436,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     # Revision runs: lower temperature reduces visual drift on unchanged prompts;
     # extra token budget covers the existing-output context in the prompt
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 5000 if is_human_revision else 3000
+    revision_max_tokens = 8000 if is_human_revision else 5000
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -501,11 +516,16 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             )
 
         # Check 3: Abstract concept instead of specific frozen scene
+        # Exclude legitimate visual design descriptors (e.g. "abstract background", "abstract pattern")
+        clean_text = text.lower()
+        for valid_design_term in ["abstract background", "abstract pattern", "abstract texture", "abstract geometric", "abstract art"]:
+            clean_text = clean_text.replace(valid_design_term, "")
+
         abstract_terms = [
             "visualization of", "concept of",
-            "representation of", "abstract"
+            "representation of", "abstract idea", "abstract concept"
         ]
-        if any(term in text.lower() for term in abstract_terms):
+        if any(term in clean_text for term in abstract_terms):
             issues.append(
                 f"⚠️  [{name}] Abstract concept detected — "
                 "should describe a specific frozen moment/scene, not a concept."

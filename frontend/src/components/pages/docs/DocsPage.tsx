@@ -45,7 +45,7 @@ const sections: DocSection[] = [
         </p>
 
         {/* Hero Banner */}
-        <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-indigo-950/50 via-[#12121a] to-purple-950/30 border border-indigo-500/30 shadow-xl space-y-3">
+        <div className="p-4 sm:p-6 md:p-7 rounded-2xl bg-gradient-to-br from-indigo-950/50 via-[#12121a] to-purple-950/30 border border-indigo-500/30 shadow-xl space-y-3">
           <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
             <Zap size={13} className="text-indigo-400" /> 10x Faster Marketing Output
           </div>
@@ -58,22 +58,22 @@ const sections: DocSection[] = [
         </div>
 
         {/* Key Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-3">
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-xl md:text-2xl font-extrabold text-indigo-400">7 AI Agents</div>
-            <div className="text-xs text-slate-400 font-medium mt-0.5">Autonomous Team</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-indigo-400">7 AI Agents</div>
+            <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Autonomous Team</div>
           </div>
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-xl md:text-2xl font-extrabold text-emerald-400">45-90s</div>
-            <div className="text-xs text-slate-400 font-medium mt-0.5">Average Delivery Speed</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-emerald-400">45-90s</div>
+            <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Average Delivery Speed</div>
           </div>
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-xl md:text-2xl font-extrabold text-purple-400">6+ Channels</div>
-            <div className="text-xs text-slate-400 font-medium mt-0.5">Multi-Channel Copy</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-purple-400">6+ Channels</div>
+            <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Multi-Channel Copy</div>
           </div>
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-xl md:text-2xl font-extrabold text-cyan-400">100%</div>
-            <div className="text-xs text-slate-400 font-medium mt-0.5">Human Control & Oversight</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-cyan-400">100%</div>
+            <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Human Control & Oversight</div>
           </div>
         </div>
       </div>
@@ -102,8 +102,8 @@ const sections: DocSection[] = [
         </div>
 
         <div className="space-y-4">
-          <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-4 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">1</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">1</div>
             <div>
               <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Create a Project Workspace & Fill Your Brief</strong>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
@@ -112,8 +112,8 @@ const sections: DocSection[] = [
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-4 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">2</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">2</div>
             <div>
               <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Launch the 7 AI Agents</strong>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
@@ -122,8 +122,8 @@ const sections: DocSection[] = [
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-4 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">3</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">3</div>
             <div>
               <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Run Synthetic Focus Group Testing</strong>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
@@ -132,8 +132,8 @@ const sections: DocSection[] = [
             </div>
           </div>
 
-          <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-4 shadow-sm">
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">4</div>
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-3 sm:gap-4 shadow-sm">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">4</div>
             <div>
               <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Approve & Publish</strong>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
@@ -166,7 +166,7 @@ const sections: DocSection[] = [
         <div className="space-y-6">
           
           {/* Example 1: B2B SaaS Product Launch */}
-          <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <div className="flex items-center justify-between">
               <span className="px-3 py-1 rounded-full text-[11px] font-bold font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">B2B SaaS Launch</span>
               <span className="text-[11px] font-mono text-slate-500">Example Campaign 01</span>
@@ -563,23 +563,79 @@ const sections: DocSection[] = [
     icon: <Waypoints size={16} className="text-indigo-400" />,
     content: (
       <div className="space-y-5">
-        <p className="text-xs md:text-sm text-slate-200">Connect AgentMark directly to <strong>Claude Desktop</strong> or <strong>Cursor IDE</strong> using the open Model Context Protocol (MCP) to run campaigns from your chat window:</p>
+        <p className="text-xs md:text-sm text-slate-200">
+          You can connect AgentMark directly to <strong>Claude Desktop</strong> (Anthropic's desktop app) using something called <strong>MCP (Model Context Protocol)</strong>. Think of MCP as a bridge that lets Claude talk to AgentMark — so you can create campaigns, test copy, and publish content right from your chat with Claude.
+        </p>
 
-        <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-xs md:text-sm space-y-3.5 shadow-md">
-          <div className="font-bold text-white text-sm md:text-base flex items-center gap-2">
-            <Terminal size={18} className="text-indigo-400" /> Executable MCP Commands in Claude:
+        <div className="space-y-5">
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
+            <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
+              <Terminal size={18} className="text-indigo-400" /> Step 1: Install the MCP Server
+            </h4>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Make sure you have <strong>Node.js (v18 or higher)</strong> installed on your computer. Then open your terminal and run:
+            </p>
+            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-indigo-300 leading-relaxed overflow-x-auto">
+              npx @novateches/agentmark-mcp
+            </div>
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+              This command downloads and starts the AgentMark MCP server on your machine. Keep this terminal window open — the server needs to keep running.
+            </p>
           </div>
-          <ul className="space-y-2.5 text-slate-300 font-mono text-[11px] md:text-xs">
-            <li className="p-3.5 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-              <code className="text-indigo-300 font-bold">generate_campaign</code>: Runs the 7-agent pipeline directly inside Claude Desktop.
-            </li>
-            <li className="p-3.5 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-              <code className="text-indigo-300 font-bold">run_focus_group</code>: Simulates consumer persona feedback on ad copy.
-            </li>
-            <li className="p-3.5 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-              <code className="text-indigo-300 font-bold">publish_to_channel</code>: Approves the human gate and formats channel publishing plans.
-            </li>
-          </ul>
+
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
+            <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
+              <Terminal size={18} className="text-indigo-400" /> Step 2: Connect Claude Desktop to AgentMark
+            </h4>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Open <strong>Claude Desktop</strong> and go to <strong>Settings → MCP Servers</strong>. Click <strong>"Add Server"</strong> and paste the following:
+            </p>
+            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-indigo-300 leading-relaxed overflow-x-auto">
+              {`{
+  "mcpServers": {
+    "agentmark": {
+      "command": "npx",
+      "args": ["@novateches/agentmark-mcp"]
+    }
+  }
+}`}
+            </div>
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+              Save the settings and restart Claude Desktop. You should see a small <strong>plug icon</strong> appear — that means AgentMark is connected!
+            </p>
+          </div>
+
+          <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
+            <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
+              <Terminal size={18} className="text-indigo-400" /> Step 3: Start Using It
+            </h4>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Once connected, just ask Claude in plain English. Here are some things you can say:
+            </p>
+            <ul className="space-y-3 text-xs md:text-sm text-slate-300">
+              <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
+                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span><strong className="text-white">"Create a new campaign"</strong> — Claude will ask you for your campaign details (brand name, audience, goal, tone) and launch the full 7-agent pipeline.</span>
+              </li>
+              <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
+                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span><strong className="text-white">"Test my ad copy with a focus group"</strong> — Claude will run a synthetic focus group simulation on your latest campaign copy and show you feedback scores.</span>
+              </li>
+              <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
+                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span><strong className="text-white">"Publish my campaign"</strong> — Claude will finalize your approved campaign and prepare everything for publishing.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2">
+          <p className="text-xs md:text-sm text-indigo-300 font-semibold flex items-center gap-2">
+            <Sparkles size={16} className="text-indigo-400 shrink-0" /> Need Help?
+          </p>
+          <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
+            If you run into any issues, make sure the MCP server terminal is still running, and that you've added the configuration exactly as shown above. You can also reach out to us on WhatsApp for step-by-step guidance.
+          </p>
         </div>
       </div>
     )
@@ -744,17 +800,25 @@ function DocsContent() {
           }
         }
 
-        .doc-content h2 { font-size: 18px; font-weight: 700; color: #F1F1F3; margin: 44px 0 16px; padding-bottom: 12px; border-bottom: 1px solid #1E2937; letter-spacing: -0.2px; }
+        .doc-content h2 { font-size: 16px; font-weight: 700; color: #F1F1F3; margin: 32px 0 12px; padding-bottom: 10px; border-bottom: 1px solid #1E2937; letter-spacing: -0.2px; }
         .doc-content h2:first-child { margin-top: 0; }
-        .doc-content section { margin-bottom: 52px; }
+        .doc-content section { margin-bottom: 36px; }
+        @media (min-width: 768px) {
+          .doc-content h2 { font-size: 18px; margin: 44px 0 16px; padding-bottom: 12px; }
+          .doc-content section { margin-bottom: 52px; }
+        }
 
-        /* Wrapped Navigation Header */
-        .toc-bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px; margin-bottom: 32px; background: #111118; border: 1px solid #2A2A38; border-radius: 14px; shadow: 0 4px 20px rgba(0,0,0,0.3); }
-        .toc-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; color: #8B8B9E; background: #1A1A24; border: 1px solid #2A2A38; transition: all 0.15s; text-decoration: none; cursor: pointer; }
+        .toc-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; margin-bottom: 24px; background: #111118; border: 1px solid #2A2A38; border-radius: 14px; }
+        @media (min-width: 768px) {
+          .toc-bar { gap: 8px; padding: 14px; margin-bottom: 32px; }
+        }
+        .toc-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 500; color: #8B8B9E; background: #1A1A24; border: 1px solid #2A2A38; transition: all 0.15s; text-decoration: none; cursor: pointer; }
+        @media (min-width: 768px) {
+          .toc-pill { padding: 7px 14px; font-size: 12px; }
+        }
         .toc-pill:hover { color: #F1F1F3; border-color: #4A4A5E; background: #16161F; transform: translateY(-1px); }
         .toc-pill.active { color: #A5B4FC; background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); font-weight: 600; }
 
-        /* Back Button */
         .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #8B8B9E; transition: color 0.15s; cursor: pointer; }
         .back-btn:hover { color: #F1F1F3; }
       `}</style>

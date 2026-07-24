@@ -4,7 +4,9 @@ import {
   ArrowLeft, Brain, Star, ThumbsUp, Zap,
   AlertTriangle, Clock, BarChart3, CheckCircle2,
   XCircle, Loader2, Palette, Radio, Target,
+  RotateCcw, X, Save,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import api from '../../../services/api';
@@ -48,26 +50,102 @@ const MemoryHubPage: React.FC = () => {
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('');
 
+  // Extended Memory Controls State
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Form inputs
+  const [brandVoice, setBrandVoice] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [keyInsights, setKeyInsights] = useState('');
+  const [preferredTonesInput, setPreferredTonesInput] = useState('');
+
+  const refetchMemoryData = async () => {
+    if (!projectId) return;
+    try {
+      const memRes = await api.get(`/campaigns/project-memory/${projectId}`);
+      setSnapshots(memRes.data.snapshots || []);
+      setAggregated(memRes.data.aggregated);
+    } catch (err) {
+      console.error('Failed to refresh memory hub data:', err);
+    }
+  };
+
+  const handleSaveMemory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectId) return;
+    setIsSubmitting(true);
+    try {
+      const tones = preferredTonesInput
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      await api.post(`/projects/${projectId}/memory`, {
+        brandVoice,
+        targetAudience,
+        keyInsights,
+        preferredTones: tones.length > 0 ? tones : undefined,
+      });
+
+      toast.success('Brand memory directives saved!');
+      setIsUpdateOpen(false);
+      setBrandVoice('');
+      setTargetAudience('');
+      setKeyInsights('');
+      setPreferredTonesInput('');
+      refetchMemoryData();
+    } catch (err: any) {
+      console.error('Failed to update memory:', err);
+      toast.error(err.response?.data?.error || 'Failed to update brand memory.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClearMemory = async () => {
+    if (!projectId) return;
+    setIsSubmitting(true);
+    try {
+      await api.post(`/projects/${projectId}/memory/clear`);
+      toast.success('Brand memory hub cleared successfully!');
+      setIsResetOpen(false);
+      refetchMemoryData();
+    } catch (err: any) {
+      console.error('Failed to clear memory:', err);
+      toast.error(err.response?.data?.error || 'Failed to clear brand memory.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
+    const controller = new AbortController();
     const fetchData = async () => {
       if (!projectId) return;
       try {
         const [projRes, memRes] = await Promise.all([
-          api.get(`/projects`),
-          api.get(`/campaigns/project-memory/${projectId}`),
+          api.get(`/projects`, { signal: controller.signal }),
+          api.get(`/campaigns/project-memory/${projectId}`, { signal: controller.signal }),
         ]);
         const projects = projRes.data.projects || [];
         const proj = projects.find((p: any) => p.id === projectId);
         setProjectName(proj?.name || 'Brand Memory');
         setSnapshots(memRes.data.snapshots || []);
         setAggregated(memRes.data.aggregated);
-      } catch (err) {
-        console.error('Failed to fetch memory hub data:', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError' && err.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch memory hub data:', err);
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     fetchData();
+    return () => controller.abort();
   }, [projectId]);
 
   const timelineEvents = snapshots.map((s, i) => ({
@@ -132,22 +210,50 @@ const MemoryHubPage: React.FC = () => {
 
         <main className="memory-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 xl:px-10 2xl:px-12 space-y-6 md:space-y-8 w-full">
-            <div className="flex items-center gap-2 sm:gap-3 mb-2 min-w-0">
-              <button
-                onClick={() => navigate(-1)}
-                className="p-3 rounded-lg transition-colors min-h-[44px]"
-                style={{ color: '#8B8B9E' }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = '#1F1F25'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
-              >
-                <ArrowLeft size={18} />
-              </button>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(78,222,163,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
-                <Brain size={22} style={{ color: '#6366F1' }} />
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-2 min-w-0">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <button
+                  onClick={() => navigate(-1)}
+                  className="p-3 rounded-lg transition-colors min-h-[44px] hover:bg-[#1F1F25]"
+                  style={{ color: '#8B8B9E' }}
+                >
+                  <ArrowLeft size={18} />
+                </button>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(78,222,163,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <Brain size={22} style={{ color: '#6366F1' }} />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight" style={{ color: '#F1F1F3' }}>Brand Memory Hub</h1>
+                  <p className="text-sm truncate" style={{ color: '#8B8B9E' }}>{projectName}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight" style={{ color: '#F1F1F3' }}>Brand Memory Hub</h1>
-                <p className="text-sm truncate" style={{ color: '#8B8B9E' }}>{projectName}</p>
+
+              {/* FAANG Header Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+                <button
+                  onClick={() => setIsUpdateOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: 'rgba(99,102,241,0.15)',
+                    color: '#818cf8',
+                    border: '1px solid rgba(99,102,241,0.3)',
+                  }}
+                >
+                  <Brain size={16} />
+                  <span>Update Memory</span>
+                </button>
+                <button
+                  onClick={() => setIsResetOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: 'rgba(244,63,94,0.1)',
+                    color: '#f43f5e',
+                    border: '1px solid rgba(244,63,94,0.25)',
+                  }}
+                >
+                  <RotateCcw size={16} />
+                  <span>Reset Memory</span>
+                </button>
               </div>
             </div>
 
@@ -367,6 +473,157 @@ const MemoryHubPage: React.FC = () => {
             )}
           </div>
         </main>
+
+        {/* ================= EDIT BRAND MEMORY DIRECTIVES MODAL ================= */}
+        {isUpdateOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+            <div
+              className="w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-5 border border-[#2A2A38]"
+              style={{ backgroundColor: '#111118', color: '#F1F1F3' }}
+            >
+              <div className="flex items-center justify-between border-b border-[#2A2A38] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20">
+                    <Brain size={20} className="text-[#6366F1]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold">Update Brand Memory Directives</h3>
+                    <p className="text-xs text-[#8B8B9E]">Teach the AI your brand voice, tone, and strategic guidelines.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsUpdateOpen(false)}
+                  className="p-2 rounded-lg text-[#8B8B9E] hover:text-white hover:bg-[#1F1F25] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveMemory} className="space-y-4 text-sm">
+                <div>
+                  <label className="block text-xs font-medium text-[#A0A0D2] mb-1.5">
+                    Brand Voice & Tone Guidelines
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={brandVoice}
+                    onChange={(e) => setBrandVoice(e.target.value)}
+                    placeholder="e.g. Confident, fun, empowering, bold and vibrant tone..."
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm bg-[#1A1A24] border border-[#2A2A38] focus:border-[#6366F1] focus:outline-none text-[#F1F1F3] placeholder-[#4A4A5E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#A0A0D2] mb-1.5">
+                    Target Audience Persona Insights
+                  </label>
+                  <input
+                    type="text"
+                    value={targetAudience}
+                    onChange={(e) => setTargetAudience(e.target.value)}
+                    placeholder="e.g. Gen-Z women aged 18-28 interested in sustainable fashion"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm bg-[#1A1A24] border border-[#2A2A38] focus:border-[#6366F1] focus:outline-none text-[#F1F1F3] placeholder-[#4A4A5E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#A0A0D2] mb-1.5">
+                    Preferred Content Tones (Comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    value={preferredTonesInput}
+                    onChange={(e) => setPreferredTonesInput(e.target.value)}
+                    placeholder="e.g. Bold, Empowering, Playful, Professional"
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm bg-[#1A1A24] border border-[#2A2A38] focus:border-[#6366F1] focus:outline-none text-[#F1F1F3] placeholder-[#4A4A5E]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-[#A0A0D2] mb-1.5">
+                    Strategic Directives & Restrictions
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={keyInsights}
+                    onChange={(e) => setKeyInsights(e.target.value)}
+                    placeholder="e.g. Never use discount jargon, prioritize high aesthetic imagery..."
+                    className="w-full rounded-xl px-3.5 py-2.5 text-sm bg-[#1A1A24] border border-[#2A2A38] focus:border-[#6366F1] focus:outline-none text-[#F1F1F3] placeholder-[#4A4A5E]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A38]">
+                  <button
+                    type="button"
+                    onClick={() => setIsUpdateOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-[#8B8B9E] hover:bg-[#1F1F25] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-medium bg-[#6366F1] text-white hover:bg-[#5356E0] transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Save size={14} />
+                    )}
+                    <span>Save Directives</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ================= RESET BRAND MEMORY CONFIRMATION MODAL ================= */}
+        {isResetOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+            <div
+              className="w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 border border-[#2A2A38]"
+              style={{ backgroundColor: '#111118', color: '#F1F1F3' }}
+            >
+              <div className="flex items-center gap-3 text-[#F43F5E]">
+                <div className="p-3 rounded-xl bg-[#F43F5E]/10 border border-[#F43F5E]/20">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Reset Brand Memory Hub?</h3>
+                  <p className="text-xs text-[#8B8B9E]">This action will clear all stored memory snapshots for this project.</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-[#8B8B9E] leading-relaxed">
+                Clearing brand memory will remove past approval/rejection history and reset preferred tone models. The AI will start learning fresh from future campaign runs.
+              </p>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#2A2A38]">
+                <button
+                  type="button"
+                  onClick={() => setIsResetOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-[#8B8B9E] hover:bg-[#1F1F25] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearMemory}
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-medium bg-[#F43F5E] text-white hover:bg-[#E12D4C] transition-all disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <RotateCcw size={14} />
+                  )}
+                  <span>Reset Memory Hub</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

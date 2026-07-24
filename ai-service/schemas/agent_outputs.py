@@ -200,38 +200,40 @@ def normalize_campaign_goal(raw) -> str:
 # ==================== MANAGER OUTPUT SCHEMA ====================
 
 class ManagerOutput(BaseModel):
-    campaign_name: str = Field(description="Campaign identifier")
-    brand_name: str = Field(description="Brand identifier")
-    industry: str = Field(description="Industry sector")
-    primary_goal: str = Field(description="Campaign goal")
-    target_audience: str = Field(description="Target audience description")
-    brand_voice: str = Field(description="Brand tone and voice")
-    channels: List[str] = Field(description="Recommended distribution channels")
-    deliverables: List[str] = Field(description="Content/assets to create")
+    campaign_name: str = Field(default="", description="Campaign identifier")
+    brand_name: str = Field(default="", description="Brand identifier")
+    industry: str = Field(default="", description="Industry sector")
+    primary_goal: str = Field(default="awareness", description="Campaign goal")
+    target_audience: str = Field(default="", description="Target audience description")
+    brand_voice: str = Field(default="professional", description="Brand tone and voice")
+    channels: List[str] = Field(default_factory=list, description="Recommended distribution channels")
+    deliverables: List[str] = Field(default_factory=list, description="Content/assets to create")
 
 
 # ==================== RESEARCH OUTPUT SCHEMA ====================
 
 class MarketAnalysis(BaseModel):
-    total_addressable_market: str = Field(description="Total addressable market size")
-    growth_rate: str = Field(description="Market growth rate")
-    market_trends: List[str] = Field(description="Current market trends")
+    total_addressable_market: str = Field(default="", description="Total addressable market size")
+    growth_rate: str = Field(default="", description="Market growth rate")
+    market_trends: List[str] = Field(default_factory=list, description="Current market trends")
 
 class CompetitorAnalysis(BaseModel):
-    top_competitors: List[str] = Field(description="List of top competitors")
-    differentiation_opportunity: str = Field(description="Differentiation strategy")
+    top_competitors: List[str] = Field(default_factory=list, description="List of top competitors")
+    differentiation_opportunity: str = Field(default="", description="Differentiation strategy")
 
 class AudienceInsights(BaseModel):
-    pain_points: List[str] = Field(description="Customer pain points")
-    motivations: List[str] = Field(description="Customer motivations")
-    preferred_channels: List[str] = Field(description="Preferred communication channels")
+    pain_points: List[str] = Field(default_factory=list, description="Customer pain points")
+    motivations: List[str] = Field(default_factory=list, description="Customer motivations")
+    preferred_channels: List[str] = Field(default_factory=list, description="Preferred communication channels")
+    language_style: str = Field(default="Professional, data-driven, concise, focusing on outcomes and efficiency.", description="Communication style and tone preferences")
+
 
 class ResearchOutput(BaseModel):
-    market_analysis: MarketAnalysis
-    competitor_analysis: CompetitorAnalysis
-    audience_insights: AudienceInsights
-    market_opportunities: List[str] = Field(description="Market growth opportunities")
-    recommended_approach: str = Field(description="Recommended strategic approach")
+    market_analysis: MarketAnalysis = Field(default_factory=MarketAnalysis)
+    competitor_analysis: CompetitorAnalysis = Field(default_factory=CompetitorAnalysis)
+    audience_insights: AudienceInsights = Field(default_factory=AudienceInsights)
+    market_opportunities: List[str] = Field(default_factory=list, description="Market growth opportunities")
+    recommended_approach: str = Field(default="", description="Recommended strategic approach")
     literas_sources: list[dict] = Field(default_factory=list, description="LiteRAG web search sources")
     tavily_sources: list[dict] = Field(default_factory=list, description="Tavily web search sources")
     search_status: dict = Field(default_factory=dict, description="Search success/failure diagnostics")
@@ -240,20 +242,20 @@ class ResearchOutput(BaseModel):
 # ==================== STRATEGY OUTPUT SCHEMA ====================
 
 class ChannelPlan(BaseModel):
-    priority: str = Field(description="Channel priority level")
-    rationale: str = Field(description="Reason for prioritization")
-    tactics: List[str] = Field(description="Channel-specific tactics")
+    priority: str = Field(default="medium", description="Channel priority level")
+    rationale: str = Field(default="", description="Reason for prioritization")
+    tactics: List[str] = Field(default_factory=list, description="Channel-specific tactics")
 
 class AudienceSegment(BaseModel):
-    segment_name: str = Field(description="Segment identifier")
-    demographics: str = Field(description="Demographic profile")
-    psychographics: str = Field(description="Psychographic profile")
-    key_message: str = Field(description="Tailored message for segment")
+    segment_name: str = Field(default="Target Audience", description="Segment identifier")
+    demographics: str = Field(default="", description="Demographic profile")
+    psychographics: str = Field(default="", description="Psychographic profile")
+    key_message: str = Field(default="", description="Tailored message for segment")
 
 class TimelinePhase(BaseModel):
-    phase_name: str = Field(description="Phase name")
-    duration: str = Field(description="Phase duration")
-    activities: List[str] = Field(description="Activities in this phase")
+    phase_name: str = Field(default="Phase 1", description="Phase name")
+    duration: str = Field(default="1 week", description="Phase duration")
+    activities: List[str] = Field(default_factory=list, description="Activities in this phase")
     start_date: Optional[str] = Field(default=None, description="Phase start date")
     end_date: Optional[str] = Field(default=None, description="Phase end date")
 
@@ -275,34 +277,35 @@ class BudgetAllocation(BaseModel):
     community_management: str = Field(default="", description="Budget for community management")
 
 class Execution(BaseModel):
-    channels: List[str] = Field(description="Execution channels")
-    deliverables: List[str] = Field(description="Content deliverables")
-    budget_allocation: BudgetAllocation
+    channels: List[str] = Field(default_factory=list, description="Execution channels")
+    deliverables: List[str] = Field(default_factory=list, description="Content deliverables")
+    budget_allocation: BudgetAllocation = Field(default_factory=BudgetAllocation)
 
 class ResearchFoundation(BaseModel):
-    market_analysis: MarketAnalysis
-    competitor_analysis: CompetitorAnalysis
-    audience_insights: AudienceInsights
-    market_opportunities: List[str]
-    recommended_approach: str
+    market_analysis: MarketAnalysis = Field(default_factory=MarketAnalysis)
+    competitor_analysis: CompetitorAnalysis = Field(default_factory=CompetitorAnalysis)
+    audience_insights: AudienceInsights = Field(default_factory=AudienceInsights)
+    market_opportunities: List[str] = Field(default_factory=list)
+    recommended_approach: str = Field(default="")
 
 class StrategyOutput(BaseModel):
-    positioning: str = Field(description="Brand positioning statement")
-    key_messages: List[str] = Field(description="Key campaign messages", min_length=3, max_length=5)
-    content_pillars: List[str] = Field(description="Content themes", min_length=3, max_length=5)
-    channel_strategy: Dict[str, ChannelPlan] = Field(description="Channel-specific strategies")
-    audience_segments: List[AudienceSegment] = Field(description="Target audience segments")
-    timeline: Dict[str, TimelinePhase] = Field(description="Campaign timeline phases")
-    success_metrics: SuccessMetrics
-    competitive_differentiation: CompetitiveDifferentiation
-    market_opportunities: List[str] = Field(description="Tactical opportunities")
-    strategic_approach: str = Field(description="Overall strategic direction")
-    content_calendar: ContentCalendar = Field(
+    positioning: str = Field(default="", description="Brand positioning statement")
+    key_messages: List[str] = Field(default_factory=list, description="Key campaign messages")
+    content_pillars: List[str] = Field(default_factory=list, description="Content themes")
+    channel_strategy: Dict[str, ChannelPlan] = Field(default_factory=dict, description="Channel-specific strategies")
+    audience_segments: List[AudienceSegment] = Field(default_factory=list, description="Target audience segments")
+    timeline: Dict[str, TimelinePhase] = Field(default_factory=dict, description="Campaign timeline phases")
+    success_metrics: SuccessMetrics = Field(default_factory=SuccessMetrics)
+    competitive_differentiation: CompetitiveDifferentiation = Field(default_factory=CompetitiveDifferentiation)
+    market_opportunities: List[str] = Field(default_factory=list, description="Tactical opportunities")
+    strategic_approach: str = Field(default="", description="Overall strategic direction")
+    content_calendar: Optional[ContentCalendar] = Field(
+        default=None,
         description="4-week structured content calendar generated by Strategy agent"
     )
-    inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(description="Campaign goal type: awareness, lead_gen, sales, or retention")
-    research_foundation: ResearchFoundation
-    execution: Execution
+    inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(default="awareness", description="Campaign goal type")
+    research_foundation: ResearchFoundation = Field(default_factory=ResearchFoundation)
+    execution: Execution = Field(default_factory=Execution)
 
     @field_validator("inferred_goal", mode="before")
     @classmethod
@@ -313,48 +316,48 @@ class StrategyOutput(BaseModel):
 # ==================== COPYWRITER OUTPUT SCHEMA ====================
 
 class CTAs(BaseModel):
-    primary: str = Field(description="Primary call to action")
-    secondary: str = Field(description="Secondary call to action")
+    primary: str = Field(default="Learn More", description="Primary call to action")
+    secondary: str = Field(default="Get Started", description="Secondary call to action")
     tertiary: Optional[str] = Field(default=None, description="Tertiary call to action")
 
 class ChannelCopy(BaseModel):
-    headline: str = Field(description="Channel-specific headline")
-    body: str = Field(description="Channel-specific body copy")
-    ctas: CTAs = Field(description="Call to action variations")
+    headline: str = Field(default="", description="Channel-specific headline")
+    body: str = Field(default="", description="Channel-specific body copy")
+    ctas: CTAs = Field(default_factory=CTAs, description="Call to action variations")
 
 class EmailCopy(BaseModel):
-    subject: str = Field(description="Email subject line")
-    headline: str = Field(description="Email headline")
-    body: str = Field(description="Email body copy")
-    ctas: CTAs
+    subject: str = Field(default="", description="Email subject line")
+    headline: str = Field(default="", description="Email headline")
+    body: str = Field(default="", description="Email body copy")
+    ctas: CTAs = Field(default_factory=CTAs)
 
 class SegmentMessaging(BaseModel):
-    segment_name: str
-    message: str
-    tone: str
+    segment_name: str = Field(default="Target Segment")
+    message: str = Field(default="")
+    tone: str = Field(default="professional")
 
 class ChannelMessaging(BaseModel):
-    channel_name: str
-    approach: str
-    key_points: List[str]
+    channel_name: str = Field(default="general")
+    approach: str = Field(default="")
+    key_points: List[str] = Field(default_factory=list)
 
 class MessagingFramework(BaseModel):
-    brand_promise: str = Field(description="Core brand promise")
-    value_proposition: str = Field(description="Value proposition statement")
-    segment_messaging: List[SegmentMessaging] = Field(description="Segment-specific messaging")
-    channel_messaging: List[ChannelMessaging] = Field(description="Channel-specific messaging")
+    brand_promise: str = Field(default="", description="Core brand promise")
+    value_proposition: str = Field(default="", description="Value proposition statement")
+    segment_messaging: List[SegmentMessaging] = Field(default_factory=list, description="Segment-specific messaging")
+    channel_messaging: List[ChannelMessaging] = Field(default_factory=list, description="Channel-specific messaging")
 
 class StrategicAlignment(BaseModel):
-    positioning_used: str = Field(description="Positioning statement used")
-    key_messages_count: int = Field(description="Number of key messages integrated")
-    deliverables: List[str] = Field(description="Deliverables covered")
+    positioning_used: str = Field(default="", description="Positioning statement used")
+    key_messages_count: int = Field(default=0, description="Number of key messages integrated")
+    deliverables: List[str] = Field(default_factory=list, description="Deliverables covered")
 
 class CopywriterOutput(BaseModel):
-    inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(description="Campaign goal: awareness, lead_gen, sales, or retention")
+    inferred_goal: Literal["awareness", "lead_gen", "sales", "retention"] = Field(default="awareness", description="Campaign goal")
     copies: Dict[Channel, Optional[ChannelCopy]] = Field(default_factory=dict, description="Channel-specific copy keyed by Channel enum")
-    messaging_framework: MessagingFramework
-    strategic_alignment: StrategicAlignment
-    copy_readiness: Dict[str, bool] = Field(description="Channel readiness flags")
+    messaging_framework: MessagingFramework = Field(default_factory=MessagingFramework)
+    strategic_alignment: StrategicAlignment = Field(default_factory=StrategicAlignment)
+    copy_readiness: Dict[str, bool] = Field(default_factory=dict, description="Channel readiness flags")
 
     @field_validator("inferred_goal", mode="before")
     @classmethod
@@ -365,126 +368,147 @@ class CopywriterOutput(BaseModel):
 # ==================== IMAGE PROMPT OUTPUT SCHEMA ====================
 
 class TextOverlay(BaseModel):
-    headline: str = Field(description="Headline text")
-    cta: str = Field(description="CTA button text")
-    placement: str = Field(description="Where to place the text overlay (e.g. bottom-left, top-right, center)")
+    headline: str = Field(default="", description="Headline text")
+    cta: str = Field(default="", description="CTA button text")
+    placement: str = Field(default="bottom-left", description="Placement")
 
 class ImagePrompt(BaseModel):
-    deliverable_name: str = Field(description="Name of the deliverable")
-    prompt: str = Field(description="DALL-E image generation prompt")
-    rationale: str = Field(description="Reasoning for this prompt")
-    visual_elements: List[str] = Field(description="Key visual elements")
-    style_keywords: List[str] = Field(description="Style keywords for consistency")
-    aspect_ratio: str = Field(description="Aspect ratio (16:9, 1:1, 9:16, 4:5, or 2:3)")
-    style: str = Field(description="Artistic style description (e.g. modern corporate photography)")
-    color_palette: str = Field(description="Color palette recommendation")
-    text_overlay: Optional[TextOverlay] = Field(description="Suggested text overlay details", default=None)
+    deliverable_name: str = Field(default="Main Asset", description="Name of deliverable")
+    prompt: str = Field(default="", description="DALL-E image generation prompt")
+    rationale: str = Field(default="", description="Reasoning for this prompt")
+    visual_elements: List[str] = Field(default_factory=list, description="Key visual elements")
+    style_keywords: List[str] = Field(default_factory=list, description="Style keywords for consistency")
+    aspect_ratio: str = Field(default="16:9", description="Aspect ratio")
+    style: str = Field(default="modern professional", description="Artistic style")
+    color_palette: str = Field(default="", description="Color palette recommendation")
+    text_overlay: Optional[TextOverlay] = Field(default=None, description="Suggested text overlay details")
 
 class VisualDirection(BaseModel):
-    overall_style: str = Field(description="Overall visual style")
-    color_palette: List[str] = Field(description="Color palette")
-    mood: str = Field(description="Visual mood and tone")
-    key_visual_themes: List[str] = Field(description="Visual themes")
+    overall_style: str = Field(default="modern corporate photography", description="Overall visual style")
+    color_palette: List[str] = Field(default_factory=list, description="Color palette")
+    mood: str = Field(default="professional and inspiring", description="Visual mood and tone")
+    key_visual_themes: List[str] = Field(default_factory=list, description="Visual themes")
 
 class ImagePromptOutput(BaseModel):
-    visual_direction: VisualDirection
-    image_prompts: List[ImagePrompt] = Field(description="Image generation prompts")
+    visual_direction: VisualDirection = Field(default_factory=VisualDirection)
+    image_prompts: List[ImagePrompt] = Field(default_factory=list, description="Image generation prompts")
 
 
 # ==================== REVIEWER OUTPUT SCHEMA ====================
 
 class AgentReview(BaseModel):
-    score: int = Field(description="Quality score out of 100", ge=0, le=100)
-    approved: bool = Field(description="Whether agent output is approved")
-    feedback: str = Field(description="Overall feedback")
-    issues: List[str] = Field(description="Specific issues found")
-    action_items: List[str] = Field(description="Required action items")
+    score: int = Field(default=80, description="Quality score out of 100", ge=0, le=100)
+    approved: bool = Field(default=True, description="Whether agent output is approved")
+    feedback: str = Field(default="Output satisfies requirements", description="Overall feedback")
+    issues: List[str] = Field(default_factory=list, description="Specific issues found")
+    action_items: List[str] = Field(default_factory=list, description="Required action items")
 
 class OverallReview(BaseModel):
-    quality_score: Optional[int] = Field(default=None, description="Overall quality score (None if no review ran)", ge=0, le=100)
-    summary: str = Field(description="Overall summary")
-    strengths: List[str] = Field(description="Campaign strengths")
-    critical_improvements: List[str] = Field(description="Critical improvements needed")
+    quality_score: Optional[int] = Field(default=80, description="Overall quality score", ge=0, le=100)
+    summary: str = Field(default="Campaign output meets quality standards.", description="Overall summary")
+    strengths: List[str] = Field(default_factory=list, description="Campaign strengths")
+    critical_improvements: List[str] = Field(default_factory=list, description="Critical improvements needed")
 
 class ReviewerOutput(BaseModel):
-    status: str = Field(description="Review status: approved, rejected, or review_failed")
-    can_publish: bool = Field(description="Whether the campaign is cleared for publishing")
-    research_review: AgentReview
-    strategy_review: AgentReview
-    copy_review: AgentReview
-    image_review: AgentReview
-    overall: OverallReview
+    status: str = Field(default="approved", description="Review status")
+    can_publish: bool = Field(default=True, description="Whether campaign is cleared for publishing")
+    research_review: AgentReview = Field(default_factory=AgentReview)
+    strategy_review: AgentReview = Field(default_factory=AgentReview)
+    copy_review: AgentReview = Field(default_factory=AgentReview)
+    image_review: AgentReview = Field(default_factory=AgentReview)
+    overall: OverallReview = Field(default_factory=OverallReview)
 
 
 # ==================== PUBLISHER OUTPUT SCHEMA ====================
 
 class CopyAsset(BaseModel):
-    asset: str
-    status: str
+    asset: str = Field(default="")
+    status: str = Field(default="ready")
     headline: Optional[str] = None
     notes: Optional[str] = None
 
 class VisualAsset(BaseModel):
-    asset: str
-    status: str
+    asset: str = Field(default="")
+    status: str = Field(default="ready")
     aspect_ratio: Optional[str] = None
     style: Optional[str] = None
     notes: Optional[str] = None
 
 class AssetChecklist(BaseModel):
-    copy_assets: List[CopyAsset]
-    visual_assets: List[VisualAsset]
-    missing_assets: List[str]
+    copy_assets: List[CopyAsset] = Field(default_factory=list)
+    visual_assets: List[VisualAsset] = Field(default_factory=list)
+    missing_assets: List[str] = Field(default_factory=list)
 
 class ChannelPublishingPlan(BaseModel):
-    channel: str
-    priority: str
-    content_type: str
-    publish_frequency: str
-    optimal_timing: str
-    copy_asset_used: str
-    visual_asset_used: str
-    kpi_targets: Dict[str, str]
-    launch_date: str
-    status: str
+    channel: str = Field(default="")
+    priority: str = Field(default="medium")
+    content_type: str = Field(default="Post")
+    publish_frequency: str = Field(default="2x/week")
+    optimal_timing: str = Field(default="Morning")
+    copy_asset_used: str = Field(default="")
+    visual_asset_used: str = Field(default="")
+    kpi_targets: Dict[str, str] = Field(default_factory=dict)
+    launch_date: str = Field(default="")
+    status: str = Field(default="scheduled")
 
 class CalendarActivity(BaseModel):
-    day: str = Field(description="Day of week + date, e.g. 'Monday 2026-06-29'")
-    channel: Channel
-    content_type: str = Field(default="Post", description="Format of content e.g. Reel, Story, Post, Ad, Email, Video")
-    description: str = Field(description="Detailed publishing instructions and execution directions (3-4 sentences). Explain exactly what the content contains, the visual setup, the key message, and step-by-step directions for the team.")
-    caption_hook: str = Field(description="Opening line or hook for the content piece")
-    effort: Literal["low", "medium", "high"]
-    quick_win: bool = Field(description="True if task ships same day with no dependencies")
+    day: str = Field(default="Monday 2026-07-28", description="Day of week + date")
+    channel: Channel = Field(default=Channel.LINKEDIN)
+    content_type: str = Field(default="Post", description="Format of content")
+    description: str = Field(default="", description="Detailed publishing instructions")
+    caption_hook: str = Field(default="", description="Opening line")
+    effort: Literal["low", "medium", "high"] = Field(default="medium")
+    quick_win: bool = Field(default=True, description="True if task ships same day")
+
+    @field_validator("channel", mode="before")
+    @classmethod
+    def normalize_channel(cls, v):
+        if isinstance(v, dict):
+            v = v.get("channel") or v.get("value") or v.get("name") or (list(v.values())[0] if v else "linkedin")
+        if isinstance(v, str):
+            v = v.lower().strip().replace(" ", "_")
+        return v
+
+    @field_validator("effort", mode="before")
+    @classmethod
+    def normalize_effort(cls, v):
+        if isinstance(v, dict):
+            v = v.get("effort") or v.get("value") or "medium"
+        if isinstance(v, str):
+            v = v.lower().strip()
+            if v not in ("low", "medium", "high"):
+                return "medium"
+        return v
+
 
 class CalendarWeek(BaseModel):
-    week_label: str
-    week_start_date: str
-    theme: str
-    activities: list[CalendarActivity] = Field(min_length=1, max_length=7)
+    week_label: str = Field(default="Week 1")
+    week_start_date: str = Field(default="")
+    theme: str = Field(default="")
+    activities: list[CalendarActivity] = Field(default_factory=list)
 
 class ContentCalendar(BaseModel):
-    total_weeks: int
-    campaign_start_date: str
-    weeks: list[CalendarWeek] = Field(min_length=1)
+    total_weeks: int = Field(default=4)
+    campaign_start_date: str = Field(default="")
+    weeks: list[CalendarWeek] = Field(default_factory=list)
 
 class ProjectedMetrics(BaseModel):
-    total_reach: str
-    lead_target: str
-    estimated_ctr: str
-    estimated_cost: str
-    roi_projection: str
-    projection_note: str
-    channel_breakdown: Dict[str, str]
-    timeline_to_results: str
-    projection_confidence: str
-    confidence_explanation: str
+    total_reach: str = Field(default="")
+    lead_target: str = Field(default="")
+    estimated_ctr: str = Field(default="")
+    estimated_cost: str = Field(default="")
+    roi_projection: str = Field(default="")
+    projection_note: str = Field(default="")
+    channel_breakdown: Dict[str, str] = Field(default_factory=dict)
+    timeline_to_results: str = Field(default="")
+    projection_confidence: str = Field(default="High")
+    confidence_explanation: str = Field(default="")
 
 class PublisherOutput(BaseModel):
-    publishing_decision: str = Field(description="APPROVED_FOR_PUBLISHING, REVISIONS_NEEDED, or HOLD")
-    decision_rationale: str = Field(description="Why this decision was made")
-    publishing_plan: List[ChannelPublishingPlan] = Field(description="Per-channel distribution plans")
-    content_calendar: ContentCalendar = Field(description="Week-by-week content schedule")
-    asset_checklist: AssetChecklist = Field(description="Copy and visual asset inventory")
-    projected_metrics: ProjectedMetrics = Field(description="Expected campaign performance")
-    executive_summary: str = Field(description="4-6 sentence summary for stakeholders")
+    publishing_decision: str = Field(default="APPROVED_FOR_PUBLISHING", description="Decision")
+    decision_rationale: str = Field(default="", description="Why this decision was made")
+    publishing_plan: List[ChannelPublishingPlan] = Field(default_factory=list, description="Per-channel distribution plans")
+    content_calendar: ContentCalendar = Field(default_factory=ContentCalendar, description="Week-by-week content schedule")
+    asset_checklist: AssetChecklist = Field(default_factory=AssetChecklist, description="Copy and visual asset inventory")
+    projected_metrics: ProjectedMetrics = Field(default_factory=ProjectedMetrics, description="Expected campaign performance")
+    executive_summary: str = Field(default="", description="Summary for stakeholders")

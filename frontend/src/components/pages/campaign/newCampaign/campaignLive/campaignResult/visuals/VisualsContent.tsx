@@ -159,7 +159,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       return `https://app.leonardo.ai/ai-generations?prompt=${encoded}`;
     }
     if (name === 'Google Imagen 3') {
-      return `https://aistudio.google.com/app/prompts/new?prompt=${encoded}`;
+      return `https://gemini.google.com/app`;
     }
     if (name === 'Ideogram 2.0') {
       return `https://ideogram.ai/?prompt=${encoded}`;

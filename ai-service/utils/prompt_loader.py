@@ -9,9 +9,15 @@ from pathlib import Path
 _templates_cache: dict[str, str] = {}
 
 
+class SafeDict(dict):
+    """Dictionary subclass that returns 'None' for missing keys to prevent KeyError in prompt formatting."""
+    def __missing__(self, key):
+        return "None"
+
+
 def load_prompt(prompt_name: str, **kwargs) -> str:
     """
-    Load a prompt template from file (with in-memory caching) and format with variables
+    Load a prompt template from file and format safely with variables
     
     Args:
         prompt_name: Name of the prompt file (without .txt extension)
@@ -20,24 +26,14 @@ def load_prompt(prompt_name: str, **kwargs) -> str:
     Returns:
         Formatted prompt string
     """
-    if prompt_name not in _templates_cache:
-        # Get the prompts directory path
-        prompts_dir = Path(__file__).parent / "prompts"
-        prompt_file = prompts_dir / f"{prompt_name}_prompt.txt"
-        
-        if not prompt_file.exists():
-            raise FileNotFoundError(f"Prompt file not found: {prompt_file}")
-        
-        # Read the prompt template
-        with open(prompt_file, 'r', encoding='utf-8') as f:
-            _templates_cache[prompt_name] = f.read()
-            
-    template = _templates_cache[prompt_name]
+    prompts_dir = Path(__file__).parent / "prompts"
+    prompt_file = prompts_dir / f"{prompt_name}_prompt.txt"
     
-    # Format with provided variables
-    try:
-        formatted_prompt = template.format(**kwargs)
-    except KeyError as e:
-        raise ValueError(f"Missing required variable in prompt template: {e}")
+    if not prompt_file.exists():
+        raise FileNotFoundError(f"Prompt file not found: {prompt_file}")
     
-    return formatted_prompt
+    with open(prompt_file, 'r', encoding='utf-8') as f:
+        template = f.read()
+        
+    # Format safely using SafeDict so missing variables default to 'None' instead of throwing KeyError
+    return template.format_map(SafeDict(kwargs))

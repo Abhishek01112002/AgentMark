@@ -466,7 +466,7 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
   return (
     <div
-      className="fgp-fadeInUp p-4 sm:p-5"
+      className="fgp-fadeInUp relative overflow-hidden p-4 sm:p-5 transition-all duration-200 shadow-[0_8px_32px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(99,102,241,0.15)]"
       style={{
         backgroundColor: 'rgba(23, 23, 37, 0.7)',
         border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -474,19 +474,10 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
         animationDelay: `${index * 80}ms`,
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 12px 40px rgba(99, 102, 241, 0.15)';
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
       }}
     >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${color}, transparent)` }} />
       {/* Profile Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
@@ -574,19 +565,26 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
       {/* Score and Objection Callout */}
       <div
+        className="relative overflow-hidden"
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.02)',
-          borderLeft: `4px solid ${color}`,
-          borderRadius: '4px 12px 12px 4px',
-          padding: '12px 16px',
+          backgroundColor: color === COLORS.green ? 'rgba(16, 185, 129, 0.04)' : color === COLORS.warning ? 'rgba(245, 158, 11, 0.04)' : 'rgba(239, 68, 68, 0.04)',
+          border: `1px solid ${color}22`,
+          borderRadius: 12,
+          padding: '14px 16px',
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 10,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-          <span style={{ fontSize: 24, fontWeight: 700, color }}>{critique.resonance_score}</span>
-          <span style={{ fontSize: 12, color: COLORS.textMuted }}>/100 Resonance</span>
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: `linear-gradient(180deg, ${color}, transparent)` }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${color}30` }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+            <span style={{ fontSize: 26, fontWeight: 700, color, fontFamily: "'Sora', sans-serif" }}>{critique.resonance_score}</span>
+            <span style={{ fontSize: 13, color: COLORS.textMuted, fontFamily: "'Sora', sans-serif" }}>/100 Resonance</span>
+          </div>
         </div>
         
         {critique.objection && (
@@ -610,33 +608,52 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
         <div
           style={{
             backgroundColor: 'rgba(245, 158, 11, 0.04)',
-            border: '1px dashed rgba(245, 158, 11, 0.2)',
-            borderRadius: 8,
-            padding: '10px 12px',
-            fontSize: 12,
+            border: '1px solid rgba(245, 158, 11, 0.12)',
+            borderRadius: 10,
+            padding: '12px 14px',
+            fontSize: 12.5,
             fontFamily: "'Inter', sans-serif",
-            color: COLORS.warning,
-            lineHeight: 1.5,
+            color: COLORS.textMuted,
+            lineHeight: 1.6,
           }}
         >
-          <span style={{ fontWeight: 600, display: 'block', marginBottom: 2, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Friction Phrase</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span style={{ fontWeight: 600, fontSize: 10, color: COLORS.warning, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Friction Phrase</span>
+          </div>
           "{critique.clash_quote}"
         </div>
       )}
 
       {/* Verdict / Decision */}
       {critique.verdict && (
-        <p
+        <div
           style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: 13,
-            color: COLORS.textPrimary,
-            lineHeight: 1.6,
-            margin: 0,
+            backgroundColor: 'rgba(99, 102, 241, 0.03)',
+            border: '1px solid rgba(99, 102, 241, 0.08)',
+            borderRadius: 10,
+            padding: '14px 16px',
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
           }}
         >
-          {critique.verdict}
-        </p>
+          <div style={{ width: 24, height: 24, borderRadius: 6, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <p
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13,
+              color: COLORS.textPrimary,
+              lineHeight: 1.6,
+              margin: 0,
+              flex: 1,
+            }}
+          >
+            {critique.verdict}
+          </p>
+        </div>
       )}
 
       {/* Emotional Pulse Bar */}
@@ -811,24 +828,32 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
       )}
 
       <div
+        className="relative overflow-hidden"
         style={{
-          backgroundColor: COLORS.bg4,
-          border: `1px solid ${COLORS.border}`,
+          backgroundColor: 'rgba(79, 70, 229, 0.03)',
+          border: `1px solid rgba(79, 70, 229, 0.12)`,
           borderRadius: 16,
-          overflow: 'hidden',
         }}
       >
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #4F46E5, #818CF8, transparent)' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px 0', fontFamily: "'Inter', sans-serif", fontSize: 11, color: '#818CF8' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Hover highlighted text to see persona objections
+        </div>
         {/* Section header */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '14px 20px',
-            borderBottom: isExpanded ? `1px solid ${COLORS.border}` : 'none',
+            padding: '10px 20px 14px',
+            borderBottom: isExpanded ? `1px solid rgba(79, 70, 229, 0.12)` : 'none',
           }}
         >
-          <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, rgba(79,70,229,0.2), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(79,70,229,0.2)' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4M16 16l-4-4-4 4"/></svg>
+            </div>
             <h3
               style={{
                 margin: 0,
@@ -846,65 +871,97 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
             onClick={toggleExpanded}
             aria-expanded={isExpanded}
             aria-label="Toggle copy friction analysis"
+            style={{
+              background: 'none',
+              border: `1px solid ${isExpanded ? 'rgba(79, 70, 229, 0.3)' : '#2A2A38'}`,
+              borderRadius: 6,
+              padding: '4px 10px',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11,
+              color: isExpanded ? '#818CF8' : '#8B8B9E',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
           >
             {isExpanded ? 'Collapse' : 'Expand'}
           </button>
         </div>
 
         {isExpanded && (
-          <div style={{ padding: '16px 20px' }}>
+          <div style={{ padding: '16px 20px 20px' }}>
             {/* Channel Tabs Selector */}
             {channels.length > 0 && (
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 8,
-                  marginBottom: 16,
-                  borderBottom: `1px solid ${COLORS.border}`,
-                  paddingBottom: 10,
-                  overflowX: 'auto',
-                }}
-              >
-                {channels.map(ch => {
-                  const isActive = ch === selectedChannel;
-                  return (
-                    <button
-                      key={ch}
-                      onClick={() => setSelectedChannel(ch)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: 6,
-                        border: 'none',
-                        backgroundColor: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                        color: isActive ? COLORS.purpleLight : COLORS.textMuted,
-                        fontFamily: "'Sora', sans-serif",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      {ch}
-                    </button>
-                  );
-                })}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><path d="M6 6h.01M6 18h.01"/></svg>
+                  <span style={{ fontSize: 10, color: COLORS.textMuted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Filter by channel</span>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 4,
+                    padding: 3,
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    borderRadius: 10,
+                    overflowX: 'auto',
+                    border: '1px solid rgba(255,255,255,0.03)',
+                  }}
+                >
+                  {channels.map(ch => {
+                    const isActive = ch === selectedChannel;
+                    return (
+                      <button
+                        key={ch}
+                        onClick={() => setSelectedChannel(ch)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: 7,
+                          border: 'none',
+                          background: isActive
+                            ? 'linear-gradient(135deg, rgba(79,70,229,0.3), rgba(129,140,248,0.12))'
+                            : 'transparent',
+                          color: isActive ? '#E0E7FF' : '#6B6B80',
+                          fontFamily: "'Sora', sans-serif",
+                          fontSize: 11.5,
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          letterSpacing: '0.04em',
+                          boxShadow: isActive ? '0 1px 6px rgba(79,70,229,0.15)' : 'none',
+                          flex: 1,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {ch}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
             <div
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 13,
-                lineHeight: 1.8,
+                lineHeight: 1.9,
                 whiteSpace: 'pre-wrap',
                 color: COLORS.textPrimary,
                 wordBreak: 'break-word',
-                backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(79,70,229,0.02))',
+                border: '1px solid rgba(79, 70, 229, 0.1)',
                 borderRadius: 12,
-                padding: '16px 20px',
+                padding: '18px 22px',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02)',
               }}
             >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span style={{ fontSize: 10, color: COLORS.textMuted, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em' }}>Copy Content</span>
+                <span style={{ fontSize: 9, color: 'rgba(139,139,158,0.5)', marginLeft: 'auto', fontFamily: "'JetBrains Mono', monospace" }}>
+                  {segments.length > 0 ? `${segments.filter(s => s.highlighted).length} friction pts` : ''}
+                </span>
+              </div>
               {segments.map((seg, i) => {
                 if (!seg.highlighted) {
                   return <span key={i}>{seg.text}</span>;
@@ -932,18 +989,20 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
               <div
                 style={{
                   marginTop: 12,
-                  padding: '10px 14px',
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(16, 185, 129, 0.05)',
-                  border: '1px solid rgba(16, 185, 129, 0.15)',
-                  fontSize: 12,
-                  color: COLORS.green,
+                  padding: '12px 16px',
+                  borderRadius: 10,
+                  backgroundColor: 'rgba(16, 185, 129, 0.04)',
+                  border: '1px solid rgba(16, 185, 129, 0.12)',
+                  fontSize: 12.5,
+                  color: '#4edea3',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6
+                  gap: 8,
+                  fontFamily: "'Inter', sans-serif",
                 }}
               >
-                ✓ No direct friction points identified in this channel's copy.
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4edea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                No direct friction points identified in this channel's copy.
               </div>
             )}
           </div>
@@ -1080,21 +1139,30 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error }) => (
         { title: "Protect Ad Budget", desc: "Detect conversion barriers and copy friction before wasting budget on paid marketing channels." },
         { title: "Predict Click Rates", desc: "Estimate click decisions and audience resonance ratings across key buyer demographics." },
         { title: "Optimize Conversions", desc: "Verify copy revisions in real-time by directly interviewing the simulated consumer panel." }
-      ].map((item, idx) => (
-        <div key={idx} className="w-full sm:w-[170px] flex-grow sm:flex-grow-0" style={{
-          backgroundColor: COLORS.bg3,
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 12,
-          padding: '12px 16px',
-          textAlign: 'left',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.textPrimary }}>{item.title}</span>
-          <span style={{ fontSize: 11, color: COLORS.textMuted, lineHeight: 1.4 }}>{item.desc}</span>
-        </div>
-      ))}
+      ].map((item, idx) => {
+        const cardColors = [
+          { bar: 'linear-gradient(90deg, #6366F1, #818CF8)', bg: 'rgba(99,102,241,0.04)', border: 'rgba(99,102,241,0.12)', icon: '#818CF8' },
+          { bar: 'linear-gradient(90deg, #0D9488, #14B8A6)', bg: 'rgba(13,148,136,0.04)', border: 'rgba(13,148,136,0.12)', icon: '#14B8A6' },
+          { bar: 'linear-gradient(90deg, #F43F5E, #FB7185)', bg: 'rgba(244,63,94,0.04)', border: 'rgba(244,63,94,0.12)', icon: '#FB7185' },
+        ];
+        const c = cardColors[idx % cardColors.length];
+        return (
+          <div key={idx} className="relative overflow-hidden w-full sm:w-[170px] flex-grow sm:flex-grow-0" style={{
+            backgroundColor: c.bg,
+            border: `1px solid ${c.border}`,
+            borderRadius: 12,
+            padding: '12px 16px',
+            textAlign: 'left',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: c.bar }} />
+            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.textPrimary, fontFamily: "'Sora', sans-serif" }}>{item.title}</span>
+            <span style={{ fontSize: 11, color: COLORS.textMuted, lineHeight: 1.4 }}>{item.desc}</span>
+          </div>
+        );
+      })}
     </div>
 
     {onRunSimulation && (
@@ -1102,7 +1170,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error }) => (
         className="fgp-btn"
         onClick={onRunSimulation}
         style={{
-          backgroundColor: COLORS.purple,
+          background: 'linear-gradient(135deg, #6366F1, #818CF8)',
           color: '#fff',
           borderRadius: 10,
           padding: '12px 28px',
@@ -1112,13 +1180,14 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error }) => (
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+          boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
           transition: 'all 0.2s ease',
-          cursor: 'pointer'
+          cursor: 'pointer',
+          border: '1px solid rgba(255,255,255,0.08)',
         }}
         aria-label="Run focus group simulation"
       >
-        <span aria-hidden>▶</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         Run Simulation
       </button>
     )}
@@ -1136,9 +1205,10 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
 
   return (
     <div
+      className="relative overflow-hidden"
       style={{
-        backgroundColor: COLORS.bg4,
-        border: `1px solid ${COLORS.border}`,
+        backgroundColor: 'rgba(99, 102, 241, 0.03)',
+        border: `1px solid rgba(99, 102, 241, 0.12)`,
         borderRadius: 16,
         padding: 24,
         display: 'flex',
@@ -1146,46 +1216,44 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
         gap: 18,
       }}
     >
-      <h3
-        style={{
-          margin: 0,
-          fontFamily: "'Sora', sans-serif",
-          fontSize: 16,
-          fontWeight: 600,
-          color: COLORS.textPrimary,
-          letterSpacing: '-0.02em',
-        }}
-      >
-        Actionable Recommendations
-      </h3>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #6366F1, #818CF8, transparent)' }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+        </div>
+        <h3
+          style={{
+            margin: 0,
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 16,
+            fontWeight: 600,
+            color: COLORS.textPrimary,
+            letterSpacing: '-0.02em',
+          }}
+        >
+          Actionable Recommendations
+        </h3>
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {recommendations.map((rec, i) => (
           <div
             key={i}
-            className="fgp-fadeInUp"
+            className="fgp-fadeInUp border border-[#2A2A38] rounded-[14px] transition-all duration-200 hover:border-[#6366F1]/20 hover:shadow-[0_6px_20px_rgba(99,102,241,0.04)]"
             style={{
               backgroundColor: 'rgba(23, 23, 37, 0.3)',
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 14,
               padding: 20,
               display: 'flex',
               flexDirection: 'column',
               gap: 14,
               animationDelay: `${i * 60}ms`,
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.2)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(99, 102, 241, 0.04)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = COLORS.border;
-              e.currentTarget.style.boxShadow = 'none';
             }}
           >
             {/* Card Header: Channel Indicator */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)' }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              </div>
               <span
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
@@ -1220,28 +1288,33 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
             >
               {/* Friction Section */}
               <div
+                className="relative overflow-hidden"
                 style={{
-                  backgroundColor: 'rgba(239, 68, 68, 0.01)',
-                  borderLeft: `3px solid ${COLORS.danger}`,
-                  borderRadius: '0 8px 8px 0',
-                  padding: '12px 14px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.04)',
+                  border: '1px solid rgba(239, 68, 68, 0.12)',
+                  borderRadius: 10,
+                  padding: '14px 16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 6,
+                  gap: 8,
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 9,
-                    color: COLORS.danger,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  Detected Friction
-                </span>
+                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #F43F5E, #FB7185)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10,
+                      color: COLORS.danger,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    Detected Friction
+                  </span>
+                </div>
                 <p
                   style={{
                     margin: 0,
@@ -1257,28 +1330,33 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
 
               {/* Suggested Revision Section */}
               <div
+                className="relative overflow-hidden"
                 style={{
-                  backgroundColor: 'rgba(16, 185, 129, 0.01)',
-                  borderLeft: `3px solid ${COLORS.green}`,
-                  borderRadius: '0 8px 8px 0',
-                  padding: '12px 14px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.04)',
+                  border: '1px solid rgba(16, 185, 129, 0.12)',
+                  borderRadius: 10,
+                  padding: '14px 16px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 6,
+                  gap: 8,
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 9,
-                    color: COLORS.green,
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  Suggested Copy Revision
-                </span>
+                <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 3, background: 'linear-gradient(180deg, #10B981, #34D399)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span
+                    style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: 10,
+                      color: COLORS.green,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                    }}
+                  >
+                    Suggested Copy Revision
+                  </span>
+                </div>
                 <p
                   style={{
                     margin: 0,
@@ -1332,7 +1410,7 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
 
       {/* ── Section 1: Header ── */}
       <div
-        className="p-4 sm:p-6"
+        className="p-4 sm:p-6 relative overflow-hidden"
         style={{
           backgroundColor: COLORS.bg4,
           border: `1px solid ${COLORS.border}`,
@@ -1343,9 +1421,14 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
           gap: 20,
         }}
       >
+        {/* indigo gradient bar */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #6366F1, transparent)' }} />
         {/* Title block */}
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.25)' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
             <h2
               style={{
                 margin: 0,
@@ -1383,7 +1466,7 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
       {/* ── Section 1.5: Onboarding Guide (Show only when report is loaded) ── */}
       {report && !isLoading && (
         <div
-          className="p-4 sm:p-6"
+          className="p-4 sm:p-6 relative overflow-hidden"
           style={{
             backgroundColor: COLORS.bg4,
             border: `1px solid ${COLORS.border}`,
@@ -1396,6 +1479,8 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
             gap: 10
           }}
         >
+          {/* sky gradient bar */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #0EA5E9, transparent)' }} />
           <h4
             style={{
               margin: 0,
@@ -1457,20 +1542,27 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
           >
             {/* Resonance Score Card */}
             <div
+              className="relative overflow-hidden"
               style={{
-                backgroundColor: 'rgba(23, 23, 37, 0.4)',
-                border: `1px solid ${COLORS.border}`,
+                backgroundColor: 'rgba(99, 102, 241, 0.04)',
+                border: `1px solid rgba(99, 102, 241, 0.15)`,
                 borderRadius: 12,
-                padding: '16px 20px',
+                padding: '18px 20px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 6
+                gap: 10
               }}
             >
-              <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Overall Resonance</span>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                <span style={{ fontSize: 24, fontWeight: 700, color: scoreColor(report.overall_score) }}>{report.overall_score}</span>
-                <span style={{ fontSize: 12, color: COLORS.textMuted }}>/100</span>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #6366F1, #818CF8, transparent)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Overall Resonance</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingLeft: 42 }}>
+                <span style={{ fontSize: 26, fontWeight: 700, color: scoreColor(report.overall_score), fontFamily: "'Sora', sans-serif" }}>{report.overall_score}</span>
+                <span style={{ fontSize: 13, color: COLORS.textMuted, fontFamily: "'Sora', sans-serif" }}>/100</span>
               </div>
             </div>
 
@@ -1481,20 +1573,27 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
               const ctr = Math.round((clickCount / totalCount) * 100);
               return (
                 <div
+                  className="relative overflow-hidden"
                   style={{
-                    backgroundColor: 'rgba(23, 23, 37, 0.4)',
-                    border: `1px solid ${COLORS.border}`,
+                    backgroundColor: 'rgba(13, 148, 136, 0.04)',
+                    border: `1px solid rgba(13, 148, 136, 0.15)`,
                     borderRadius: 12,
-                    padding: '16px 20px',
+                    padding: '18px 20px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 6
+                    gap: 10
                   }}
                 >
-                  <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Simulated CTR</span>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                    <span style={{ fontSize: 24, fontWeight: 700, color: ctr >= 50 ? COLORS.green : COLORS.danger }}>{ctr}%</span>
-                    <span style={{ fontSize: 12, color: COLORS.textMuted }}>({clickCount}/{totalCount} would click)</span>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #0D9488, #14B8A6, transparent)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, rgba(13,148,136,0.2), rgba(20,184,166,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(13,148,136,0.2)' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Simulated CTR</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingLeft: 42 }}>
+                    <span style={{ fontSize: 26, fontWeight: 700, color: ctr >= 50 ? COLORS.green : COLORS.danger, fontFamily: "'Sora', sans-serif" }}>{ctr}%</span>
+                    <span style={{ fontSize: 13, color: COLORS.textMuted, fontFamily: "'Sora', sans-serif" }}>({clickCount}/{totalCount} would click)</span>
                   </div>
                 </div>
               );
@@ -1505,20 +1604,27 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
               const frictionCount = report.persona_critiques?.filter(c => c.objection || c.clash_quote).length || 0;
               return (
                 <div
+                  className="relative overflow-hidden"
                   style={{
-                    backgroundColor: 'rgba(23, 23, 37, 0.4)',
-                    border: `1px solid ${COLORS.border}`,
+                    backgroundColor: 'rgba(245, 158, 11, 0.04)',
+                    border: `1px solid rgba(245, 158, 11, 0.15)`,
                     borderRadius: 12,
-                    padding: '16px 20px',
+                    padding: '18px 20px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 6
+                    gap: 10
                   }}
                 >
-                  <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identified Objections</span>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                    <span style={{ fontSize: 24, fontWeight: 700, color: frictionCount > 2 ? COLORS.warning : COLORS.green }}>{frictionCount}</span>
-                    <span style={{ fontSize: 12, color: COLORS.textMuted }}>friction points</span>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #D97706, #F59E0B, transparent)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(251,191,36,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245,158,11,0.2)' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    </div>
+                    <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identified Objections</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, paddingLeft: 42 }}>
+                    <span style={{ fontSize: 26, fontWeight: 700, color: frictionCount > 2 ? COLORS.warning : COLORS.green, fontFamily: "'Sora', sans-serif" }}>{frictionCount}</span>
+                    <span style={{ fontSize: 13, color: COLORS.textMuted, fontFamily: "'Sora', sans-serif" }}>friction points</span>
                   </div>
                 </div>
               );
@@ -1526,27 +1632,35 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
 
             {/* Target Demographics Verification Card */}
             <div
+              className="relative overflow-hidden"
               style={{
-                backgroundColor: 'rgba(23, 23, 37, 0.4)',
-                border: `1px solid ${COLORS.border}`,
+                backgroundColor: 'rgba(124, 58, 237, 0.04)',
+                border: `1px solid rgba(124, 58, 237, 0.15)`,
                 borderRadius: 12,
-                padding: '16px 20px',
+                padding: '18px 20px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 6
+                gap: 10
               }}
             >
-              <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target Demographics</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'linear-gradient(90deg, #7C3AED, #A78BFA, transparent)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, rgba(124,58,237,0.2), rgba(167,139,250,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(124,58,237,0.2)' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <span style={{ fontSize: 11, color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Target Demographics</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingLeft: 42 }}>
                 <span
                   style={{
-                    fontSize: 13,
+                    fontSize: 14,
                     color: COLORS.textPrimary,
                     fontWeight: 600,
                     textOverflow: 'ellipsis',
                     overflow: 'hidden',
                     whiteSpace: 'nowrap',
-                    maxWidth: 240
+                    maxWidth: 240,
+                    fontFamily: "'Sora', sans-serif"
                   }}
                   title={targetAudience}
                 >
@@ -1570,17 +1684,22 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
           {/* ── Section 3: Persona Panel (Split Pane) ── */}
           {report.persona_critiques?.length > 0 && (
             <div>
-              <h3
-                style={{
-                  margin: '0 0 16px 0',
-                  fontFamily: "'Sora', sans-serif",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                Persona Panel
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontFamily: "'Sora', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: COLORS.textPrimary,
+                  }}
+                >
+                  Persona Panel
+                </h3>
+              </div>
               
               <div className="flex flex-col md:flex-row gap-6 items-stretch">
                 {/* Left side: Persona list stack */}
@@ -1604,9 +1723,10 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
                       <div
                         key={critique.persona_id}
                         onClick={() => setSelectedPersonaIdx(idx)}
+                        className="relative"
                         style={{
                           backgroundColor: isActive ? 'rgba(99, 102, 241, 0.08)' : 'rgba(23, 23, 37, 0.4)',
-                          border: `1px solid ${isActive ? COLORS.purple : 'rgba(255, 255, 255, 0.06)'}`,
+                          border: `1px solid ${isActive ? 'rgba(99, 102, 241, 0.35)' : 'rgba(255, 255, 255, 0.06)'}`,
                           borderRadius: 12,
                           padding: '12px 16px',
                           display: 'flex',
@@ -1616,24 +1736,27 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
                           transition: 'all 0.2s ease',
                         }}
                       >
+                        {isActive && <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 2.5, background: 'linear-gradient(180deg, #6366F1, #818CF8)', borderRadius: '12px 0 0 12px' }} />}
                         {/* Avatar initials with circular frame */}
                         <div
                           style={{
-                            width: 32,
-                            height: 32,
+                            width: 34,
+                            height: 34,
                             borderRadius: '50%',
-                            backgroundColor: isActive ? COLORS.purple : 'rgba(255, 255, 255, 0.08)',
+                            background: isActive ? 'linear-gradient(135deg, #6366F1, #818CF8)' : 'rgba(255, 255, 255, 0.08)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: '#fff',
                             fontSize: 12,
                             fontWeight: 700,
+                            boxShadow: isActive ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
+                            flexShrink: 0,
                           }}
                         >
                           {initials}
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
                           <span
                             style={{
                               fontSize: 13,
@@ -1642,28 +1765,39 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
                               whiteSpace: 'nowrap',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
+                              fontFamily: "'Sora', sans-serif",
                             }}
                           >
                             {displayName}
                           </span>
-                          <span style={{ fontSize: 11, color: COLORS.textMuted }}>
-                            {critique.click_intent ? 'Would Click' : 'Would Scroll Past'}
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: critique.click_intent ? '#4edea3' : '#F43F5E', flexShrink: 0 }} />
+                            <span style={{ fontSize: 11, color: COLORS.textMuted }}>
+                              {critique.click_intent ? 'Would Click' : 'Would Scroll Past'}
+                            </span>
+                          </div>
                         </div>
                         {/* Resonance Score Badge */}
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 700,
-                            color: scoreCol,
-                            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                            padding: '2px 8px',
-                            borderRadius: 6,
-                            border: `1px solid ${scoreCol}33`,
-                          }}
-                        >
-                          {critique.resonance_score}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                          <span
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 700,
+                              color: scoreCol,
+                              backgroundColor: isActive ? `${scoreCol}15` : 'rgba(255, 255, 255, 0.02)',
+                              padding: '1px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${scoreCol}33`,
+                              fontFamily: "'Sora', sans-serif",
+                              lineHeight: '20px',
+                            }}
+                          >
+                            {critique.resonance_score}
+                          </span>
+                          <div style={{ width: 24, height: 2, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                            <div style={{ width: `${critique.resonance_score}%`, height: '100%', borderRadius: 2, backgroundColor: scoreCol }} />
+                          </div>
+                        </div>
                       </div>
                     );
                   })}

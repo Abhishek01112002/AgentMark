@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Sparkles, Rocket, ShoppingBag, Zap } from 'lucide-react';
 
 interface CreateProjectModalProps {
   onClose: () => void;
@@ -65,6 +65,60 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onCrea
             >
               <X size={20} />
             </button>
+          </div>
+
+          {/* Quick Starter Templates */}
+          <div className="mb-4">
+            <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[#A0A0D2] flex items-center gap-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              <Sparkles size={13} className="text-indigo-400" />
+              Starter Templates
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setName('SaaS Product Launch');
+                  setDescription('B2B software release campaign targeting tech founders & developers');
+                }}
+                className="p-2.5 text-left rounded-lg border border-[#2A2A38] bg-[#111118] hover:border-[#6366F1] hover:bg-[#1A1A24] transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F1F1F3] group-hover:text-indigo-300">
+                  <Rocket size={12} className="text-indigo-400" />
+                  SaaS Launch
+                </div>
+                <div className="text-[10px] text-[#8B8B9E] truncate mt-0.5">B2B product release</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setName('E-Commerce Summer Sale');
+                  setDescription('Multi-channel retail campaign featuring Instagram ads & email sequence');
+                }}
+                className="p-2.5 text-left rounded-lg border border-[#2A2A38] bg-[#111118] hover:border-[#4edea3] hover:bg-[#1A1A24] transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F1F1F3] group-hover:text-emerald-300">
+                  <ShoppingBag size={12} className="text-emerald-400" />
+                  Summer Sale
+                </div>
+                <div className="text-[10px] text-[#8B8B9E] truncate mt-0.5">Retail & promo ads</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setName('Fintech User Growth');
+                  setDescription('Trust-building retargeting sequence for financial tech app');
+                }}
+                className="p-2.5 text-left rounded-lg border border-[#2A2A38] bg-[#111118] hover:border-[#F59E0B] hover:bg-[#1A1A24] transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F1F1F3] group-hover:text-amber-300">
+                  <Zap size={12} className="text-amber-400" />
+                  Fintech Growth
+                </div>
+                <div className="text-[10px] text-[#8B8B9E] truncate mt-0.5">User acquisition</div>
+              </button>
+            </div>
           </div>
 
           {/* Form */}

@@ -318,12 +318,23 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             + existing_strategy_section
         )
 
+    brand_voice = manager.get("brand_voice") or getattr(state, "brand_voice", None) or "professional"
+    industry = manager.get("industry") or getattr(state, "industry", None) or "other"
+    primary_goal = manager.get("primary_goal") or getattr(state, "primary_goal", None) or "awareness"
+    target_audience = manager.get("target_audience") or getattr(state, "target_audience", None) or "General target audience"
+    additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
+
     # Load strategy prompt and format with data
     prompt = load_prompt(
         "strategy",
         campaign_name=campaign_name,
         brand_name=brand_name,
+        brand_voice=brand_voice,
+        industry=industry,
+        primary_goal=primary_goal,
+        target_audience=target_audience,
         brief=brief,
+        additional_context=additional_context,
         channels=json.dumps(channels),
         deliverables=json.dumps(deliverables),
         market_analysis=json.dumps(market_analysis, indent=2),
@@ -339,7 +350,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     # Revision runs: lower temperature prevents unnecessary field changes;
     # extra token budget handles the existing-strategy context
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 6500 if is_human_revision else 5000
+    revision_max_tokens = 10000 if is_human_revision else 8000
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -361,6 +372,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     
     if strategy_plan is None:
         logger.info("   ⚠️ Strategy LLM unavailable — using research-grounded fallback strategy")
+        # ✅ Clear error flag so downstream nodes (Copywriter, Image, Reviewer) don't skip
+        state.error = None
+        state.status = "strategy_complete"
+        logger.info("   ✅ Fallback strategy ready — error flag cleared, pipeline will continue")
         return _write_fallback_strategy(
             state,
             campaign_name,
@@ -473,6 +488,13 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             normalized[kpi] = match if match else "N/A"
         strategy_plan.success_metrics = strategy_plan.success_metrics.model_copy(update={"targets": normalized})
         logger.info(f"   ✓ success_metrics targets normalized: {normalized}")
+
+    # ========== STEP 4D: ENSURE COMPETITORS IN COMPETITIVE DIFFERENTIATION ==========
+    if strategy_plan.competitive_differentiation:
+        if not strategy_plan.competitive_differentiation.competitors:
+            res_comps = competitor_analysis.get("top_competitors", []) or [f"{industry} Competitors"]
+            strategy_plan.competitive_differentiation.competitors = res_comps
+            logger.info(f"   ✓ Added competitors from research foundation: {res_comps}")
 
     # ========== STEP 5: DISPLAY STRATEGY SUMMARY ==========
     logger.info("\n[STEP 5] Strategy summary...")

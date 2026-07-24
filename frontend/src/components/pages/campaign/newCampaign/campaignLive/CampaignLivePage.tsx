@@ -13,6 +13,7 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { TypewriterText } from './TypewriterText';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
@@ -23,16 +24,6 @@ import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../shared/ChannelIcon';
 
 // ── Module-level constants (stable across renders) ────────────────────────────
-
-/** Typewriter strings — module level so the typewriter useEffect has a stable dep. */
-const TYPEWRITER_STRINGS = [
-  'Drafting introduction paragraph based on Hook 2...',
-  'Optimizing sentence length for readability...',
-  'Injecting brand voice variables...',
-  'Cross-referencing compliance guidelines...',
-  'Generating Twitter variant sequence...',
-  'Building LinkedIn thought-leadership post...',
-];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -166,10 +157,21 @@ const CampaignLivePage: React.FC = () => {
     setIsRetryingInLive(true);
     try {
       await api.post(`/campaigns/${campaignId}/retry`);
-      toast.success('Retrying campaign pipeline... Agents are running!');
+      toast.success('Resuming campaign pipeline from failed step...');
       setCampaignFailed(false);
       setFailedError('');
-      setAgents(INITIAL_AGENTS.map((a) => a.key === 'manager' ? { ...a, status: 'running', description: RUNNING_DESCRIPTIONS.manager } : { ...a, status: 'pending' }));
+      // Preserve completed agents! Only set the first non-completed/failed agent to 'running'
+      setAgents((prev) => {
+        let firstUnfinishedFound = false;
+        return prev.map((a) => {
+          if (a.status === 'completed') return a;
+          if (!firstUnfinishedFound) {
+            firstUnfinishedFound = true;
+            return { ...a, status: 'running', description: RUNNING_DESCRIPTIONS[a.key] || 'Executing step...' };
+          }
+          return { ...a, status: 'pending' };
+        });
+      });
       checkCampaignStatus();
     } catch (err: any) {
       console.error('Failed to retry campaign from live view:', err);
@@ -264,19 +266,27 @@ const CampaignLivePage: React.FC = () => {
     };
   }, [campaignPreviewData]);
 
-  const [typewriterText, setTypewriterText] = useState('');
-  const [currentStringIndex, setCurrentStringIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
   // Track when the page was mounted so we can compute elapsed durations.
   const pageStartTimeRef = useRef(Date.now());
 
   const socketRef = useRef<Socket | null>(null);
   const projectIdRef = useRef<string>('');
+  const pendingStatusCheckRef = useRef(false);
+  const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const statusCheckControllerRef = useRef<AbortController | null>(null);
 
   const checkCampaignStatus = useCallback(async () => {
     if (!campaignId) return;
+    if (pendingStatusCheckRef.current) return;
+    pendingStatusCheckRef.current = true;
+
+    statusCheckControllerRef.current?.abort();
+    const controller = new AbortController();
+    statusCheckControllerRef.current = controller;
+
     try {
-      const response = await api.get(`/campaigns/${campaignId}`);
+      const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
       const { campaign } = response.data;
       if (campaign) {
         projectIdRef.current = campaign.projectId;
@@ -392,14 +402,30 @@ const CampaignLivePage: React.FC = () => {
               const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
               const currentIdx = pipelineKeys.indexOf(a.key);
 
-              if (activeIdx !== -1 && currentIdx !== -1 && currentIdx > activeIdx) {
-                const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
-                return {
-                  ...a,
-                  status: 'pending' as AgentStatus,
-                  description: initialAgent?.description ?? 'Pending...',
-                  duration: undefined,
-                };
+              if (activeIdx !== -1 && currentIdx !== -1) {
+                if (currentIdx > activeIdx) {
+                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
+                  return {
+                    ...a,
+                    status: 'pending' as AgentStatus,
+                    description: initialAgent?.description ?? 'Pending...',
+                    duration: undefined,
+                  };
+                }
+                if (currentIdx === activeIdx) {
+                  return {
+                    ...a,
+                    status: 'running',
+                    description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
+                  };
+                }
+                if (currentIdx < activeIdx) {
+                  return {
+                    ...a,
+                    status: 'completed',
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
               }
 
               if (completedAgents.includes(a.key)) {
@@ -410,31 +436,21 @@ const CampaignLivePage: React.FC = () => {
                 };
               }
 
-              if (a.key === activeAgentKey) {
-                return {
-                  ...a,
-                  status: 'running',
-                  description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
-                };
-              }
-              
-              if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
-                return {
-                  ...a,
-                  status: 'completed',
-                  description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
-                };
-              }
-
               return a;
             })
           );
+
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
       console.error('Failed to fetch campaign status:', error);
     } finally {
       setIsInitialLoading(false);
+      pendingStatusCheckRef.current = false;
+      if (statusCheckControllerRef.current === controller) {
+        statusCheckControllerRef.current = null;
+      }
     }
   }, [campaignId, navigate]);
 
@@ -459,6 +475,7 @@ const CampaignLivePage: React.FC = () => {
   useEffect(() => {
     if (!campaignId) return;
 
+    const controller = new AbortController();
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
@@ -480,7 +497,6 @@ const CampaignLivePage: React.FC = () => {
       setIsConnected(true);
       setSocketAuthError('');
       socket.emit('join_campaign', campaignId);
-      // Re-sync fallback: re-fetch latest DB status when socket connects/reconnects
       void checkCampaignStatus();
     });
 
@@ -488,7 +504,6 @@ const CampaignLivePage: React.FC = () => {
       setIsConnected(false);
     });
 
-    // Server-side auth rejection (invalid token / wrong user)
     socket.on('auth_error', (err: { message: string }) => {
       console.warn('[Socket.io] Auth error:', err.message);
       setSocketAuthError(err.message || 'Unauthorized connection.');
@@ -498,11 +513,9 @@ const CampaignLivePage: React.FC = () => {
       console.warn('[Socket.io] Socket error:', err?.message || err);
     });
 
-    // ── Agent progress tick ──────────────────────────────────────────────────
     socket.on('agent_update', (data: AgentUpdatePayload) => {
       const { agent: agentKey, status } = data;
 
-      // Extract and update revision counts from socket message
       if (data && typeof data === 'object') {
         const research = data.research_revision_count;
         const strategy = data.strategy_revision_count;
@@ -517,17 +530,14 @@ const CampaignLivePage: React.FC = () => {
         }));
       }
 
-
-
       if (status === 'completed' || status === 'running' || status === 'failed') {
         setAgents((prev) => {
           const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
-          const runningIdx = pipelineKeys.indexOf(agentKey);
+          const targetIdx = pipelineKeys.indexOf(agentKey);
 
           const updated = prev.map((a) => {
             const currentIdx = pipelineKeys.indexOf(a.key);
 
-            // If this is the agent being updated
             if (a.key === agentKey) {
               if (status === 'completed') {
                 return {
@@ -551,32 +561,62 @@ const CampaignLivePage: React.FC = () => {
               };
             }
 
-            // If another agent transitions to running, reset any agent downstream of it to pending
-            if (status === 'running' && runningIdx !== -1 && currentIdx > runningIdx) {
-              const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
-              return {
-                ...a,
-                status: 'pending' as AgentStatus,
-                description: initialAgent?.description ?? 'Pending...',
-                duration: undefined,
-              };
+            if (targetIdx !== -1) {
+              if (status === 'running') {
+                if (currentIdx < targetIdx) {
+                  // Preceding agents MUST be completed
+                  return {
+                    ...a,
+                    status: 'completed' as AgentStatus,
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
+                if (currentIdx > targetIdx) {
+                  // Subsequent agents MUST be pending
+                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
+                  return {
+                    ...a,
+                    status: 'pending' as AgentStatus,
+                    description: initialAgent?.description ?? 'Pending...',
+                    duration: undefined,
+                  };
+                }
+              } else if (status === 'completed') {
+                if (currentIdx < targetIdx) {
+                  // Preceding agents MUST be completed
+                  return {
+                    ...a,
+                    status: 'completed' as AgentStatus,
+                    description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
+                  };
+                }
+              }
             }
 
             return a;
           });
 
-          // When an agent completes, mark the next pending agent as running.
           if (status === 'completed') {
             const completedIdx = updated.findIndex((a) => a.key === agentKey);
             const nextPendingIdx = updated.findIndex(
-              (a, i) => i > completedIdx && a.status === 'pending'
+              (a, i) => i > completedIdx && (a.status === 'pending' || a.status === 'running')
             );
             if (nextPendingIdx !== -1 && updated[completedIdx].key !== 'reviewer') {
+              // Ensure ONLY the single next agent is set to running
               updated[nextPendingIdx] = {
                 ...updated[nextPendingIdx],
                 status: 'running',
                 description: RUNNING_DESCRIPTIONS[updated[nextPendingIdx].key] ?? 'Processing...',
               };
+              // Reset any agents after nextPendingIdx to pending
+              for (let i = nextPendingIdx + 1; i < updated.length; i++) {
+                const initialAgent = INITIAL_AGENTS.find((item) => item.key === updated[i].key);
+                updated[i] = {
+                  ...updated[i],
+                  status: 'pending',
+                  description: initialAgent?.description ?? 'Pending...',
+                };
+              }
             }
           }
 
@@ -585,12 +625,11 @@ const CampaignLivePage: React.FC = () => {
       }
     });
 
-    // ── Human approval required ──────────────────────────────────────────────
     socket.on('human_approval_required', async () => {
+      if (controller.signal.aborted) return;
+
       setShowHumanReview(true);
-      
-      // Mark reviewer as completed and publisher as pending (awaiting approval) immediately
-      // to update the pipeline view and stop the typewriter animation instantly.
+
       setAgents((prev) =>
         prev.map((a) => {
           if (a.key === 'reviewer') return { ...a, status: 'completed', description: 'Quality evaluation done' };
@@ -599,9 +638,8 @@ const CampaignLivePage: React.FC = () => {
         })
       );
 
-      // Fetch latest campaign data to get revision counts
       try {
-        const response = await api.get(`/campaigns/${campaignId}`);
+        const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
         const { campaign } = response.data;
         if (campaign) {
           setRevisionCounts({
@@ -611,8 +649,7 @@ const CampaignLivePage: React.FC = () => {
             image_prompt: campaign.imageRevisionCount || 0,
           });
           if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
-          
-          // Extract individual agent scores from reviewOutput
+
           if (campaign.reviewOutput) {
             try {
               const reviewData = JSON.parse(campaign.reviewOutput);
@@ -623,7 +660,6 @@ const CampaignLivePage: React.FC = () => {
                 image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
               });
 
-              // Find lowest scoring agent to pre-select by default
               let lowestAgent = 'copywriter';
               let lowestScore = 999;
               const rawScores = {
@@ -655,12 +691,12 @@ const CampaignLivePage: React.FC = () => {
           setCampaignPreviewData(campaign);
           window.dispatchEvent(new Event('campaign_status_changed'));
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch revision counts:', error);
       }
     });
 
-    // ── Campaign complete ────────────────────────────────────────────────────
     socket.on('campaign_complete', () => {
       setAgents((prev) =>
         prev.map((a) => ({
@@ -670,13 +706,12 @@ const CampaignLivePage: React.FC = () => {
         }))
       );
       window.dispatchEvent(new Event('campaign_status_changed'));
-        setTimeout(() => {
-          const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
-          navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
-        }, 2000);
+      completeTimeoutRef.current = setTimeout(() => {
+        const validProjectId = projectIdRef.current || new URLSearchParams(window.location.search).get('projectId');
+        navigate(`/campaign/${campaignId}/result${validProjectId ? `?projectId=${validProjectId}` : ''}`);
+      }, 2000);
     });
 
-    // ── Campaign failed ──────────────────────────────────────────────────────
     socket.on('campaign_failed', (data: AgentUpdatePayload) => {
       console.error('[Socket.io] Campaign failed | error=', data.error);
       setCampaignFailed(true);
@@ -686,6 +721,11 @@ const CampaignLivePage: React.FC = () => {
     });
 
     return () => {
+      if (completeTimeoutRef.current) {
+        clearTimeout(completeTimeoutRef.current);
+        completeTimeoutRef.current = null;
+      }
+      controller.abort();
       socket.emit('leave_campaign', campaignId);
       socket.disconnect();
     };
@@ -769,40 +809,6 @@ const CampaignLivePage: React.FC = () => {
       setShowHumanReview(true);
     }
   };
-
-  // ── Typewriter effect ────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!activeAgent) {
-      if (typewriterText !== '') {
-        setTypewriterText('');
-      }
-      return;
-    }
-    const currentString = TYPEWRITER_STRINGS[currentStringIndex];
-    let timeout: number;
-
-    if (isDeleting) {
-      if (typewriterText.length > 0) {
-        timeout = window.setTimeout(() => {
-          setTypewriterText(currentString.substring(0, typewriterText.length - 1));
-        }, 50);  // was 30ms — reduced re-render frequency from ~33/s to ~20/s
-      } else {
-        setIsDeleting(false);
-        setCurrentStringIndex((prev) => (prev + 1) % TYPEWRITER_STRINGS.length);
-      }
-    } else {
-      if (typewriterText.length < currentString.length) {
-        timeout = window.setTimeout(() => {
-          setTypewriterText(currentString.substring(0, typewriterText.length + 1));
-        }, 100);  // was 60ms — smoother, less CPU pressure
-      } else {
-        timeout = window.setTimeout(() => setIsDeleting(true), 3000);  // was 2000ms
-      }
-    }
-
-    return () => clearTimeout(timeout);
-  }, [typewriterText, isDeleting, currentStringIndex, activeAgent]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -1145,7 +1151,7 @@ const CampaignLivePage: React.FC = () => {
                           <div style={{ color: '#c0c1ff' }}>&gt; {activeAgent.name} is running...</div>
                           <div className="mt-4 flex">
                             <span className="mr-2" style={{ color: '#c0c1ff' }}>&gt;</span>
-                            <span style={{ color: '#F1F1F3' }}>{typewriterText}</span>
+                            <TypewriterText activeAgent={activeAgent} />
                             <span className="w-2 h-4 bg-[#c0c1ff] ml-1 animate-pulse inline-block align-middle mt-[2px]" />
                           </div>
                         </>
@@ -1650,15 +1656,8 @@ const CampaignLivePage: React.FC = () => {
                     onChange={(e) => setRevisionFeedback(e.target.value)}
                     placeholder="Be specific — what should be changed, improved, or rewritten?"
                     rows={4}
-                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none transition-all duration-200"
-                    style={{
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.06)',
-                      color: '#EDEDF5',
-                      fontFamily: 'Sora, sans-serif',
-                    }}
-                    onFocus={(e) => { e.target.style.border = '1px solid rgba(165,182,252,0.3)'; e.target.style.boxShadow = '0 0 0 3px rgba(165,182,252,0.06)'; }}
-                    onBlur={(e) => { e.target.style.border = '1px solid rgba(255,255,255,0.06)'; e.target.style.boxShadow = 'none'; }}
+                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none transition-all duration-200 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)] text-[#EDEDF5] focus:border-[rgba(165,182,252,0.3)] focus:shadow-[0_0_0_3px_rgba(165,182,252,0.06)]"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
                   />
                   <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>
                     Tip: Be specific — mention what's wrong and what tone/direction you prefer.
@@ -1668,38 +1667,7 @@ const CampaignLivePage: React.FC = () => {
                 <button
                   onClick={handleRequestRevision}
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
-                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
-                  style={{
-                    fontFamily: 'Sora, sans-serif',
-                    background: '#DC2626',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    boxShadow: '0 4px 24px rgba(220,38,38,0.4)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if ((revisionCounts[selectedAgent as keyof typeof revisionCounts] || 0) < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
-                  onTouchStart={(e) => {
-                    if ((revisionCounts[selectedAgent as keyof typeof revisionCounts] || 0) < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
-                  onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
+                  className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed font-sora bg-[#DC2626] text-white border-none shadow-[0_4px_24px_rgba(220,38,38,0.4)] enabled:hover:bg-[#EF4444] enabled:hover:shadow-[0_6px_32px_rgba(220,38,38,0.55)]"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <polyline points="23 4 23 10 17 10" />
@@ -1717,19 +1685,8 @@ const CampaignLivePage: React.FC = () => {
             <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', background: 'linear-gradient(0deg, rgba(192,193,255,0.02) 0%, transparent 100%)' }}>
               <button
                 onClick={handleApprove}
-                className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98]"
-                style={{
-                fontFamily: 'Sora, sans-serif',
-                background: 'linear-gradient(135deg, #6EE7B7 0%, #34D399 100%)',
-                color: '#0A0A0F',
-                boxShadow: '0 4px 24px rgba(110,231,183,0.25)',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(110,231,183,0.35)'; (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.05)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(110,231,183,0.25)'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
-              onTouchStart={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(110,231,183,0.35)'; (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.05)'; }}
-              onTouchEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(110,231,183,0.25)'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
-              onTouchCancel={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(110,231,183,0.25)'; (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
-            >
+                className="w-full py-3.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98] font-sora bg-gradient-to-br from-[#6EE7B7] to-[#34D399] text-[#0A0A0F] shadow-[0_4px_24px_rgba(110,231,183,0.25)] hover:shadow-[0_6px_32px_rgba(110,231,183,0.35)] hover:brightness-105"
+              >
               <span className="material-symbols-outlined text-[19px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Approve &amp; Publish Campaign
             </button>

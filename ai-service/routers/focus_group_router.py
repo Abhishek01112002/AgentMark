@@ -168,7 +168,8 @@ def mock_focus_group_report() -> FocusGroupReport:
 # § 2  Request / Response Pydantic models
 # ═══════════════════════════════════════════════════════════════════════════════
 
-_ROUTER_CONFIG = ConfigDict(extra="forbid", str_strip_whitespace=True)
+_ROUTER_CONFIG = ConfigDict(extra="ignore", str_strip_whitespace=True)
+
 
 
 class SimulateRequest(BaseModel):
@@ -575,6 +576,7 @@ async def simulate_focus_group(
     # ── Run LLM-backed simulation with error handling ─────────────────────────
     t_start = time.monotonic()
     try:
+        from llm.factory import AllProvidersRateLimitedError
         report: FocusGroupReport = await _run_simulation(
             brand_name=brand_name,
             target_audience=target_audience,
@@ -583,7 +585,7 @@ async def simulate_focus_group(
             campaign_provider=campaign_provider,
             negativity_bias=request.negativity_bias,  # Fix #11: pass configurable bias
         )
-    except (RuntimeError, asyncio.TimeoutError) as exc:
+    except (RuntimeError, asyncio.TimeoutError, AllProvidersRateLimitedError) as exc:
         elapsed = time.monotonic() - t_start
         logger.error(
             "LLM simulation failed for campaign_id=%s after %.2fs: %s",
@@ -596,9 +598,10 @@ async def simulate_focus_group(
             status_code=503,
             detail=(
                 "The focus group simulation could not be completed due to an "
-                "LLM service failure or timeout. Please try again later."
+                f"LLM service failure, rate limit, or timeout: {str(exc)}"
             ),
         ) from exc
+
     except Exception as exc:
         elapsed = time.monotonic() - t_start
         logger.error(

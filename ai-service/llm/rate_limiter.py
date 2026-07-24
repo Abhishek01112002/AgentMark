@@ -10,10 +10,10 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-# Known per-key RPM limits (conservative)
+# Known per-key RPM limits (conservative limits for free tier API keys)
 RPM_LIMITS: dict[str, int] = {
-    "groq": 30,
-    "gemini": 15,
+    "groq": 25,
+    "gemini": 12,  # Google Gemini free tier has a strict 15 RPM limit; 12 prevents HTTP 429
     "openai": 200,
 }
 
@@ -64,13 +64,30 @@ class RateLimiter:
                 self._requests[key_id] = []
             self._requests[key_id].append(now)
 
-    def mark_cooldown(self, key_id: str, duration: float = 60.0):
+    def mark_cooldown(self, key_id: str, duration: float = 30.0):
         now = time.time()
         with self._lock:
             self._cooling[key_id] = now + duration
-            provider_name = key_id.split("-")[0] if "-" in key_id else key_id
-            limit = RPM_LIMITS.get(provider_name, 15)
-            self._requests[key_id] = [now] * limit
+            # NOTE: Do NOT fill _requests with fake timestamps.
+            # The old code did `self._requests[key_id] = [now] * limit` which
+            # double-blocked keys: after the cooldown expired, the fake timestamps
+            # were still inside the 60s sliding window, causing continued rejection.
+
+    def soonest_available(self) -> float | None:
+        """Return the number of seconds until the soonest cooling key becomes available.
+        Returns None if no keys are cooling (meaning something else is wrong)."""
+        now = time.time()
+        with self._lock:
+            if not self._cooling:
+                return None
+            soonest = min(self._cooling.values())
+            wait = soonest - now
+            return max(wait, 0.0)
+
+    def clear_cooldowns(self):
+        """Emergency reset: clear all cooldown timers."""
+        with self._lock:
+            self._cooling.clear()
 
 
 _rate_limiter_instance: RateLimiter | None = None

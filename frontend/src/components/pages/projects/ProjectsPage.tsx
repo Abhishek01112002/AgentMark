@@ -34,20 +34,30 @@ const ProjectsContent: React.FC = () => {
   useEffect(() => {
     if (didFetchRef.current) return;
     didFetchRef.current = true;
-    fetchProjects();
-  }, []);
 
-  const fetchProjects = async () => {
-    try {
-      const response = await api.get('/projects');
-      setProjects(response.data.projects || []);
-    } catch (error: any) {
-      console.error('Failed to fetch projects:', error);
-      toast.error('Failed to load projects');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const controller = new AbortController();
+
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get('/projects', { signal: controller.signal });
+        setProjects(response.data.projects || []);
+      } catch (error: any) {
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch projects:', error);
+          toast.error('Failed to load projects');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+
+    return () => {
+      controller.abort();
+      didFetchRef.current = false;
+    };
+  }, []);
 
   const visibleProjects = projects.slice(0, visibleCount);
   const showingAll = visibleCount >= projects.length;
@@ -209,28 +219,8 @@ const ProjectsContent: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center"
-                style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                  onTouchStart={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                    (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                  }}
-                  onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
-                  onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                    (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                  }}
+                className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center bg-[#6366F1] hover:bg-[#8083ff] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
+                style={{ color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
                 >
                   <Plus size={16} />
                   New Project
@@ -241,18 +231,9 @@ const ProjectsContent: React.FC = () => {
             {projects.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
                 <div
-                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300 border border-[#2A2A38] hover:border-[rgba(99,102,241,0.4)] hover:-translate-y-0.5"
                   style={{
                     backgroundColor: '#111118',
-                    border: '1px solid #2A2A38',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.4)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2A2A38';
-                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   <div
@@ -296,18 +277,9 @@ const ProjectsContent: React.FC = () => {
                 </div>
 
                 <div
-                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300 border border-[#2A2A38] hover:border-[rgba(78,222,163,0.4)] hover:-translate-y-0.5"
                   style={{
                     backgroundColor: '#111118',
-                    border: '1px solid #2A2A38',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(78, 222, 163, 0.4)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2A2A38';
-                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   <div
@@ -351,18 +323,9 @@ const ProjectsContent: React.FC = () => {
                 </div>
 
                 <div
-                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300"
+                  className="relative overflow-hidden rounded-xl p-5 group transition-all duration-300 border border-[#2A2A38] hover:border-[rgba(245,158,11,0.4)] hover:-translate-y-0.5"
                   style={{
                     backgroundColor: '#111118',
-                    border: '1px solid #2A2A38',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#2A2A38';
-                    e.currentTarget.style.transform = 'none';
                   }}
                 >
                   <div
@@ -410,7 +373,7 @@ const ProjectsContent: React.FC = () => {
             )}
 
             {/* Projects Grid */}
-            {projects.length === 0 ? (
+            {!loading && projects.length === 0 ? (
               <div className="rounded-xl p-12 text-center" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
                 <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(99,102,241,0.1)' }}>
                   <FolderOpen size={32} style={{ color: '#6366F1' }} />
@@ -423,13 +386,8 @@ const ProjectsContent: React.FC = () => {
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-lg font-medium transition-all"
-                  style={{ backgroundColor: '#6366F1', color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
-                  onTouchStart={(e) => (e.currentTarget.style.backgroundColor = '#8083ff')}
-                  onTouchEnd={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
-                  onTouchCancel={(e) => (e.currentTarget.style.backgroundColor = '#6366F1')}
+                  className="inline-flex items-center gap-2 px-5 py-3 min-h-[44px] rounded-lg font-medium transition-all bg-[#6366F1] hover:bg-[#8083ff]"
+                  style={{ color: '#F1F1F3', fontFamily: 'JetBrains Mono, monospace', fontSize: '14px' }}
                 >
                   <Plus size={16} />
                   Create First Project
@@ -441,16 +399,8 @@ const ProjectsContent: React.FC = () => {
                   {visibleProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="group relative rounded-xl p-6 transition-all cursor-pointer stagger-enter"
-                    style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.4)';
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#111118';
-                    }}
+                    onClick={() => navigate(`/projects/${project.id}`, { state: { project } })}
+                    className="group relative rounded-xl p-6 transition-all cursor-pointer stagger-enter bg-[#111118] border border-[#2A2A38] hover:bg-[#1A1A24] hover:border-[rgba(99,102,241,0.4)]"
                   >
                     {/* Icon */}
                     <div
@@ -499,28 +449,15 @@ const ProjectsContent: React.FC = () => {
                     {/* Actions */}
                     <div className="flex items-center gap-2 pt-4 border-t" style={{ borderColor: '#2A2A38' }}>
                       <button
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/projects/${project.id}`, { state: { project } });
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all bg-[rgba(99,102,241,0.1)] hover:bg-[rgba(99,102,241,0.2)]"
                         style={{
-                          backgroundColor: 'rgba(99,102,241,0.1)',
                           color: '#6366F1',
                           border: '1px solid rgba(99,102,241,0.2)',
                           fontFamily: 'JetBrains Mono, monospace',
-                        }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                        }}
-                        onTouchStart={(e) => {
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
-                        }}
-                        onTouchEnd={(e) => {
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                        }}
-                        onTouchCancel={(e) => {
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
                         }}
                       >
                         <Eye size={14} />
@@ -532,33 +469,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleRenameClick(project);
                         }}
-                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all"
-                        style={{ color: '#8B8B9E', border: '1px solid #2A2A38' }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
-                        onTouchStart={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(99,102,241,0.3)';
-                        }}
-                        onTouchEnd={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
-                        onTouchCancel={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#6366F1] hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.3)]"
                       >
                         <Edit3 size={14} />
                       </button>
@@ -568,33 +479,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleDeleteClick(project);
                         }}
-                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all"
-                        style={{ color: '#8B8B9E', border: '1px solid #2A2A38' }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#F43F5E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(244,63,94,0.1)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.3)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
-                        onTouchStart={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#F43F5E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(244,63,94,0.1)';
-                          (e.currentTarget as HTMLElement).style.borderColor = 'rgba(244,63,94,0.3)';
-                        }}
-                        onTouchEnd={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
-                        onTouchCancel={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                          (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                        }}
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] hover:border-[rgba(244,63,94,0.3)]"
                       >
                         <Trash2 size={14} />
                       </button>

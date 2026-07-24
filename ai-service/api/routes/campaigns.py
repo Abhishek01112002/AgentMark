@@ -82,6 +82,8 @@ def _require_explicit_provider_keys(llm_config: dict | None, *, context: str) ->
 def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None) -> CampaignState:
     """Invoke LangGraph workflow synchronously (called via threadpool)."""
     from llm.factory import set_llm_config
+    from llm.rate_limiter import reset_rate_limiter
+    reset_rate_limiter()  # Clear stale cooldowns from previous runs
     set_llm_config(llm_config)
     
     config = {
@@ -92,19 +94,31 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
     current_state = workflow.get_state(config)
     
     if current_state.values:
-        logger.info("🔄 Resuming workflow from checkpoint thread_id=%s", state.campaign_id)
-        workflow.update_state(
-            config,
-            {
-                "human_approval_status": state.human_approval_status,
-                "human_feedback": state.human_feedback,
-                "human_revision_target": state.human_revision_target,
-                "awaiting_human_approval": False,
-                "status": "processing",
-                "error": "",
-            },
-            as_node="human_approval"
-        )
+        next_nodes = current_state.next
+        if next_nodes and "human_approval" in next_nodes:
+            logger.info("🔄 Resuming workflow from HITL human_approval checkpoint thread_id=%s", state.campaign_id)
+            workflow.update_state(
+                config,
+                {
+                    "human_approval_status": state.human_approval_status,
+                    "human_feedback": state.human_feedback,
+                    "human_revision_target": state.human_revision_target,
+                    "awaiting_human_approval": False,
+                    "status": "processing",
+                    "error": "",
+                },
+                as_node="human_approval"
+            )
+        else:
+            failed_node = next_nodes[0] if next_nodes else "unknown"
+            logger.info("🔄 Resuming failed agent step '%s' directly from checkpoint | thread_id=%s", failed_node, state.campaign_id)
+            workflow.update_state(
+                config,
+                {
+                    "status": "processing",
+                    "error": "",
+                }
+            )
         result = workflow.invoke(None, config=config)
     else:
         logger.info("🚀 Initiating new campaign workflow run thread_id=%s", state.campaign_id)
@@ -403,10 +417,15 @@ async def test_key_route(payload: TestKeyRequest):
         return TestKeyResponse(success=False, message="API returned empty response")
     except Exception as e:
         error_msg = str(e).lower()
+        if "bad credentials" in error_msg or ("github" in error_msg and "401" in error_msg):
+            return TestKeyResponse(
+                success=False,
+                message="GitHub PAT invalid/expired (401 Bad Credentials). Check token string or accept terms at github.com/marketplace/models."
+            )
         if "invalid" in error_msg or "unauthorized" in error_msg or "not found" in error_msg or "401" in error_msg or "key" in error_msg:
             return TestKeyResponse(success=False, message="Invalid API key")
         if "denied" in error_msg or "403" in error_msg:
-            return TestKeyResponse(success=False, message="Access denied — enable the API in your Google Cloud project")
+            return TestKeyResponse(success=False, message="Access denied — check API key permissions")
         if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
             return TestKeyResponse(success=False, message="Rate limited — try again later")
         return TestKeyResponse(success=False, message=f"Connection failed: {str(e)[:80]}")

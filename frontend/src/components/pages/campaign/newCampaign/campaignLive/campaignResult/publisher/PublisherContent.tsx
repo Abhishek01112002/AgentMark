@@ -483,7 +483,8 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
 
       {/* Publishing Decision */}
       {publishingDecision && (
-        <div className={`card-elevate rounded-xl p-6 border ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : publishingDecision === 'HOLD' ? 'bg-[#F43F5E]/10 border-[#F43F5E]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
+        <div className={`card-elevate rounded-xl p-6 border relative overflow-hidden ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'bg-[#4edea3]/10 border-[#4edea3]/20' : publishingDecision === 'HOLD' ? 'bg-[#F43F5E]/10 border-[#F43F5E]/20' : 'bg-[#F59E0B]/10 border-[#F59E0B]/20'}`}>
+          <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: `linear-gradient(90deg, ${publishingDecision === 'APPROVED_FOR_PUBLISHING' ? '#4edea3' : publishingDecision === 'HOLD' ? '#F43F5E' : '#F59E0B'}, transparent)` }} />
           <h3 className="text-lg font-semibold mb-2 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: publishingDecision === 'APPROVED_FOR_PUBLISHING' ? '#4edea3' : publishingDecision === 'HOLD' ? '#F43F5E' : '#F59E0B' }}>
             <ThumbsUp size={20} />
             {publishingDecision === 'APPROVED_FOR_PUBLISHING' ? 'Approved for Publishing' : publishingDecision === 'HOLD' ? 'Hold' : 'Revisions Needed'}
@@ -496,7 +497,8 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
 
       {/* Executive Summary */}
       {executiveSummary && (
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#0A0A1C] border border-[#6366F1]/25 rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <FileText size={20} className="text-[#6366F1]" />
             Executive Summary
@@ -507,9 +509,10 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
 
       {/* Projected Metrics */}
       {projectedMetrics.total_reach && (
-        <div className="card-elevate-green bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#4338CA] via-[#0D9488] via-[#D97706] to-[#7C3AED]" />
           <h3 className="text-lg font-semibold mb-6 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <LineChart size={20} className="text-[#6366F1]" />
+            <LineChart size={20} className="text-[#818CF8]" />
             Projected Metrics
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
@@ -576,10 +579,11 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
 
       {/* Publishing Plan */}
       {publishingPlan.length > 0 && (
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#0A0A1C] border border-[#8B5CF6]/25 rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] to-transparent" />
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h3 className="text-lg font-semibold flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-              <Map size={20} className="text-[#6366F1]" />
+              <Map size={20} className="text-[#8B5CF6]" />
               Publishing Plan
             </h3>
             <div className="flex items-center gap-3">

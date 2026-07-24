@@ -122,7 +122,7 @@ def _check_redis_rate_limit(redis_client, key_id: str = "default") -> bool:
 def search_web(
     query: str,
     redis_client=None,
-    max_results: int = 3,
+    max_results: int = 6,
     api_key: Optional[str] = None,
 ) -> SearchResult:
     """

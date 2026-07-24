@@ -9,16 +9,18 @@ CAMPAIGN CONTEXT (What the outputs should align with):
 - Campaign Name: {campaign_name}
 - Brand Name: {brand_name}
 - Brand Voice: {brand_voice}
+- Target Audience: {target_audience}
 - Industry: {industry}
 - Primary Goal: {primary_goal}
 - Campaign Brief: {brief}
+- Additional Context: {additional_context} (If "None", ignore this constraint)
 - Manager-Defined Channels: {channels}
 - Active Human Overrides / Feedback: {human_feedback}
 
-⚠️ CRITICAL RULE FOR HUMAN OVERRIDES:
+ CRITICAL RULE FOR HUMAN OVERRIDES:
 The 'Active Human Overrides / Feedback' section represents direct instructions from the human user. If the user explicitly asks an agent to deviate from any constraint (e.g., write copy for additional channels not in the manager list, change the brand voice, write longer/shorter content, target a different demographic, etc.), the agent MUST comply. You must NOT penalize any agent for successfully implementing a change that the human explicitly requested, even if it goes against the manager-defined settings or the original brief. These human overrides take absolute priority over any standard rule.
 
-⚠️ CAMPAIGN ALIGNMENT AUDIT — MANDATORY:
+ CAMPAIGN ALIGNMENT AUDIT — MANDATORY:
 Before scoring, you MUST check if ALL downstream agents respected the Manager's constraints:
 1. CHANNEL DRIFT: Did Strategy or Copywriter generate output for channels NOT in {channels}? (e.g., LinkedIn when only Facebook/Email were selected) → If YES, this is a CRITICAL ISSUE. Deduct 20 points from that agent's score and set passed=false.
    EXCEPTION: If the human has explicitly requested or approved adding new channels in the 'Active Human Overrides / Feedback' section, these channels are officially allowed and must NOT be flagged as drift.
@@ -372,3 +374,20 @@ IMPORTANT:
 - action_items must be specific and actionable
 - Do not reuse the same scores across unrelated campaigns unless the outputs are genuinely equivalent in quality.
 - Base scores on the actual completeness, specificity, and cross-agent alignment of the current campaign.
+
+CRITICAL SCORING CALIBRATION — READ THIS CAREFULLY:
+You have a strong tendency to give 90+ scores to everything. This makes scores meaningless.
+
+Score Distribution Reality:
+- 95-100: ALMOST NEVER. Reserve ONLY for outputs with zero issues, exceptional specificity, novel strategic insights, and perfect cross-agent alignment. In practice, AI-generated first-draft campaigns should virtually never score this high.
+- 90-94: RARE. All fields present AND each field demonstrates genuine depth, specificity, and strategic nuance. No generic filler content anywhere.
+- 80-89: TYPICAL for good AI outputs. All required fields present, reasonable quality, but with some generic language, surface-level insights, or missed alignment opportunities.
+- 75-79: ACCEPTABLE but mediocre. Fields present but lack depth. Research uses generic trends. Copy lacks brand personality. Strategy is formulaic.
+- Below 75: Revision needed. Missing fields, significant quality gaps, or cross-agent misalignment.
+
+ANTI-INFLATION RULES:
+1. If research trends are generic (e.g., "digital transformation", "sustainability") rather than industry-specific, cap research at 85.
+2. If copy uses generic marketing phrases without brand-specific personality, cap copy at 85.
+3. If strategy doesn't reference specific research findings, cap strategy at 82.
+4. If image prompts lack lens/perspective language or contain abstract concepts, cap image at 85.
+5. Start each agent at 75 and ADD points for quality, rather than starting at 100 and subtracting.

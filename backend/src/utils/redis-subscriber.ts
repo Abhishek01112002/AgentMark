@@ -185,11 +185,24 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
             if (!currentOutputs.completed_agents) {
               currentOutputs.completed_agents = [];
             }
+
+            const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+            if (status === 'running') {
+              const runningIdx = pipelineKeys.indexOf(data.agent);
+              if (runningIdx !== -1) {
+                // Filter out any agents at or after runningIdx from completed_agents
+                currentOutputs.completed_agents = currentOutputs.completed_agents.filter((agent: string) => {
+                  const idx = pipelineKeys.indexOf(agent);
+                  return idx !== -1 && idx < runningIdx;
+                });
+              }
+            }
             
             if (status === 'completed' && !currentOutputs.completed_agents.includes(data.agent)) {
               currentOutputs.completed_agents.push(data.agent);
             }
             currentOutputs.active_agent = status === 'running' ? data.agent : null;
+
 
             // Merge intermediate outputs as they complete
             if (status === 'completed' && outputs && typeof outputs === 'object') {

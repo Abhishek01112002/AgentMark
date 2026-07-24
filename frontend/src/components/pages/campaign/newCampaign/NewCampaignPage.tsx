@@ -160,50 +160,72 @@ const NewCampaignContent: React.FC = () => {
     if (didFetchProjectsRef.current) return;
     didFetchProjectsRef.current = true;
 
+    const controller = new AbortController();
     const fetchProjects = async () => {
       try {
-        const response = await api.get('/projects');
+        const response = await api.get('/projects', { signal: controller.signal });
         setProjects(response.data.projects || []);
       } catch (error: any) {
-        console.error('Failed to fetch projects:', error);
-        toast.error('Failed to load projects');
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch projects:', error);
+          toast.error('Failed to load projects');
+        }
       } finally {
-        setLoadingProjects(false);
+        if (!controller.signal.aborted) {
+          setLoadingProjects(false);
+        }
       }
     };
     fetchProjects();
+    return () => {
+      controller.abort();
+      didFetchProjectsRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
     if (didFetchConstantsRef.current) return;
     didFetchConstantsRef.current = true;
 
+    const controller = new AbortController();
     const fetchConstants = async () => {
       try {
-        const response = await api.get('/constants');
+        const response = await api.get('/constants', { signal: controller.signal });
         setConstants(response.data);
       } catch (error: any) {
-        console.error('Failed to fetch constants:', error);
-        toast.error('Failed to load form options');
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch constants:', error);
+          toast.error('Failed to load form options');
+        }
       } finally {
-        setLoadingConstants(false);
+        if (!controller.signal.aborted) {
+          setLoadingConstants(false);
+        }
       }
     };
     fetchConstants();
+    return () => {
+      controller.abort();
+      didFetchConstantsRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!formData.projectId) return;
-    
+
+    const controller = new AbortController();
     const fetchCampaigns = async () => {
       try {
-        const response = await api.get('/campaigns', { params: { projectId: formData.projectId } });
+        const response = await api.get('/campaigns', { params: { projectId: formData.projectId }, signal: controller.signal });
         setProjectCampaigns(response.data.campaigns || []);
-      } catch (error) {
-        console.error('Failed to fetch project campaigns:', error);
+      } catch (error: any) {
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch project campaigns:', error);
+        }
       }
     };
     fetchCampaigns();
+    return () => controller.abort();
   }, [formData.projectId]);
 
   const handleCreateProject = async (name: string, description: string) => {
@@ -395,28 +417,13 @@ const NewCampaignContent: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setShowCreateProjectModal(true)}
-                className="flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-all hover:bg-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.1)]"
                 style={{
-                  backgroundColor: 'rgba(99,102,241,0.1)',
                   color: '#6366F1',
                   border: '1px solid rgba(99,102,241,0.2)',
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                }}
-                onTouchStart={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.2)';
-                }}
-                onTouchEnd={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                }}
-                onTouchCancel={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                }}
+
               >
                 <Plus size={14} />
                 New
@@ -660,13 +667,8 @@ const NewCampaignContent: React.FC = () => {
           <button
             type="submit"
             disabled={isCreating}
-            className="px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center min-h-[44px]"
-            style={{ fontFamily: 'JetBrains Mono, monospace', backgroundColor: '#6366F1', color: '#F1F1F3' }}
-            onMouseEnter={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
-            onMouseLeave={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
-            onTouchStart={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#8083ff')}
-            onTouchEnd={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
-            onTouchCancel={(e) => !isCreating && (e.currentTarget.style.backgroundColor = '#6366F1')}
+             className="px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto justify-center min-h-[44px] hover:bg-[#8083ff] bg-[#6366F1]"
+            style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}
           >
             {isCreating ? (
               <>
@@ -756,17 +758,27 @@ const NewCampaignContent: React.FC = () => {
               </div>
               <h3 className="text-xl font-bold text-white mb-2 font-display-lg tracking-tight">API Keys Required</h3>
               <p className="text-[#A1A1AA] text-sm leading-relaxed">
-                Add at least one valid API key in Settings &gt; API Keys before launching a campaign. Campaigns will not start until a provider key is configured.
+                Add your API key in Settings &gt; API Keys or proceed with system default environment keys configured on the server.
               </p>
             </div>
             
-            <div className="flex space-x-3 w-full mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 w-full mt-8">
               <button
                 type="button"
                 onClick={() => setShowApiKeysModal(false)}
-                className="flex-1 px-4 py-3 bg-[#1C1C24] hover:bg-[#252530] text-[#E4E4E7] font-medium rounded-xl transition-all duration-200 border border-[#2B2B36] hover:border-[#3F3F4E]"
+                className="px-4 py-3 bg-[#1C1C24] hover:bg-[#252530] text-[#E4E4E7] font-medium rounded-xl transition-all duration-200 border border-[#2B2B36]"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowApiKeysModal(false);
+                  await checkDuplicateAndSubmit();
+                }}
+                className="flex-1 px-4 py-3 bg-[#2A2A38] hover:bg-[#3F3F52] text-white font-medium rounded-xl transition-all duration-200 border border-[#3A3A4C]"
+              >
+                Use System Keys
               </button>
               <button
                 type="button"

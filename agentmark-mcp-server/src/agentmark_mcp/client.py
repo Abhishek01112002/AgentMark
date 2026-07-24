@@ -599,3 +599,52 @@ class AgentMarkClient:
         Reset revision counters back to 0 for a campaign via POST /api/campaigns/:id/reset-revisions.
         """
         return await self.post("/api/campaigns/%s/reset-revisions" % campaign_id, {})
+
+    async def submit_human_approval(self, campaign_id: str, decision: str, feedback: Optional[str] = None) -> Dict[str, Any]:
+        payload = {"decision": decision}
+        if feedback:
+            payload["feedback"] = feedback
+        return await self.post(f"/api/campaigns/{campaign_id}/approve", payload)
+
+    async def request_targeted_revision(self, campaign_id: str, target_agent: str, feedback: str) -> Dict[str, Any]:
+        payload = {"targetAgent": target_agent, "feedback": feedback}
+        return await self.post(f"/api/campaigns/{campaign_id}/targeted-revision", payload)
+
+    async def update_client_memory(self, project_id: str, brand_voice: Optional[str] = None, target_audience: Optional[str] = None, key_insights: Optional[str] = None) -> Dict[str, Any]:
+        payload = {
+            "projectId": project_id,
+            "brandVoice": brand_voice,
+            "targetAudience": target_audience,
+            "keyInsights": key_insights,
+        }
+        return await self.post("/api/projects/memory/update", payload)
+
+    async def clear_client_memory(self, project_id: str) -> Dict[str, Any]:
+        return await self.post(f"/api/projects/{project_id}/memory/clear", {})
+
+    async def export_campaign_pdf(self, campaign_id: str) -> Dict[str, Any]:
+        return await self.get(f"/api/campaigns/{campaign_id}/export/pdf")
+
+    async def export_campaign_json(self, campaign_id: str) -> Dict[str, Any]:
+        return await self.get(f"/api/campaigns/{campaign_id}/export/json")
+
+    async def get_publishing_schedule(self, campaign_id: str) -> Dict[str, Any]:
+        return await self.get(f"/api/campaigns/{campaign_id}/publishing-schedule")
+
+    async def verify_channel_credentials(self, campaign_id: str, channels: Optional[List[str]] = None) -> Dict[str, Any]:
+        payload = {"channels": channels or []}
+        return await self.post(f"/api/campaigns/{campaign_id}/verify-channels", payload)
+
+    async def generate_image_asset(self, prompt: str, aspect_ratio: Optional[str] = "1:1") -> Dict[str, Any]:
+        payload = {"prompt": prompt, "aspectRatio": aspect_ratio}
+        return await self.post("/api/campaigns/generate-image", payload)
+
+    async def get_campaign_analytics(self, campaign_id: str) -> Dict[str, Any]:
+        return await self.get(f"/api/campaigns/{campaign_id}/analytics")
+
+    async def synthesize_brand_memory(self, project_id: str) -> Dict[str, Any]:
+        return await self.post(f"/api/projects/{project_id}/memory/synthesize", {})
+
+    async def compare_campaigns(self, target_campaign_id: str, baseline_campaign_id: Optional[str] = None) -> Dict[str, Any]:
+        payload = {"targetCampaignId": target_campaign_id, "baselineCampaignId": baseline_campaign_id}
+        return await self.post("/api/campaigns/compare", payload)

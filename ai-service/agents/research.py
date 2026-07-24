@@ -160,6 +160,8 @@ def research_agent(state: CampaignState) -> CampaignState:
             + existing_research_section
         )
 
+    additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
+
     # Load research prompt and format with campaign data
     prompt = load_prompt(
         "research",
@@ -170,6 +172,7 @@ def research_agent(state: CampaignState) -> CampaignState:
         target_audience=target_audience,
         brand_voice=brand_voice,
         brief=brief,
+        additional_context=additional_context,
         channels=', '.join(channels),
         deliverables=', '.join(deliverables),
         human_feedback_section=human_feedback_section
@@ -180,17 +183,26 @@ def research_agent(state: CampaignState) -> CampaignState:
     current_year = datetime.date.today().year
     product_name = getattr(state, 'product_name', brand_name) or brand_name
     
-    # Enrich search term with industry to prevent collisions with common words (e.g. "Bingo" the game vs "Bingo" the snack brand)
-    query_brand = product_name
-    if industry and industry.lower() != 'other':
-        query_brand = f"{product_name} {industry}"
-        
-    query_1 = f"{query_brand} industry trends {target_audience} {current_year}"
-    query_2 = f"{query_brand} top competitors market analysis"
+    # If the product name looks like a placeholder or a new brand, we search generic industry trends to ensure rich results.
+    # Otherwise, we search for the specific brand.
+    is_placeholder_brand = product_name.lower().strip() in [
+        "lune & coast", "hot_wears", "new brand", "brand name", "my brand", "placeholder", "test brand", "lune and coast", "hot wears"
+    ]
+    
+    if is_placeholder_brand:
+        logger.info(f"   ℹ️ Placeholder/New brand detected ('{product_name}') — running generic industry search queries for '{industry}'")
+        query_1 = f"{industry} industry trends {target_audience} {current_year}"
+        query_2 = f"{industry} market analysis top competitors"
+    else:
+        query_brand = product_name
+        if industry and industry.lower() != 'other':
+            query_brand = f"{product_name} {industry}"
+        query_1 = f"{query_brand} industry trends {target_audience} {current_year}"
+        query_2 = f"{query_brand} top competitors market analysis"
 
     # Pass None as redis_client to let search_web automatically use the shared pool
-    result_1 = search_web(query_1, redis_client=None, api_key=tavily_api_key)
-    result_2 = search_web(query_2, redis_client=None, api_key=tavily_api_key)
+    result_1 = search_web(query_1, redis_client=None, max_results=3, api_key=tavily_api_key)
+    result_2 = search_web(query_2, redis_client=None, max_results=3, api_key=tavily_api_key)
 
     total_snippets = len(result_1.snippets) + len(result_2.snippets)
     logger.info(f"   LiteRAG retrieved {total_snippets} total snippets for campaign")
@@ -235,7 +247,7 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Revision runs: lower temperature avoids regenerating unchanged fields;
     # higher token budget compensates for the extra existing-output context
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 2500 if is_human_revision else 1500
+    revision_max_tokens = 4000 if is_human_revision else 3000
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")

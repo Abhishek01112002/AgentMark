@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -44,10 +44,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const token = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
-      if (token && storedUser) {
+      if (token) {
         try {
-          setUser(JSON.parse(storedUser));
-          // Verify token is still valid and fetch fresh user details
+          if (storedUser) {
+            try { setUser(JSON.parse(storedUser)); } catch {}
+          }
           const response = await api.get('/auth/me', { signal: controller.signal });
           if (response.data?.user) {
             setUser(response.data.user);
@@ -68,14 +69,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => controller.abort();
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean = false) => {
+  const login = useCallback(async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       const response = await api.post('/auth/login', { email, password, rememberMe });
-      const { user, token } = response.data;
+      const { user: userData, token } = response.data;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
 
       toast.success('Login successful!');
     } catch (error: any) {
@@ -83,16 +84,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.error(message);
       throw error;
     }
-  };
+  }, []);
 
-  const signup = async (email: string, password: string, name?: string) => {
+  const signup = useCallback(async (email: string, password: string, name?: string) => {
     try {
       const response = await api.post('/auth/signup', { email, password, name });
-      const { user, token } = response.data;
+      const { user: userData, token } = response.data;
 
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
 
       toast.success('Account created successfully!');
     } catch (error: any) {
@@ -100,22 +101,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       toast.error(message);
       throw error;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');
-  };
+  }, []);
 
-  const updateUser = (userData: Partial<User>) => {
+  const updateUser = useCallback((userData: Partial<User>) => {
     const updatedUser = { ...user, ...userData } as User;
     setUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
-  };
+  }, [user]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
       const { user: freshUser } = response.data;
@@ -124,10 +125,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ user, loading, login, signup, logout, updateUser, refreshUser }),
+    [user, loading, login, signup, logout, updateUser, refreshUser],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, updateUser, refreshUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

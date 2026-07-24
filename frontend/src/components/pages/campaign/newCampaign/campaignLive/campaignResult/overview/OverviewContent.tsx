@@ -90,7 +90,8 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Campaign Identity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-elevate bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-gradient-to-br from-[#6366F1]/10 to-transparent border border-[#6366F140] rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Fingerprint size={20} className="text-[#6366F1]" />
             Campaign Identity
@@ -111,15 +112,16 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           </div>
         </div>
 
-        <div className="card-elevate-green bg-gradient-to-br from-[#4edea3]/10 to-transparent border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate-green bg-gradient-to-br from-[#10B981]/10 to-transparent border border-[#10B98140] rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#10B981] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <Milestone size={20} className="text-[#4edea3]" />
+            <Milestone size={20} className="text-[#10B981]" />
             Campaign Objectives
           </h3>
           <div className="space-y-4">
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Primary Goal</span>
-              <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#4edea3' }}>{displayGoal}</p>
+              <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#10B981' }}>{displayGoal}</p>
             </div>
             {brandVoice && (
               <div>
@@ -133,9 +135,10 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Target Audience */}
       {targetAudience && (
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#1C140A] border border-[#F59E0B40] rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <Users size={20} className="text-[#6366F1]" />
+            <Users size={20} className="text-[#F59E0B]" />
             Target Audience
           </h3>
           <p className="text-base leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
@@ -146,9 +149,10 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
 
       {/* Additional Context */}
       {campaign.additionalInfo && (
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6">
+        <div className="card-elevate bg-[#0A1628] border border-[#0EA5E940] rounded-xl p-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0EA5E9] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <AlignLeft size={20} className="text-[#6366F1]" />
+            <AlignLeft size={20} className="text-[#0EA5E9]" />
             Additional Context
           </h3>
           <p className="text-base leading-relaxed whitespace-pre-wrap" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>

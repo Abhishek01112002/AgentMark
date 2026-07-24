@@ -22,7 +22,7 @@ import logging
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from typing import Callable, Optional
+from typing import Callable, Optional, List, Dict, Any
 
 from mcp.server.fastmcp import Context, FastMCP
 
@@ -32,12 +32,31 @@ from .tools.focus_group import run_focus_group_impl
 from .tools.publish import publish_to_channel_impl
 from .tools.project import create_project_impl
 from .tools.revision import revise_copy_with_feedback_impl, get_campaign_status_impl, revise_image_prompts_impl
+from .tools.extended import (
+    submit_human_approval_impl,
+    request_targeted_revision_impl,
+    update_client_memory_impl,
+    clear_client_memory_impl,
+    export_campaign_pdf_impl,
+    export_campaign_json_impl,
+    get_publishing_schedule_impl,
+    verify_channel_credentials_impl,
+    generate_image_asset_impl,
+    get_campaign_analytics_impl,
+    synthesize_brand_memory_impl,
+    compare_campaigns_impl,
+)
 
 # Configure standard stream logging to stderr (stdout is reserved for MCP protocol)
+class UnbufferedStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stderr,
+    handlers=[UnbufferedStreamHandler(sys.stderr)],
 )
 logger = logging.getLogger("agentmark-mcp-server")
 
@@ -1208,6 +1227,260 @@ async def reset_campaign_revisions(
         return "\n".join(lines)
     except Exception as exc:
         logger.error("Error in reset_campaign_revisions tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: submit_human_approval ───────────────────────────────────────────────
+@mcp.tool()
+async def submit_human_approval(
+    campaign_id: str,
+    decision: str,
+    feedback: Optional[str] = None,
+) -> str:
+    """
+    Submit human approval decision (approved or rejected) for a campaign paused at the HITL gate.
+
+    Parameters:
+        campaign_id: The ID of the campaign awaiting human approval.
+        decision: Must be 'approved' or 'rejected'.
+        feedback: Optional notes or instructions.
+    """
+    client = get_client()
+    client.set_active_tool("submit_human_approval")
+    try:
+        res = await submit_human_approval_impl(client, campaign_id, decision, feedback)
+        return f"# Human Approval Submitted ✅\n\n- **Campaign ID**: `{campaign_id}`\n- **Decision**: `{decision}`\n- **Status**: {res.get('status', 'updated')}"
+    except Exception as exc:
+        logger.error("Error in submit_human_approval tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: request_targeted_revision ──────────────────────────────────────────
+@mcp.tool()
+async def request_targeted_revision(
+    campaign_id: str,
+    target_agent: str,
+    feedback: str,
+) -> str:
+    """
+    Re-run a specific upstream agent ('research', 'strategy', 'copywriter', 'image_prompt') with targeted feedback.
+
+    Parameters:
+        campaign_id: The ID of the campaign.
+        target_agent: Target agent step to re-run.
+        feedback: Detailed revision feedback.
+    """
+    client = get_client()
+    client.set_active_tool("request_targeted_revision")
+    try:
+        res = await request_targeted_revision_impl(client, campaign_id, target_agent, feedback)
+        return f"# Targeted Revision Requested 🔄\n\n- **Campaign ID**: `{campaign_id}`\n- **Target Agent**: `{target_agent}`\n- **Status**: {res.get('status', 'processing')}"
+    except Exception as exc:
+        logger.error("Error in request_targeted_revision tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: update_client_memory ───────────────────────────────────────────────
+@mcp.tool()
+async def update_client_memory(
+    project_id: str,
+    brand_voice: Optional[str] = None,
+    target_audience: Optional[str] = None,
+    key_insights: Optional[str] = None,
+) -> str:
+    """
+    Update brand guidelines, tone of voice, or target audience context in the project Memory Hub.
+
+    Parameters:
+        project_id: Target project ID.
+        brand_voice: Updated brand tone guidelines.
+        target_audience: Updated audience persona notes.
+        key_insights: Strategic brand takeaways.
+    """
+    client = get_client()
+    client.set_active_tool("update_client_memory")
+    try:
+        res = await update_client_memory_impl(client, project_id, brand_voice, target_audience, key_insights)
+        return f"# Client Memory Hub Updated 🧠\n\n- **Project ID**: `{project_id}`\n- **Status**: Updated successfully"
+    except Exception as exc:
+        logger.error("Error in update_client_memory tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: clear_client_memory ────────────────────────────────────────────────
+@mcp.tool()
+async def clear_client_memory(project_id: str) -> str:
+    """
+    Reset or clear the Memory Hub context for a specific project.
+    """
+    client = get_client()
+    client.set_active_tool("clear_client_memory")
+    try:
+        res = await clear_client_memory_impl(client, project_id)
+        return f"# Client Memory Cleared 🧹\n\n- **Project ID**: `{project_id}`\n- **Status**: Memory context reset"
+    except Exception as exc:
+        logger.error("Error in clear_client_memory tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: export_campaign_pdf ─────────────────────────────────────────────────
+@mcp.tool()
+async def export_campaign_pdf(campaign_id: str) -> str:
+    """
+    Export full campaign strategy, copy, visual prompts, and content calendar as a PDF document.
+    """
+    client = get_client()
+    client.set_active_tool("export_campaign_pdf")
+    try:
+        res = await export_campaign_pdf_impl(client, campaign_id)
+        return f"# Campaign PDF Export Ready 📄\n\n- **Campaign ID**: `{campaign_id}`\n- **Download URL**: {res.get('downloadUrl', 'Available in campaign exports tab')}"
+    except Exception as exc:
+        logger.error("Error in export_campaign_pdf tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: export_campaign_json ────────────────────────────────────────────────
+@mcp.tool()
+async def export_campaign_json(campaign_id: str) -> str:
+    """
+    Export campaign creative assets and schedule payload as clean JSON for CMS / Buffer / Zapier integration.
+    """
+    client = get_client()
+    client.set_active_tool("export_campaign_json")
+    try:
+        res = await export_campaign_json_impl(client, campaign_id)
+        return f"# Campaign JSON Export Ready 📦\n\n```json\n{res}\n```"
+    except Exception as exc:
+        logger.error("Error in export_campaign_json tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: get_publishing_schedule ─────────────────────────────────────────────
+@mcp.tool()
+async def get_publishing_schedule(campaign_id: str) -> str:
+    """
+    Retrieve the 4-week content calendar publishing timeline and channel readiness status.
+    """
+    client = get_client()
+    client.set_active_tool("get_publishing_schedule")
+    try:
+        res = await get_publishing_schedule_impl(client, campaign_id)
+        return f"# 4-Week Publishing Schedule 📅\n\n```json\n{res}\n```"
+    except Exception as exc:
+        logger.error("Error in get_publishing_schedule tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: verify_channel_credentials ─────────────────────────────────────────
+@mcp.tool()
+async def verify_channel_credentials(
+    campaign_id: str,
+    channels: Optional[List[str]] = None,
+) -> str:
+    """
+    Test connected social media and email publishing API credentials for a campaign.
+    """
+    client = get_client()
+    client.set_active_tool("verify_channel_credentials")
+    try:
+        res = await verify_channel_credentials_impl(client, campaign_id, channels)
+        return f"# Channel Credentials Verification 🔗\n\n- **Campaign ID**: `{campaign_id}`\n- **Status**: {res.get('status', 'Verified')}"
+    except Exception as exc:
+        logger.error("Error in verify_channel_credentials tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: generate_image_asset ────────────────────────────────────────────────
+@mcp.tool()
+async def generate_image_asset(
+    prompt: str,
+    aspect_ratio: Optional[str] = "1:1",
+) -> str:
+    """
+    Directly generate a visual image asset from a prompt using Gemini or DALL-E.
+    """
+    client = get_client()
+    client.set_active_tool("generate_image_asset")
+    try:
+        res = await generate_image_asset_impl(client, prompt, aspect_ratio)
+        return f"# Visual Asset Generated 🖼️\n\n- **Image URL**: {res.get('imageUrl', 'Generated successfully')}"
+    except Exception as exc:
+        logger.error("Error in generate_image_asset tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: get_campaign_analytics ──────────────────────────────────────────────
+@mcp.tool()
+async def get_campaign_analytics(campaign_id: str) -> str:
+    """
+    Fetch projected reach, estimated CTR, conversion targets, and performance ROI metrics for a published campaign.
+    """
+    client = get_client()
+    client.set_active_tool("get_campaign_analytics")
+    try:
+        res = await get_campaign_analytics_impl(client, campaign_id)
+        return f"# Campaign Analytics & Metrics 📊\n\n```json\n{res}\n```"
+    except Exception as exc:
+        logger.error("Error in get_campaign_analytics tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: synthesize_brand_memory_intelligence ────────────────────────────────
+@mcp.tool()
+async def synthesize_brand_memory_intelligence(project_id: str) -> str:
+    """
+    Synthesize implicit brand voice guidelines, tone rules, and winning positioning patterns from top-performing historical campaigns into the project Memory Hub.
+    """
+    client = get_client()
+    client.set_active_tool("synthesize_brand_memory_intelligence")
+    try:
+        res = await synthesize_brand_memory_impl(client, project_id)
+        return f"# Brand Memory Intelligence Synthesized 🧠\n\n- **Project**: `{project_id}`\n- **Status**: {res.get('message', 'Synthesized')}\n\n```json\n{res}\n```"
+    except Exception as exc:
+        logger.error("Error in synthesize_brand_memory_intelligence tool: %s", exc)
+        raise
+    finally:
+        client.set_active_tool(None)
+
+
+# ── Tool: compare_campaign_performance_vectors ───────────────────────────────
+@mcp.tool()
+async def compare_campaign_performance_vectors(
+    target_campaign_id: str,
+    baseline_campaign_id: Optional[str] = None,
+) -> str:
+    """
+    Perform comparative performance analysis between a target campaign and a baseline top-performing campaign to isolate copy structure, tone deltas, and review score differences.
+    """
+    client = get_client()
+    client.set_active_tool("compare_campaign_performance_vectors")
+    try:
+        res = await compare_campaigns_impl(client, target_campaign_id, baseline_campaign_id)
+        return f"# Campaign Performance Vector Comparison 📈\n\n- **Target Campaign**: `{target_campaign_id}`\n\n```json\n{res}\n```"
+    except Exception as exc:
+        logger.error("Error in compare_campaign_performance_vectors tool: %s", exc)
         raise
     finally:
         client.set_active_tool(None)

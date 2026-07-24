@@ -102,7 +102,7 @@ def manager_node(state: CampaignState) -> dict:
     
     try:
         updated_state = manager_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         publish_agent_event(state.campaign_id, "manager", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"manager_output": _try_parse_json(updated_state.manager_output)}})
         return {
             "manager_output": updated_state.manager_output,
@@ -159,7 +159,7 @@ def research_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = research_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -234,7 +234,7 @@ def strategy_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = strategy_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -309,7 +309,7 @@ def copywriter_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = copywriter_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -382,7 +382,7 @@ def image_prompt_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = image_prompt_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -439,7 +439,7 @@ def reviewer_node(state: CampaignState) -> dict:
     
     try:
         updated_state = reviewer_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Persist the targeted revision agent from the AI review status in human_revision_target
         if updated_state.review_output:
@@ -563,7 +563,7 @@ def publisher_node(state: CampaignState) -> dict:
     
     try:
         updated_state = publisher_agent(state)
-        time.sleep(2)  # spacing between agent calls
+        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         publish_agent_event(state.campaign_id, "publisher", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"publisher_output": _try_parse_json(updated_state.publisher_output)}})
         return {
             "publisher_output": updated_state.publisher_output,

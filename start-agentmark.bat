@@ -70,9 +70,8 @@ async function run() {
   };
 
   // 1. Write to standard Roaming AppData path
-  const claudeDir = path.join(process.env.APPDATA, 'Claude');
-  if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
   fs.writeFileSync(path.join(claudeDir, 'claude_desktop_config.json'), JSON.stringify(config, null, 2));
+
 
   // 2. Write to UWP Windows Store app path (if exists)
   const uwpDir = path.join(process.env.LOCALAPPDATA, 'Packages', 'Claude_pzs8sxrjxfjjc', 'LocalCache', 'Roaming', 'Claude');

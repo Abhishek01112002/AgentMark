@@ -162,9 +162,9 @@ class ProviderPool:
 
 
 # Global shared rate limiter — aggregate safety net across all providers
-# Gemini free tier: 15 RPM = 1 request every 4 seconds (0.25 req/sec)
-# capacity=3 allows a small burst for sequential agent calls without hammering the API
-GLOBAL_RATE_LIMITER = TokenBucket(capacity=3, refill_rate=0.25)
+# Capped burst capacity set to 8 to allow parallel focus-group persona calls without queuing
+GLOBAL_RATE_LIMITER = TokenBucket(capacity=8, refill_rate=0.5)
+
 
 
 class BaseLLMClient(ABC):

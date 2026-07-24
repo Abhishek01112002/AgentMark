@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, BookOpen, Copy, Target, Plus, Loader2, EyeOff, Star, GitBranch, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Link, BookOpen, Copy, Target, Plus, Loader2, EyeOff, Star, GitBranch, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import api from '../../../../../../../services/api';
@@ -752,46 +752,54 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
       </div>
 
       <div className={`grid grid-cols-1 ${hasRightPanelContent ? 'xl:grid-cols-12' : 'xl:grid-cols-1'} gap-5`}>
-        {/* Left Column - Variants Stack Feed */}
-        <div className={`${hasRightPanelContent ? 'xl:col-span-7' : 'xl:col-span-1'} space-y-5`}>
-          
-          {/* Channel Strategy Angle Box */}
-          {(() => {
-            const framework = parsedData?.messaging_framework || {};
-            const activeChannelMessaging = framework.channel_messaging?.find(
-              (ch: any) => {
-                if (!ch?.channel_name) return false;
-                const name = ch.channel_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const tab = activeTab.toLowerCase().replace(/[^a-z0-9]/g, '');
-                return name === tab || name.includes(tab) || tab.includes(name);
-              }
-            );
-            if (!activeChannelMessaging) return null;
-            return (
-              <div className="p-4 rounded-xl bg-[#111118] border border-[#2A2A38] relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#6366F1]" />
-                <div className="text-[10px] uppercase tracking-wider text-[#A0A0D2] font-semibold mb-2" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                  <Target size={12} className="inline-block mr-1 -mt-0.5" /> Channel Strategy & Angle
+        {/* Channel Strategy Angle - Full Width */}
+        {(() => {
+          const framework = parsedData?.messaging_framework || {};
+          const activeChannelMessaging = framework.channel_messaging?.find(
+            (ch: any) => {
+              if (!ch?.channel_name) return false;
+              const name = ch.channel_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const tab = activeTab.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return name === tab || name.includes(tab) || tab.includes(name);
+            }
+          );
+          if (!activeChannelMessaging) return null;
+          return (
+            <div className="xl:col-span-12">
+              <div className="rounded-xl bg-[#111118] border border-[#2A2A38] p-5 md:p-6">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#6366F1]/10 flex items-center justify-center">
+                    <Target size={16} className="text-[#6366F1]" />
+                  </div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                    Channel Strategy & Angle
+                  </h3>
                 </div>
-                <p className="text-sm font-medium mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-                  {activeChannelMessaging.approach}
-                </p>
+                <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4 mb-4">
+                  <p className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                    {activeChannelMessaging.approach}
+                  </p>
+                </div>
                 {activeChannelMessaging.key_points?.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {activeChannelMessaging.key_points.map((point: string, idx: number) => (
-                      <span 
-                        key={idx} 
-                        className="px-2.5 py-1 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs font-semibold"
-                        style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8083ff' }}
+                      <span
+                        key={idx}
+                        className="px-3 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-xs"
+                        style={{ fontFamily: 'Inter, sans-serif', color: '#C0C0D0' }}
                       >
-                        #{point}
+                        {point}
                       </span>
                     ))}
                   </div>
                 )}
               </div>
-            );
-          })()}
+            </div>
+          );
+        })()}
+
+        {/* Left Column - Variants Stack Feed */}
+        <div className={`${hasRightPanelContent ? 'xl:col-span-7' : 'xl:col-span-1'} space-y-5`}>
 
           {/* Variants Pagination Feed */}
           {currentVariant ? (
@@ -1062,7 +1070,8 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
           <div className="xl:col-span-5 space-y-5">
           {/* Messaging Framework */}
           {messagingFramework.brand_promise && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+            <div className="card-elevate bg-[#0A0A1C] border border-[#6366F1]/25 rounded-xl p-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent" />
               <h4 className="text-base md:text-lg font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                 <BookOpen size={20} className="text-[#6366F1]" />
                 Messaging Framework
@@ -1085,13 +1094,17 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
           {/* Segment Messaging */}
           {messagingFramework.segment_messaging?.length > 0 && (
             <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Segment Messaging</h4>
+              <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
+                <Users size={16} className="text-[#6366F1]" />Segment Messaging
+              </h4>
               <div className="space-y-3">
                 {messagingFramework.segment_messaging.map((seg: any, idx: number) => (
-                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-3">
-                    <h5 className="text-xs font-medium mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{seg.segment_name}</h5>
-                    <p className="text-xs mb-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{seg.message}</p>
-                    <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Tone: {seg.tone}</span>
+                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{seg.segment_name}</h5>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{seg.tone}</span>
+                    </div>
+                    <p className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#B0B0C0' }}>{seg.message}</p>
                   </div>
                 ))}
               </div>
@@ -1103,9 +1116,10 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
       {/* Strategic Alignment */}
       {strategicAlignment.positioning_used && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+        <div className="bg-[#0A0A1C] border border-[#8B5CF6]/25 rounded-xl p-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] to-transparent" />
           <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <Link size={20} className="text-[#6366F1]" />
+            <Link size={20} className="text-[#8B5CF6]" />
             Strategic Alignment
           </h4>
           <div className="space-y-3">
@@ -1136,10 +1150,11 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
       {/* Copy Version History */}
       {copyVersions.length > 0 && (
         <div className="mt-8 rounded-2xl p-6 border shadow-xl relative overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(18, 18, 28, 0.8) 0%, rgba(12, 12, 18, 0.9) 100%)', borderColor: '#262638' }}>
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0EA5E9] to-transparent" />
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-bold flex items-center gap-2.5 tracking-tight" style={{ fontFamily: 'Inter, sans-serif', color: '#F8FAFC' }}>
-              <div className="w-7 h-7 rounded-lg bg-[#6366F1]/15 border border-[#6366F1]/30 flex items-center justify-center">
-                <GitBranch size={15} className="text-[#818cf8]" />
+              <div className="w-7 h-7 rounded-lg bg-[#0EA5E9]/15 border border-[#0EA5E9]/30 flex items-center justify-center">
+                <GitBranch size={15} className="text-[#0EA5E9]" />
               </div>
               Copy Version History & Score Progression
             </h3>
@@ -1234,7 +1249,8 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
       {/* Copy Readiness Overview */}
       {Object.keys(copyReadiness).length > 0 && (
-        <div className="mt-6 bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
+        <div className="mt-6 bg-[#0A0A1C] border border-[#7C3AED40] rounded-xl p-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#7C3AED] to-transparent" />
           <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Copy Readiness Status</h3>
           
           {/* Messaging Framework Status */}

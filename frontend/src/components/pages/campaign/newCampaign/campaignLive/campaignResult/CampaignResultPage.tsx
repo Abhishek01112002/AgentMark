@@ -345,14 +345,16 @@ const CampaignResultPage: React.FC = () => {
   }, [getOutputField]);
 
   useEffect(() => {
+    if (!campaignId) return;
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const fetchCampaign = async () => {
-      if (!campaignId) return;
-      
       try {
         const rawProjectId = new URLSearchParams(window.location.search).get('projectId');
         const projectId = (rawProjectId && rawProjectId !== 'undefined' && rawProjectId !== 'null') ? rawProjectId : null;
         const url = projectId ? `/campaigns/${campaignId}?projectId=${projectId}` : `/campaigns/${campaignId}`;
-        const response = await api.get(url);
+        const response = await api.get(url, { signal });
         const campaignData = response.data.campaign;
         setCampaign(campaignData);
 
@@ -386,7 +388,6 @@ const CampaignResultPage: React.FC = () => {
                 image_prompt: scores.image_prompt ? scores.image_prompt / 10 : null,
               });
 
-              // Find lowest scoring agent to pre-select by default
               let lowestAgent = 'copywriter';
               let lowestScore = 999;
               Object.entries(scores).forEach(([agent, val]) => {
@@ -411,6 +412,7 @@ const CampaignResultPage: React.FC = () => {
           }
         }
       } catch (error: any) {
+        if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch campaign:', error);
         toast.error('Failed to load campaign data');
       } finally {
@@ -419,24 +421,27 @@ const CampaignResultPage: React.FC = () => {
     };
 
     const fetchMemoryInsights = async () => {
-      if (!campaignId) return;
       try {
-        const res = await api.get(`/campaigns/${campaignId}/memory-insights`);
+        const res = await api.get(`/campaigns/${campaignId}/memory-insights`, { signal });
         setMemoryInsights(res.data.insights || []);
         setMemoryCount(res.data.count || 0);
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch memory insights:', err);
       }
     };
     
     fetchCampaign();
     fetchMemoryInsights();
+
+    return () => controller.abort();
   }, [campaignId]);
 
   // ── Socket.io: Real-time updates from MCP tools ─────────────────────────────
   useEffect(() => {
     if (!campaignId) return;
 
+    const controller = new AbortController();
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
@@ -453,7 +458,6 @@ const CampaignResultPage: React.FC = () => {
       socket.emit('join_campaign', campaignId);
     });
 
-    // Focus group results arrived (via MCP run_focus_group or revise_copy_with_feedback)
     socket.on('focus_group_complete', (data: any) => {
       if (data?.report) {
         setFocusGroupReport(data.report);
@@ -461,7 +465,6 @@ const CampaignResultPage: React.FC = () => {
         setFocusGroupError(null);
         setFocusGroupUpdatedViaMcp(true);
 
-        // Update local campaign state so tab data is consistent
         setCampaign(prev => {
           if (!prev) return null;
           const currentOutputs = prev.aiOutputs || {};
@@ -488,34 +491,34 @@ const CampaignResultPage: React.FC = () => {
       }
     });
 
-    // General campaign data updated (copy revision, any MCP-driven change)
     socket.on('campaign_data_updated', async (data: any) => {
       if (data?.campaignId === campaignId && data?.updatedField !== 'focus_group') {
-        // Re-fetch campaign to pick up latest aiOutputs
         try {
-          const response = await api.get(`/campaigns/${campaignId}`);
+          const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
           setCampaign(response.data.campaign);
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
           console.error('Failed to refresh campaign after MCP update:', err);
         }
       }
     });
 
-    // Campaign status changed (e.g., revision completed, back to awaiting_human_approval)
     socket.on('human_approval_required', async () => {
       try {
-        const response = await api.get(`/campaigns/${campaignId}`);
+        const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
         const campaignData = response.data.campaign;
         setCampaign(campaignData);
         setShowHumanReview(true);
         if (campaignData.reviewScore) setQualityScore(campaignData.reviewScore);
         toast.success('Copy revision complete — ready for review', { duration: 4000 });
-      } catch (err) {
+      } catch (err: any) {
+        if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
         console.error('Failed to refresh campaign after revision:', err);
       }
     });
 
     return () => {
+      controller.abort();
       socket.emit('leave_campaign', campaignId);
       socket.disconnect();
       socketRef.current = null;
@@ -955,21 +958,8 @@ const CampaignResultPage: React.FC = () => {
                   <div className="flex-shrink-0 flex items-start">
                     <button
                       onClick={() => setShowVariantModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all w-full sm:w-auto justify-center"
-                      style={{
-                        backgroundColor: '#1A1A24',
-                        color: '#c0c1ff',
-                        border: '1px solid #2A2A38',
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = '#2A2A38';
-                        (e.currentTarget as HTMLElement).style.borderColor = '#6366F180';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                        (e.currentTarget as HTMLElement).style.borderColor = '#2A2A38';
-                      }}
+                      className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all w-full sm:w-auto justify-center bg-[#1A1A24] text-[#c0c1ff] border border-[#2A2A38] hover:bg-[#2A2A38] hover:border-[#6366F180]"
+                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
                     >
                       <GitBranch size={16} />
                       Create Variant
@@ -1001,22 +991,17 @@ const CampaignResultPage: React.FC = () => {
                           setActiveTab(tab.id);
                           if (tab.id === 'focus-group') setFocusGroupUpdatedViaMcp(false);
                         }}
-                        className="flex items-center gap-2 px-4 py-3 rounded-xl transition-all relative whitespace-nowrap border"
+                        className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all relative whitespace-nowrap border ${
+                          isActive ? 'text-[#c0c1ff]' : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                        }`}
                         style={{
                           fontFamily: 'JetBrains Mono, monospace',
                           fontSize: '14px',
                           fontWeight: isActive ? 600 : 500,
-                          color: isActive ? '#c0c1ff' : '#8B8B9E',
                           background: isActive ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
                           borderColor: isActive ? 'rgba(99, 102, 241, 0.28)' : 'transparent',
                           cursor: 'pointer',
                           boxShadow: isActive ? '0 8px 24px rgba(99, 102, 241, 0.12)' : 'none',
-                        }}
-                        onMouseEnter={(e) => {
-                          if (!isActive) (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isActive) (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
                         }}
                       >
                         <Icon size={16} />
@@ -1527,16 +1512,8 @@ const CampaignResultPage: React.FC = () => {
                     onChange={(e) => setRevisionFeedback(e.target.value)}
                     placeholder="e.g., The copywriting tone is too formal. Please make it more casual and conversational for Gen Z."
                     rows={5}
-                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none focus:ring-2"
-                    style={{
-                      background: '#111118',
-                      border: '1px solid #2A2A38',
-                      color: '#F1F1F3',
-                      fontFamily: 'Sora, sans-serif',
-                      boxShadow: 'none',
-                    }}
-                    onFocus={(e) => { e.target.style.border = '1px solid rgba(192,193,255,0.4)'; e.target.style.boxShadow = '0 0 0 3px rgba(192,193,255,0.1)'; }}
-                    onBlur={(e) => { e.target.style.border = '1px solid #2A2A38'; e.target.style.boxShadow = 'none'; }}
+                    className="w-full rounded-xl px-4 py-3 text-xs resize-none focus:outline-none bg-[#111118] text-[#F1F1F3] border border-[#2A2A38] focus:border-[rgba(192,193,255,0.4)] focus:shadow-[0_0_0_3px_rgba(192,193,255,0.1)] transition-all"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
                   />
                   <p className="text-[10px] mt-1.5" style={{ fontFamily: 'Sora, sans-serif', color: '#4A4A5E' }}>
                     Tip: Be specific — mention what's wrong and what tone/direction you prefer.
@@ -1546,40 +1523,8 @@ const CampaignResultPage: React.FC = () => {
                 <button
                   onClick={handleRequestRevision}
                   disabled={revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3}
-                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98]"
-                  style={{
-                    fontFamily: 'Inter, sans-serif',
-                    background: '#DC2626',
-                    color: '#FFFFFF',
-                    border: 'none',
-                    boxShadow: '0 4px 24px rgba(220,38,38,0.4)',
-                    opacity: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 0.3 : 1,
-                    cursor: revisionCounts[selectedAgent as keyof typeof revisionCounts] >= 3 ? 'not-allowed' : 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
-                  onTouchStart={(e) => {
-                    if (revisionCounts[selectedAgent as keyof typeof revisionCounts] < 3) {
-                      (e.currentTarget as HTMLButtonElement).style.background = '#EF4444';
-                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 32px rgba(220,38,38,0.55)';
-                    }
-                  }}
-                  onTouchEnd={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
-                  onTouchCancel={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = '#DC2626';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(220,38,38,0.4)';
-                  }}
+                  className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 active:scale-[0.98] bg-[#DC2626] text-white border-none shadow-[0_4px_24px_rgba(220,38,38,0.4)] disabled:opacity-30 disabled:cursor-not-allowed enabled:hover:bg-[#EF4444] enabled:hover:shadow-[0_6px_32px_rgba(220,38,38,0.55)]"
+                  style={{ fontFamily: 'Inter, sans-serif' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <polyline points="23 4 23 10 17 10" />
@@ -1600,18 +1545,8 @@ const CampaignResultPage: React.FC = () => {
           <div className="px-6 py-4" style={{ borderTop: '1px solid #1e1e2b', background: '#0d0d14' }}>
             <button
               onClick={handleApprove}
-              className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-              style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                background: 'linear-gradient(135deg, #c0c1ff 0%, #a8a9ff 100%)',
-                color: '#0e0e13',
-                boxShadow: '0 4px 20px rgba(192,193,255,0.25)',
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
-              onTouchStart={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 28px rgba(192,193,255,0.4)'; }}
-              onTouchEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
-              onTouchCancel={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 20px rgba(192,193,255,0.25)'; }}
+              className="w-full py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] bg-gradient-to-br from-[#c0c1ff] to-[#a8a9ff] text-[#0e0e13] shadow-[0_4px_20px_rgba(192,193,255,0.25)] hover:shadow-[0_6px_28px_rgba(192,193,255,0.4)]"
+              style={{ fontFamily: 'JetBrains Mono, monospace' }}
             >
               <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               Approve &amp; Publish Campaign

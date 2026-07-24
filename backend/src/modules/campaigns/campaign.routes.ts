@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
 
 import { verifyApiKeyScope } from '../developer/developer.controller';
 
@@ -11,6 +11,9 @@ router.use(authMiddleware);
 router.use(verifyApiKeyScope);
 
 router.post('/', campaignRateLimiter, createCampaign);
+router.post('/compare', compareCampaigns);
+router.post('/:id/verify-channels', verifyChannelCredentials);
+router.post('/verify-channels', verifyChannelCredentials);
 router.post('/test-key', testKey);
 router.post('/enhance-prompt', campaignRateLimiter, enhancePrompt);
 router.get('/', getCampaigns);

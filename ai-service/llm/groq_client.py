@@ -7,6 +7,7 @@ import logging
 import os
 from typing import Type, TypeVar
 
+import json_repair
 from groq import Groq
 from pydantic import BaseModel
 
@@ -25,13 +26,14 @@ T = TypeVar("T", bound=BaseModel)
 class GroqClient(BaseLLMClient):
     """Groq API client with fail-fast provider-pool semantics."""
 
-    def __init__(self, api_key: str = None, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, api_key: str = None, model: str = None):
         super().__init__()
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found")
 
-        self.model = model
+        self.model = model or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
         self.client = Groq(api_key=self.api_key, max_retries=0)
 
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
@@ -69,22 +71,42 @@ IMPORTANT:
 
         try:
             self._wait_for_rate_limit()
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": enhanced_prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens,
-                response_format={"type": "json_object"},
-            )
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": enhanced_prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format={"type": "json_object"},
+                )
+            except Exception as mode_exc:
+                if "json" in str(mode_exc).lower():
+                    logger.warning("Groq json_object mode failed (%s), retrying standard generation...", mode_exc)
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": enhanced_prompt}],
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                else:
+                    raise mode_exc
+
             self._record_success()
 
             response_text = response.choices[0].message.content
             if not response_text or not response_text.strip():
                 raise ValueError("Groq returned empty response")
 
-            return response_model.model_validate_json(response_text)
+            try:
+                return response_model.model_validate_json(response_text)
+            except Exception as parse_exc:
+                logger.warning(f"Initial JSON validation failed ({parse_exc}), attempting json_repair...")
+                repaired = json_repair.repair_json(response_text)
+                return response_model.model_validate_json(repaired)
         except Exception as exc:
             self._raise_typed_error(exc)
+
+
 
     def _raise_typed_error(self, exc: Exception):
         if isinstance(exc, (NonRetryableLLMError, RateLimitedLLMError)):

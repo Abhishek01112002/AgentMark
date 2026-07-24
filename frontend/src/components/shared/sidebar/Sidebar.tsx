@@ -75,8 +75,9 @@ const Sidebar: React.FC = () => {
   }>>([]);
 
   useEffect(() => {
+    const abortController = new AbortController();
     let cancelled = false;
-    let intervalId: number | undefined;
+    const intervalRef = { current: undefined as number | undefined };
 
     const fetchActive = async () => {
       if (document.visibilityState === 'hidden') {
@@ -84,44 +85,50 @@ const Sidebar: React.FC = () => {
       }
 
       try {
-        const res = await api.get('/campaigns/active/live', { timeout: 8000 });
+        const res = await api.get('/campaigns/active/live', {
+          timeout: 8000,
+          signal: abortController.signal,
+        });
         if (!cancelled) {
           setActiveCampaigns(res.data.campaigns || []);
         }
       } catch (err) {
         if (!cancelled) {
-          console.error('Failed to fetch active campaigns in sidebar:', err);
+          const error = err as { name?: string };
+          if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+            console.error('Failed to fetch active campaigns in sidebar:', err);
+          }
         }
       }
     };
 
     const startPolling = () => {
-      if (intervalId) {
-        window.clearInterval(intervalId);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
       }
       void fetchActive();
-      intervalId = window.setInterval(fetchActive, ACTIVE_CAMPAIGNS_POLL_MS);
+      intervalRef.current = window.setInterval(fetchActive, ACTIVE_CAMPAIGNS_POLL_MS);
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         startPolling();
-      } else if (intervalId) {
-        window.clearInterval(intervalId);
-        intervalId = undefined;
+      } else if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
       }
     };
 
     startPolling();
 
-    // Listen to custom window events for immediate update
     window.addEventListener('campaign_status_changed', fetchActive);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      abortController.abort();
       cancelled = true;
-      if (intervalId) {
-        window.clearInterval(intervalId);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
       }
       window.removeEventListener('campaign_status_changed', fetchActive);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -222,31 +229,9 @@ const Sidebar: React.FC = () => {
         <button
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden md:flex w-full items-center justify-center p-2 rounded-lg transition-colors mt-2"
+          className="hidden md:flex w-full items-center justify-center p-2 rounded-lg transition-colors mt-2 bg-transparent text-[#4A4A5E] hover:bg-[#2a292f] hover:text-[#c0c1ff]"
           style={{
-            backgroundColor: 'transparent',
-            color: '#4A4A5E',
             border: '1px solid #2A2A38',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-            (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
-          }}
-          onTouchStart={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-            (e.currentTarget as HTMLElement).style.color = '#c0c1ff';
-          }}
-          onTouchEnd={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
-          }}
-          onTouchCancel={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-            (e.currentTarget as HTMLElement).style.color = '#4A4A5E';
           }}
         >
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -309,15 +294,13 @@ const Sidebar: React.FC = () => {
           
           const handleMouseEnter = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
-              (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-              (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
+              e.currentTarget.classList.add('nav-hover');
             }
           };
           
           const handleMouseLeave = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-              (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
+              e.currentTarget.classList.remove('nav-hover');
             }
           };
           
@@ -385,14 +368,12 @@ const Sidebar: React.FC = () => {
                     }}
                     onMouseEnter={(e) => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
-                        (e.currentTarget as HTMLElement).style.borderLeftColor = isAwaitingReview ? '#F59E0B' : '#8083ff';
+                        e.currentTarget.classList.add(isAwaitingReview ? 'campaign-hover-awaiting' : 'campaign-hover');
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                        (e.currentTarget as HTMLElement).style.borderLeftColor = 'transparent';
+                        e.currentTarget.classList.remove('campaign-hover', 'campaign-hover-awaiting');
                       }
                     }}
                     title={c.name}
@@ -462,15 +443,13 @@ const Sidebar: React.FC = () => {
           
           const handleMouseEnter = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
-              (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-              (e.currentTarget as HTMLElement).style.color = '#e4e1e9';
+              e.currentTarget.classList.add('nav-hover');
             }
           };
           
           const handleMouseLeave = (e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
             if (!active) {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-              (e.currentTarget as HTMLElement).style.color = '#c7c4d7';
+              e.currentTarget.classList.remove('nav-hover');
             }
           };
           
@@ -497,7 +476,7 @@ const Sidebar: React.FC = () => {
 
         <button
           onClick={() => { logout(); navigate('/'); }}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all bg-transparent hover:bg-[#2a292f] ${
             isCollapsed && 'justify-center'
           }`}
           style={{
@@ -507,24 +486,8 @@ const Sidebar: React.FC = () => {
             letterSpacing: '0.02em',
             fontWeight: 500,
             color: '#F43F5E',
-            background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-          }}
-          onTouchStart={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = '#2a292f';
-          }}
-          onTouchEnd={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-          }}
-          onTouchCancel={(e) => {
-            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
           }}
           title={isCollapsed ? 'Logout' : ''}
         >
@@ -552,6 +515,9 @@ const Sidebar: React.FC = () => {
         .flex-1.overflow-y-auto::-webkit-scrollbar-thumb:hover {
           background: #3A3A48;
         }
+        .nav-hover { background-color: #2a292f !important; color: #e4e1e9 !important; }
+        .campaign-hover { background-color: rgba(255,255,255,0.02) !important; border-left-color: #8083ff !important; }
+        .campaign-hover-awaiting { background-color: rgba(255,255,255,0.02) !important; border-left-color: #F59E0B !important; }
       `}</style>
 
       {/* ── Desktop Sidebar ── */}

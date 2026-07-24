@@ -37,19 +37,23 @@ export const Integrations: React.FC = () => {
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (signal?: AbortSignal) => {
     try {
-      const res = await api.get('/developer/claude-status');
+      const res = await api.get('/developer/claude-status', { signal });
       setStatus(res.data);
     } catch (err: any) {
-      console.error('[Integrations] Failed to fetch Claude connection status:', err);
+      if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+        console.error('[Integrations] Failed to fetch Claude connection status:', err);
+      }
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchStatus();
+    const abortController = new AbortController();
+    fetchStatus(abortController.signal);
+    return () => abortController.abort();
   }, [fetchStatus]);
 
   const [installerOpen, setInstallerOpen] = useState(false);

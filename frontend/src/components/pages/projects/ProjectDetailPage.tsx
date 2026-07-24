@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
   Plus,
@@ -57,9 +57,11 @@ const scoreMap: Record<ScoreTone, string> = {
 const ProjectDetailContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [project, setProject] = useState<Project | null>(null);
+  const location = useLocation();
+  const initialProject = (location.state as { project?: Project })?.project || null;
+  const [project, setProject] = useState<Project | null>(initialProject);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialProject);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; campaign: Campaign | null }>({ show: false, campaign: null });
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,19 +84,26 @@ const ProjectDetailContent: React.FC = () => {
   };
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchProjectData = async () => {
       if (!id) return;
       
       try {
-        setLoading(true);
-        const projectResponse = await api.get(`/projects/${id}`);
-        setProject(projectResponse.data.project);
+        if (!initialProject) setLoading(true);
+        const projectResponse = await api.get(`/projects/${id}`, { signal: controller.signal });
+        if (projectResponse.data?.project) {
+          setProject(projectResponse.data.project);
+        }
       } catch (error: any) {
-        console.error('Failed to fetch project data:', error);
-        toast.error(error.response?.data?.message || 'Failed to load project data');
-        
-        if (error.response?.status === 404) {
-          setTimeout(() => navigate('/projects'), 2000);
+        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
+          console.error('Failed to fetch project data:', error);
+          toast.error(error.response?.data?.message || 'Failed to load project data');
+          
+          if (error.response?.status === 404) {
+            setProject(null);
+            setTimeout(() => navigate('/projects'), 2000);
+          }
         }
       } finally {
         setLoading(false);
@@ -102,6 +111,8 @@ const ProjectDetailContent: React.FC = () => {
     };
     
     fetchProjectData();
+    
+    return () => controller.abort();
   }, [id, navigate]);
 
   useEffect(() => {
@@ -216,12 +227,55 @@ const handlePageChange = (page: number) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6366F1] mx-auto mb-4" />
-          <p className="text-sm" style={{ color: '#8B8B9E', fontFamily: 'Sora, sans-serif' }}>Loading project...</p>
+      <>
+        <style>{`
+          .project-detail-main {
+            margin-left: 0;
+            transition: margin-left 200ms cubic-bezier(0.4,0,0.2,1);
+          }
+          @media (min-width: 768px) {
+            .project-detail-main {
+              margin-left: var(--sidebar-w, 240px);
+            }
+          }
+          @keyframes skeleton-shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.45; }
+          }
+          .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
+        `}</style>
+        <div className="min-h-screen" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
+          <Sidebar />
+          <TopNav title="Project" />
+          <main className="project-detail-main pt-14 fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
+            <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6">
+              {/* Back to Projects Skeleton */}
+              <div className="sk h-4 w-32 rounded mb-2" />
+
+              {/* Banner Skeleton */}
+              <div className="rounded-xl p-6" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                <div className="flex items-center gap-4">
+                  <div className="sk w-16 h-16 rounded-xl flex-shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <div className="sk h-7 w-48 rounded-lg" />
+                    <div className="sk h-4 w-72 rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Campaign Table Skeleton */}
+              <div className="rounded-xl p-6" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                <div className="sk h-6 w-36 rounded mb-6" />
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="sk h-12 w-full rounded-lg" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -296,13 +350,8 @@ const handlePageChange = (page: number) => {
             
             <button
               onClick={() => navigate('/projects')}
-              className="flex items-center gap-2 px-1 py-3 text-sm font-medium transition-colors"
-              style={{ color: '#8B8B9E', fontFamily: 'JetBrains Mono, monospace' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#F1F1F3')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#8B8B9E')}
-              onTouchStart={(e) => (e.currentTarget.style.color = '#F1F1F3')}
-              onTouchEnd={(e) => (e.currentTarget.style.color = '#8B8B9E')}
-              onTouchCancel={(e) => (e.currentTarget.style.color = '#8B8B9E')}
+              className="flex items-center gap-2 px-1 py-3 text-sm font-medium transition-colors text-[#8B8B9E] hover:text-[#F1F1F3]"
+              style={{ fontFamily: 'JetBrains Mono, monospace' }}
             >
               <ArrowLeft size={16} />
               Back to Projects
@@ -327,16 +376,7 @@ const handlePageChange = (page: number) => {
                       </h1>
                       <button
                         onClick={() => setShowRenameModal(true)}
-                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
-                        style={{ color: '#8B8B9E' }}
-                        onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#6366F1';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(99,102,241,0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                          (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                        }}
+                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-[#8B8B9E] hover:text-[#6366F1] hover:bg-[rgba(99,102,241,0.1)]"
                       >
                         <Edit3 size={16} />
                       </button>
@@ -355,19 +395,12 @@ const handlePageChange = (page: number) => {
                 <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => navigate(`/projects/${id}/memory`)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all w-full sm:w-auto justify-center"
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all w-full sm:w-auto justify-center bg-[#1A1A24] hover:bg-[#2A2A38]"
                     style={{
-                      backgroundColor: '#1A1A24',
                       color: '#c0c1ff',
                       fontFamily: 'JetBrains Mono, monospace',
                       fontSize: '14px',
                       border: '1px solid #2A2A38',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#2A2A38';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
                     }}
                   >
                     <Brain size={16} />
@@ -375,32 +408,11 @@ const handlePageChange = (page: number) => {
                   </button>
                   <button
                     onClick={() => navigate(`/campaign/new?projectId=${id}`)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center"
+                    className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all btn-press w-full sm:w-auto justify-center bg-[#6366F1] hover:bg-[#8083ff] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)]"
                     style={{
-                      backgroundColor: '#6366F1',
                       color: '#F1F1F3',
                       fontFamily: 'JetBrains Mono, monospace',
                       fontSize: '14px',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                      (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                    }}
-                    onTouchStart={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#8083ff';
-                      (e.currentTarget as HTMLElement).style.boxShadow = '0 0 20px rgba(99,102,241,0.3)';
-                    }}
-                    onTouchEnd={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
-                    }}
-                    onTouchCancel={(e) => {
-                      (e.currentTarget as HTMLElement).style.backgroundColor = '#6366F1';
-                      (e.currentTarget as HTMLElement).style.boxShadow = 'none';
                     }}
                   >
                     <Plus size={16} />
@@ -573,14 +585,8 @@ const handlePageChange = (page: number) => {
                           return (
                             <tr
                               key={row.id}
-                              className="group transition-colors"
+                              className="group transition-colors hover:bg-[#1b1b20]"
                               style={{ borderBottom: '1px solid #2A2A38' }}
-                              onMouseEnter={(e) =>
-                                ((e.currentTarget as HTMLElement).style.backgroundColor = '#1b1b20')
-                              }
-                              onMouseLeave={(e) =>
-                                ((e.currentTarget as HTMLElement).style.backgroundColor = 'transparent')
-                              }
                             >
                               <td style={{ padding: '16px 20px' }}>
                                 <div className="flex items-center gap-3 min-w-0">
@@ -668,33 +674,17 @@ const handlePageChange = (page: number) => {
                                 <div className="flex items-center justify-end gap-2">
                                   <button
                                     onClick={() => handleViewCampaign(row.id, row.status)}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]"
                                     title="View Details"
-                                    style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
-                                    onMouseEnter={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#F1F1F3';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = '#1A1A24';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                                   >
                                     <Eye size={16} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteClick(row)}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors"
+                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors text-[#8B8B9E] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.08)]"
                                     title="Delete"
-                                    style={{ color: '#8B8B9E', background: 'none', border: 'none', cursor: 'pointer' }}
-                                    onMouseEnter={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#F43F5E';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(244,63,94,0.08)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      (e.currentTarget as HTMLElement).style.color = '#8B8B9E';
-                                      (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                                   >
                                     <Trash2 size={16} />
                                   </button>
