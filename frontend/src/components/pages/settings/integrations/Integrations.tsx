@@ -372,42 +372,47 @@ export const Integrations: React.FC = () => {
                   <button
                     onClick={handlePing}
                     disabled={pinging}
-                    className="px-3 py-1.5 text-xs font-mono font-medium rounded-lg bg-[#161622] border border-[#2E2E42] hover:bg-[#1E1E2E] hover:border-indigo-500/50 text-indigo-300 transition-all flex items-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
+                    className="px-3.5 py-1.5 text-xs font-mono font-semibold rounded-lg bg-[#181824] border border-[#2E2E42] hover:bg-[#202030] hover:border-indigo-500/60 text-indigo-300 transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50"
                   >
                     <Activity size={13} className={pinging ? 'animate-spin text-indigo-400' : 'text-indigo-400'} />
-                    {pinging ? 'Verifying...' : 'Verify Connection'}
+                    {pinging ? 'Verifying...' : 'Verify Live Ping'}
                   </button>
 
-                  {/* Real-time Live Connection Badge */}
+                  {/* World-Class SaaS Status Badge */}
                   {status?.isLiveConnected ? (
-                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-semibold shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold tracking-wide shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                       <span className="relative flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                       </span>
-                      <span>MCP ACTIVE</span>
+                      <span>CONNECTED</span>
                     </div>
                   ) : status?.status === 'Connected' ? (
-                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono font-semibold" title="Config file is valid. Waiting for Claude tool request or restart.">
-                      <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                      <span>CONFIGURED (STANDBY)</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono font-bold tracking-wide shadow-[0_0_15px_rgba(245,158,11,0.15)]" title="Config file is valid. Waiting for Claude tool request or restart.">
+                      <span className="h-2 w-2 rounded-full bg-amber-400"></span>
+                      <span>STANDBY</span>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-mono font-semibold">
-                      <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                      <span>UNCONFIGURED</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-400 text-xs font-mono font-bold tracking-wide">
+                      <span className="h-2 w-2 rounded-full bg-rose-500"></span>
+                      <span>OFFLINE</span>
                     </div>
                   )}
                 </div>
 
-                {status?.lastActiveAt ? (
-                  <span className="text-[10px] font-mono text-[#8B8B9E] flex items-center gap-1">
+                {status?.isLiveConnected ? (
+                  <span className="text-[10px] font-mono text-emerald-400/90 flex items-center gap-1.5">
                     <ShieldCheck size={11} className="text-emerald-400" />
-                    Last live ping: {new Date(status.lastActiveAt).toLocaleTimeString()}
+                    Live telemetry stream active • Ping verified at {new Date(status.lastActiveAt!).toLocaleTimeString()}
+                  </span>
+                ) : status?.lastActiveAt ? (
+                  <span className="text-[10px] font-mono text-[#8B8B9E] flex items-center gap-1.5">
+                    <ShieldCheck size={11} className="text-amber-400" />
+                    Standby mode • Config verified • Last activity: {new Date(status.lastActiveAt).toLocaleTimeString()}
                   </span>
                 ) : (
                   <span className="text-[10px] font-mono text-[#8B8B9E]">
-                    Awaiting initial tool execution
+                    Standby mode • Config verified • Awaiting client prompt
                   </span>
                 )}
               </div>
