@@ -299,7 +299,7 @@ const SupportContent: React.FC = () => {
                         onClick={() => toggleAccordion(index)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                       >
-                        <span className="text-sm font-medium pr-4" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>{faq.question}</span>
+                        <span className="text-sm font-medium pr-4" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{faq.question}</span>
                         <ChevronDown
                           size={18}
                           className={`chevron transition-transform ${

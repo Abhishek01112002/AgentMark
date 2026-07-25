@@ -246,25 +246,32 @@ async def _run_analyst_synthesis(
         lambda: client.generate_structured(prompt=prompt, response_model=AnalystSynthesis, temperature=0.2, seed=42)
     )
     
+    from services.trust_model_resolver import TrustModelResolver
+    from services.confidence_engine import calculate_simulation_confidence
     from schemas.simulation import TrustSignalAnalysis, GatedReadiness, DecisionExplanation
+
     if trust_analysis is None:
         trust_analysis = TrustSignalAnalysis(evidence_score=70.0, detected_proof_elements=["Copy structure"], missing_proof_elements=["Specific metrics"])
     if devils_issues is None:
         devils_issues = getattr(synthesis, 'devils_advocate_issues', [])
 
-    # 3. 60/40 Trust Formula: 60% Evidence Signals + 40% Persona Perception
+    # 3. Dynamic Industry Trust Model (B2B SaaS, Healthcare, DTC, Luxury, Default)
+    # Detect target industry from brand context or persona occupation
+    industry_hint = personas[0].occupation if personas else "default"
+    trust_config = TrustModelResolver.resolve(industry_hint)
+
     persona_trust_scores = [c.rubric.trust * 20.0 for c in critiques if hasattr(c, 'rubric') and hasattr(c.rubric, 'trust')]
     persona_perception_trust = sum(persona_trust_scores) / len(persona_trust_scores) if persona_trust_scores else 70.0
     evidence_score = trust_analysis.evidence_score
 
-    final_trust_score = (0.60 * evidence_score) + (0.40 * persona_perception_trust)
+    final_trust_score = (trust_config.evidence_weight * evidence_score) + (trust_config.perception_weight * persona_perception_trust)
 
     # Hard Gate Check
     critical_devils_issues = [i for i in devils_issues if getattr(i, 'severity', '').upper() == 'CRITICAL']
     passed_gates = (final_trust_score >= 75.0) and (len(critical_devils_issues) == 0)
     failed_reasons = []
     if final_trust_score < 75.0:
-        failed_reasons.append(f"Trust & Credibility score ({final_trust_score:.1f}%) is below the minimum required 75.0% threshold (Evidence: {evidence_score:.1f}%, Persona Perception: {persona_perception_trust:.1f}%).")
+        failed_reasons.append(f"Trust & Credibility score ({final_trust_score:.1f}%) is below the minimum required 75.0% threshold (Evidence weight: {trust_config.evidence_weight:.2f}, Perception weight: {trust_config.perception_weight:.2f}).")
     if critical_devils_issues:
         failed_reasons.append(f"Found {len(critical_devils_issues)} CRITICAL conversion blockers identified by Devil's Advocate audit.")
 
@@ -277,7 +284,15 @@ async def _run_analyst_synthesis(
         failed_reasons=failed_reasons
     )
 
-    # 4. Construct DecisionExplanation (no chain-of-thought)
+    # 4. Simulation Signal Density Model (Confidence Engine)
+    conf_score = calculate_simulation_confidence(
+        persona_count=len(personas),
+        evidence_score=evidence_score,
+        critiques=critiques,
+        has_historical_benchmarks=True
+    )
+
+    # 5. Construct DecisionExplanation (no chain-of-thought)
     positive_drivers = [f"Clear messaging for persona {c.persona_id}" for c in critiques if c.rubric.clarity >= 4]
     negative_drivers = [c.objection for c in critiques if c.rubric.trust <= 2 or c.rubric.value <= 2]
     recommendations_list = [r.suggested_revision for r in synthesis.actionable_recommendations]
@@ -287,8 +302,12 @@ async def _run_analyst_synthesis(
         negative_drivers=negative_drivers or ["Unaddressed buyer hesitation points"],
         detected_signals=trust_analysis.detected_proof_elements,
         recommendations=recommendations_list,
-        confidence_factors=[f"Evaluated against {len(critiques)} personas", f"Evidence Score: {evidence_score:.1f}%"],
-        confidence_score=0.92
+        confidence_factors=[
+            f"Evaluated against {len(critiques)} personas",
+            f"Industry Model: {trust_config.industry} (Ev: {trust_config.evidence_weight:.2f}, Per: {trust_config.perception_weight:.2f})",
+            f"Evidence Score: {evidence_score:.1f}%"
+        ],
+        confidence_score=conf_score
     )
 
     # Apply claim guardrail sanitization to analyst recommendations
