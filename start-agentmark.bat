@@ -53,31 +53,42 @@ async function run() {
   const apiKey = keyRes.key;
   if (!apiKey) { console.log('  ERROR: Could not generate API key'); process.exit(1); }
 
-  const claudeDir = path.join(process.env.APPDATA, 'Claude');
-  if (!fs.existsSync(claudeDir)) fs.mkdirSync(claudeDir, { recursive: true });
+  function safeWriteConfig(configFilePath) {
+    const dir = path.dirname(configFilePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
-  const config = {
-    mcpServers: {
-      agentmark: {
-        command: 'E:/AgentMark/AgentMark/agentmark-mcp-server/.venv/Scripts/python.exe',
-        args: ['-m', 'agentmark_mcp.server'],
-        env: {
-          AGENTMARK_API_URL: 'http://localhost:5003',
-          AGENTMARK_API_KEY: apiKey
-        }
+    let existing = { mcpServers: {} };
+    if (fs.existsSync(configFilePath)) {
+      try {
+        const raw = fs.readFileSync(configFilePath, 'utf-8');
+        fs.writeFileSync(configFilePath + '.bak', raw, 'utf-8');
+        existing = JSON.parse(raw);
+        if (!existing.mcpServers) existing.mcpServers = {};
+      } catch (e) {
+        existing = { mcpServers: {} };
       }
     }
-  };
+
+    existing.mcpServers.agentmark = {
+      command: 'E:/AgentMark/AgentMark/agentmark-mcp-server/.venv/Scripts/python.exe',
+      args: ['-m', 'agentmark_mcp.server'],
+      env: {
+        AGENTMARK_API_URL: 'http://localhost:5003',
+        AGENTMARK_API_KEY: apiKey
+      }
+    };
+
+    fs.writeFileSync(configFilePath, JSON.stringify(existing, null, 2), 'utf-8');
+  }
 
   // 1. Write to standard Roaming AppData path
-  fs.writeFileSync(path.join(claudeDir, 'claude_desktop_config.json'), JSON.stringify(config, null, 2));
-
+  const mainConfigPath = path.join(process.env.APPDATA, 'Claude', 'claude_desktop_config.json');
+  safeWriteConfig(mainConfigPath);
 
   // 2. Write to UWP Windows Store app path (if exists)
   const uwpDir = path.join(process.env.LOCALAPPDATA, 'Packages', 'Claude_pzs8sxrjxfjjc', 'LocalCache', 'Roaming', 'Claude');
   if (fs.existsSync(path.dirname(uwpDir))) {
-    if (!fs.existsSync(uwpDir)) fs.mkdirSync(uwpDir, { recursive: true });
-    fs.writeFileSync(path.join(uwpDir, 'claude_desktop_config.json'), JSON.stringify(config, null, 2));
+    safeWriteConfig(path.join(uwpDir, 'claude_desktop_config.json'));
     console.log('  UWP Store Config also updated successfully.');
   }
 

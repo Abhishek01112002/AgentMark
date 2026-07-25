@@ -601,7 +601,8 @@ class AgentMarkClient:
         return await self.post("/api/campaigns/%s/reset-revisions" % campaign_id, {})
 
     async def submit_human_approval(self, campaign_id: str, decision: str, feedback: Optional[str] = None) -> Dict[str, Any]:
-        payload = {"decision": decision}
+        action = "approve" if str(decision).lower() in ("approved", "approve") else "reject"
+        payload = {"action": action, "decision": decision}
         if feedback:
             payload["feedback"] = feedback
         return await self.post(f"/api/campaigns/{campaign_id}/approve", payload)
