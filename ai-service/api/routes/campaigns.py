@@ -289,7 +289,7 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
             error=final_state.error or "Campaign cancelled by user",
             extra={"outputs": outputs_dict},
         )
-    elif final_state.awaiting_human_approval:
+    elif final_state.awaiting_human_approval or final_state.status == "awaiting_human_approval":
         publish_agent_event(
             campaign_id=campaign_id,
             agent="system",

@@ -10,7 +10,8 @@ import {
   Info,
   X,
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Cloud
 } from 'lucide-react';
 import api from '../../../../services/api';
 import toast from 'react-hot-toast';
@@ -51,10 +52,12 @@ export const Integrations: React.FC = () => {
     setPinging(true);
     try {
       const res = await api.post('/developer/claude-ping');
-      if (res.data.success) {
-        toast.success(res.data.message || 'Live MCP heartbeat ping verified!');
-        await fetchStatus();
+      if (res.data.isLiveConnected) {
+        toast.success(res.data.message || 'Live MCP heartbeat verified! Tool calls actively processing.');
+      } else {
+        toast(res.data.message || 'Configured on disk. Awaiting first tool command from Claude Desktop.');
       }
+      await fetchStatus();
     } catch (err: any) {
       toast.error('Failed to verify live connection');
     } finally {
@@ -113,7 +116,7 @@ export const Integrations: React.FC = () => {
       relaunch: 'idle',
     });
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003';
     const token = localStorage.getItem('token');
 
     try {
@@ -168,10 +171,12 @@ export const Integrations: React.FC = () => {
               }
 
               if (step === 'complete' && status === 'success') {
-                setInstallerStatus('success');
-                setShowRestartAlert(false);
-                toast.success('AgentMark connected successfully!');
-                await fetchStatus();
+                setTimeout(async () => {
+                  setInstallerStatus('success');
+                  setShowRestartAlert(false);
+                  toast.success('AgentMark connected successfully!');
+                  await fetchStatus();
+                }, 1200);
               }
             } catch (jsonErr) {
               // ignore malformed chunks
@@ -294,7 +299,8 @@ export const Integrations: React.FC = () => {
               <Info size={18} className="shrink-0 text-indigo-400 mt-0.5" />
               <div className="space-y-1.5">
                 <p className="font-bold text-white flex items-center gap-2">
-                  <span>☁️ Hosted Cloud Environment Detected</span>
+                  <Cloud size={15} className="shrink-0 text-indigo-400" />
+                  <span>Hosted Cloud Environment Detected</span>
                   <span className="px-2 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-300">
                     Manual Local Setup Required
                   </span>
@@ -355,7 +361,8 @@ export const Integrations: React.FC = () => {
           ) : null}
 
           {/* Main Info Card */}
-          <div className="p-6 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-5">
+          <div className="p-6 rounded-xl space-y-5 shadow-[0_8px_40px_rgba(0,0,0,0.25)] relative overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(17,17,24,1) 0%, rgba(12,12,18,0.95) 100%)', border: '1px solid #2A2A38' }}>
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent opacity-60" />
             
             <div className="flex items-start justify-between border-b border-[#2A2A38]/40 pb-4">
               <div className="space-y-1">
@@ -425,16 +432,16 @@ export const Integrations: React.FC = () => {
                 <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>
                   Configuration File Location
                 </span>
-                <div className="flex items-center gap-2 bg-[#0E0E13] border border-[#2A2A38]/50 px-3 py-2 rounded-lg font-mono text-[11px] text-[#E2E8F0] overflow-hidden select-all">
-                  <span className="truncate flex-1">{status?.path || 'N/A'}</span>
+                <div className="flex items-center gap-2 rounded-lg font-mono text-[11px] overflow-hidden select-all" style={{ background: 'linear-gradient(135deg, rgba(14,14,19,0.9), rgba(10,10,15,0.7))', border: '1px solid rgba(42,42,56,0.5)', padding: '8px 12px' }}>
+                  <span className="truncate flex-1" style={{ color: '#E2E8F0' }}>{status?.path || 'N/A'}</span>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>
+                <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: '#A0A0D2', fontFamily: 'JetBrains Mono, monospace' }}>
                   Active Access Token
                 </span>
-                <div className="flex items-center justify-between bg-[#0E0E13] border border-[#2A2A38]/50 px-3 py-1.5 rounded-lg">
+                <div className="flex items-center justify-between rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(14,14,19,0.9), rgba(10,10,15,0.7))', border: '1px solid rgba(42,42,56,0.5)', padding: '6px 12px' }}>
                   <code className="font-mono text-[11px] text-[#E2E8F0]">
                     {status?.maskedKey || 'No token active'}
                   </code>
@@ -525,7 +532,7 @@ export const Integrations: React.FC = () => {
 
           {/* Newly Generated API key show block */}
           {newlyGeneratedKey && (
-            <div className="p-5 rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 space-y-3">
+            <div className="p-5 rounded-xl space-y-3 shadow-[0_4px_20px_rgba(16,185,129,0.1)]" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 100%)', border: '1px solid rgba(16,185,129,0.25)' }}>
               <div className="flex items-center gap-2 text-[#10B981]">
                 <Info size={14} />
                 <h4 className="font-semibold text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
@@ -552,7 +559,7 @@ export const Integrations: React.FC = () => {
           )}
 
           {/* Interactive DX OS & Client Config Helper Box */}
-          <div className="p-6 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-4">
+          <div className="p-6 rounded-xl space-y-4 shadow-[0_8px_40px_rgba(0,0,0,0.2)]" style={{ background: 'linear-gradient(180deg, rgba(17,17,24,1) 0%, rgba(14,14,20,0.95) 100%)', border: '1px solid #2A2A38' }}>
             
             {/* Header with Client Switcher */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2A2A38]/40 pb-3 gap-3">

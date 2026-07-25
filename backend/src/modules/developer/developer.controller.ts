@@ -326,16 +326,60 @@ export const pingClaude = async (
 ): Promise<void> => {
   try {
     const userId = req.userId!;
-    userLastMcpActivity.set(userId, Date.now());
     
-    // Clear status cache so next status check returns instant updated live status
+    // Clear status cache so we read fresh disk & DB state
     statusCache.delete(userId);
 
+    const validateKey = async (apiKey: string): Promise<{ valid: boolean; isOtherUser?: boolean }> => {
+      const keyHash = crypto.createHash('sha256').update(apiKey, 'utf8').digest('hex');
+      const activeKey = await prisma.apiKey.findUnique({
+        where: { keyHash },
+        select: { isActive: true, userId: true },
+      });
+      if (!activeKey || !activeKey.isActive) {
+        return { valid: false };
+      }
+      if (activeKey.userId !== userId) {
+        return { valid: false, isOtherUser: true };
+      }
+      return { valid: true };
+    };
+
+    const status = await getClaudeConfigStatus(userId, validateKey);
+
+    // Check actual DB last used key timestamp for this user
+    const mostRecentKey = await prisma.apiKey.findFirst({
+      where: { userId, isActive: true, lastUsedAt: { not: null } },
+      orderBy: { lastUsedAt: 'desc' },
+      select: { lastUsedAt: true },
+    });
+
+    const mcpActivityTime = userLastMcpActivity.get(userId);
+    const dbLastUsedTime = mostRecentKey?.lastUsedAt ? new Date(mostRecentKey.lastUsedAt).getTime() : 0;
+    const effectiveLastActive = Math.max(mcpActivityTime || 0, dbLastUsedTime || 0);
+
+    const now = Date.now();
+    const isLiveConnected = Boolean(effectiveLastActive > 0 && (now - effectiveLastActive < 120_000));
+    
+    const liveStatus = isLiveConnected 
+      ? 'Active (Connected)' 
+      : (status.status === 'Connected' || status.status === 'Configuration Outdated')
+      ? 'Configured (Idle)'
+      : 'Disconnected';
+
+    const message = isLiveConnected
+      ? 'Verified live telemetry: MCP server is active & processing tool calls.'
+      : status.status === 'Connected'
+      ? 'Configuration verified on disk. Awaiting first tool command from Claude Desktop.'
+      : status.error || 'Claude Desktop configuration not found or inactive.';
+
     res.json({
-      success: true,
-      liveStatus: 'Active (Connected)',
-      lastActiveAt: new Date().toISOString(),
-      message: 'Live MCP heartbeat ping verified successfully!',
+      success: isLiveConnected,
+      liveStatus,
+      isLiveConnected,
+      lastActiveAt: effectiveLastActive > 0 ? new Date(effectiveLastActive).toISOString() : null,
+      configStatus: status.status,
+      message,
     });
   } catch (error) {
     next(error);
@@ -595,7 +639,7 @@ export const connectClaudeFlow = async (
   try {
     // ── STEP 1: DETECT CLAUDE ───────────────────────────────────────────────
     emit('detect', 'pending', 'Detecting Claude Desktop installation...');
-    await sleep(400);
+    await sleep(600);
 
     let isInstalled = false;
     try {
@@ -614,7 +658,7 @@ export const connectClaudeFlow = async (
 
     // ── STEP 2: CREATE BACKUP ───────────────────────────────────────────────
     emit('backup', 'pending', 'Creating safety backup of configuration...');
-    await sleep(300);
+    await sleep(500);
 
     try {
       await fs.access(configPath);
@@ -634,7 +678,7 @@ export const connectClaudeFlow = async (
 
     // ── STEP 3: RESOLVE/GENERATE API KEY ─────────────────────────────────────
     emit('key', 'pending', 'Resolving API key for connection...');
-    await sleep(300);
+    await sleep(500);
 
     let apiKey = '';
     // Check if we can reuse an existing valid key in the config
@@ -684,7 +728,7 @@ export const connectClaudeFlow = async (
 
     // ── STEP 4: DETECT & TERMINATE CLAUDE PROCESS ───────────────────────────
     emit('terminate', 'pending', 'Checking if Claude Desktop is running...');
-    await sleep(400);
+    await sleep(600);
 
     let isRunning = false;
     let runningPath = '';
@@ -758,7 +802,7 @@ export const connectClaudeFlow = async (
 
     // ── STEP 5: WRITE CONFIG ─────────────────────────────────────────────────
     emit('merge', 'pending', 'Writing configuration changes...');
-    await sleep(400);
+    await sleep(600);
 
     let parsedConfig: any = {};
     if (existingContent) {
@@ -820,7 +864,7 @@ export const connectClaudeFlow = async (
 
     // ── STEP 6: RELAUNCH CLAUDE ──────────────────────────────────────────────
     emit('relaunch', 'pending', 'Relaunching Claude Desktop...');
-    await sleep(400);
+    await sleep(600);
 
     try {
       if (osType === 'win32') {

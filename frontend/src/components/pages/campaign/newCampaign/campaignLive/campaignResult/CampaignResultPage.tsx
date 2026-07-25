@@ -85,6 +85,7 @@ const CampaignResultPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [memoryInsights, setMemoryInsights] = useState<any[]>([]);
   const [memoryCount, setMemoryCount] = useState<number>(0);
 
@@ -351,12 +352,17 @@ const CampaignResultPage: React.FC = () => {
 
     const fetchCampaign = async () => {
       try {
+        setNotFound(false);
         const rawProjectId = new URLSearchParams(window.location.search).get('projectId');
         const projectId = (rawProjectId && rawProjectId !== 'undefined' && rawProjectId !== 'null') ? rawProjectId : null;
         const url = projectId ? `/campaigns/${campaignId}?projectId=${projectId}` : `/campaigns/${campaignId}`;
         const response = await api.get(url, { signal });
         const campaignData = response.data.campaign;
-        setCampaign(campaignData);
+        if (!campaignData) {
+          setNotFound(true);
+        } else {
+          setCampaign(campaignData);
+        }
 
         if (campaignData && campaignData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
           setShowHumanReview(true);
@@ -412,11 +418,17 @@ const CampaignResultPage: React.FC = () => {
           }
         }
       } catch (error: any) {
-        if (error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
+        if (signal.aborted || error?.name === 'AbortError' || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
         console.error('Failed to fetch campaign:', error);
-        toast.error('Failed to load campaign data');
+        if (error?.response?.status === 404) {
+          setNotFound(true);
+        } else {
+          toast.error('Failed to load campaign data');
+        }
       } finally {
-        setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -442,7 +454,7 @@ const CampaignResultPage: React.FC = () => {
     if (!campaignId) return;
 
     const controller = new AbortController();
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {
@@ -456,6 +468,24 @@ const CampaignResultPage: React.FC = () => {
 
     socket.on('connect', () => {
       socket.emit('join_campaign', campaignId);
+    });
+
+    socket.on('agent_update', (data: any) => {
+      if (data && data.outputs && typeof data.outputs === 'object') {
+        setCampaign(prev => {
+          if (!prev) return null;
+          const currentOutputs = prev.aiOutputs
+            ? (typeof prev.aiOutputs === 'string' ? JSON.parse(prev.aiOutputs) : prev.aiOutputs)
+            : {};
+          return {
+            ...prev,
+            aiOutputs: {
+              ...currentOutputs,
+              ...data.outputs,
+            },
+          };
+        });
+      }
     });
 
     socket.on('focus_group_complete', (data: any) => {
@@ -686,7 +716,7 @@ const CampaignResultPage: React.FC = () => {
     );
   }
 
-  if (!campaign) {
+  if (notFound || !campaign) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F', color: '#F1F1F3' }}>
         <div className="text-center">
@@ -947,7 +977,7 @@ const CampaignResultPage: React.FC = () => {
                       </span>
                     </div>
                     <div>
-                      <h1 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                      <h1 className="text-3xl md:text-4xl font-bold" style={{ fontFamily: 'Sora, sans-serif', background: 'linear-gradient(135deg, #FFFFFF 0%, #A5B4FC 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 0 40px rgba(99,102,241,0.15)' }}>
                         {campaign.name}
                       </h1>
                       <p className="text-sm mt-1" style={{ color: '#8B8B9E' }}>

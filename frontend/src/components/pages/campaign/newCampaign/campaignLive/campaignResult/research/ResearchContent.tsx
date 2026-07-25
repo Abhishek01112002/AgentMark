@@ -123,7 +123,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
                   <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#6366F1]/60">TAM</span>
                 </div>
                 <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Total Addressable Market</h4>
-                <p className="text-xl md:text-2xl font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{tam}</p>
+                <p className="text-base md:text-lg font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{tam}</p>
               </div>
             </div>
           )}
@@ -139,7 +139,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
                   <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#4edea3]/60">CAGR</span>
                 </div>
                 <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Market Growth Rate</h4>
-                <p className="text-xl md:text-2xl font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{growthRate}</p>
+                <p className="text-base md:text-lg font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{growthRate}</p>
               </div>
             </div>
           )}
@@ -398,98 +398,167 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
         {/* Tavily/LiteRAG Sources */}
         {literasSources.length > 0 && (
-          <div className="lg:col-span-2" style={{ marginTop: '1rem', paddingTop: '1.5rem', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4" style={{ background: '#111118', border: '0.5px solid rgba(255,255,255,0.06)', borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: '#8B8B9E', marginBottom: '1rem' }}>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{literasSources.length}</strong> sources retrieved</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{marketSources.length}</strong> market</span>
-              <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }}><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 9h6"/><path d="M9 13h6"/></svg><strong style={{ color: '#F1F1F3', fontWeight: 500 }}>{competitorSources.length}</strong> competitor</span>
-              <span className="sm:ml-auto" style={{ color: '#5A5A6E', fontSize: '12px' }}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Live</span>
+          <div className="lg:col-span-2" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: 'none', position: 'relative' }}>
+            {/* Gradient divider */}
+            <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.15), rgba(129,140,248,0.25), rgba(99,102,241,0.15), transparent)' }} />
+
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold" style={{ fontFamily: "'Sora', sans-serif", color: '#F1F1F3' }}>Web Sources</h3>
+                  <p style={{ fontSize: 11, color: '#6B6B80', fontFamily: "'Inter', sans-serif", marginTop: 1 }}>Real-time search results from Tavily</p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(78,222,163,0.08), rgba(78,222,163,0.03))', border: '1px solid rgba(78,222,163,0.15)', boxShadow: '0 0 12px rgba(78,222,163,0.04)' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#4edea3' }} />
+                <span style={{ fontSize: 10, fontWeight: 600, color: '#4edea3', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.02em' }}>Live</span>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-1.5" style={{ marginBottom: '1rem' }}>
-              {(["all", "market", "competitor"] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setActiveFilter(f)}
-                  style={{
-                    fontSize: '12px', padding: '5px 14px', borderRadius: '20px',
-                    border: activeFilter === f ? '0.5px solid rgba(255,255,255,0.12)' : '0.5px solid rgba(255,255,255,0.06)',
-                    background: activeFilter === f ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                    color: activeFilter === f ? '#EDEDF5' : '#8B8B9E',
-                    cursor: 'pointer', fontFamily: 'Inter, sans-serif', fontWeight: 500,
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {f === "all" ? "All sources" : f === "market" ? "Market trends" : "Competitors"}
-                </button>
-              ))}
+            {/* Summary + Filter bar — glass-style card */}
+            <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 18px', marginBottom: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 24px', boxShadow: '0 1px 20px rgba(0,0,0,0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <span style={{ fontSize: 12, color: '#8B8B9E', fontFamily: "'Inter', sans-serif", letterSpacing: '0.01em' }}><strong style={{ color: '#F1F1F3', fontWeight: 600 }}>{literasSources.length}</strong> Total</span>
+                </div>
+                <div style={{ width: 1, height: 14, background: 'linear-gradient(180deg, rgba(255,255,255,0.08), transparent)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                  <span style={{ fontSize: 12, color: '#8B8B9E', fontFamily: "'Inter', sans-serif" }}><strong style={{ color: '#818CF8', fontWeight: 600 }}>{marketSources.length}</strong> Market</span>
+                </div>
+                <div style={{ width: 1, height: 14, background: 'linear-gradient(180deg, rgba(255,255,255,0.08), transparent)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 9h6"/><path d="M9 13h6"/></svg>
+                  <span style={{ fontSize: 12, color: '#8B8B9E', fontFamily: "'Inter', sans-serif" }}><strong style={{ color: '#A78BFA', fontWeight: 600 }}>{competitorSources.length}</strong> Competitor</span>
+                </div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 3, padding: 3, background: 'rgba(0,0,0,0.2)', borderRadius: 9, border: '1px solid rgba(255,255,255,0.03)' }}>
+                {(["all", "market", "competitor"] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setActiveFilter(f)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: activeFilter === f ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(129,140,248,0.1))' : 'transparent',
+                      color: activeFilter === f ? '#E0E7FF' : '#6B6B80',
+                      fontFamily: "'Inter', sans-serif", fontSize: 11.5, fontWeight: 500,
+                      transition: 'all 0.25s ease',
+                      whiteSpace: 'nowrap',
+                      boxShadow: activeFilter === f ? '0 1px 4px rgba(99,102,241,0.15)' : 'none',
+                    }}
+                  >
+                    {f === "all" ? "All" : f === "market" ? "Market" : "Competitor"}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <p style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#5A5A6E', marginBottom: '0.75rem', fontFamily: 'Inter, sans-serif' }}>
-              Real-time sources used
-            </p>
-
+            {/* Source Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {literasSources
                 .filter(s => activeFilter === "all" || s.query_type === activeFilter)
                 .map((src, i) => {
+                  const isMarket = src.query_type === "market";
+                  const accentColor = isMarket ? '#818CF8' : '#A78BFA';
+                  const accentBg = isMarket ? 'rgba(99,102,241,0.05)' : 'rgba(124,58,237,0.05)';
+                  const accentBorder = isMarket ? 'rgba(99,102,241,0.12)' : 'rgba(124,58,237,0.12)';
+
                   return (
                     <div
                       key={i}
-                      className="border border-solid border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] transition-[border-color] duration-150"
+                      className="group relative overflow-hidden transition-all duration-300"
                       style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: '12px', padding: '14px 16px', fontFamily: 'Inter, sans-serif',
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: 14,
+                        padding: '18px 20px',
+                        fontFamily: "'Inter', sans-serif",
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                        <img
-                          src={`https://www.google.com/s2/favicons?domain=${src.domain}&sz=32`}
-                          alt={src.domain}
-                          style={{ width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0, objectFit: 'contain' }}
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            target.style.display = 'none';
-                            const fallback = target.nextElementSibling;
-                            if (fallback) (fallback as HTMLElement).style.display = 'flex';
-                          }}
-                        />
-                        <span
-                          style={{ display: 'none', width: '20px', height: '20px', borderRadius: '4px', flexShrink: 0, background: '#1A1A24', border: '0.5px solid rgba(255,255,255,0.06)', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600, color: '#8B8B9E' }}
-                        >
-                          {src.domain[0]?.toUpperCase()}
-                        </span>
-                        <div>
-                          <div style={{ fontSize: '12px', fontWeight: 500, color: '#EDEDF5' }}>{src.domain}</div>
+                      {/* Top accent line */}
+                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${accentColor}, transparent)`, opacity: 0.7 }} />
+                      
+                      {/* Hover glow + elevation */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500" style={{ background: `radial-gradient(500px circle at 50% -20%, ${accentColor}10, transparent)`, borderRadius: 14 }} />
+                      <div className="absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[14px]" style={{ boxShadow: `0 8px 30px ${accentColor}08`, pointerEvents: 'none' }} />
+
+                      <div className="relative" style={{ transform: 'translateZ(0)' }}>
+                        {/* Header: favicon + domain + type badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                          <div style={{ position: 'relative', width: 26, height: 26, flexShrink: 0 }}>
+                            <img
+                              src={`https://www.google.com/s2/favicons?domain=${src.domain}&sz=32`}
+                              alt={src.domain}
+                              style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'contain' }}
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling;
+                                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                              }}
+                            />
+                            <span
+                              style={{ display: 'none', width: 26, height: 26, borderRadius: 7, flexShrink: 0, background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}08)`, border: `1px solid ${accentBorder}`, alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: accentColor, position: 'absolute', top: 0, left: 0 }}
+                            >
+                              {src.domain[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 500, color: '#B0B0C0', flex: 1 }}>{src.domain}</span>
+                          <span style={{
+                            fontSize: 10, padding: '3px 8px', borderRadius: 6, fontWeight: 600, letterSpacing: '0.03em',
+                            background: accentBg,
+                            color: accentColor,
+                            border: `1px solid ${accentBorder}`,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {isMarket ? 'Market' : 'Competitor'}
+                          </span>
                         </div>
-                      </div>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: '#EDEDF5', lineHeight: 1.45, marginBottom: '8px' }}>{src.title}</div>
-                      <div style={{
-                        fontSize: '12px', color: '#8B8B9E', lineHeight: 1.55,
-                        display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}>{src.snippet}</div>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        marginTop: '10px', paddingTop: '10px', borderTop: '0.5px solid rgba(255,255,255,0.06)',
-                      }}>
-                        <span style={{
-                          fontSize: '11px', padding: '3px 10px', borderRadius: '20px', fontWeight: 500,
-                          border: '0.5px solid',
-                          background: src.query_type === 'market' ? 'rgba(99,102,241,0.08)' : 'rgba(217,160,240,0.08)',
-                          color: src.query_type === 'market' ? '#818CF8' : '#D9A0F0',
-                          borderColor: src.query_type === 'market' ? 'rgba(129,140,248,0.15)' : 'rgba(217,160,240,0.15)',
+
+                        {/* Title */}
+                        <h4 style={{
+                          fontSize: 14, fontWeight: 600, color: '#EDEDF5', lineHeight: 1.4, marginBottom: 8,
+                          fontFamily: "'Sora', sans-serif",
+                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                         }}>
-                          {src.query_type === "market" ? "Market trend" : "Competitor"}
-                        </span>
-                        <a
-                          href={src.url} target="_blank" rel="noopener noreferrer"
-                          className="text-[#5A5A6E] hover:text-[#818CF8]"
-                          style={{ fontSize: '12px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px' }}
-                        >
-                          Open
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ verticalAlign: 'middle' }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                        </a>
+                          {src.title}
+                        </h4>
+
+                        {/* Snippet */}
+                        <p style={{
+                          fontSize: 12.5, color: '#7A7A8E', lineHeight: 1.55,
+                          display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                          marginBottom: 14,
+                        }}>
+                          {src.snippet}
+                        </p>
+
+                        {/* Footer: open link */}
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#5A5A6E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><path d="M6 6h.01M6 18h.01"/></svg>
+                            <span style={{ fontSize: 10, color: '#5A5A6E', fontFamily: "'JetBrains Mono', monospace" }}>{(() => { try { return new URL(src.url).hostname.replace('www.', ''); } catch { return src.domain; } })()}</span>
+                          </div>
+                          <a
+                            href={src.url} target="_blank" rel="noopener noreferrer"
+                            style={{
+                              fontSize: 11.5, fontWeight: 500, color: '#6B6B80', textDecoration: 'none',
+                              display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 6,
+                              transition: 'all 0.2s ease',
+                              border: '1px solid transparent',
+                            }}
+                            className="hover:border-[rgba(99,102,241,0.15)] hover:bg-[rgba(99,102,241,0.04)] hover:text-[#818CF8]"
+                          >
+                            Open
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          </a>
+                        </div>
                       </div>
                     </div>
                   );

@@ -20,13 +20,12 @@ AGENT_PIPELINE = [
     ("copywriter",    "[AgentMark] [Copywriter] Generating multi-channel creative copy..."),
     ("image_prompt",  "[AgentMark] [Visuals] Creating image prompt specifications..."),
     ("reviewer",      "[AgentMark] [Reviewer] Scoring and quality-checking all outputs..."),
-    ("publisher",     "[AgentMark] [Publisher] Assembling final publication schedule..."),
 ]
 
 # Approximate time budget per agent step (seconds). Used to decide which
 # progress message to emit during polling so the user never sees silence.
-# Total pipeline: ~120–180 seconds, divided non-uniformly across nodes.
-_AGENT_TIME_BUDGETS = [10, 40, 30, 40, 15, 20, 20]
+# Total initial pipeline: ~140–160 seconds.
+_AGENT_TIME_BUDGETS = [10, 40, 30, 40, 15, 20]
 
 
 def _elapsed_milestone(elapsed_secs: float) -> Optional[str]:

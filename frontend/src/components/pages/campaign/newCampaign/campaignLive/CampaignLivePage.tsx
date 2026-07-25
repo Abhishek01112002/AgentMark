@@ -49,6 +49,7 @@ interface AgentUpdatePayload {
   strategy_revision_count?: number;
   copy_revision_count?: number;
   image_revision_count?: number;
+  outputs?: Record<string, any>;
 }
 
 // Helper to capitalize error messages (e.g. "fetch failed" -> "Fetch failed")
@@ -394,6 +395,7 @@ const CampaignLivePage: React.FC = () => {
         } else if (campaign.status === 'processing') {
           setCampaignFailed(false);
           setFailedError('');
+          setCampaignPreviewData(campaign);
           const outputs = campaign.aiOutputs || {};
           const completedAgents = outputs.completed_agents || [];
           const activeAgentKey = outputs.active_agent || null;
@@ -457,11 +459,19 @@ const CampaignLivePage: React.FC = () => {
   }, [campaignId, navigate]);
 
   useEffect(() => {
-    if (!campaignId || showHumanReview || campaignFailed) return;
+    // campaignFailed is intentionally NOT in this guard:
+    // When a campaign fails we still want one status check to run so that
+    // any already-completed agent outputs (persisted in DB) are loaded and shown.
+    // The interval is allowed to continue briefly; checkCampaignStatus() itself
+    // is a no-op when data is stale (pendingStatusCheckRef deduplicates calls).
+    if (!campaignId || showHumanReview) return;
 
     checkCampaignStatus();
 
     // Re-sync fallback: periodic safety-net polling every 6s while active
+    // Stop polling once campaign is definitively failed to avoid noisy requests
+    if (campaignFailed) return;
+
     const interval = setInterval(() => {
       checkCampaignStatus();
     }, 6000);
@@ -478,7 +488,7 @@ const CampaignLivePage: React.FC = () => {
     if (!campaignId) return;
 
     const controller = new AbortController();
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {
@@ -530,6 +540,22 @@ const CampaignLivePage: React.FC = () => {
           copywriter: typeof copywriter === 'number' ? copywriter : prev.copywriter,
           image_prompt: typeof image_prompt === 'number' ? image_prompt : prev.image_prompt,
         }));
+
+        if (data.outputs && typeof data.outputs === 'object') {
+          setCampaignPreviewData((prev: any) => {
+            const existing = prev ? { ...prev } : { id: campaignId, projectId: projectIdRef.current };
+            const currentOutputs = existing.aiOutputs
+              ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs)
+              : {};
+            return {
+              ...existing,
+              aiOutputs: {
+                ...currentOutputs,
+                ...data.outputs,
+              },
+            };
+          });
+        }
       }
 
       if (status === 'completed' || status === 'running' || status === 'failed') {
@@ -720,6 +746,8 @@ const CampaignLivePage: React.FC = () => {
       setFailedError(data.error ?? 'An unexpected error occurred.');
       setShowHumanReview(false);
       window.dispatchEvent(new Event('campaign_status_changed'));
+      // Load completed agent outputs from DB so user can see what finished before failure
+      void checkCampaignStatus();
     });
 
     return () => {

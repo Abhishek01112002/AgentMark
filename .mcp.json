@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "agentmark": {
+      "command": "E:\\AgentMark\\AgentMark\\agentmark-mcp-server\\.venv\\Scripts\\python.exe",
+      "args": [
+        "-m",
+        "agentmark_mcp.server"
+      ],
+      "env": {
+        "AGENTMARK_API_URL": "http://localhost:5003",
+        "AGENTMARK_API_KEY": "am_c5791487c2bc9f8deea7956a56b4485b9b8880329b988e9d71c71b25cbc6481beabf8f73dd61ea70e2894b927aa1392777a6a7872b89503f428464bb1d844e61",
+        "PYTHONPATH": "E:\\AgentMark\\AgentMark\\agentmark-mcp-server\\src"
+      }
+    }
+  }
+}

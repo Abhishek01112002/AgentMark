@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, BookOpen, Copy, Target, Plus, Loader2, EyeOff, Star, GitBranch, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react';
+import { Link, BookOpen, Copy, Target, Plus, Loader2, EyeOff, Star, GitBranch, TrendingUp, TrendingDown, Minus, Users, PenLine, Award } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import api from '../../../../../../../services/api';
@@ -39,7 +39,7 @@ function getVariantsForChannel(
     headline: legacyCopy.headline || '',
     body_copy: legacyCopy.body || legacyCopy.body_copy || legacyCopy.caption || '',
     ctas: legacyCopy.ctas || {},
-    tags: ['✨ Original'],
+    tags: ['Original'],
     isChampion: true,
     isHidden: false,
     createdAt: new Date().toISOString(),
@@ -360,7 +360,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
           headline: legacyCopy.headline || '',
           body_copy: legacyCopy.body || legacyCopy.body_copy || legacyCopy.caption || '',
           ctas: legacyCopy.ctas || {},
-          tags: ['✨ Original'],
+          tags: ['Original'],
           isChampion: dbVariants.length === 0 || !dbVariants.some(v => v.isChampion),
           isHidden: false,
           createdAt: new Date().toISOString(),
@@ -845,15 +845,23 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
               {/* Card Header Actions */}
               <div className="flex justify-between items-start mb-5 flex-wrap gap-2">
                 <div className="flex flex-wrap gap-1.5 items-center">
-                  {currentVariant.tags?.map((tag, tIdx) => (
-                    <span 
-                      key={tIdx} 
-                      className="px-2.5 py-1 rounded bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] font-bold text-[#8083ff]"
-                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
+                  {currentVariant.tags?.map((tag, tIdx) => {
+                    const isOriginal = tag === 'Original';
+                    return (
+                      <span 
+                        key={tIdx} 
+                        className={`px-2.5 py-1 rounded inline-flex items-center gap-1.5 text-[10px] font-bold ${
+                          isOriginal 
+                            ? 'bg-gradient-to-r from-[#F59E0B]/15 to-[#D97706]/10 border border-[#F59E0B]/30 text-[#FBBF24] shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                            : 'bg-[#6366F1]/10 border border-[#6366F1]/20 text-[#8083ff]'
+                        }`}
+                        style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                      >
+                        {isOriginal && <Award size={11} className="text-[#FBBF24]" />}
+                        {isOriginal ? 'Original Copy' : tag}
+                      </span>
+                    );
+                  })}
                   {currentVariant.generationNote && (
                     <span 
                       className="px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-[10px] text-[#8B8B9E] italic max-w-[150px] truncate"
@@ -895,10 +903,11 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
               {/* Card Fields */}
               <div className="space-y-4">
                 {currentVariant.headline && (
-                    <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
-                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Headline</label>
-                      <div className="flex items-start gap-3">
-                        <p className="text-sm outline-none flex-1" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{currentVariant.headline}</p>
+                    <div className="bg-[#0e0e13] border border-[#6366F1]/15 rounded-xl p-4 focus-within:border-[#6366F1]/50 transition-colors relative">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6366F1]/5 to-transparent pointer-events-none" />
+                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1.5 text-[10px] font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8' }}>Headline</label>
+                      <div className="flex items-start gap-3 relative">
+                        <p className="text-sm md:text-base font-semibold outline-none flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}>{currentVariant.headline}</p>
                         <button
                           onClick={() => handleCopyField(currentVariant.headline, 'Headline')}
                           className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
@@ -911,17 +920,19 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                 )}
 
                 {activeTab === 'email' && currentVariant.headline && (
-                    <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
-                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Subject</label>
-                      <p className="text-sm outline-none" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{currentVariant.headline}</p>
+                    <div className="bg-[#0e0e13] border border-[#6366F1]/10 rounded-xl p-4 focus-within:border-[#6366F1]/40 transition-colors relative">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#818CF8]/3 to-transparent pointer-events-none" />
+                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1.5 text-[10px] font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8' }}>Subject</label>
+                      <p className="text-sm md:text-base font-semibold outline-none leading-relaxed relative" style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}>{currentVariant.headline}</p>
                     </div>
                 )}
 
                 {currentVariant.body_copy && (
-                    <div className="bg-[#0e0e13] border border-[#2A2A38]/60 rounded-lg p-3.5 focus-within:border-[#6366F1] transition-colors relative">
-                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1 text-[10px]" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Body</label>
-                      <div className="flex items-start gap-3">
-                        <div className="text-sm outline-none min-h-[80px] whitespace-pre-wrap flex-1" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
+                    <div className="bg-[#0e0e13] border border-[#6366F1]/10 rounded-xl p-4 focus-within:border-[#6366F1]/40 transition-colors relative">
+                      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#818CF8]/3 to-transparent pointer-events-none" />
+                      <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1.5 text-[10px] font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8' }}>Body</label>
+                      <div className="flex items-start gap-3 relative">
+                        <div className="text-sm md:text-base outline-none min-h-[80px] whitespace-pre-wrap flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#E8E8F0' }}>
                           {currentVariant.body_copy}
                         </div>
                         <button
@@ -1116,8 +1127,10 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
       {/* Strategic Alignment */}
       {strategicAlignment.positioning_used && (
-        <div className="bg-[#0A0A1C] border border-[#8B5CF6]/25 rounded-xl p-5 relative overflow-hidden">
+        <div className="bg-[#0A0A1C] border border-[#8B5CF6]/25 rounded-xl p-5 relative overflow-hidden shadow-[0_8px_40px_rgba(139,92,246,0.12)]">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#8B5CF6]/5 via-transparent to-[#6366F1]/3 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] to-transparent" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-[#8B5CF6]/5 blur-3xl pointer-events-none" />
           <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
             <Link size={20} className="text-[#8B5CF6]" />
             Strategic Alignment
@@ -1176,13 +1189,13 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
             return (
               <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-inner" style={{ background: delta != null && delta > 0 ? 'rgba(52,211,153,0.06)' : delta != null && delta < 0 ? 'rgba(244,63,94,0.06)' : 'rgba(99,102,241,0.06)', borderColor: delta != null && delta > 0 ? 'rgba(52,211,153,0.25)' : delta != null && delta < 0 ? 'rgba(244,63,94,0.25)' : 'rgba(99,102,241,0.25)' }}>
                 {delta == null
-                  ? <span style={{ fontSize: 16 }}>👥</span>
+                  ? <Users size={18} className="text-[#818cf8]" />
                   : delta > 0 ? <TrendingUp size={18} className="text-[#34d399]" /> : delta < 0 ? <TrendingDown size={18} className="text-[#f43f5e]" /> : <Minus size={18} className="text-[#818cf8]" />
                 }
                 <span className="text-xs font-semibold tracking-wide" style={{ fontFamily: 'Inter, sans-serif', color: delta != null && delta > 0 ? '#34d399' : delta != null && delta < 0 ? '#f43f5e' : '#A0A0D2' }}>
                   {delta == null
                     ? `Focus Group score: ${Math.round(lastFG)}/100`
-                    : `Focus Group Score Progression: ${Math.round(firstFG)}/100 → ${Math.round(lastFG)}/100${delta > 0 ? ` (+${delta} Improvement 🎯)` : delta < 0 ? ` (${delta} — Needs Offer Tuning)` : ' (No change)'}`
+                    : `Focus Group Score Progression: ${Math.round(firstFG)}/100 → ${Math.round(lastFG)}/100${delta > 0 ? ` (+${delta} Improvement)` : delta < 0 ? ` (${delta} — Needs Offer Tuning)` : ' (No change)'}`
                   }
                 </span>
               </div>
@@ -1219,17 +1232,20 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                       {/* Scores */}
                       <div className="ml-auto flex items-center gap-2">
                         {cpScore != null && (
-                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium" style={{ background: 'rgba(99,102,241,0.12)', color: '#a5a6ff', border: '1px solid rgba(99,102,241,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>
-                            ✍ Quality: {Math.round(cpScore)}/100
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium inline-flex items-center gap-1" style={{ background: 'rgba(99,102,241,0.12)', color: '#a5a6ff', border: '1px solid rgba(99,102,241,0.2)', fontFamily: 'JetBrains Mono, monospace' }}>
+                            <PenLine size={12} />
+                            Quality: {Math.round(cpScore)}/100
                           </span>
                         )}
                         {fgScore != null ? (
-                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-bold" style={{ background: `${fgColor}18`, color: fgColor, border: `1px solid ${fgColor}35`, fontFamily: 'JetBrains Mono, monospace' }}>
-                            👥 Focus Group: {Math.round(fgScore)}/100
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-bold inline-flex items-center gap-1" style={{ background: `${fgColor}18`, color: fgColor, border: `1px solid ${fgColor}35`, fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Users size={12} />
+                            Focus Group: {Math.round(fgScore)}/100
                           </span>
                         ) : (
-                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium text-[#64748B] border border-[#27273A]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                            👥 Pending Evaluation
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-md font-medium text-[#64748B] border border-[#27273A] inline-flex items-center gap-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            <Users size={12} />
+                            Pending Evaluation
                           </span>
                         )}
                       </div>

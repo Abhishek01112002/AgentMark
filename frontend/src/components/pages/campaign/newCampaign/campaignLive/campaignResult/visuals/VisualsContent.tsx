@@ -357,38 +357,47 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
       {/* ── PLATFORM TABS ─────────────────────────────────────────────────── */}
       {promptsList.length > 0 && (
-        <div className="flex gap-8 border-b border-[#2A2A38] overflow-x-auto scrollbar-none">
-          {activeTabs.map(tab => {
-            const count =
-              tab === 'all'
-                ? promptsList.length
-                : promptsList.filter(
-                    (p: any) => getPromptPlatformKey(p) === tab
-                  ).length;
-            const config = tab === 'all'
-              ? { accent: '#6366F1', label: 'All Platforms', bgAccent: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }
-              : PLATFORM_CONFIG[tab];
-            const isActive = activeTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-3.5 text-sm font-semibold transition-all relative whitespace-nowrap ${
-                  isActive ? 'text-white' : 'text-[#8B8B9E] hover:text-[#D1D1E0]'
-                }`}
-              >
-                {tab !== 'all' && <ChannelIcon channel={tab} size={14} className="inline-block mr-1.5" />}
-                {config.label}
-                <span className="ml-1.5 text-xs opacity-40 font-mono">({count})</span>
-                {isActive && (
-                  <div
-                    className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                    style={{ backgroundColor: config.accent }}
-                  />
-                )}
-              </button>
-            );
-          })}
+        <div style={{ background: 'rgba(17,17,24,0.5)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
+          <div className="flex gap-1 overflow-x-auto scrollbar-none">
+            {activeTabs.map(tab => {
+              const count =
+                tab === 'all'
+                  ? promptsList.length
+                  : promptsList.filter(
+                      (p: any) => getPromptPlatformKey(p) === tab
+                    ).length;
+              const config = tab === 'all'
+                ? { accent: '#6366F1', label: 'All Platforms', bgAccent: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }
+                : PLATFORM_CONFIG[tab];
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className="whitespace-nowrap transition-all duration-200"
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: isActive ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.08))' : 'transparent',
+                    color: isActive ? '#E0E7FF' : '#6B6B80',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: isActive ? '0 1px 4px rgba(99,102,241,0.1)' : 'none',
+                  }}
+                >
+                  {tab !== 'all' && <ChannelIcon channel={tab} size={14} />}
+                  <span>{config.label}</span>
+                  <span style={{ fontSize: 11, opacity: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>({count})</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -423,10 +432,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                 }`}
               >
                 {/* ── CARD TOP BAR ── */}
-                <div className="flex items-center justify-between px-7 py-5 border-b border-[#2A2A38]/60">
+                <div className="flex items-center justify-between px-7 py-5 border-b border-[#2A2A38]/60" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), transparent)' }}>
                   <div className="flex items-center gap-3">
                     {/* Platform accent stripe + badge */}
-                    <div className="w-1 h-6 rounded-full" style={{ backgroundColor: brandAccent }} />
+                    <div className="w-1 h-7 rounded-full" style={{ backgroundColor: brandAccent, boxShadow: `0 0 8px ${brandAccent}40` }} />
                     <span
                       className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border inline-flex items-center gap-1.5"
                       style={{ backgroundColor: bgAccent, color: brandAccent, borderColor }}
@@ -458,7 +467,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                   {/* LEFT – Visual mockup + specs */}
                   <div className="flex flex-col gap-5">
                     {/* Mockup canvas */}
-                    <div className="group bg-[#0A0A0F] border border-[#2A2A38] rounded-xl flex items-center justify-center p-5 relative overflow-hidden hover:border-[#6366F1]/20 transition-colors">
+                    <div className="group bg-[#0A0A0F] border border-[#2A2A38] rounded-xl flex items-center justify-center p-5 relative overflow-hidden hover:border-[#6366F1]/20 transition-all duration-300" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02), 0 2px 12px rgba(0,0,0,0.15)' }}>
                       {/* thirds grid overlay */}
                       <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-0 group-hover:opacity-15 transition-opacity duration-300">
                         {Array.from({ length: 9 }).map((_, i) => (
@@ -468,11 +477,12 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
                       {/* Aspect frame */}
                       <div
-                        className="relative bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] border border-[#2A2A38] rounded-lg overflow-hidden flex flex-col items-center justify-center shadow-inner"
+                        className="relative bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] border border-[#2A2A38] rounded-lg overflow-hidden flex flex-col items-center justify-center"
                         style={{
                           width: '100%',
                           maxWidth: ratio === '16:9' ? '220px' : ratio === '9:16' || ratio === '4:5' || ratio === '2:3' ? '100px' : '160px',
                           aspectRatio: ratio.replace(':', '/'),
+                          boxShadow: '0 0 20px rgba(99,102,241,0.04), inset 0 1px 0 rgba(255,255,255,0.03)',
                         }}
                       >
                         {headlineText ? (
@@ -492,7 +502,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                     </div>
 
                     {/* Specs table */}
-                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 space-y-3">
+                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 space-y-3" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                       <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-1">
                         Specs
                       </p>
@@ -501,7 +511,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                         { label: 'Text Zone', value: card.text_overlay?.placement || 'N/A' },
                         { label: 'Platform', value: label },
                       ].map(row => (
-                        <div key={row.label} className="flex items-center justify-between gap-3">
+                        <div key={row.label} className="flex items-center justify-between gap-3 px-1.5 py-1 rounded-md" style={{ background: 'rgba(255,255,255,0.015)' }}>
                           <span className="text-xs text-[#8B8B9E]">{row.label}</span>
                           <span className="text-xs font-semibold text-[#F1F1F3] font-mono truncate max-w-[110px]" title={row.value}>
                             {row.value}
@@ -530,7 +540,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                   <div className="flex flex-col gap-6">
 
                     {/* Prompt Strength score — compact bar + click-to-expand checks panel */}
-                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl overflow-hidden">
+                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl overflow-hidden" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                       {/* Top row: label + bar + score + toggle */}
                       <button
                         onClick={() =>
@@ -548,12 +558,17 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             Technical keywords check
                           </span>
                         </div>
-                        <div className="flex-1 h-1.5 rounded-full bg-[#1A1A24] overflow-hidden">
+                        <div className="flex-1 h-2 rounded-full bg-[#1A1A24] overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)' }}>
                           <div
-                            className="h-full rounded-full transition-all duration-700"
+                            className="h-full rounded-full transition-all duration-700 ease-out"
                             style={{
                               width: `${score}%`,
-                              backgroundColor: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444',
+                              background: score >= 80
+                                ? 'linear-gradient(90deg, #059669, #10B981)'
+                                : score >= 50
+                                ? 'linear-gradient(90deg, #D97706, #F59E0B)'
+                                : 'linear-gradient(90deg, #DC2626, #EF4444)',
+                              boxShadow: '0 0 6px rgba(16,185,129,0.15)',
                             }}
                           />
                         </div>
@@ -650,7 +665,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-default transition-all"
                             style={
                               ai.ready
-                                ? { background: '#10B981' + '18', color: '#10B981', borderColor: '#10B981' + '40' }
+                                ? { background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', color: '#10B981', borderColor: 'rgba(16,185,129,0.25)', boxShadow: '0 1px 4px rgba(16,185,129,0.06)' }
                                 : { background: ai.notReadyColor + '18', color: ai.notReadyColor, borderColor: ai.notReadyColor + '40' }
                             }
                           >
@@ -670,9 +685,14 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                     {/* Original prompt */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
-                          Image Prompt
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div style={{ width: 20, height: 20, borderRadius: 5, background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.1)' }}>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                          </div>
+                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
+                            Image Prompt
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => handleCopyPrompt(card.prompt || '', cardId)}
@@ -735,12 +755,17 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                         </div>
                       </div>
                       <div
-                        className={`bg-[#0A0A0F] border rounded-xl p-4 text-sm leading-relaxed text-[#D1D1E0] min-h-[130px] max-h-[240px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
+                        className={`relative overflow-hidden rounded-xl text-sm leading-relaxed text-[#D1D1E0] min-h-[130px] max-h-[240px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
                           isEnhancing
                             ? 'border-[#6366F1]/50 animate-pulse'
-                            : 'border-[#2A2A38]'
+                            : ''
                         }`}
-                        style={mono}
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(99,102,241,0.02))',
+                          border: isEnhancing ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(99,102,241,0.08)',
+                          fontFamily: "'JetBrains Mono', monospace",
+                          padding: 16,
+                        }}
                       >
                         {card.prompt || 'No prompt generated.'}
                       </div>

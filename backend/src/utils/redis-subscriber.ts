@@ -173,13 +173,17 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
       // agent="system" and are emitted separately below with their own event name,
       // preventing a noisy agent_update with agent="system" from reaching the live panel.
       if (data.agent !== 'system') {
-        io.to(`campaign:${campaign_id}`).emit('agent_update', data);
-
         // Queue intermediate progress state persistence in database to prevent read-modify-write race conditions
         dbWriteQueue.add(async () => {
           try {
-            const currentOutputs = campaign!.aiOutputs 
-              ? (typeof campaign!.aiOutputs === 'string' ? JSON.parse(campaign!.aiOutputs) : campaign!.aiOutputs) as Record<string, any>
+            // Re-fetch latest campaign record inside queue task to guarantee we merge against the freshest DB state
+            const latestCampaign = await prisma.campaign.findUnique({
+              where: { id: campaign_id },
+              select: { aiOutputs: true }
+            });
+
+            const currentOutputs = latestCampaign?.aiOutputs 
+              ? (typeof latestCampaign.aiOutputs === 'string' ? JSON.parse(latestCampaign.aiOutputs) : latestCampaign.aiOutputs) as Record<string, any>
               : {};
             
             if (!currentOutputs.completed_agents) {
@@ -202,7 +206,6 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               currentOutputs.completed_agents.push(data.agent);
             }
             currentOutputs.active_agent = status === 'running' ? data.agent : null;
-
 
             // Merge intermediate outputs as they complete
             if (status === 'completed' && outputs && typeof outputs === 'object') {
@@ -230,8 +233,16 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               where: { id: campaign_id },
               data: updateData,
             });
+
+            // Emit agent_update to socket room with full payload after DB persistence completes
+            io.to(`campaign:${campaign_id}`).emit('agent_update', {
+              ...data,
+              outputs: currentOutputs,
+            });
           } catch (dbErr: any) {
             console.error(`[Redis Subscriber] Failed to persist intermediate progress | campaign=${campaign_id} | error=${dbErr.message}`);
+            // Fallback emission if DB write throws
+            io.to(`campaign:${campaign_id}`).emit('agent_update', data);
           }
         });
       }

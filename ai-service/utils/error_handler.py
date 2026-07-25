@@ -48,8 +48,18 @@ def safe_llm_call(
         return result, state
         
     except Exception as e:
-        error_msg = f"{agent_name} Agent Error: {str(e)[:300]}"
-        logger.info(f"\n💥 {error_msg}")
+        error_type = type(e).__name__
+        raw_msg = str(e).strip() or error_type
+        error_msg = f"{agent_name} Agent Error ({error_type}): {raw_msg}"
+        
+        logger.error(
+            "💥 LLM Call Failed | agent=%s | campaign_id=%s | error_type=%s | error=%s",
+            agent_name,
+            getattr(state, "campaign_id", "N/A"),
+            error_type,
+            raw_msg,
+            exc_info=True,
+        )
         
         state.status = error_status
         state.error = error_msg

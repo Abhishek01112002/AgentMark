@@ -131,8 +131,18 @@ class AIServiceClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
-        throw new Error(formatAiServiceError(errorData.detail, response.statusText));
+        const rawText = await response.text().catch(() => '');
+        let detail: unknown = rawText;
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
+          } catch {
+            detail = rawText.slice(0, 500);
+          }
+        }
+        const fallback = response.statusText ? `AI Service error (${response.status}: ${response.statusText})` : `AI Service HTTP ${response.status}`;
+        throw new Error(formatAiServiceError(detail, fallback));
       }
 
       const result = await response.json() as AIServiceCampaignResponse;
@@ -197,8 +207,18 @@ class AIServiceClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
-        return { success: false, message: formatAiServiceError(errorData.detail, response.statusText) };
+        const rawText = await response.text().catch(() => '');
+        let detail: unknown = rawText;
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
+          } catch {
+            detail = rawText.slice(0, 500);
+          }
+        }
+        const fallback = response.statusText ? `Key test failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
+        return { success: false, message: formatAiServiceError(detail, fallback) };
       }
 
       return await response.json() as { success: boolean; message: string };
@@ -233,8 +253,18 @@ class AIServiceClient {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
-        throw new Error(formatAiServiceError(errorData.detail, response.statusText));
+        const rawText = await response.text().catch(() => '');
+        let detail: unknown = rawText;
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
+          } catch {
+            detail = rawText.slice(0, 500);
+          }
+        }
+        const fallback = response.statusText ? `Prompt enhancement failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
+        throw new Error(formatAiServiceError(detail, fallback));
       }
 
       const result = await response.json() as { enhanced_prompt: string };
@@ -274,8 +304,18 @@ class AIServiceClient {
       });
       clearTimeout(timeoutId);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' })) as { detail?: unknown };
-        throw new Error(formatAiServiceError(errorData.detail, response.statusText));
+        const rawText = await response.text().catch(() => '');
+        let detail: unknown = rawText;
+        if (rawText) {
+          try {
+            const parsed = JSON.parse(rawText);
+            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
+          } catch {
+            detail = rawText.slice(0, 500);
+          }
+        }
+        const fallback = response.statusText ? `Copy variant failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
+        throw new Error(formatAiServiceError(detail, fallback));
       }
       return await response.json() as { channel: string; copy_data: any };
     } catch (error: any) {

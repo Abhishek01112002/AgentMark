@@ -207,7 +207,7 @@ function DashboardContent() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {

@@ -217,6 +217,7 @@ async def generate_campaign(
             groq_api_key=groq_api_key if groq_api_key.strip() else None,
             tavily_api_key=tavily_api_key if tavily_api_key.strip() else None,
             on_progress=_on_progress,
+        )
     except Exception as exc:
         logger.error("Error in generate_campaign tool: %s", exc)
         return (

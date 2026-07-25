@@ -209,6 +209,31 @@ class ManagerOutput(BaseModel):
     channels: List[str] = Field(default_factory=list, description="Recommended distribution channels")
     deliverables: List[str] = Field(default_factory=list, description="Content/assets to create")
 
+    @field_validator("channels", mode="before")
+    @classmethod
+    def validate_and_normalize_channels(cls, v: Any) -> List[str]:
+        """Enforces minimum 4 and maximum 6 recommended distribution channels."""
+        all_possible = ["instagram", "facebook", "linkedin", "twitter", "tiktok", "youtube", "email", "google_ads"]
+        raw_list = v if isinstance(v, list) else []
+        normalized: List[str] = []
+        for ch in raw_list:
+            if not isinstance(ch, str):
+                continue
+            c_clean = ch.strip().lower().replace(" ", "_").replace("-", "_")
+            if c_clean in all_possible and c_clean not in normalized:
+                normalized.append(c_clean)
+        
+        # Supplement up to 4 if fewer than 4 provided
+        if len(normalized) < 4:
+            for default_ch in ["instagram", "email", "linkedin", "facebook", "twitter", "tiktok"]:
+                if default_ch not in normalized:
+                    normalized.append(default_ch)
+                if len(normalized) >= 4:
+                    break
+        
+        # Cap at 6 maximum
+        return normalized[:6]
+
 
 # ==================== RESEARCH OUTPUT SCHEMA ====================
 

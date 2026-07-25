@@ -105,7 +105,7 @@ const OverviewContent: React.FC<OverviewContentProps> = ({ data, campaign }) => 
           <div className="space-y-4">
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Campaign Name</span>
-              <p className="text-xl font-bold" style={{ fontFamily: 'Inter, sans-serif', color: '#6366F1' }}>{campaignName || 'Untitled Campaign'}</p>
+              <p className="text-2xl font-bold" style={{ fontFamily: 'Inter, sans-serif', background: 'linear-gradient(135deg, #818CF8 0%, #A78BFA 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 0 30px rgba(99,102,241,0.2)' }}>{campaignName || 'Untitled Campaign'}</p>
             </div>
             <div>
               <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Brand Name</span>

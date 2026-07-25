@@ -26,16 +26,16 @@ const getChannelDisplayName = (ch: any): string => {
 };
 
 const channelColorMap: Record<string, { accent: string; cardBg: string; border: string; badgeBg: string; gradient: string }> = {
-  linkedin:    { accent: '#0A66C2', cardBg: '#0A1628', border: '#0A66C240', badgeBg: '#0A66C215', gradient: 'linear-gradient(90deg, #0A66C2 0%, transparent 100%)' },
-  instagram:   { accent: '#E1306C', cardBg: '#1C0A14', border: '#E1306C40', badgeBg: '#E1306C15', gradient: 'linear-gradient(90deg, #E1306C 0%, transparent 100%)' },
-  facebook:    { accent: '#1877F2', cardBg: '#0A1428', border: '#1877F240', badgeBg: '#1877F215', gradient: 'linear-gradient(90deg, #1877F2 0%, transparent 100%)' },
-  twitter:     { accent: '#1DA1F2', cardBg: '#0A1628', border: '#1DA1F240', badgeBg: '#1DA1F215', gradient: 'linear-gradient(90deg, #1DA1F2 0%, transparent 100%)' },
-  tiktok:      { accent: '#00F2EA', cardBg: '#0A1C1C', border: '#00F2EA40', badgeBg: '#00F2EA15', gradient: 'linear-gradient(90deg, #00F2EA 0%, transparent 100%)' },
-  youtube:     { accent: '#FF0000', cardBg: '#1C0A0A', border: '#FF000040', badgeBg: '#FF000015', gradient: 'linear-gradient(90deg, #FF0000 0%, transparent 100%)' },
-  email:       { accent: '#F59E0B', cardBg: '#1C140A', border: '#F59E0B40', badgeBg: '#F59E0B15', gradient: 'linear-gradient(90deg, #F59E0B 0%, transparent 100%)' },
-  googleads:   { accent: '#34A853', cardBg: '#0A1C0A', border: '#34A85340', badgeBg: '#34A85315', gradient: 'linear-gradient(90deg, #34A853 0%, transparent 100%)' },
-  pinterest:   { accent: '#E60023', cardBg: '#1C0A0A', border: '#E6002340', badgeBg: '#E6002315', gradient: 'linear-gradient(90deg, #E60023 0%, transparent 100%)' },
-  general:     { accent: '#6366F1', cardBg: '#0A0A1C', border: '#6366F140', badgeBg: '#6366F115', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  linkedin:    { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  instagram:   { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  facebook:    { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  twitter:     { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  tiktok:      { accent: '#A78BFA', cardBg: '#111118', border: 'rgba(167,139,250,0.12)', badgeBg: 'rgba(167,139,250,0.08)', gradient: 'linear-gradient(90deg, #7C3AED 0%, transparent 100%)' },
+  youtube:     { accent: '#A78BFA', cardBg: '#111118', border: 'rgba(167,139,250,0.12)', badgeBg: 'rgba(167,139,250,0.08)', gradient: 'linear-gradient(90deg, #7C3AED 0%, transparent 100%)' },
+  email:       { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  googleads:   { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
+  pinterest:   { accent: '#A78BFA', cardBg: '#111118', border: 'rgba(167,139,250,0.12)', badgeBg: 'rgba(167,139,250,0.08)', gradient: 'linear-gradient(90deg, #7C3AED 0%, transparent 100%)' },
+  general:     { accent: '#818CF8', cardBg: '#111118', border: 'rgba(129,140,248,0.12)', badgeBg: 'rgba(129,140,248,0.08)', gradient: 'linear-gradient(90deg, #6366F1 0%, transparent 100%)' },
 };
 
 const phaseColors = [
@@ -889,8 +889,8 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
                   const ch = channel.toLowerCase().replace(/[^a-z0-9]/g, '');
                   const palette = channelColorMap[ch] || channelColorMap.general;
                   return (
-                    <div key={idx} className="card-elevate rounded-lg p-4 sm:p-5 relative overflow-hidden" style={{ background: palette.cardBg, borderColor: palette.border }}>
-                      <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: palette.gradient }} />
+                    <div key={idx} className="card-elevate rounded-xl p-4 sm:p-5 relative overflow-hidden" style={{ background: palette.cardBg, border: `1px solid ${palette.border}`, boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
+                      <div className="absolute top-0 left-0 w-full h-[3px]" style={{ background: palette.gradient, opacity: 0.8 }} />
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-base font-semibold flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                           <ChannelIcon channel={channel} size={16} className="shrink-0" />
@@ -928,11 +928,11 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
               const chBadgeColor = typeof ch === 'object' ? (ch.badgeColor || '#6366F1') : '#6366F1';
 
               return (
-                <div key={idx} className="rounded-xl p-5 relative overflow-hidden transition-all" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent" />
+                <div key={idx} className="rounded-xl p-5 relative overflow-hidden transition-all" style={{ background: '#111118', border: '1px solid rgba(129,140,248,0.08)', boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
+                  <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#6366F1] to-transparent opacity-80" />
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center pdf-no-print" style={{ backgroundColor: (typeof ch === 'object' && ch.bg) || 'rgba(99, 102, 241, 0.1)', color: (typeof ch === 'object' && ch.color) || '#6366F1' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center pdf-no-print" style={{ backgroundColor: (typeof ch === 'object' && ch.bg) || 'rgba(99, 102, 241, 0.1)', color: (typeof ch === 'object' && ch.color) || '#818CF8' }}>
                         {typeof ch === 'object' && typeof ch.icon === 'function' ? (
                           (() => {
                             const Icon = ch.icon;

@@ -14,7 +14,7 @@ CAMPAIGN DETAILS:
 - Brand Voice: {brand_voice}
 
 INSTRUCTIONS:
-1. Analyze the industry and identify the most effective marketing channels for reaching the target audience
+1. Analyze the industry and identify the most effective marketing channels (minimum 4, maximum 6) for reaching the target audience
 2. Consider the primary goal and recommend 3-4 content deliverables that will help achieve it
 3. Ensure recommendations align with the brand voice and target audience preferences
 4. Think about where the target audience spends their time online

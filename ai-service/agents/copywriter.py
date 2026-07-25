@@ -329,6 +329,12 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     execution = strategy.get("execution", {})
     deliverables = execution.get("deliverables", [])
     channels = normalize_channel_list(execution.get("channels", []))
+    if not channels and state.manager_output:
+        try:
+            mgr_data = json.loads(state.manager_output)
+            channels = normalize_channel_list(mgr_data.get("channels", []))
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to fallback to manager_output channels: {e}")
 
     logger.info(f"✓ Positioning: {positioning[:60]}...")
     logger.info(f"✓ Key Messages: {len(key_messages)} found")
@@ -478,8 +484,10 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         audience_segments=json.dumps(audience_segments, indent=2),
         timeline=json.dumps(timeline, indent=2),
         competitive_differentiation=json.dumps(competitive_differentiation, indent=2),
-        deliverables=json.dumps(deliverables, indent=2),
-        channels=json.dumps(channels, indent=2),
+        channels=(
+            f"ACTIVE CAMPAIGN CHANNELS (Generate copy ONLY for these): {json.dumps([c for c in channels if c])}\n"
+            f"FORBIDDEN CHANNELS (MUST set copy to null and copy_readiness to false): {json.dumps([c for c in ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube', 'email', 'google_ads'] if c not in channels])}"
+        ),
         # Research insights
         pain_points=json.dumps(pain_points, indent=2),
         motivations=json.dumps(motivations, indent=2),

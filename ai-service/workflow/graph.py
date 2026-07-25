@@ -110,10 +110,11 @@ def manager_node(state: CampaignState) -> dict:
             "error": updated_state.error,
         }
     except Exception as e:
-        logger.info(f"Manager Node Error: {e}")
-        publish_agent_event(state.campaign_id, "manager", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Manager agent error ({type(e).__name__})"
+        logger.error("💥 Manager Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "manager", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 
@@ -183,10 +184,11 @@ def research_node(state: CampaignState) -> dict:
             "error": updated_state.error,
         }
     except Exception as e:
-        logger.info(f"Research Node Error: {e}")
-        publish_agent_event(state.campaign_id, "research", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Research agent error ({type(e).__name__})"
+        logger.error("💥 Research Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "research", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 
@@ -260,10 +262,11 @@ def strategy_node(state: CampaignState) -> dict:
             "error": updated_state.error,
         }
     except Exception as e:
-        logger.info(f"Strategy Node Error: {e}")
-        publish_agent_event(state.campaign_id, "strategy", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Strategy agent error ({type(e).__name__})"
+        logger.error("💥 Strategy Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "strategy", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 
@@ -334,10 +337,11 @@ def copywriter_node(state: CampaignState) -> dict:
             "error": updated_state.error,
         }
     except Exception as e:
-        logger.info(f"Copywriter Node Error: {e}")
-        publish_agent_event(state.campaign_id, "copywriter", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Copywriter agent error ({type(e).__name__})"
+        logger.error("💥 Copywriter Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "copywriter", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 
@@ -406,10 +410,11 @@ def image_prompt_node(state: CampaignState) -> dict:
             "error": updated_state.error,
         }
     except Exception as e:
-        logger.info(f"Image Prompt Node Error: {e}")
-        publish_agent_event(state.campaign_id, "image_prompt", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Image Prompt agent error ({type(e).__name__})"
+        logger.error("💥 Image Prompt Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "image_prompt", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 
@@ -485,12 +490,20 @@ def reviewer_node(state: CampaignState) -> dict:
             "human_revision_target": updated_state.human_revision_target,
             "status": updated_state.status,
             "error": updated_state.error,
+            # CRITICAL: must return revision counts so LangGraph persists the increments.
+            # Without these, the graph state never sees the count grow and the loop
+            # never exits because MAX_REVISIONS is never reached.
+            "research_revision_count": updated_state.research_revision_count or 0,
+            "strategy_revision_count": updated_state.strategy_revision_count or 0,
+            "copy_revision_count": updated_state.copy_revision_count or 0,
+            "image_revision_count": updated_state.image_revision_count or 0,
         }
     except Exception as e:
-        logger.info(f"Reviewer Node Error: {e}")
-        publish_agent_event(state.campaign_id, "reviewer", "failed", error=str(e), extra=_get_revision_counts_extra(state))
+        err_msg = str(e).strip() or f"Reviewer agent error ({type(e).__name__})"
+        logger.error("💥 Reviewer Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "reviewer", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
-            "error": str(e),
+            "error": err_msg,
             "status": "error",
         }
 

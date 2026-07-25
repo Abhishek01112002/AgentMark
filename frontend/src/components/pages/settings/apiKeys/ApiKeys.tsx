@@ -26,21 +26,21 @@ interface ProviderMeta {
 const TAG_STYLES: Record<ProviderMeta['tag'], { label: string; bg: string; border: string; text: string }> = {
   essential: {
     label: 'ESSENTIAL',
-    bg: 'bg-danger/10',
-    border: 'border-danger/30',
-    text: 'text-danger',
+    bg: 'bg-gradient-to-r from-[#EF4444]/15 to-[#DC2626]/5',
+    border: 'border-[#EF4444]/30',
+    text: 'text-[#F87171]',
   },
   recommended: {
     label: 'RECOMMENDED',
-    bg: 'bg-secondary/10',
-    border: 'border-secondary/30',
-    text: 'text-secondary',
+    bg: 'bg-gradient-to-r from-[#6366F1]/15 to-[#8B5CF6]/5',
+    border: 'border-[#6366F1]/30',
+    text: 'text-[#A5B4FC]',
   },
   optional: {
     label: 'OPTIONAL',
-    bg: 'bg-tertiary/10',
-    border: 'border-tertiary/30',
-    text: 'text-tertiary',
+    bg: 'bg-gradient-to-r from-[#8B8B9E]/15 to-[#6B6B7E]/5',
+    border: 'border-[#8B8B9E]/30',
+    text: 'text-[#B0B0C4]',
   },
 };
 
@@ -261,8 +261,8 @@ const ApiKeys: React.FC = () => {
         document.body
       )}
 
-      <div className="bg-surface border border-border-base rounded-2xl overflow-hidden" style={{ backgroundColor: '#111118', borderColor: '#2A2A38' }}>
-        <div className="p-5 sm:p-6 border-b border-border-base">
+      <div className="rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.25)]" style={{ background: 'linear-gradient(180deg, rgba(17,17,24,1) 0%, rgba(12,12,18,0.95) 100%)', border: '1px solid #2A2A38' }}>
+        <div className="p-5 sm:p-6 border-b border-[#2A2A38] bg-gradient-to-r from-[#6366F1]/5 to-transparent">
           <h2 className="text-lg font-semibold text-text-primary">API Keys</h2>
           <p className="text-sm text-text-secondary mt-0.5">Add API keys for LLM and search providers.</p>
         </div>
@@ -308,7 +308,7 @@ const ApiKeys: React.FC = () => {
                           const isVisible = !hiddenKeys[keyId];
                           const tStatus = testStatus[keyId] || 'idle';
                           return (
-                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 bg-surface-container-low rounded-lg border border-border-base">
+                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 rounded-lg border" style={{ background: 'linear-gradient(135deg, rgba(20,20,30,0.8), rgba(15,15,22,0.6))', borderColor: '#2A2A38', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}>
                               <div className="flex-1 font-mono text-sm text-text-primary truncate min-w-0 w-full">
                                 {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
                               </div>
@@ -343,7 +343,7 @@ const ApiKeys: React.FC = () => {
 
                     {/* New key input */}
                     <div className="space-y-1.5">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 bg-surface-container-lowest rounded-lg border border-dashed border-border-base w-full">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 rounded-lg border border-dashed" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.03), transparent)', borderColor: '#6366F1/25' }}>
                         <div className="flex items-center flex-1 gap-2 min-w-0 w-full">
                           <input
                             id={`new-key-input-${id}`}
@@ -457,7 +457,8 @@ const ApiKeys: React.FC = () => {
           })}
         </div>
 
-        <div className="bg-surface-container-low px-5 sm:px-6 py-3.5 flex items-center gap-3 text-xs text-text-muted">
+        <div className="bg-gradient-to-r from-[#6366F1]/5 to-transparent px-5 sm:px-6 py-3.5 flex items-center gap-3 text-xs" style={{ color: '#6B6B7E', borderTop: '1px solid rgba(42,42,56,0.5)' }}>
+          <div className="w-1.5 h-1.5 rounded-full bg-[#6366F1]/40" />
           <span>Keys are stored locally in your browser and sent per-request via headers.</span>
         </div>
       </div>

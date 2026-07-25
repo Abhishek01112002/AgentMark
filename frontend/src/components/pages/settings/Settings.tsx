@@ -61,25 +61,22 @@ const SettingsContent: React.FC = () => {
               </header>
 
               {/* Tabs */}
-              <div className="flex gap-2 border-b border-[#2A2A38] overflow-x-auto">
+              <div className="flex gap-1.5 p-1.5 bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl w-fit overflow-x-auto">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-3 font-medium text-sm transition-all relative whitespace-nowrap ${
+                      className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm transition-all relative whitespace-nowrap rounded-lg ${
                         activeTab === tab.id
-                          ? 'text-[#c0c1ff]'
-                          : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                          ? 'bg-gradient-to-r from-[#6366F1]/20 to-[#8B5CF6]/10 text-[#C7D2FE] shadow-[0_0_20px_rgba(99,102,241,0.1)] border border-[#6366F1]/25'
+                          : 'text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]'
                       }`}
                       style={{ fontFamily: 'JetBrains Mono, monospace' }}
                     >
-                      <Icon size={16} />
+                      <Icon size={16} className={activeTab === tab.id ? 'text-[#818CF8]' : ''} />
                       <span>{tab.label}</span>
-                      {activeTab === tab.id && (
-                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#c0c1ff]" />
-                      )}
                     </button>
                   );
                 })}

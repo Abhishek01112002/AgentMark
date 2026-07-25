@@ -1426,6 +1426,22 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
       }
     }
 
+    // Read existing completed agent outputs so Python can resume from where it failed.
+    // The LangGraph graph uses thread_id = campaign_id for checkpointing, so passing
+    // these outputs lets _run_workflow() detect the existing checkpoint and resume
+    // instead of restarting the entire pipeline from scratch.
+    const existingOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs as string)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const toStr = (val: any): string | null => {
+      if (val == null) return null;
+      if (typeof val === 'string') return val;
+      try { return JSON.stringify(val); } catch { return null; }
+    };
+
     // Reset campaign in DB: status='processing', aiError=null
     const updatedCampaign = await prisma.campaign.update({
       where: { id },
@@ -1445,7 +1461,7 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
       campaign: updatedCampaign,
     });
 
-    // Fire AI workflow in background
+    // Fire AI workflow in background — pass existing outputs so LangGraph resumes from checkpoint
     const io = getIO();
     if (io) {
       let memoryContext;
@@ -1485,6 +1501,18 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
         llm_config: effectiveLlmConfig,
         campaign_id: campaign.id,
         client_memory_context: memoryContext?.formattedText ?? null,
+        // Pass existing completed outputs so Python _run_workflow() can resume
+        // from the LangGraph checkpoint (thread_id = campaign.id) rather than restart
+        manager_output: toStr(existingOutputs.manager_output),
+        research_output: toStr(existingOutputs.research_output),
+        strategy_output: toStr(existingOutputs.strategy_output),
+        copy_output: toStr(existingOutputs.copy_output),
+        image_output: toStr(existingOutputs.image_output),
+        review_output: toStr(existingOutputs.review_output),
+        research_revision_count: campaign.researchRevisionCount ?? 0,
+        strategy_revision_count: campaign.strategyRevisionCount ?? 0,
+        copy_revision_count: campaign.copyRevisionCount ?? 0,
+        image_revision_count: campaign.imageRevisionCount ?? 0,
       }, io);
     } else {
       console.warn(`[CampaignRetry] Socket.io not initialised — retry background runner will not emit socket events | campaign=${campaign.id}`);
@@ -1493,6 +1521,8 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
     next(err);
   }
 };
+
+
 
 export const compareCampaigns = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
