@@ -82,6 +82,7 @@ model Campaign {
   
   memorySnapshot  CampaignMemorySnapshot?
   preflightSimulations PreflightSimulation[]
+  performanceSnapshots PerformanceSnapshot[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -231,3 +232,72 @@ model McpActivity {
   @@index([userId, createdAt(sort: Desc)])
   @@index([campaignId])
 }
+
+// ── Phase 2A Ad Performance Telemetry Infrastructure Models ───────────────────
+
+model PerformanceSnapshot {
+  id                   String   @id @default(uuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  platform             String   // 'meta', 'google', 'linkedin'
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  conversions          Int      @default(0)
+  spendUsd             Float    @default(0.0)
+
+  observedCtr          Float?
+  observedCvr          Float?
+  observedRoas         Float?
+
+  snapshotDate         DateTime @default(now())
+
+  @@map("performance_snapshots")
+  @@index([campaignId, platform])
+  @@index([snapshotDate])
+}
+
+model TelemetryEvent {
+  id                   String   @id @default(uuid())
+  eventId              String   @unique
+  organizationId       String
+  projectId            String
+  campaignId           String
+  platform             String   // 'meta', 'google', 'linkedin'
+
+  rawPayload           Json
+  normalizedMetrics    Json
+  eventTimestamp       DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  @@map("telemetry_events")
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([campaignId])
+}
+
+model ProviderCredential {
+  id                   String   @id @default(uuid())
+  organizationId       String
+  platform             String   // 'meta', 'google', 'linkedin'
+  encryptedMetadata    String   @db.Text
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("provider_credentials")
+  @@unique([organizationId, platform])
+}
+
+model WebhookDelivery {
+  id                   String   @id @default(uuid())
+  platform             String
+  signatureHeader      String?
+  status               String   // 'PROCESSED', 'DUPLICATE', 'INVALID_SIGNATURE', 'SKIPPED'
+  processingLatencyMs  Float?
+
+  deliveredAt          DateTime @default(now())
+
+  @@map("webhook_deliveries")
+  @@index([platform, deliveredAt(sort: Desc)])
+}
+
