@@ -1,0 +1,126 @@
+"""
+Groq LLM client.
+"""
+
+import json
+import logging
+import os
+from typing import Type, TypeVar
+
+import json_repair
+from groq import Groq
+from pydantic import BaseModel
+
+from .base import (
+    BaseLLMClient,
+    NonRetryableLLMError,
+    RateLimitedLLMError,
+    is_payload_too_large_error,
+    is_rate_limit_error,
+)
+
+logger = logging.getLogger(__name__)
+T = TypeVar("T", bound=BaseModel)
+
+
+class GroqClient(BaseLLMClient):
+    """Groq API client with fail-fast provider-pool semantics."""
+
+    def __init__(self, api_key: str = None, model: str = None):
+        super().__init__()
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        if not self.api_key:
+            raise ValueError("GROQ_API_KEY not found")
+
+        self.model = model or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+        self.client = Groq(api_key=self.api_key, max_retries=0)
+
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
+        try:
+            self._wait_for_rate_limit()
+            kwargs = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if seed is not None:
+                kwargs["seed"] = seed
+            response = self.client.chat.completions.create(**kwargs)
+            self._record_success()
+            return response.choices[0].message.content
+        except Exception as exc:
+            self._raise_typed_error(exc)
+
+    def generate_structured(
+        self,
+        prompt: str,
+        response_model: Type[T],
+        temperature: float = 0.7,
+        max_tokens: int = 4000,
+        seed: int | None = None,
+    ) -> T:
+        schema = response_model.model_json_schema()
+        compact_schema = json.dumps(schema, separators=(",", ":"))
+        enhanced_prompt = f"""{prompt}
+
+You must respond with ONLY a valid JSON object matching this exact schema:
+{compact_schema}
+
+IMPORTANT:
+- Return ONLY the JSON object, no markdown, no code blocks, no explanations
+- All required fields must be present
+- Follow the exact field names and types specified"""
+
+        try:
+            self._wait_for_rate_limit()
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": enhanced_prompt}],
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format={"type": "json_object"},
+                )
+            except Exception as mode_exc:
+                if "json" in str(mode_exc).lower():
+                    logger.warning("Groq json_object mode failed (%s), retrying standard generation...", mode_exc)
+                    response = self.client.chat.completions.create(
+                        model=self.model,
+                        messages=[{"role": "user", "content": enhanced_prompt}],
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                    )
+                else:
+                    raise mode_exc
+
+            self._record_success()
+
+            response_text = response.choices[0].message.content
+            if not response_text or not response_text.strip():
+                raise ValueError("Groq returned empty response")
+
+            try:
+                return response_model.model_validate_json(response_text)
+            except Exception as parse_exc:
+                logger.warning(f"Initial JSON validation failed ({parse_exc}), attempting json_repair...")
+                repaired = json_repair.repair_json(response_text)
+                return response_model.model_validate_json(repaired)
+        except Exception as exc:
+            self._raise_typed_error(exc)
+
+
+
+    def _raise_typed_error(self, exc: Exception):
+        if isinstance(exc, (NonRetryableLLMError, RateLimitedLLMError)):
+            raise exc
+        if is_payload_too_large_error(exc):
+            raise NonRetryableLLMError(
+                f"Groq request is too large for model {self.model}; fail over to another provider."
+            ) from exc
+        if is_rate_limit_error(exc):
+            raise RateLimitedLLMError(f"Groq rate limited for model {self.model}") from exc
+
+        logger.info("Groq LLM error: %s", str(exc)[:160])
+        raise exc

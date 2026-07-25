@@ -1,0 +1,266 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  body {
+    @apply bg-background text-on-background font-body-md antialiased;
+  }
+  /* ── Cursor fix ──────────────────────────────────────────────────────────
+     Browser UA stylesheet forces cursor:text on every text node regardless
+     of what body says. Setting cursor on * overrides UA and cascades properly.
+  */
+  * {
+    cursor: default;
+  }
+  input, textarea, select, [contenteditable="true"] {
+    cursor: text;
+  }
+  button, a, [role="button"], label[for], [tabindex]:not([tabindex="-1"]),
+  label.cursor-pointer, label.cursor-pointer *,
+  .cursor-pointer, .cursor-pointer * {
+    cursor: pointer !important;
+  }
+  button *, a * {
+    cursor: pointer !important;
+  }
+  /* Keyboard navigation focus ring — invisible to mouse, critical for WCAG AA */
+  :focus-visible {
+    outline: 2px solid #6366F1;
+    outline-offset: 2px;
+  }
+}
+
+
+@layer utilities {
+  .pulse-dot {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.1);
+    }
+  }
+
+  .glass-panel {
+    background: rgba(17, 17, 24, 0.8);
+    backdrop-filter: blur(12px);
+  }
+
+  .typewriter-cursor {
+    border-right: 2px solid #c0c1ff;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    50% {
+      border-color: transparent;
+    }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .slide-up {
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .card-elevate {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card-elevate:hover {
+    border-color: rgba(99, 102, 241, 0.45) !important;
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.18), 0 0 30px rgba(99, 102, 241, 0.12) !important;
+  }
+  .card-elevate-green {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card-elevate-green:hover {
+    border-color: rgba(78, 222, 163, 0.45) !important;
+    box-shadow: 0 0 0 1px rgba(78, 222, 163, 0.18), 0 0 30px rgba(78, 222, 163, 0.12) !important;
+  }
+  .card-elevate-amber {
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .card-elevate-amber:hover {
+    border-color: rgba(245, 158, 11, 0.45) !important;
+    box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.18), 0 0 30px rgba(245, 158, 11, 0.12) !important;
+  }
+
+  .stagger-enter {
+    animation: fadeIn 0.35s ease-out both;
+  }
+  .stagger-enter:nth-child(1) { animation-delay: 0s; }
+  .stagger-enter:nth-child(2) { animation-delay: 0.04s; }
+  .stagger-enter:nth-child(3) { animation-delay: 0.08s; }
+  .stagger-enter:nth-child(4) { animation-delay: 0.12s; }
+  .stagger-enter:nth-child(5) { animation-delay: 0.16s; }
+  .stagger-enter:nth-child(6) { animation-delay: 0.2s; }
+  .stagger-enter:nth-child(7) { animation-delay: 0.24s; }
+  .stagger-enter:nth-child(8) { animation-delay: 0.28s; }
+  .stagger-enter:nth-child(9) { animation-delay: 0.32s; }
+  .stagger-enter:nth-child(10) { animation-delay: 0.36s; }
+  .stagger-enter:nth-child(n+11) { animation-delay: 0.4s; }
+
+  .modal-overlay {
+    animation: fadeInOverlay 0.2s ease-out forwards;
+  }
+  @keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-content {
+    animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes modalSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dropdown-enter {
+    animation: dropdownIn 0.15s ease-out forwards;
+    transform-origin: top right;
+  }
+  @keyframes dropdownIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .btn-press:active {
+    transform: scale(0.97);
+    transition: transform 0.08s;
+  }
+
+  .nav-item-icon {
+    transition: transform 0.2s ease;
+  }
+  .nav-item:hover .nav-item-icon {
+    transform: translateX(2px);
+  }
+
+  .count-up {
+    animation: countFade 0.4s ease-out forwards;
+  }
+  @keyframes countFade {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2A2A38;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #464554;
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+  button, a, [role="button"], [tabindex]:not([tabindex="-1"]) {
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.2);
+  }
+  button:active, a:active, [role="button"]:active, [tabindex]:not([tabindex="-1"]):active {
+    opacity: 0.85;
+    transition: opacity 0.05s;
+  }
+}
+
+.champion-card {
+  border-color: rgba(99, 102, 241, 0.8) !important;
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 0 25px rgba(99, 102, 241, 0.25), inset 0 0 12px rgba(99, 102, 241, 0.05) !important;
+}
+.champion-card:hover {
+  border-color: rgba(99, 102, 241, 1.0) !important;
+  box-shadow: 0 0 0 1.5px rgba(99, 102, 241, 0.5), 0 0 35px rgba(99, 102, 241, 0.35), inset 0 0 15px rgba(99, 102, 241, 0.08) !important;
+}
+
+.skeleton-card {
+  background: linear-gradient(110deg, #111118 8%, #1C1C28 18%, #111118 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position-x: -200%;
+  }
+}
+
+/* Custom scrollbar reset */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* iOS Safari Auto-Zoom Prevention */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+}

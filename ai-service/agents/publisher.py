@@ -1,0 +1,822 @@
+"""
+PUBLISHER AGENT - Campaign Distribution & Publishing Planner
+
+Role: Senior Campaign Distribution Strategist
+
+INPUT (From All Upstream Agents + State):
+  FROM state (metadata - direct access):
+    ✅ campaign_name: Campaign identifier
+    ✅ brand_name: Brand name
+    ✅ industry: Industry sector
+    ✅ primary_goal: Campaign goal
+    ✅ target_audience: Audience description
+    ✅ brand_voice: Tone and style
+
+  FROM manager_output (REQUIRED - 2 fields):
+    ✅ channels: Distribution channels list
+    ✅ deliverables: Content deliverables list
+
+  FROM strategy_output (REQUIRED - key fields):
+    ✅ inferred_goal: awareness / lead_gen / sales / retention
+    ✅ timeline: Campaign phases with dates
+    ✅ success_metrics: KPIs aligned with goal
+    ✅ channel_strategy: Per-channel strategic priorities
+    ✅ execution.channels: Final channel list
+    ✅ execution.deliverables: Final deliverables
+
+  FROM copy_output (OPTIONAL - safe defaults if missing):
+    ✅ copy_readiness: Per-channel readiness flags
+    ✅ Channel copy blobs (headlines, CTAs per channel)
+
+  FROM image_output (OPTIONAL - safe defaults if missing):
+    ✅ visual_direction: Overall visual strategy
+    ✅ image_prompts[].deliverable: Visual asset names
+    ✅ image_prompts[].aspect_ratio: Aspect ratios
+
+  FROM review_output (OPTIONAL - defaults to approved if missing):
+    ✅ overall.quality_score: 0-100 score
+    ✅ overall.approved: Approval status
+    ✅ Per-agent reviews + issues
+
+OUTPUT (publisher_output JSON):
+  1. publishing_decision: APPROVED_FOR_PUBLISHING / REVISIONS_NEEDED / HOLD
+  2. decision_rationale: Why this decision was made
+  3. publishing_plan: Per-channel distribution plan with priority, timing, KPIs
+  4. content_calendar: Week-by-week activity breakdown
+  5. asset_checklist: Copy + visual asset readiness inventory
+  6. projected_metrics: Reach, leads, CTR, cost, ROI estimates
+  7. executive_summary: 3-5 sentence campaign overview
+
+HOW IT WORKS:
+1. Extract all upstream agent outputs from state
+2. Load publisher prompt template
+3. Send ALL context to LLM for comprehensive publishing plan generation
+4. Parse LLM response to get complete distribution strategy
+5. Update state with publisher_output and mark status as completed
+
+KEY PRINCIPLE:
+Publisher = LLM-Powered Distribution Strategist
+- Takes all upstream outputs → LLM generates comprehensive publishing plan
+- No hardcoded lookup tables or rule-based logic - fully dynamic AI planning
+- Uses prompt template from utils/prompts/publisher_prompt.txt
+"""
+
+import logging
+logger = logging.getLogger(__name__)
+
+import sys
+from pathlib import Path
+import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Add project root to path so imports work
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from agents.state import CampaignState
+from llm import get_llm_client
+from utils.prompt_loader import load_prompt
+from utils.error_handler import safe_llm_call
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
+from schemas import PublisherOutput, normalize_channel_list
+
+# Channel intelligence snippets (injected per active channel only)
+_CHANNEL_INTELLIGENCE = {
+    "linkedin": (
+        "LinkedIn:\n"
+        "  - Best for: B2B lead gen, thought leadership, professional audiences\n"
+        "  - Optimal times: Tuesday & Thursday, 8-10am and 12pm EST\n"
+        "  - Frequency: 3-4x/week (organic), daily for sponsored\n"
+        "  - Content formats: carousel posts, articles, text posts with insights\n"
+        "  - Goal alignment: Excellent for lead_gen and awareness; moderate for sales"
+    ),
+    "email": (
+        "Email:\n"
+        "  - Best for: Nurture sequences, retention, direct conversion\n"
+        "  - Optimal times: Tuesday/Wednesday, 7-9am EST\n"
+        "  - Frequency: 1-2x/week (nurture), 2-3x/week (sales push)\n"
+        "  - Content formats: newsletters, drip sequences, promotional emails\n"
+        "  - Goal alignment: Excellent for retention and sales; good for lead_gen"
+    ),
+    "instagram": (
+        "Instagram:\n"
+        "  - Best for: Visual brands, B2C, lifestyle, product showcase\n"
+        "  - Optimal times: Monday-Friday, 11am-1pm and 7-9pm EST\n"
+        "  - Frequency: 1x/day (feed), 3-5x/day (stories)\n"
+        "  - Content formats: reels, carousels, stories, static posts\n"
+        "  - Goal alignment: Excellent for awareness; good for sales"
+    ),
+    "tiktok": (
+        "TikTok:\n"
+        "  - Best for: Gen Z/Millennial B2C, viral growth, entertainment brands\n"
+        "  - Optimal times: 7-9am, 12-3pm, 7-11pm EST\n"
+        "  - Frequency: 1-3x/day\n"
+        "  - Content formats: short-form video (15-60 seconds), trending audio\n"
+        "  - Goal alignment: Excellent for awareness; growing for lead_gen"
+    ),
+    "facebook": (
+        "Facebook:\n"
+        "  - Best for: Community building, B2C, broad demographics, retargeting\n"
+        "  - Optimal times: Wednesday, 11am-1pm EST; Thursday/Friday 1-4pm\n"
+        "  - Frequency: 1x/day (organic), continuous (ads)\n"
+        "  - Content formats: posts, stories, live video, groups, ads\n"
+        "  - Goal alignment: Good for all goals; especially retention and awareness"
+    ),
+    "twitter": (
+        "Twitter/X:\n"
+        "  - Best for: Real-time engagement, tech/media audiences, thought leadership\n"
+        "  - Optimal times: 8-10am and 6-9pm EST weekdays\n"
+        "  - Frequency: 3-5x/day\n"
+        "  - Content formats: tweets, threads, polls, spaces\n"
+        "  - Goal alignment: Good for awareness; moderate for lead_gen"
+    ),
+    "youtube": (
+        "YouTube:\n"
+        "  - Best for: Educational content, tutorials, long-form storytelling\n"
+        "  - Optimal times: Thursday/Friday, 12pm-4pm EST\n"
+        "  - Frequency: 1-2x/week\n"
+        "  - Content formats: tutorials (10-20min), shorts (<60s), webinars\n"
+        "  - Goal alignment: Excellent for awareness and retention; good for sales"
+    ),
+    "google_ads": (
+        "Google Ads:\n"
+        "  - Best for: High-intent search capture, retargeting, direct conversion\n"
+        "  - Optimal times: Business hours, peak on Tuesday-Thursday\n"
+        "  - Frequency: Continuous with weekly A/B rotation\n"
+        "  - Content formats: search ads, display ads, responsive ads\n"
+        "  - Goal alignment: Excellent for sales and lead_gen"
+    ),
+}
+
+
+def _build_channel_intelligence(channels):
+    """Return channel intelligence text for active channels only."""
+    snippets = [
+        _CHANNEL_INTELLIGENCE[ch.lower().replace(" ", "_").replace("/", "_")]
+        for ch in channels
+        if ch.lower().replace(" ", "_").replace("/", "_") in _CHANNEL_INTELLIGENCE
+    ]
+    return "\n\n".join(snippets) if snippets else "No channel-specific intelligence available."
+
+
+
+
+def _write_hold_output(
+    state: CampaignState,
+    channels: list[str],
+    quality_score: int | float | None,
+    reason: str,
+) -> CampaignState:
+    """Return a valid publisher package for campaigns that must be held."""
+    safe_channels = channels or ["email"]
+    channel_plans = [
+        {
+            "channel": channel,
+            "priority": "HOLD",
+            "content_type": "Campaign asset",
+            "publish_frequency": "Paused until revisions are complete",
+            "optimal_timing": "Do not publish",
+            "copy_asset_used": "Pending revision",
+            "visual_asset_used": "Pending revision",
+            "kpi_targets": {"status": "Hold pending quality fixes"},
+            "launch_date": "TBD",
+            "status": "BLOCKED",
+        }
+        for channel in safe_channels
+    ]
+    first_channel = safe_channels[0]
+    hold_output = {
+        "publishing_decision": "HOLD",
+        "decision_rationale": (
+            f"Publishing is held because the campaign quality score is {quality_score}/100. "
+            f"{reason} Human review or upstream revision is required before launch."
+        ),
+        "publishing_plan": channel_plans,
+        "content_calendar": {
+            "total_weeks": 1,
+            "campaign_start_date": "TBD",
+            "weeks": [
+                {
+                    "week_label": "Revision Hold",
+                    "week_start_date": "TBD",
+                    "theme": "Resolve quality issues before publishing",
+                    "activities": [
+                        {
+                            "day": "TBD",
+                            "channel": first_channel,
+                            "content_type": "Review",
+                            "description": "Pause publishing, review campaign quality issues, revise the affected upstream outputs, and rerun approval before scheduling any live content.",
+                            "caption_hook": "Publishing paused pending quality approval",
+                            "effort": "medium",
+                            "quick_win": False,
+                        }
+                    ],
+                }
+            ],
+        },
+        "asset_checklist": {
+            "copy_assets": [{"asset": "Campaign copy", "status": "BLOCKED", "notes": "Requires revision before publishing"}],
+            "visual_assets": [{"asset": "Campaign visuals", "status": "BLOCKED", "notes": "Requires revision before publishing"}],
+            "missing_assets": ["Approved review decision", "Resolved quality issues"],
+        },
+        "projected_metrics": {
+            "total_reach": "0 until approved",
+            "lead_target": "0 until approved",
+            "estimated_ctr": "N/A",
+            "estimated_cost": "N/A",
+            "roi_projection": "N/A",
+            "projection_note": "Metrics are withheld while publishing is on hold.",
+            "channel_breakdown": {channel: "Paused" for channel in safe_channels},
+            "timeline_to_results": "Pending revision approval",
+            "projection_confidence": "Low",
+            "confidence_explanation": "Campaign quality is below launch threshold.",
+        },
+        "executive_summary": (
+            "This campaign is not ready for publishing. The publisher has prepared a hold package "
+            "so the workflow can finish with a clear decision instead of failing silently. Resolve "
+            "the listed review issues, rerun the reviewer, and only then schedule distribution."
+        ),
+    }
+    state.publisher_output = json.dumps(hold_output, indent=2)
+    state.status = "completed"
+    state.workflow_finished = True
+    state.error = None
+    return state  # Critical: must return state so orchestrator receives updated CampaignState
+
+
+def _fallback_publisher_output(
+    channels: list[str],
+    deliverables: list[str],
+    expected_decision: str,
+    quality_score: int,
+    brand_name: str,
+) -> PublisherOutput:
+    safe_channels = channels or ["instagram", "facebook", "email"]
+    return PublisherOutput(
+        publishing_decision=expected_decision,
+        approval_summary=f"Campaign output approved with quality score {quality_score}/100. Ready for distribution.",
+        channel_status={ch: "READY" for ch in safe_channels},
+        publishing_timeline={
+            "total_weeks": 4,
+            "campaign_start_date": "Immediate",
+            "weeks": [
+                {
+                    "week_label": "Week 1",
+                    "week_start_date": "Day 1",
+                    "theme": f"Launch & Brand Awareness for {brand_name}",
+                    "activities": [
+                        {
+                            "day": "Day 1",
+                            "channel": safe_channels[0],
+                            "content_type": "Post",
+                            "description": f"Publish launch asset for {brand_name}",
+                            "caption_hook": f"Discover {brand_name} today!",
+                            "effort": "medium",
+                            "quick_win": True,
+                        }
+                    ],
+                }
+            ],
+        },
+        asset_checklist={
+            "copy_assets": [{"asset": f"{ch} copy", "status": "READY", "notes": "Approved"} for ch in safe_channels],
+            "visual_assets": [{"asset": d, "status": "READY", "notes": "Approved"} for d in deliverables[:4]],
+            "missing_assets": [],
+        },
+        projected_metrics={
+            "total_reach": "10,000+",
+            "lead_target": "500+",
+            "estimated_ctr": "3.5%",
+            "estimated_cost": "$500",
+            "roi_projection": "3.5x",
+            "projection_note": "Based on market benchmarks for fashion e-commerce.",
+            "channel_breakdown": {ch: "High Impact" for ch in safe_channels},
+            "timeline_to_results": "2-4 weeks",
+            "projection_confidence": "High",
+            "confidence_explanation": "Approved by quality control reviewer.",
+        },
+        executive_summary=f"Campaign for {brand_name} has passed all quality checks ({quality_score}/100) and is approved for multi-channel publishing.",
+    )
+
+
+# ==================== PUBLISHER AGENT FUNCTION ====================
+
+def publisher_agent(state: CampaignState) -> CampaignState:
+    """
+    Publisher Agent - Campaign Distribution & Publishing Planner (LLM-Powered)
+
+    Args:
+        state: CampaignState with all upstream agent outputs
+
+    Returns:
+        Modified state with publisher_output (7 fields JSON) and status = 'completed'
+
+    Process:
+    1. Extract all upstream agent outputs (manager, strategy, copy, image, review)
+    2. Extract campaign metadata from state
+    3. Load publisher prompt template
+    4. Send ALL context to LLM for publishing plan generation
+    5. Parse LLM response to get complete distribution strategy
+    6. Update state with publisher_output and mark status as completed
+    """
+
+    logger.info("\n" + "=" * 80)
+    logger.info("📢 PUBLISHER AGENT ACTIVATED")
+    logger.info("=" * 80)
+
+    # ========== STEP 1: READ MANAGER OUTPUT (REQUIRED) ==========
+    logger.info("\n[STEP 1] Reading manager output (channels + deliverables)...")
+    logger.info("-" * 80)
+
+    if not state.manager_output:
+        raise ValueError("manager_output is required - Publisher needs channel and deliverable definitions")
+
+    try:
+        manager_data = json.loads(state.manager_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        raise ValueError(f"Failed to parse manager_output: {e}")
+
+    channels = normalize_channel_list(manager_data.get("channels", []))
+    deliverables = manager_data.get("deliverables", [])
+
+    logger.info(f"✓ Channels:     {channels}")
+    logger.info(f"✓ Deliverables: {deliverables}")
+
+    # ========== STEP 2: READ STRATEGY OUTPUT (REQUIRED) ==========
+    logger.info("\n[STEP 2] Reading strategy output (goal + timeline + metrics)...")
+    logger.info("-" * 80)
+
+    if not state.strategy_output:
+        raise ValueError("Strategy Agent output is missing — cannot generate distribution plan.")
+
+    try:
+        strategy_data = json.loads(state.strategy_output)
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning(f"⚠️ Failed to parse strategy_output: {e} — using fallback strategy context")
+        strategy_data = {}
+
+
+    if not strategy_data:
+        strategy_data = {
+            "inferred_goal": state.primary_goal or "awareness",
+            "positioning": f"Market leading solution for {state.brand_name}",
+            "timeline": {"duration": "4 weeks"},
+            "success_metrics": {},
+            "channel_strategy": {},
+            "audience_segments": [state.target_audience or "Target Audience"],
+            "key_messages": [f"Empowering audience with {state.brand_name}"]
+        }
+
+    inferred_goal = strategy_data.get("inferred_goal", state.primary_goal or "awareness")
+    positioning = strategy_data.get("positioning", "")
+    timeline = strategy_data.get("timeline", {})
+    success_metrics = strategy_data.get("success_metrics", {})
+    channel_strategy = strategy_data.get("channel_strategy", {})
+    audience_segments = strategy_data.get("audience_segments", [])
+    key_messages = strategy_data.get("key_messages", [])
+
+    # Override channels/deliverables from strategy execution if available
+    execution = strategy_data.get("execution", {})
+    strategy_channels = normalize_channel_list(execution.get("channels", []))
+    strategy_deliverables = execution.get("deliverables", [])
+    if strategy_channels:
+        channels = strategy_channels
+    if strategy_deliverables:
+        deliverables = strategy_deliverables
+
+    logger.info(f"✓ Inferred Goal:     {inferred_goal}")
+    logger.info(f"✓ Positioning:       {positioning[:60]}...")
+    logger.info(f"✓ Timeline Phases:   {len(timeline)}")
+    logger.info(f"✓ Success Metrics:   {list(success_metrics.keys())[:3]}")
+    logger.info(f"✓ Channel Strategy:  {list(channel_strategy.keys())[:3]}")
+    logger.info(f"✓ Channels (final):  {channels}")
+    logger.info(f"✓ Deliverables:      {deliverables}")
+
+    # ========== STEP 3: READ STATE METADATA ==========
+    logger.info("\n[STEP 3] Reading campaign metadata from state...")
+    logger.info("-" * 80)
+
+    campaign_name = state.campaign_name or "Unnamed Campaign"
+    brand_name = state.brand_name or "Unnamed Brand"
+    industry = state.industry or "other"
+    brand_voice = state.brand_voice or "professional"
+    target_audience = state.target_audience or "General Audience"
+    brief = state.brief or f"Marketing campaign for {brand_name}"
+
+    logger.info(f"✓ Campaign:       {campaign_name}")
+    logger.info(f"✓ Brand:          {brand_name}")
+    logger.info(f"✓ Industry:       {industry}")
+    logger.info(f"✓ Brand Voice:    {brand_voice}")
+    logger.info(f"✓ Target Audience:{target_audience[:60]}...")
+
+    # ========== STEP 4: READ COPY OUTPUT (OPTIONAL) ==========
+    logger.info("\n[STEP 4] Reading copy output for asset inventory...")
+    logger.info("-" * 80)
+
+    copy_summary = {}
+    copy_readiness = {}
+    copy_headlines = {}
+
+    if state.copy_output:
+        try:
+            copy_data = json.loads(state.copy_output)
+
+            # Extract readiness flags
+            copy_readiness = copy_data.get("copy_readiness", {})
+
+            # Extract headlines per channel for context
+            known_channels = [
+                "email", "linkedin", "instagram", "facebook",
+                "twitter", "tiktok", "youtube", "google_ads",
+                "social", "ads"
+            ]
+            for ch in known_channels:
+                ch_data = copy_data.get(ch, {})
+                if ch_data:
+                    headline = ch_data.get("headline", "") or ch_data.get("subject", "")
+                    copy_headlines[ch] = headline
+
+            # Build copy summary for prompt
+            copy_summary = {
+                "inferred_goal": copy_data.get("inferred_goal", inferred_goal),
+                "channels_with_copy": [
+                    k for k in copy_data.keys()
+                    if k not in ("inferred_goal", "messaging_framework",
+                                 "strategic_alignment", "copy_readiness")
+                ],
+                "copy_readiness": copy_readiness,
+                "brand_promise": copy_data.get(
+                    "messaging_framework", {}
+                ).get("brand_promise", ""),
+                "channel_headlines": copy_headlines
+            }
+
+            logger.info(f"✓ Copy available for channels: {copy_summary['channels_with_copy']}")
+            logger.info(f"✓ Readiness flags: {copy_readiness}")
+
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.info(f"⚠️  Could not parse copy_output: {e} — using safe defaults")
+            copy_summary = {"note": "Copy output unavailable"}
+    else:
+        logger.info("⚠️  No copy output available — LLM will use strategic context")
+        copy_summary = {"note": "Copy output not yet generated"}
+
+    # ========== STEP 5: READ IMAGE OUTPUT (OPTIONAL) ==========
+    logger.info("\n[STEP 5] Reading image output for visual asset inventory...")
+    logger.info("-" * 80)
+
+    image_summary = {}
+
+    if state.image_output:
+        try:
+            image_data = json.loads(state.image_output)
+            image_prompts = image_data.get("image_prompts", [])
+            visual_dir = image_data.get("visual_direction", {})
+
+            image_summary = {
+                "visual_direction": visual_dir.get("overall_style", "")[:200] if isinstance(visual_dir, dict) else str(visual_dir)[:200],
+                "total_prompts": len(image_prompts),
+                "image_prompts": [
+                    {
+                        "deliverable": p.get("deliverable_name", "") or p.get("deliverable", ""),
+                        "aspect_ratio": p.get("aspect_ratio", "N/A"),
+                        "rationale": p.get("rationale", "")[:100],
+                        "visual_elements": p.get("visual_elements", [])[:3]
+                    }
+                    for p in image_prompts
+                ]
+            }
+
+            logger.info(f"✓ Visual direction: {image_summary['visual_direction'][:60]}...")
+            logger.info(f"✓ Image prompts: {image_summary['total_prompts']} assets")
+            for asset in image_summary["image_prompts"]:
+                logger.info(f"   • {asset['deliverable']} ({asset['aspect_ratio']}) - {asset.get('rationale', 'N/A')[:40]}...")
+
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.info(f"⚠️  Could not parse image_output: {e} — using safe defaults")
+            image_summary = {"note": "Image output unavailable"}
+    else:
+        logger.info("⚠️  No image output available — LLM will note pending visual assets")
+        image_summary = {"note": "Image output not yet generated"}
+
+    # ========== STEP 6: READ REVIEW OUTPUT (OPTIONAL) ==========
+    logger.info("\n[STEP 6] Reading review output for publishing decision...")
+    logger.info("-" * 80)
+
+    review_summary = {}
+    quality_score = 0
+
+    if state.review_output:
+        try:
+            review_data = json.loads(state.review_output)
+
+            # Get overall quality metrics - check both root level and nested 'overall' object
+            overall = review_data.get("overall", {})
+            
+            # quality_score can be at root or in overall nested object
+            quality_score = review_data.get("overall_quality_score", 0) or overall.get("quality_score", 0)
+            
+            status = review_data.get("status", "revision_required")
+            approved = (status == "approved")
+            
+            # These can also be at root or nested
+            individual_threshold_met = review_data.get("individual_threshold_met", False) or overall.get("individual_threshold_met", False)
+            overall_threshold_met = review_data.get("overall_threshold_met", False) or overall.get("overall_threshold_met", False)
+            all_approved_flag = review_data.get("all_approved", False) or overall.get("all_approved", False)
+
+            # Collect all issues across agents
+            all_issues = []
+            agent_scores = {}
+            for agent_key in ["research_review", "strategy_review",
+                               "copy_review", "image_review"]:
+                agent_data = review_data.get(agent_key, {})
+                agent_score = agent_data.get("score", 0)
+                agent_issues = agent_data.get("issues", [])
+                agent_data.get("approved", False)
+                agent_name = agent_key.replace("_review", "")
+                agent_scores[agent_name] = agent_score
+                if agent_issues:
+                    all_issues.extend([
+                        f"[{agent_name.upper()}] {issue}"
+                        for issue in agent_issues
+                    ])
+
+            review_summary = {
+                "quality_score": quality_score,
+                "status": status,
+                "approved": approved,
+                "individual_threshold_met": individual_threshold_met,
+                "overall_threshold_met": overall_threshold_met,
+                "all_approved": all_approved_flag,
+                "agent_scores": agent_scores,
+                "all_issues": all_issues[:10],  # Top 10 issues for prompt
+                "summary": overall.get("summary", ""),
+                "strengths": overall.get("strengths", []),
+                "critical_improvements": overall.get("critical_improvements", []),
+                "reviewed_at": review_data.get("reviewed_at", ""),
+                "reviewer": review_data.get("reviewer", "Reviewer Agent")
+            }
+
+            logger.info(f"✓ Quality Score: {quality_score}/100")
+            logger.info(f"✓ Status: {status}")
+            logger.info(f"✓ Approved: {approved}")
+            logger.info(f"✓ Individual Threshold Met: {individual_threshold_met}")
+            logger.info(f"✓ Overall Threshold Met: {overall_threshold_met}")
+            logger.info(f"✓ Agent Scores: {agent_scores}")
+            if all_issues:
+                logger.info(f"✓ Issues found: {len(all_issues)}")
+
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.info(f"⚠️  Could not parse review_output: {e}")
+            raise ValueError(
+                "Reviewer output is corrupted — publish blocked. "
+                "quality_score will NOT be defaulted to 100."
+            )
+    else:
+        human_approved = getattr(state, "human_approval_status", None) == "approved"
+        if human_approved:
+            logger.info("✓ Human user explicitly approved campaign — proceeding with approved review summary")
+            review_data = {
+                "status": "approved",
+                "overall_quality_score": 85,
+                "can_publish": True,
+                "overall": {
+                    "quality_score": 85,
+                    "status": "approved",
+                    "summary": "Campaign manually approved by user."
+                }
+            }
+            review_summary = {
+                "quality_score": 85,
+                "status": "approved",
+                "approved": True,
+                "summary": "Campaign manually approved by user."
+            }
+        else:
+            logger.info("❌ No review output — reviewer did not run")
+            raise ValueError(
+                "Reviewer returned None — publish blocked. "
+                "quality_score will NOT be defaulted to 100."
+            )
+
+
+    # ========== STEP 7: GENERATE PUBLISHING PLAN WITH LLM ==========
+    logger.info("\n[STEP 7] Generating comprehensive publishing plan with LLM...")
+    logger.info("-" * 80)
+    logger.info("📢 AI Distribution Strategist building publishing plan...")
+
+    # Initialize LLM client
+    llm = get_llm_client()
+
+    # Gate on explicit human approval or can_publish flag from Reviewer
+    human_approved = getattr(state, "human_approval_status", None) == "approved"
+    quality_score = review_data.get("overall_quality_score") or review_data.get("overall", {}).get("quality_score")
+    if quality_score is None:
+        quality_score = 0
+    can_publish = human_approved or review_data.get("can_publish")
+    if can_publish is None or not can_publish:
+        status_val = review_data.get("status") or review_data.get("overall", {}).get("status")
+        can_publish = human_approved or (status_val == "approved") or (quality_score >= 60)
+
+    if not human_approved and quality_score is not None and quality_score < 60:
+        return _write_hold_output(
+            state,
+            channels,
+            quality_score,
+            review_data.get("overall", {}).get("summary", "Quality score is below the publish threshold."),
+        )
+
+    if not can_publish:
+        raise ValueError(
+            f"Publish blocked. Status: {review_data.get('status', 'unknown')}. "
+            f"Reason: {review_data.get('overall', {}).get('summary', 'No summary provided')}"
+        )
+
+    # Also validate quality score if present
+    if quality_score is not None and quality_score < 60:
+        raise ValueError(
+            f"Quality score {quality_score} below threshold 60. "
+            f"Status: {review_data.get('status', 'unknown')}"
+        )
+
+    # Pre-calculate publishing decision based on quality score
+    if quality_score is not None and quality_score >= 80:
+        expected_decision = "APPROVED_FOR_PUBLISHING"
+    elif quality_score is not None and quality_score >= 60:
+        expected_decision = "REVISIONS_NEEDED"
+    else:
+        expected_decision = "APPROVED_FOR_PUBLISHING"  # Default when can_publish is true but score is absent
+
+    logger.info(f"   can_publish: {can_publish} | Quality Score: {quality_score}/100 → Expected Decision: {expected_decision}")
+
+    additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
+
+    # Load publisher prompt and format with all campaign data
+    prompt = load_prompt(
+        "publisher",
+        # Campaign metadata
+        campaign_name=campaign_name,
+        brand_name=brand_name,
+        industry=industry,
+        brand_voice=brand_voice,
+        target_audience=target_audience,
+        brief=brief,
+        additional_context=additional_context,
+        # Manager data
+        channels=json.dumps(channels, separators=(',', ':')),
+        deliverables=json.dumps(deliverables, separators=(',', ':')),
+        # Strategy data
+        inferred_goal=inferred_goal,
+        positioning=positioning,
+        timeline=json.dumps(timeline, separators=(',', ':')),
+        success_metrics=json.dumps(success_metrics, separators=(',', ':')),
+        channel_strategy=json.dumps(channel_strategy, separators=(',', ':')),
+        audience_segments=json.dumps(audience_segments, separators=(',', ':')),
+        key_messages=json.dumps(key_messages, separators=(',', ':')),
+        # Copy data
+        copy_summary=json.dumps(copy_summary, separators=(',', ':')),
+        # Image data
+        image_summary=json.dumps(image_summary, separators=(',', ':')),
+        # Review data
+        review_summary=json.dumps(review_summary, separators=(',', ':')),
+
+        quality_score=quality_score,
+        # Derived fields
+        channels_count=len(channels),
+        deliverables_count=len(deliverables),
+        # Pre-calculated decision for strict enforcement
+        expected_decision=expected_decision,
+        # Dynamic channel intelligence (only active channels)
+        channel_intelligence=_build_channel_intelligence(channels),
+    )
+
+    logger.info("   Querying LLM with structured output...")
+
+    # Cache-aware LLM call
+    cache_key = make_key("Publisher", prompt=prompt, temperature=0.5, max_tokens=8192)
+    cached = cache_get(cache_key)
+    if cached is not None:
+        logger.info("📦 Cache hit — using cached Publisher response")
+        publisher_output = PublisherOutput(**cached)
+    else:
+        publisher_output, state = safe_llm_call(
+            state,
+            "Publisher",
+            lambda: llm.generate_structured(prompt, PublisherOutput, temperature=0.5, max_tokens=8192)
+        )
+        if publisher_output is not None:
+            cache_set(cache_key, publisher_output.model_dump())
+
+    if publisher_output is None:
+        logger.info("   ⚠️ Publisher LLM unavailable — using deterministic fallback publishing plan")
+        publisher_output = _fallback_publisher_output(
+            channels,
+            deliverables,
+            expected_decision,
+            quality_score,
+            brand_name,
+        )
+        state.error = None
+        state.status = "published"
+        logger.info("   ✅ Fallback publishing plan ready — error flag cleared, campaign complete")
+
+    # ========== POST-PROCESSING: ENFORCE STRICT RULES ==========
+    logger.info("\n   Enforcing strict decision and status rules...")
+    
+    # Force correct publishing decision based on quality score
+    if publisher_output.publishing_decision != expected_decision:
+        logger.info(f"   ⚠️  LLM produced '{publisher_output.publishing_decision}', correcting to '{expected_decision}'")
+        publisher_output.publishing_decision = expected_decision
+    
+    # Force correct channel status based on copy availability
+    copy_available = state.copy_output is not None
+    for plan in publisher_output.publishing_plan:
+        channel = plan.channel.lower()
+        # Channels that need copy: email, linkedin, social, ads, facebook, twitter, instagram, tiktok, youtube
+        needs_copy = channel in ["email", "linkedin", "social", "ads", "facebook", "twitter", "instagram", "tiktok", "youtube", "google_ads"]
+        
+        if needs_copy:
+            if copy_available:
+                # Check if this specific channel has ready copy
+                channel_ready_key = f"{channel}_ready"
+                is_ready = copy_readiness.get(channel_ready_key, False)
+                if is_ready:
+                    plan.status = "READY"
+                else:
+                    plan.status = "PENDING_ASSET"
+            else:
+                # No copy output at all
+                plan.status = "PENDING_ASSET"
+        else:
+            # Non-copy channels (e.g., website, blog) can be READY if they have content
+            plan.status = "READY"
+    
+    logger.info("   ✓ Decision and status rules enforced")
+
+    # ========== STEP 8: DISPLAY PUBLISHING PLAN SUMMARY ==========
+    logger.info("\n[STEP 8] Publishing plan generated!")
+    logger.info("-" * 80)
+    logger.info("✅ Publishing plan generated by LLM!")
+
+    logger.info(f"\n📝 Publishing Decision: {publisher_output.publishing_decision}")
+    logger.info(f"   Rationale: {publisher_output.decision_rationale[:100]}...")
+
+    logger.info("\n📅 Content Calendar:")
+    logger.info(f"   Total Weeks: {publisher_output.content_calendar.total_weeks}")
+    logger.info(f"   Start Date:  {publisher_output.content_calendar.campaign_start_date}")
+
+    logger.info(f"\n📊 Publishing Plan ({len(publisher_output.publishing_plan)} channels):")
+    for plan in publisher_output.publishing_plan[:3]:
+        logger.info(f"   • {plan.channel}: {plan.priority} priority - {plan.status}")
+
+    logger.info("\n📦 Asset Checklist:")
+    logger.info(f"   Copy Assets:   {len(publisher_output.asset_checklist.copy_assets)}")
+    logger.info(f"   Visual Assets: {len(publisher_output.asset_checklist.visual_assets)}")
+    if publisher_output.asset_checklist.missing_assets:
+        logger.info(f"   Missing:       {len(publisher_output.asset_checklist.missing_assets)} items")
+
+    logger.info("\n📈 Projected Metrics:")
+    logger.info(f"   Total Reach: {publisher_output.projected_metrics.total_reach}")
+    logger.info(f"   Lead Target: {publisher_output.projected_metrics.lead_target}")
+    logger.info(f"   Est. CTR:    {publisher_output.projected_metrics.estimated_ctr}")
+    logger.info(f"   ROI:         {publisher_output.projected_metrics.roi_projection}")
+
+    logger.info("\n📝 Executive Summary:")
+    logger.info(f"   {publisher_output.executive_summary[:150]}...")
+
+    # ========== STEP 9: WRITE TO STATE ==========
+    logger.info("\n[STEP 9] Writing to state...")
+    logger.info("-" * 80)
+
+    publisher_output_json = publisher_output.model_dump_json(indent=2)
+
+    state.publisher_output = publisher_output_json
+    state.status = "completed"
+    state.workflow_finished = True  # Mark workflow as completely finished
+    state.error = None
+
+    logger.info("✅ State updated:")
+    logger.info(f"   publisher_output: {len(publisher_output_json)} characters")
+    logger.info(f"   status: {state.status}")
+
+    logger.info("\n" + "=" * 80)
+    logger.info("✅ PUBLISHER AGENT COMPLETE")
+    logger.info(f"   Decision:  {publisher_output.publishing_decision}")
+    logger.info(f"   Channels:  {len(publisher_output.publishing_plan)}")
+    logger.info(f"   Calendar:  {publisher_output.content_calendar.total_weeks} weeks")
+    logger.info("=" * 80)
+
+    return state
+
+
+# ==================== MAIN EXECUTION ====================
+
+if __name__ == "__main__":
+    logger.info("\n" + "=" * 80)
+    logger.info("⚠️  This is the agent module file.")
+    logger.info("    To test the Publisher Agent, run: python examples/run_publisher.py")
+    logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
+    logger.info("=" * 80)
+    

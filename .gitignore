@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+coverage/
+
+# Misc
+.cache/
+temp/
+tmp/
+
+# AI Service - Learning & Verification Files
+ai-service/LANGGRAPH_LEARNING_GUIDE.md
+ai-service/ACTUAL_DEPENDENCIES.md
+ai-service/VERIFICATION_REPORT.txt
+ai-service/LANGGRAPH_SUMMARY.txt
+ai-service/STRUCTURED_OUTPUTS_AND_ERROR_HANDLING.md
+ai-service/HITL_SUMMARY.md
+ai-service/HITL_VISUAL_DIAGRAMS.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

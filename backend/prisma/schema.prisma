@@ -1,0 +1,316 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatarUrl String?
+  
+  projects  Project[]
+  notifications Notification[]
+  apiKeys   ApiKey[]
+  mcpActivities McpActivity[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  status      String   @default("active") // active, idle, archived
+  
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  campaigns       Campaign[]
+  memorySnapshots CampaignMemorySnapshot[]
+  personaMemories PersonaMemory[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("projects")
+  @@index([userId])
+}
+
+model Campaign {
+  id              String   @id @default(uuid())
+  name            String
+  brandName       String?
+  industry        String
+  primaryGoal     String
+  targetAudience  String   @db.Text
+  brandVoice      String
+  
+  status          String   @default("draft")
+  reviewScore     Float?   // AI review agent score (0-100)
+  reviewOutput    String?  @db.Text // Full review output JSON with individual agent scores
+  
+  // AI Service Integration
+  aiCampaignId    String?  // FastAPI campaign ID
+  aiOutputs       Json?    // All 7 agent outputs (manager, research, strategy, copy, image, review, publisher)
+  aiError         String?  @db.Text // Error message if AI workflow fails
+  
+  // HITL (Human-In-The-Loop) Fields
+  researchRevisionCount  Int?     @default(0)
+  strategyRevisionCount  Int?     @default(0)
+  copyRevisionCount      Int?     @default(0)
+  imageRevisionCount     Int?     @default(0)
+  humanApprovalStatus    String?  // 'pending', 'approved', 'rejected'
+  humanFeedback          String?  @db.Text
+  humanRevisionTarget    String?  // 'research', 'strategy', 'copywriter', 'image_prompt'
+  
+  additionalInfo  String?  @db.Text
+  
+  projectId       String
+  project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  memorySnapshot  CampaignMemorySnapshot?
+  preflightSimulations PreflightSimulation[]
+  performanceSnapshots PerformanceSnapshot[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("campaigns")
+  @@index([projectId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, isRead])
+}
+
+model CampaignMemorySnapshot {
+  id                      String   @id @default(uuid())
+
+  projectId               String
+  project                 Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  campaignId              String   @unique
+  campaign                Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  finalReviewScore        Float?
+  humanApprovedOnFirstTry Boolean  @default(false)
+
+  rejectionReasons        Json?    // [{ targetAgent: string, feedbackText: string }]
+  finalApprovedTone       String[] // Postgres native array
+  finalChannelsUsed       String[]
+
+  completedAt             DateTime @default(now())
+
+  @@index([projectId, completedAt])
+  @@map("campaign_memory_snapshots")
+}
+
+model PreflightSimulation {
+  id                 String   @id @default(uuid())
+  campaignId         String
+  campaign           Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  status             String   @default("completed") // pending, running, completed, failed
+  readinessScore     Float?   // Overall 0-100 score
+  passedGates        Boolean  @default(true)
+  trustScore         Float?
+  evidenceScore      Float?
+  personaTrustScore  Float?
+
+  decisionExplanation Json?   // { positiveDrivers, negativeDrivers, detectedSignals, recommendations, confidenceFactors, confidenceScore }
+  devilsAdvocateIssues Json?  // [{ issue, severity, evidence, recommendedFix }]
+  telemetry          Json?    // { latencyMs, tokenCount, modelUsed, estimatedCostUsd }
+
+  requestHash        String?  // Deterministic SHA-256 hash for idempotency deduplication
+  version            SimulationVersion?
+
+  createdAt          DateTime @default(now())
+
+  @@map("preflight_simulations")
+  @@index([campaignId])
+  @@index([requestHash])
+}
+
+model SimulationVersion {
+  id               String              @id @default(uuid())
+  simulationId     String              @unique
+  simulation       PreflightSimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  modelVersion     String   // E.g. "gpt-4o-2024-08-06"
+  promptVersion    String   // E.g. "devils_advocate_v1.2"
+  scoringVersion   String   // E.g. "gated_readiness_v2.0"
+
+  createdAt        DateTime @default(now())
+
+  @@map("simulation_versions")
+}
+
+model PersonaMemory {
+  id             String   @id @default(uuid())
+  personaId      String
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  memoryType     String   // 'objection', 'accepted_fix', 'unresolved_risk', 'trust_delta'
+  summary        String   @db.Text
+  embeddingReady Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+
+  @@map("persona_memories")
+  @@index([projectId, personaId])
+  @@index([projectId, createdAt])
+  @@index([projectId, personaId, createdAt(sort: Desc)])
+}
+
+// ── Developer API Keys ─────────────────────────────────────────────────────────
+// Stores long-lived programmatic API keys for MCP server and third-party integrations.
+// The raw key is NEVER stored — only its SHA-256 hash. The raw key is shown once
+// at creation time (returned in the POST /api/developer/keys response) and discarded.
+
+model ApiKey {
+  id         String    @id @default(uuid())
+
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // SHA-256 hex digest of the raw key. Used for constant-time lookup during auth.
+  keyHash    String    @unique
+
+  // Human-readable label (e.g. "Claude Desktop - MacBook Pro").
+  label      String
+
+  // Soft-delete flag. Revocation sets this to false; the record is retained for audit.
+  isActive   Boolean   @default(true)
+
+  // Updated asynchronously after each successful authentication to enable usage auditing.
+  lastUsedAt DateTime?
+
+  createdAt  DateTime  @default(now())
+
+  @@map("api_keys")
+  @@index([userId])
+}
+
+model McpActivity {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  toolName    String
+  campaignId  String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  @@map("mcp_activities")
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([campaignId])
+}
+
+// ── Phase 2A Ad Performance Telemetry Infrastructure Models ───────────────────
+
+model PerformanceSnapshot {
+  id                   String   @id @default(uuid())
+  campaignId           String
+  campaign             Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  platform             String   // 'meta', 'google', 'linkedin'
+  impressions          Int      @default(0)
+  clicks               Int      @default(0)
+  conversions          Int      @default(0)
+  spendUsd             Float    @default(0.0)
+
+  observedCtr          Float?
+  observedCvr          Float?
+  observedRoas         Float?
+
+  snapshotDate         DateTime @default(now())
+
+  @@map("performance_snapshots")
+  @@index([campaignId, platform])
+  @@index([snapshotDate])
+}
+
+model TelemetryEvent {
+  id                   String   @id @default(uuid())
+  eventId              String   @unique
+  organizationId       String
+  projectId            String
+  campaignId           String
+  platform             String   // 'meta', 'google', 'linkedin'
+
+  rawPayload           Json
+  normalizedMetrics    Json
+  eventTimestamp       DateTime @default(now())
+  createdAt            DateTime @default(now())
+
+  @@map("telemetry_events")
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([campaignId])
+}
+
+model ProviderCredential {
+  id                   String   @id @default(uuid())
+  organizationId       String
+  platform             String   // 'meta', 'google', 'linkedin'
+  encryptedMetadata    String   @db.Text
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@map("provider_credentials")
+  @@unique([organizationId, platform])
+}
+
+model WebhookDelivery {
+  id                   String   @id @default(uuid())
+  platform             String
+  signatureHeader      String?
+  status               String   // 'PROCESSED', 'DUPLICATE', 'INVALID_SIGNATURE', 'SKIPPED'
+  processingLatencyMs  Float?
+
+  deliveredAt          DateTime @default(now())
+
+  @@map("webhook_deliveries")
+  @@index([platform, deliveredAt(sort: Desc)])
+}
+
+model CalibrationModelSnapshot {
+  id               String   @id @default(uuid())
+  industry         String
+  version          String   // 'calibrated_v1.0'
+  metricsJson      Json     // { spearman_rho, ndcg_at_5, pearson_r, mae }
+  sampleCount      Int
+  driftDetected    Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+
+  @@map("calibration_model_snapshots")
+  @@index([industry, createdAt(sort: Desc)])
+}
