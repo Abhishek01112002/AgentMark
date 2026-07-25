@@ -213,6 +213,27 @@ async def _run_analyst_synthesis(
         lambda: client.generate_structured(prompt=prompt, response_model=AnalystSynthesis, temperature=0.2, seed=42)
     )
     
+    # Compute Trust Score & Gated Readiness
+    trust_scores = [c.rubric.trust * 20.0 for c in critiques if hasattr(c, 'rubric') and hasattr(c.rubric, 'trust')]
+    avg_trust = sum(trust_scores) / len(trust_scores) if trust_scores else 75.0
+
+    passed_gates = avg_trust >= 75.0
+    failed_reasons = []
+    if avg_trust < 75.0:
+        failed_reasons.append(f"Trust & Credibility score ({avg_trust:.1f}%) is below the minimum required 75.0% threshold.")
+
+    from schemas.simulation import GatedReadiness, ReasoningSummary
+    gated_readiness = GatedReadiness(
+        passed_gates=passed_gates,
+        trust_score=round(avg_trust, 1),
+        cognitive_load=35.0,
+        failed_reasons=failed_reasons
+    )
+    if hasattr(synthesis, 'gated_readiness') and synthesis.gated_readiness:
+        synthesis.gated_readiness.passed_gates = passed_gates
+        synthesis.gated_readiness.trust_score = round(avg_trust, 1)
+        synthesis.gated_readiness.failed_reasons = failed_reasons
+
     # Apply claim guardrail sanitization to analyst recommendations
     sanitized_recs = sanitize_copy_rewrites(synthesis.actionable_recommendations)
     
@@ -220,5 +241,8 @@ async def _run_analyst_synthesis(
         overall_score=overall_score,
         persona_critiques=critiques,
         actionable_recommendations=sanitized_recs,
-        personas=personas
+        personas=personas,
+        gated_readiness=gated_readiness,
+        devils_advocate_issues=getattr(synthesis, 'devils_advocate_issues', []),
+        reasoning_summary=getattr(synthesis, 'reasoning_summary', None) or ReasoningSummary()
     )

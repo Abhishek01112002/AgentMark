@@ -83,6 +83,38 @@ class TestFocusGroupAgentBatch2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("[Claim Verification Required]", report.actionable_recommendations[0].suggested_revision)
         self.assertNotIn("FDA Approved", report.actionable_recommendations[0].suggested_revision)
 
+    async def test_gated_readiness_threshold_failure(self):
+        mock_client = MagicMock()
+        mock_synthesis = AnalystSynthesis(
+            overall_score=40,
+            actionable_recommendations=[
+                ActionableRecommendation(
+                    target_channel="LinkedIn",
+                    friction_identified="Low trust score identified in messaging",
+                    suggested_revision="Add customer testimonials to build trust."
+                )
+            ]
+        )
+        mock_client.generate_structured.return_value = mock_synthesis
+
+        critiques = [
+            PersonaCritique(
+                persona_id="sarah-tech",
+                rubric=PersonaRubric(clarity=3, trust=2, value=2, urgency=1), # trust = 2 * 20 = 40% < 75%
+                objection="Unbelievable claim",
+                clash_quote="Claim",
+                click_intent=False,
+                verdict="Do not trust this pitch due to lack of proof"
+            )
+        ]
+
+        personas = []
+        report = await _run_analyst_synthesis(mock_client, critiques, "Original copy", personas)
+
+        self.assertFalse(report.gated_readiness.passed_gates)
+        self.assertEqual(report.gated_readiness.trust_score, 40.0)
+        self.assertIn("Trust & Credibility score (40.0%) is below the minimum required 75.0% threshold.", report.gated_readiness.failed_reasons[0])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -179,6 +179,35 @@ class ActionableRecommendation(BaseModel):
     )
 
 
+class DevilsAdvocateIssue(BaseModel):
+    """Specific risk or friction point identified by the Devil's Advocate Agent."""
+    model_config = SIMULATION_CONFIG
+
+    issue: str = Field(..., min_length=5, max_length=500, description="The specific risk or claim weakness")
+    severity: str = Field(..., description="CRITICAL, HIGH, MEDIUM, or LOW")
+    evidence: str = Field(..., min_length=5, max_length=500, description="Quote or missing proof trigger")
+    recommended_fix: str = Field(..., min_length=5, max_length=1000, description="Actionable revision step")
+
+
+class GatedReadiness(BaseModel):
+    """Pre-Flight gate evaluation results."""
+    model_config = SIMULATION_CONFIG
+
+    passed_gates: bool = Field(default=True, description="True if trust >= 75% and critical issues == 0")
+    trust_score: float = Field(default=80.0, ge=0.0, le=100.0, description="Calculated Trust & Credibility metric (0-100)")
+    cognitive_load: float = Field(default=30.0, ge=0.0, le=100.0, description="Mental processing effort score (lower is better)")
+    failed_reasons: List[str] = Field(default_factory=list, description="List of gate violation reasons if failed")
+
+
+class ReasoningSummary(BaseModel):
+    """Transparency rationale for marketer trust."""
+    model_config = SIMULATION_CONFIG
+
+    positive_drivers: List[str] = Field(default_factory=list, description="Top copy elements driving conversion")
+    negative_drivers: List[str] = Field(default_factory=list, description="Top copy elements causing friction")
+    confidence_score: float = Field(default=0.92, ge=0.0, le=1.0, description="Prediction calibration score (0.0 to 1.0)")
+
+
 class FocusGroupReport(BaseModel):
     """Consolidated report output from the simulation analyst."""
     model_config = SIMULATION_CONFIG
@@ -204,6 +233,18 @@ class FocusGroupReport(BaseModel):
     personas: List[PersonaProfile] = Field(
         default=[],
         description="The simulated persona profiles used for the focus group."
+    )
+    gated_readiness: GatedReadiness = Field(
+        default_factory=GatedReadiness,
+        description="Gated Pre-Flight readiness results"
+    )
+    devils_advocate_issues: List[DevilsAdvocateIssue] = Field(
+        default_factory=list,
+        description="Adversarial risk audit issues"
+    )
+    reasoning_summary: ReasoningSummary = Field(
+        default_factory=ReasoningSummary,
+        description="Transparency and trust summary"
     )
 
     @model_validator(mode="after")
@@ -271,6 +312,19 @@ class AnalystSynthesis(BaseModel):
         max_length=10,
         description="Detailed text revision tips to resolve friction — provide at least 1"
     )
+    gated_readiness: GatedReadiness = Field(
+        default_factory=GatedReadiness,
+        description="Gated Pre-Flight readiness results"
+    )
+    devils_advocate_issues: List[DevilsAdvocateIssue] = Field(
+        default_factory=list,
+        description="Adversarial risk audit issues"
+    )
+    reasoning_summary: ReasoningSummary = Field(
+        default_factory=ReasoningSummary,
+        description="Transparency and trust summary"
+    )
+
 
 
 class PersonaListContainer(BaseModel):
