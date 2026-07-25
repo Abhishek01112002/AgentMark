@@ -3,7 +3,7 @@ Google Ads Telemetry Connector — AgentMark AI Pre-Flight Engine
 """
 
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 from services.telemetry_connectors.base import BaseTelemetryConnector
 from domain.telemetry import CanonicalAdMetrics, NormalizedPerformanceEvent
 
@@ -41,11 +41,11 @@ class GoogleTelemetryConnector(BaseTelemetryConnector):
         )
 
         return NormalizedPerformanceEvent(
-            event_id=str(raw_payload.get("event_id", f"google_{raw_payload.get('campaign_id', 'evt')}_{int(datetime.utcnow().timestamp())}")),
+            event_id=str(raw_payload.get("event_id", f"google_{raw_payload.get('campaign_id', 'evt')}_{int(datetime.now(timezone.utc).timestamp())}")),
             organization_id=str(raw_payload.get("organization_id", "org_default")),
             project_id=str(raw_payload.get("project_id", "proj_default")),
             campaign_id=metrics.campaign_id,
             platform="google",
             metrics=metrics,
-            event_timestamp=datetime.utcnow()
+            event_timestamp=datetime.now(timezone.utc)
         )

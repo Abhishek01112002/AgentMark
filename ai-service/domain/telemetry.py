@@ -5,7 +5,7 @@ Provider-agnostic canonical data models for ad platform metrics, telemetry event
 and normalized performance schemas.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 
@@ -35,5 +35,5 @@ class NormalizedPerformanceEvent(BaseModel):
     platform: str = Field(description="'meta', 'google', or 'linkedin'")
     
     metrics: CanonicalAdMetrics
-    event_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    event_timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     payload_version: str = Field(default="v1.0")

@@ -68,8 +68,24 @@ def process_telemetry_webhook(
         logger.error(f"Failed to parse webhook payload for {platform}: {exc}")
         return {"status": "error", "reason": "payload_parse_failure"}, "PARSE_ERROR"
 
-    # Step 3: Deduplication check
-    if event.event_id in _PROCESSED_EVENT_IDS:
+    # Step 3: Redis-backed Deduplication check (with in-memory fallback)
+    redis_key = f"idempotency:telemetry:{event.event_id}"
+    is_duplicate = False
+
+    try:
+        from services.redis_client import get_redis_client
+        redis_client = get_redis_client()
+        if redis_client:
+            # SET key EX 86400 NX returns True if new key set, False if key already exists
+            was_set = redis_client.set(redis_key, "1", ex=86400, nx=True)
+            if not was_set:
+                is_duplicate = True
+        else:
+            is_duplicate = event.event_id in _PROCESSED_EVENT_IDS
+    except Exception:
+        is_duplicate = event.event_id in _PROCESSED_EVENT_IDS
+
+    if is_duplicate:
         logger.info(f"Duplicate telemetry event detected and dropped: {event.event_id}")
         return {"status": "dropped", "reason": "duplicate_event_id"}, "DUPLICATE"
 
