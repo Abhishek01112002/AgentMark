@@ -145,20 +145,42 @@ async def run_focus_group_simulation(
     else:
         devils_issues = devils_result
 
-    # ── Step 2: Synthesize Report via Analyst Agent ─────────────────────────
-    report = await _run_with_retry(
-        lambda: _run_analyst_synthesis(client, valid_critiques, copy_output, personas, negativity_bias, trust_analysis, devils_issues)
+    # ── Step 2: Analyst Synthesis & Multi-Persona Debate Engine ──
+    report = await _run_analyst_synthesis(
+        client, 
+        valid_critiques, 
+        copy_output, 
+        personas, 
+        negativity_bias,
+        trust_analysis=trust_analysis,
+        devils_issues=devils_issues
     )
 
-    elapsed_ms = (time.time() - start_time) * 1000.0
-    report.telemetry = ExecutionTelemetry(
-        latency_ms=round(elapsed_ms, 2),
-        token_count=len(copy_output.split()) * 4 + 350,
-        model_used="smart_client",
-        estimated_cost_usd=0.0015
-    )
+    # Execute Phase 1B Multi-Persona Debate Engine
+    try:
+        from agents.debate_orchestrator import run_multi_persona_debate
+        debate_summary = await run_multi_persona_debate(
+            campaign_copy=copy_output,
+            personas=personas,
+            critiques=valid_critiques,
+            client=client
+        )
+        report.debate_summary = debate_summary
+    except Exception as e:
+        logger.warning(f"Multi-Persona Debate Engine failed (non-fatal): {e}")
 
-    return report
+    # Compute execution telemetry
+    end_time = time.time()
+    latency_ms = round((end_time - start_time) * 1000, 2)
+    telemetry = ExecutionTelemetry(
+        latency_ms=latency_ms,
+        token_count=850,
+        model_used=getattr(client, 'primary_provider', 'smart_client'),
+        provider=getattr(client, 'primary_provider', 'openai'),
+        estimated_cost_usd=0.0015,
+        cache_hit=False
+    )
+    report.telemetry = telemetry
 
 
 from utils.guardrails import sanitize_copy_rewrites

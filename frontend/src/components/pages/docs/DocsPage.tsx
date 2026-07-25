@@ -850,7 +850,7 @@ function DocsContent() {
 
         .doc-content h2 { font-size: 16px; font-weight: 700; color: #F1F1F3; margin: 32px 0 12px; padding-bottom: 10px; border-bottom: 1px solid #1E2937; letter-spacing: -0.2px; }
         .doc-content h2:first-child { margin-top: 0; }
-        .doc-content section { margin-bottom: 36px; }
+        .doc-content section { content-visibility: auto; contain-intrinsic-size: 400px; margin-bottom: 36px; }
         @media (min-width: 768px) {
           .doc-content h2 { font-size: 18px; margin: 44px 0 16px; padding-bottom: 12px; }
           .doc-content section { margin-bottom: 52px; }

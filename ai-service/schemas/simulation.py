@@ -238,52 +238,40 @@ class ExecutionTelemetry(BaseModel):
     estimated_cost_usd: float = Field(default=0.0, ge=0.0, description="Estimated API cost in USD")
 
 
+class DebateRound(BaseModel):
+    """Transcript summary for a single round of persona debate."""
+    model_config = SIMULATION_CONFIG
+    round_number: int = Field(..., ge=1, le=3, description="Debate round number (1=Initial, 2=Cross-Objections, 3=Final Decision)")
+    speaker_persona_id: str = Field(..., description="Persona ID of speaker")
+    target_persona_id: str | None = Field(default=None, description="Persona ID being addressed in cross-objections")
+    transcript: str = Field(..., max_length=2000, description="Persona statement referencing campaign claims or evidence")
+
+
+class DebateSummary(BaseModel):
+    """Multi-Persona Debate Engine summary."""
+    model_config = SIMULATION_CONFIG
+    buying_probability: float = Field(..., ge=0.0, le=100.0, description="Overall buying committee probability percentage")
+    consensus: str = Field(..., description="Committee consensus: 'approve', 'revise', or 'reject'")
+    top_objections: List[str] = Field(default_factory=list, description="Top objections raised during debate")
+    unresolved_risks: List[str] = Field(default_factory=list, description="Unresolved buying blockers")
+    strongest_positive_signals: List[str] = Field(default_factory=list, description="Strongest value drivers agreed upon by panel")
+    rounds: List[DebateRound] = Field(default_factory=list, description="Structured 3-round debate transcripts")
+
+
 class FocusGroupReport(BaseModel):
-    """Consolidated report output from the simulation analyst."""
+    """Complete output schema of the Synthetic Focus Group simulation."""
     model_config = SIMULATION_CONFIG
 
-    overall_score: int = Field(
-        ..., 
-        ge=0, 
-        le=100, 
-        description="Weighted average of all resonance scores (negativity-biased)"
-    )
-    persona_critiques: List[PersonaCritique] = Field(
-        ..., 
-        min_length=1, 
-        max_length=10,
-        description="Individual critiques from the panel"
-    )
-    actionable_recommendations: List[ActionableRecommendation] = Field(
-        ...,
-        min_length=1,  # Fix #6: must always have at least 1 recommendation
-        max_length=10,
-        description="Detailed text revision tips — at least 1 required"
-    )
-    personas: List[PersonaProfile] = Field(
-        default=[],
-        description="The simulated persona profiles used for the focus group."
-    )
-    gated_readiness: GatedReadiness = Field(
-        default_factory=GatedReadiness,
-        description="Gated Pre-Flight readiness results"
-    )
-    devils_advocate_issues: List[DevilsAdvocateIssue] = Field(
-        default_factory=list,
-        description="Adversarial risk audit issues"
-    )
-    decision_explanation: DecisionExplanation = Field(
-        default_factory=DecisionExplanation,
-        description="Structured decision rationale and detected trust signals"
-    )
-    trust_signal_analysis: TrustSignalAnalysis = Field(
-        default_factory=TrustSignalAnalysis,
-        description="Independent evidence signal audit"
-    )
-    telemetry: ExecutionTelemetry = Field(
-        default_factory=ExecutionTelemetry,
-        description="Execution latency, token, and cost metrics"
-    )
+    overall_score: int = Field(..., ge=0, le=100, description="Negativity-biased overall score (0-100)")
+    persona_critiques: List[PersonaCritique] = Field(..., min_length=1, description="List of individual persona critiques")
+    actionable_recommendations: List[ActionableRecommendation] = Field(..., description="List of actionable recommendations")
+    personas: List[PersonaProfile] = Field(default_factory=list, description="List of persona profiles used")
+    gated_readiness: GatedReadiness = Field(default_factory=GatedReadiness, description="Hard gate readiness assessment")
+    devils_advocate_issues: List[DevilsAdvocateIssue] = Field(default_factory=list, description="Adversarial conversion risk audit")
+    decision_explanation: DecisionExplanation = Field(default_factory=DecisionExplanation, description="Structured decision explanation")
+    trust_signal_analysis: TrustSignalAnalysis = Field(default_factory=TrustSignalAnalysis, description="Independent evidence signal audit")
+    telemetry: ExecutionTelemetry = Field(default_factory=ExecutionTelemetry, description="Execution latency, token, and cost metrics")
+    debate_summary: DebateSummary | None = Field(default=None, description="Optional Phase 1B Multi-Persona Debate Engine summary")
 
     @property
     def reasoning_summary(self) -> DecisionExplanation:

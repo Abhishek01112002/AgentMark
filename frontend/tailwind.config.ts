@@ -78,6 +78,7 @@ export default {
         gutter: '24px',
       },
       fontFamily: {
+        mono: ['JetBrains Mono', 'monospace'],
         'display-lg': ['Sora', 'sans-serif'],
         'body-md': ['Sora', 'sans-serif'],
         'headline-lg': ['Sora', 'sans-serif'],
