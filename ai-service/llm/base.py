@@ -208,11 +208,11 @@ class BaseLLMClient(ABC):
         self.circuit_breaker.record_success()
 
     @abstractmethod
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
         pass
 
     @abstractmethod
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
         pass
 
 
@@ -221,8 +221,8 @@ class PoolClient(BaseLLMClient):
     def __init__(self, pool: ProviderPool):
         self._pool = pool
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
-        return self._pool.generate(prompt, temperature, max_tokens)
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
+        return self._pool.generate(prompt, temperature, max_tokens, seed=seed)
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
-        return self._pool.generate_structured(prompt, response_model, temperature, max_tokens)
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
+        return self._pool.generate_structured(prompt, response_model, temperature, max_tokens, seed=seed)

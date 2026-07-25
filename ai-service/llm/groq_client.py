@@ -36,15 +36,18 @@ class GroqClient(BaseLLMClient):
 
         self.client = Groq(api_key=self.api_key, max_retries=0)
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
         try:
             self._wait_for_rate_limit()
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            kwargs = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if seed is not None:
+                kwargs["seed"] = seed
+            response = self.client.chat.completions.create(**kwargs)
             self._record_success()
             return response.choices[0].message.content
         except Exception as exc:
@@ -56,6 +59,7 @@ class GroqClient(BaseLLMClient):
         response_model: Type[T],
         temperature: float = 0.7,
         max_tokens: int = 4000,
+        seed: int | None = None,
     ) -> T:
         schema = response_model.model_json_schema()
         compact_schema = json.dumps(schema, separators=(",", ":"))

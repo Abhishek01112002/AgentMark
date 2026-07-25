@@ -58,7 +58,7 @@ class GeminiClient(BaseLLMClient):
         self.model._client = client_manager.get_default_client("generative")
         self.model._async_client = client_manager.get_default_client("generative_async")
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
         _ensure_event_loop()
         try:
             self._wait_for_rate_limit()
@@ -80,6 +80,7 @@ class GeminiClient(BaseLLMClient):
         response_model: Type[T],
         temperature: float = 0.7,
         max_tokens: int = 4000,
+        seed: int | None = None,
     ) -> T:
         _ensure_event_loop()
         schema = response_model.model_json_schema()

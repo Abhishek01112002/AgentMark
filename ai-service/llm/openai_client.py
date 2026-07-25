@@ -68,15 +68,18 @@ class OpenAIClient(BaseLLMClient):
         # native parse path entirely and go straight to JSON-mode fallback.
         self._use_json_fallback: bool = False
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
         try:
             self._wait_for_rate_limit()
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            kwargs = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if seed is not None:
+                kwargs["seed"] = seed
+            response = self.client.chat.completions.create(**kwargs)
             self._record_success()
             return response.choices[0].message.content
         except Exception as exc:
@@ -88,12 +91,13 @@ class OpenAIClient(BaseLLMClient):
         response_model: Type[T],
         temperature: float = 0.7,
         max_tokens: int = 4000,
+        seed: int | None = None,
     ) -> T:
         # If a previous call on this instance already confirmed that the key
         # lacks models.read, skip straight to the JSON-mode fallback.
         if not self._use_json_fallback:
             try:
-                return self._generate_structured_native(prompt, response_model, temperature, max_tokens)
+                return self._generate_structured_native(prompt, response_model, temperature, max_tokens, seed=seed)
             except Exception as exc:
                 if _is_models_permission_error(exc):
                     logger.warning(
@@ -107,22 +111,25 @@ class OpenAIClient(BaseLLMClient):
 
         # JSON-mode fallback: plain chat.completions.create + Pydantic validation.
         # Does not call GET /v1/models so works with keys that lack models.read.
-        return self._generate_structured_json_mode(prompt, response_model, temperature, max_tokens)
+        return self._generate_structured_json_mode(prompt, response_model, temperature, max_tokens, seed=seed)
 
     # ── Private helpers ──────────────────────────────────────────────────────
 
     def _generate_structured_native(
-        self, prompt: str, response_model: Type[T], temperature: float, max_tokens: int
+        self, prompt: str, response_model: Type[T], temperature: float, max_tokens: int, seed: int | None = None
     ) -> T:
         """Use OpenAI's native structured-output beta parser."""
         self._wait_for_rate_limit()
-        response = self.client.beta.chat.completions.parse(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format=response_model,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        kwargs = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "response_format": response_model,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if seed is not None:
+            kwargs["seed"] = seed
+        response = self.client.beta.chat.completions.parse(**kwargs)
         self._record_success()
         parsed = response.choices[0].message.parsed
         if parsed:
@@ -130,7 +137,7 @@ class OpenAIClient(BaseLLMClient):
         raise ValueError("OpenAI returned null parsed object")
 
     def _generate_structured_json_mode(
-        self, prompt: str, response_model: Type[T], temperature: float, max_tokens: int
+        self, prompt: str, response_model: Type[T], temperature: float, max_tokens: int, seed: int | None = None
     ) -> T:
         """Fallback: JSON response_format + Pydantic model_validate_json.
         
@@ -151,13 +158,16 @@ class OpenAIClient(BaseLLMClient):
 
         try:
             self._wait_for_rate_limit()
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": augmented_prompt}],
-                response_format={"type": "json_object"},
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+            kwargs = {
+                "model": self.model,
+                "messages": [{"role": "user", "content": augmented_prompt}],
+                "response_format": {"type": "json_object"},
+                "temperature": temperature,
+                "max_tokens": max_tokens,
+            }
+            if seed is not None:
+                kwargs["seed"] = seed
+            response = self.client.chat.completions.create(**kwargs)
             self._record_success()
             raw_json = response.choices[0].message.content or "{}"
             return response_model.model_validate_json(raw_json)

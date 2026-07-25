@@ -191,21 +191,23 @@ class SmartClient(BaseLLMClient):
                     "All LLM providers are currently rate-limited. Try again later or add more API keys."
                 )
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
         return self._call_with_failover(
-            lambda c, p, t, m: c.generate(p, t, m),
+            lambda c, p, t, m, s: c.generate(p, t, m, seed=s),
             prompt,
             temperature,
             max_tokens,
+            seed,
         )
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
         return self._call_with_failover(
-            lambda c, p, r, t, m: c.generate_structured(p, r, t, m),
+            lambda c, p, r, t, m, s: c.generate_structured(p, r, t, m, seed=s),
             prompt,
             response_model,
             temperature,
             max_tokens,
+            seed,
         )
 
 
