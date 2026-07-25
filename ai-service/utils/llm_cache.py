@@ -108,7 +108,7 @@ def set(key: str, value: any):
     r = _get_redis()
     if r:
         try:
-            r.setex(f"llm:cache:{key}", 86400, json.dumps(value))
+            r.set(f"llm:cache:{key}", json.dumps(value), ex=86400)
         except Exception as exc:
             logger.warning("Failed to write to Redis cache (non-fatal): %s", exc)
 
