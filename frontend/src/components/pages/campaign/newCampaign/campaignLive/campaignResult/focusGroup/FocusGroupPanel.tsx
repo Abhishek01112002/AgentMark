@@ -8,6 +8,13 @@ import { createPortal } from 'react-dom';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
+interface PersonaRubric {
+  clarity: number;
+  trust: number;
+  value: number;
+  urgency: number;
+}
+
 interface PersonaCritique {
   persona_id: string;
   resonance_score: number;
@@ -15,6 +22,7 @@ interface PersonaCritique {
   clash_quote: string;
   click_intent: boolean;
   verdict: string;
+  rubric?: PersonaRubric;
 }
 
 interface ActionableRecommendation {
@@ -600,6 +608,35 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
           >
             "{critique.objection}"
           </p>
+        )}
+
+        {critique.rubric && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px', marginTop: 4, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+            {[
+              { label: 'Clarity', score: critique.rubric.clarity },
+              { label: 'Trust', score: critique.rubric.trust },
+              { label: 'Value', score: critique.rubric.value },
+              { label: 'Urgency', score: critique.rubric.urgency },
+            ].map(({ label, score }) => (
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: COLORS.textMuted }}>
+                  <span>{label}</span>
+                  <span style={{ fontWeight: 600, color: COLORS.textPrimary }}>{score}/5</span>
+                </div>
+                <div style={{ height: 4, borderRadius: 2, backgroundColor: COLORS.border, overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${(score / 5) * 100}%`,
+                      backgroundColor: score >= 4 ? COLORS.green : score >= 3 ? COLORS.warning : COLORS.danger,
+                      borderRadius: 2,
+                      transition: 'width 600ms ease-out',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
