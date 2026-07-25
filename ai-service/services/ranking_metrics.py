@@ -17,8 +17,15 @@ def calculate_spearman_rho(scores: List[float], actuals: List[float]) -> float:
     def get_ranks(val_list: List[float]) -> List[float]:
         sorted_indices = sorted(range(n), key=lambda i: val_list[i])
         ranks = [0.0] * n
-        for rank, idx in enumerate(sorted_indices):
-            ranks[idx] = float(rank + 1)
+        i = 0
+        while i < n:
+            j = i
+            while j < n and val_list[sorted_indices[j]] == val_list[sorted_indices[i]]:
+                j += 1
+            avg_rank = sum(range(i + 1, j + 1)) / float(j - i)
+            for k in range(i, j):
+                ranks[sorted_indices[k]] = avg_rank
+            i = j
         return ranks
 
     rank_x = get_ranks(scores)
