@@ -87,6 +87,16 @@ class PersonaProfile(BaseModel):
         return cleaned
 
 
+class PersonaRubric(BaseModel):
+    """4-axis Likert rubric evaluation (1-5 scale)."""
+    model_config = SIMULATION_CONFIG
+
+    clarity: int = Field(default=3, ge=1, le=5, description="1=Confusing/Vague, 5=Crystal Clear")
+    trust: int = Field(default=3, ge=1, le=5, description="1=Unbelievable/Fake, 5=Highly Credible")
+    value: int = Field(default=3, ge=1, le=5, description="1=Weak/Irrelevant, 5=Must-Have Benefit")
+    urgency: int = Field(default=3, ge=1, le=5, description="1=Zero Urgency, 5=Immediate Action")
+
+
 class PersonaCritique(BaseModel):
     """Critique output from an individual persona auditing copy."""
     model_config = SIMULATION_CONFIG
@@ -96,8 +106,12 @@ class PersonaCritique(BaseModel):
         max_length=50,
         description="Reference to the persona ID"
     )
+    rubric: PersonaRubric = Field(
+        default_factory=PersonaRubric,
+        description="4-axis Likert rubric scoring breakdown"
+    )
     resonance_score: int = Field(
-        ..., 
+        default=60, 
         ge=0, 
         le=100, 
         description="Score from 0 to 100 on alignment with needs"
@@ -123,6 +137,23 @@ class PersonaCritique(BaseModel):
         max_length=1000, 
         description="Short explanation of their final decision"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def compute_resonance_score_from_rubric(cls, data: any) -> any:
+        if isinstance(data, dict):
+            rubric_raw = data.get("rubric")
+            if isinstance(rubric_raw, dict):
+                c = rubric_raw.get("clarity", 3)
+                t = rubric_raw.get("trust", 3)
+                v = rubric_raw.get("value", 3)
+                u = rubric_raw.get("urgency", 3)
+                computed = (c + t + v + u) * 5
+                data["resonance_score"] = max(0, min(100, computed))
+            elif isinstance(rubric_raw, PersonaRubric):
+                computed = (rubric_raw.clarity + rubric_raw.trust + rubric_raw.value + rubric_raw.urgency) * 5
+                data["resonance_score"] = max(0, min(100, computed))
+        return data
 
 
 class ActionableRecommendation(BaseModel):

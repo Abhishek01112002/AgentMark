@@ -907,7 +907,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6366F1]/5 to-transparent pointer-events-none" />
                       <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1.5 text-[10px] font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8' }}>Headline</label>
                       <div className="flex items-start gap-3 relative">
-                        <p className="text-sm md:text-base font-semibold outline-none flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}>{currentVariant.headline}</p>
+                        <p className="text-sm md:text-base outline-none flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#E2E8F0' }}>{currentVariant.headline}</p>
                         <button
                           onClick={() => handleCopyField(currentVariant.headline, 'Headline')}
                           className="p-2 min-w-[34px] min-h-[34px] flex items-center justify-center rounded border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
@@ -932,7 +932,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                       <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#818CF8]/3 to-transparent pointer-events-none" />
                       <label className="absolute -top-2.5 left-3 bg-[#0e0e13] px-1.5 text-[10px] font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#818CF8' }}>Body</label>
                       <div className="flex items-start gap-3 relative">
-                        <div className="text-sm md:text-base outline-none min-h-[80px] whitespace-pre-wrap flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#E8E8F0' }}>
+                        <div className="text-sm md:text-base outline-none min-h-[80px] whitespace-pre-wrap flex-1 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#C8C8D8' }}>
                           {currentVariant.body_copy}
                         </div>
                         <button
@@ -1090,12 +1090,12 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
               <div className="space-y-4">
                 <div>
                   <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Brand Promise</span>
-                  <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{messagingFramework.brand_promise}</p>
+                  <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#D1D1E0' }}>{messagingFramework.brand_promise}</p>
                 </div>
                 {messagingFramework.value_proposition && (
                   <div>
                     <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Value Proposition</span>
-                    <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{messagingFramework.value_proposition}</p>
+                    <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#D1D1E0' }}>{messagingFramework.value_proposition}</p>
                   </div>
                 )}
               </div>
