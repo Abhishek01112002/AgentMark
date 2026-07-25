@@ -75,10 +75,15 @@ async def run_focus_group_simulation(
     campaign_provider: str,
     negativity_bias: float = 0.3
 ) -> FocusGroupReport:
-    """
-    Runs individual persona audits, independent Trust Analyzer, and Devil's Advocate concurrently.
-    Uses SmartClient with automatic failover across all configured providers.
-    """
+    if not personas:
+        from agents.persona_composer import compose_dynamic_personas
+        logger.info(f"No explicit persona panel provided. Composing dynamic persona panel for target audience: {target_audience}")
+        personas = await compose_dynamic_personas(
+            campaign_brief=copy_output[:300],
+            industry="B2B SaaS" if "b2b" in target_audience.lower() or "enterprise" in target_audience.lower() else "General",
+            target_audience=target_audience,
+            product_category="Marketing Strategy"
+        )
     start_time = time.time()
     client = get_llm_client()
     logger.info("Executing Pre-Flight Simulation Engine (Parallel Agent Orchestration)")

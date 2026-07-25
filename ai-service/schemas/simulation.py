@@ -72,6 +72,12 @@ class PersonaProfile(BaseModel):
         max_length=1500, 
         description="Behavioral instructions for LLM simulation roleplay"
     )
+    company_size: str | None = Field(default=None, description="Target company size segment")
+    buying_stage: str | None = Field(default=None, description="Stage in purchase decision process")
+    risk_tolerance: str | None = Field(default=None, description="Risk tolerance level")
+    trust_sensitivity: str | None = Field(default=None, description="Sensitivity to evidence & proof")
+    objection_patterns: List[str] | None = Field(default=None, description="Specific objection patterns")
+    communication_style: str | None = Field(default=None, description="Communication style preference")
 
     @field_validator("id")
     @classmethod
