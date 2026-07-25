@@ -301,3 +301,16 @@ model WebhookDelivery {
   @@index([platform, deliveredAt(sort: Desc)])
 }
 
+model CalibrationModelSnapshot {
+  id               String   @id @default(uuid())
+  industry         String
+  version          String   // 'calibrated_v1.0'
+  metricsJson      Json     // { spearman_rho, ndcg_at_5, pearson_r, mae }
+  sampleCount      Int
+  driftDetected    Boolean  @default(false)
+
+  createdAt        DateTime @default(now())
+
+  @@map("calibration_model_snapshots")
+  @@index([industry, createdAt(sort: Desc)])
+}
