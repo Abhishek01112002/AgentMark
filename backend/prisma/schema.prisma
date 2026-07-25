@@ -147,12 +147,14 @@ model PreflightSimulation {
   devilsAdvocateIssues Json?  // [{ issue, severity, evidence, recommendedFix }]
   telemetry          Json?    // { latencyMs, tokenCount, modelUsed, estimatedCostUsd }
 
+  requestHash        String?  // Deterministic SHA-256 hash for idempotency deduplication
   version            SimulationVersion?
 
   createdAt          DateTime @default(now())
 
   @@map("preflight_simulations")
   @@index([campaignId])
+  @@index([requestHash])
 }
 
 model SimulationVersion {

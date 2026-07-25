@@ -75,6 +75,19 @@ async def run_focus_group_simulation(
     campaign_provider: str,
     negativity_bias: float = 0.3
 ) -> FocusGroupReport:
+    from utils.prompt_sanitizer import sanitize_user_input
+    from utils.idempotency import generate_request_hash, get_cached_simulation, store_cached_simulation
+    from config.version_registry import PROMPT_VERSION, SCORING_VERSION, MODEL_VERSION
+
+    # P0 Sanitization & Idempotency check
+    sanitized_copy = sanitize_user_input(copy_output)
+    req_hash = generate_request_hash(copy_output, brand_name, target_audience)
+
+    cached_report = get_cached_simulation(req_hash)
+    if cached_report is not None:
+        logger.info(f"Idempotency cache hit for request_hash: {req_hash[:10]}... Returning cached simulation.")
+        return cached_report
+
     if not personas:
         from agents.persona_composer import compose_dynamic_personas
         logger.info(f"No explicit persona panel provided. Composing dynamic persona panel for target audience: {target_audience}")
@@ -91,7 +104,7 @@ async def run_focus_group_simulation(
     # ── Step 1: Run Isolated Persona Audits + Trust Analyzer + Devil's Advocate in Parallel ──
     async def run_isolated_persona(persona: PersonaProfile):
         return await asyncio.wait_for(
-            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, copy_output)),
+            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, sanitized_copy)),
             timeout=35.0
         )
 
@@ -198,6 +211,8 @@ async def run_focus_group_simulation(
         cache_hit=False
     )
     report.telemetry = telemetry
+    store_cached_simulation(req_hash, report)
+    return report
 
 
 from utils.guardrails import sanitize_copy_rewrites
