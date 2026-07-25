@@ -195,17 +195,41 @@ class GatedReadiness(BaseModel):
 
     passed_gates: bool = Field(default=True, description="True if trust >= 75% and critical issues == 0")
     trust_score: float = Field(default=80.0, ge=0.0, le=100.0, description="Calculated Trust & Credibility metric (0-100)")
+    evidence_score: float = Field(default=75.0, ge=0.0, le=100.0, description="60% Evidence Signals score")
+    persona_perception_score: float = Field(default=80.0, ge=0.0, le=100.0, description="40% Persona Perception score")
     cognitive_load: float = Field(default=30.0, ge=0.0, le=100.0, description="Mental processing effort score (lower is better)")
     failed_reasons: List[str] = Field(default_factory=list, description="List of gate violation reasons if failed")
 
 
-class ReasoningSummary(BaseModel):
-    """Transparency rationale for marketer trust."""
+class DecisionExplanation(BaseModel):
+    """Structured decision rationale and detected trust signals (replaces ReasoningSummary)."""
     model_config = SIMULATION_CONFIG
 
     positive_drivers: List[str] = Field(default_factory=list, description="Top copy elements driving conversion")
     negative_drivers: List[str] = Field(default_factory=list, description="Top copy elements causing friction")
+    detected_signals: List[str] = Field(default_factory=list, description="Verifiable trust elements found in text")
+    recommendations: List[str] = Field(default_factory=list, description="Actionable revision steps")
+    confidence_factors: List[str] = Field(default_factory=list, description="Calibration evidence factors")
     confidence_score: float = Field(default=0.92, ge=0.0, le=1.0, description="Prediction calibration score (0.0 to 1.0)")
+
+
+class TrustSignalAnalysis(BaseModel):
+    """Output from independent Trust Analyzer Agent."""
+    model_config = SIMULATION_CONFIG
+
+    evidence_score: float = Field(default=70.0, ge=0.0, le=100.0, description="60% Evidence Signals score")
+    detected_proof_elements: List[str] = Field(default_factory=list, description="Verifiable proof found (logos, metrics, guarantees)")
+    missing_proof_elements: List[str] = Field(default_factory=list, description="Missing proof elements causing skepticism")
+
+
+class ExecutionTelemetry(BaseModel):
+    """Observability metadata for latency, tokens, model, and cost."""
+    model_config = SIMULATION_CONFIG
+
+    latency_ms: float = Field(default=0.0, ge=0.0, description="Execution duration in milliseconds")
+    token_count: int = Field(default=0, ge=0, description="Total prompt + completion tokens used")
+    model_used: str = Field(default="smart_client", description="Primary LLM provider/model used")
+    estimated_cost_usd: float = Field(default=0.0, ge=0.0, description="Estimated API cost in USD")
 
 
 class FocusGroupReport(BaseModel):
@@ -242,10 +266,23 @@ class FocusGroupReport(BaseModel):
         default_factory=list,
         description="Adversarial risk audit issues"
     )
-    reasoning_summary: ReasoningSummary = Field(
-        default_factory=ReasoningSummary,
-        description="Transparency and trust summary"
+    decision_explanation: DecisionExplanation = Field(
+        default_factory=DecisionExplanation,
+        description="Structured decision rationale and detected trust signals"
     )
+    trust_signal_analysis: TrustSignalAnalysis = Field(
+        default_factory=TrustSignalAnalysis,
+        description="Independent evidence signal audit"
+    )
+    telemetry: ExecutionTelemetry = Field(
+        default_factory=ExecutionTelemetry,
+        description="Execution latency, token, and cost metrics"
+    )
+
+    @property
+    def reasoning_summary(self) -> DecisionExplanation:
+        """Backward compatibility alias for reasoning_summary."""
+        return self.decision_explanation
 
     @model_validator(mode="after")
     def validate_overall_score_boundary(self) -> "FocusGroupReport":
@@ -316,14 +353,19 @@ class AnalystSynthesis(BaseModel):
         default_factory=GatedReadiness,
         description="Gated Pre-Flight readiness results"
     )
-    devils_advocate_issues: List[DevilsAdvocateIssue] = Field(
-        default_factory=list,
-        description="Adversarial risk audit issues"
+    decision_explanation: DecisionExplanation = Field(
+        default_factory=DecisionExplanation,
+        description="Structured decision rationale and detected trust signals"
     )
-    reasoning_summary: ReasoningSummary = Field(
-        default_factory=ReasoningSummary,
-        description="Transparency and trust summary"
+    trust_signal_analysis: TrustSignalAnalysis = Field(
+        default_factory=TrustSignalAnalysis,
+        description="Independent evidence signal audit"
     )
+
+    @property
+    def reasoning_summary(self) -> DecisionExplanation:
+        """Backward compatibility alias."""
+        return self.decision_explanation
 
 
 

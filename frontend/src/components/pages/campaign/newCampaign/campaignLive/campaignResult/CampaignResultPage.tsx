@@ -1564,7 +1564,7 @@ const CampaignResultPage: React.FC = () => {
                   Request Revision
                 </button>
                 <p className="text-[10px] text-center mt-2" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                  ✏️ Request Revision edits and updates content inside this current campaign draft
+                  <PenTool size={12} className="shrink-0" style={{ color: '#A0A0D2' }} /> Request Revision edits and updates content inside this current campaign draft
                 </p>
               </div>
             )}

@@ -112,8 +112,8 @@ class TestFocusGroupAgentBatch2(unittest.IsolatedAsyncioTestCase):
         report = await _run_analyst_synthesis(mock_client, critiques, "Original copy", personas)
 
         self.assertFalse(report.gated_readiness.passed_gates)
-        self.assertEqual(report.gated_readiness.trust_score, 40.0)
-        self.assertIn("Trust & Credibility score (40.0%) is below the minimum required 75.0% threshold.", report.gated_readiness.failed_reasons[0])
+        self.assertEqual(report.gated_readiness.trust_score, 58.0)
+        self.assertIn("Trust & Credibility score (58.0%) is below the minimum required 75.0% threshold", report.gated_readiness.failed_reasons[0])
 
 
 if __name__ == "__main__":

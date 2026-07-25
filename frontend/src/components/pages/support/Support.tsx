@@ -42,7 +42,7 @@ const SupportContent: React.FC = () => {
     },
     {
       question: 'How do I connect AgentMark to Claude Desktop or Cursor IDE via MCP?',
-      answer: 'Go to Settings > Integrations and click "Connect Claude Desktop". Our system automatically writes the required configuration to your local claude_desktop_config.json file. Once added, completely restart Claude Desktop from your taskbar/tray to use AgentMark tools inside your chat assistant.',
+      answer: 'Go to Settings > Integrations and click "Connect Claude Desktop". On a local development environment, our system automatically writes the required configuration to your claude_desktop_config.json file. For cloud-hosted instances, you can download the config file and manually place it in your Claude folder. Once configured, completely restart Claude Desktop from your taskbar/tray to use AgentMark tools inside your chat assistant.',
     },
     {
       question: 'How long does campaign generation take?',
@@ -70,15 +70,31 @@ const SupportContent: React.FC = () => {
     },
     {
       question: 'What happens if an agent failure occurs?',
-      answer: 'Our "Self-Healing Architecture" automatically attempts to restart stalled agents. If an agent remains unresponsive, you\'ll see a red status dot. You can manually refresh the node from the Review panel without losing progress.',
+      answer: 'If an agent stalls or fails, it will retry with exponential backoff for transient errors (rate limits, brief outages). After persistent failure, the agent is marked as "failed" with a red status indicator and you can manually re-run the campaign from the campaign list page.',
     },
     {
       question: 'Can I switch between AI models?',
-      answer: 'Yes. Under Settings > Model Config, you can select between our Performance model for speed or Precision model for highly nuanced copy. Enterprise users also have access to custom-tuned local LLMs.',
+      answer: 'Yes. Under Settings > API Keys, you can add keys for multiple providers (OpenAI, Gemini, Groq). The system automatically uses your fastest available provider. Enterprise users can request custom model routing.',
     },
     {
       question: 'Is my proprietary data kept private?',
-      answer: 'Absolutely. We utilize zero-retention data processing. Your strategy inputs and proprietary research are never used to train global models and are encrypted at rest with AES-256 standards.',
+      answer: 'Absolutely. Your strategy inputs and proprietary research are never used to train models. Data is stored securely in our database and transmitted over encrypted HTTPS connections.',
+    },
+    {
+      question: 'How is the campaign review score calculated?',
+      answer: 'After all agents complete their work, the Quality Reviewer agent audits the full output and assigns a score from 0 to 100. This score factors in brand safety, policy compliance, readability, and message consistency across channels.',
+    },
+    {
+      question: 'Can I manage multiple projects, each with its own campaigns?',
+      answer: 'Yes. You can create multiple projects from the dashboard sidebar. Each project contains its own campaigns, and campaign counts are tracked per project. Switch between projects anytime to organize campaigns by brand, team, or initiative.',
+    },
+    {
+      question: 'What do the different campaign statuses mean?',
+      answer: 'Draft means the campaign is not yet launched. Processing means agents are actively working. Awaiting Human Approval means agents finished and you can review before publishing. Completed means all agents succeeded. Failed means an error occurred during generation. Deleted campaigns are hidden from view.',
+    },
+    {
+      question: 'How do API keys work in AgentMark?',
+      answer: 'Go to Settings > API Keys to add keys for Gemini, Groq, OpenAI, and Tavily. Keys are stored in your browser and sent per-request. The system automatically fails over between providers if one is unavailable. Tavily is used only by the Research agent for web search.',
     },
   ];
 

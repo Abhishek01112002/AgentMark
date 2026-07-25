@@ -80,6 +80,7 @@ model Campaign {
   project         Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   
   memorySnapshot  CampaignMemorySnapshot?
+  preflightSimulations PreflightSimulation[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -127,6 +128,44 @@ model CampaignMemorySnapshot {
 
   @@index([projectId, completedAt])
   @@map("campaign_memory_snapshots")
+}
+
+model PreflightSimulation {
+  id                 String   @id @default(uuid())
+  campaignId         String
+  campaign           Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  status             String   @default("completed") // pending, running, completed, failed
+  readinessScore     Float?   // Overall 0-100 score
+  passedGates        Boolean  @default(true)
+  trustScore         Float?
+  evidenceScore      Float?
+  personaTrustScore  Float?
+
+  decisionExplanation Json?   // { positiveDrivers, negativeDrivers, detectedSignals, recommendations, confidenceFactors, confidenceScore }
+  devilsAdvocateIssues Json?  // [{ issue, severity, evidence, recommendedFix }]
+  telemetry          Json?    // { latencyMs, tokenCount, modelUsed, estimatedCostUsd }
+
+  version            SimulationVersion?
+
+  createdAt          DateTime @default(now())
+
+  @@map("preflight_simulations")
+  @@index([campaignId])
+}
+
+model SimulationVersion {
+  id               String              @id @default(uuid())
+  simulationId     String              @unique
+  simulation       PreflightSimulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  modelVersion     String   // E.g. "gpt-4o-2024-08-06"
+  promptVersion    String   // E.g. "devils_advocate_v1.2"
+  scoringVersion   String   // E.g. "gated_readiness_v2.0"
+
+  createdAt        DateTime @default(now())
+
+  @@map("simulation_versions")
 }
 
 // ── Developer API Keys ─────────────────────────────────────────────────────────

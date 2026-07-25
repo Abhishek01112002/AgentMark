@@ -42,11 +42,39 @@ interface PersonaProfile {
   cognitive_profile: string;
 }
 
+interface GatedReadiness {
+  passed_gates: boolean;
+  trust_score: number;
+  evidence_score?: number;
+  persona_perception_score?: number;
+  cognitive_load?: number;
+  failed_reasons?: string[];
+}
+
+interface DevilsAdvocateIssue {
+  issue: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  evidence: string;
+  recommended_fix: string;
+}
+
+interface DecisionExplanation {
+  positive_drivers?: string[];
+  negative_drivers?: string[];
+  detected_signals?: string[];
+  recommendations?: string[];
+  confidence_factors?: string[];
+  confidence_score?: number;
+}
+
 interface FocusGroupReport {
   overall_score: number;
   persona_critiques: PersonaCritique[];
   actionable_recommendations: ActionableRecommendation[];
   personas?: PersonaProfile[];
+  gated_readiness?: GatedReadiness;
+  devils_advocate_issues?: DevilsAdvocateIssue[];
+  decision_explanation?: DecisionExplanation;
 }
 
 
