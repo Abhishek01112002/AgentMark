@@ -43,7 +43,6 @@ export const Integrations: React.FC = () => {
   const [copiedConfig, setCopiedConfig] = useState(false);
   const [copiedPath, setCopiedPath] = useState(false);
   const [selectedOs, setSelectedOs] = useState<'windows' | 'mac' | 'linux'>('windows');
-  const [selectedClient, setSelectedClient] = useState<'claude' | 'cursor'>('claude');
 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -563,39 +562,13 @@ export const Integrations: React.FC = () => {
             
             {/* Header with Client Switcher */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#2A2A38]/40 pb-3 gap-3">
-              <div>
-                <h4 className="font-semibold text-xs uppercase tracking-wider text-text-secondary" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>
-                  Manual Configuration Builder
+              <div className="space-y-1">
+                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  OS Path & Config Guidance
                 </h4>
                 <p className="text-[11px] text-[#8B8B9E] mt-0.5">
-                  Select your AI client and OS to get exact file paths & formatted JSON.
+                  Select your OS to get exact file paths & formatted JSON for Claude Desktop.
                 </p>
-              </div>
-
-              {/* Client Selector Tabs */}
-              <div className="flex items-center gap-1 bg-[#0E0E13] p-1 rounded-lg border border-[#2A2A38]/60">
-                <button
-                  type="button"
-                  onClick={() => setSelectedClient('claude')}
-                  className={`px-3 py-1 text-xs font-mono font-medium rounded-md transition-all cursor-pointer ${
-                    selectedClient === 'claude'
-                      ? 'bg-[#6366F1] text-white font-semibold'
-                      : 'text-[#8B8B9E] hover:text-white'
-                  }`}
-                >
-                  Claude Desktop
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedClient('cursor')}
-                  className={`px-3 py-1 text-xs font-mono font-medium rounded-md transition-all cursor-pointer ${
-                    selectedClient === 'cursor'
-                      ? 'bg-[#6366F1] text-white font-semibold'
-                      : 'text-[#8B8B9E] hover:text-white'
-                  }`}
-                >
-                  Cursor IDE
-                </button>
               </div>
             </div>
 
@@ -603,7 +576,7 @@ export const Integrations: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-mono text-zinc-400">
-                  Target Config Directory ({selectedClient === 'claude' ? 'Claude' : 'Cursor'}):
+                  Target Config Directory (Claude Desktop):
                 </span>
                 
                 {/* OS Selector Pills */}
@@ -628,32 +601,20 @@ export const Integrations: React.FC = () => {
               {/* Copyable Path Row */}
               <div className="flex items-center gap-2 bg-[#0E0E13] border border-[#2A2A38] px-3 py-2 rounded-lg font-mono text-[11px] text-[#E2E8F0]">
                 <span className="truncate flex-1 select-all text-indigo-300">
-                  {selectedClient === 'claude'
-                    ? selectedOs === 'windows'
-                      ? '%APPDATA%\\Claude\\claude_desktop_config.json'
-                      : selectedOs === 'mac'
-                      ? '~/Library/Application Support/Claude/claude_desktop_config.json'
-                      : '~/.config/Claude/claude_desktop_config.json'
-                    : selectedOs === 'windows'
-                      ? '%APPDATA%\\Cursor\\User\\globalStorage\\mcp.json'
-                      : selectedOs === 'mac'
-                      ? '~/Library/Application Support/Cursor/User/globalStorage/mcp.json'
-                      : '~/.config/Cursor/User/globalStorage/mcp.json'}
+                  {selectedOs === 'windows'
+                    ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+                    : selectedOs === 'mac'
+                    ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+                    : '~/.config/Claude/claude_desktop_config.json'}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
-                    const targetPath = selectedClient === 'claude'
-                      ? selectedOs === 'windows'
-                        ? '%APPDATA%\\Claude\\claude_desktop_config.json'
-                        : selectedOs === 'mac'
-                        ? '~/Library/Application Support/Claude/claude_desktop_config.json'
-                        : '~/.config/Claude/claude_desktop_config.json'
-                      : selectedOs === 'windows'
-                        ? '%APPDATA%\\Cursor\\User\\globalStorage\\mcp.json'
-                        : selectedOs === 'mac'
-                        ? '~/Library/Application Support/Cursor/User/globalStorage/mcp.json'
-                        : '~/.config/Cursor/User/globalStorage/mcp.json';
+                    const targetPath = selectedOs === 'windows'
+                      ? '%APPDATA%\\Claude\\claude_desktop_config.json'
+                      : selectedOs === 'mac'
+                      ? '~/Library/Application Support/Claude/claude_desktop_config.json'
+                      : '~/.config/Claude/claude_desktop_config.json';
                     copyToClipboard(targetPath, setCopiedPath);
                   }}
                   className="px-2.5 py-1 bg-[#1B1B25] hover:bg-[#252535] border border-[#2A2A38] rounded text-[10px] font-mono text-white flex items-center gap-1 transition-all cursor-pointer"
