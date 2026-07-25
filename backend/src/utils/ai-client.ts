@@ -113,17 +113,22 @@ class AIServiceClient {
    * Create a new campaign using AI agents
    * This is a BLOCKING call that waits for all 7 agents to complete
    */
-  async createCampaign(data: AIServiceCampaignRequest): Promise<AIServiceCampaignResponse> {
+  async createCampaign(data: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      console.log(`🤖 Calling AI Service: ${this.baseUrl}/campaigns/create`);
+      console.log(`🤖 [${requestId || 'no-req-id'}] Calling AI Service: ${this.baseUrl}/campaigns/create`);
       console.log(`📊 Campaign: ${data.campaign_name} | Brand: ${data.brand_name}`);
+
+      const headers: Record<string, string> = aiServiceHeaders();
+      if (requestId) {
+        headers['X-Request-ID'] = requestId;
+      }
 
       const response = await fetch(`${this.baseUrl}/campaigns/create`, {
         method: 'POST',
-        headers: aiServiceHeaders(),
+        headers,
         body: JSON.stringify(data),
         signal: controller.signal,
       });

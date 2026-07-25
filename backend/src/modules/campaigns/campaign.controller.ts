@@ -130,7 +130,8 @@ const RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
 async function runAIWorkflowBackground(
   dbCampaignId: string,
   payload: AIServiceCampaignRequest,
-  io: SocketIOServer
+  io: SocketIOServer,
+  requestId?: string
 ): Promise<void> {
   let lastError: Error | null = null;
 
@@ -138,28 +139,28 @@ async function runAIWorkflowBackground(
     if (attempt > 0) {
       const cancelled = await checkCancellation(dbCampaignId);
       if (cancelled) {
-        console.log(`Campaign ${dbCampaignId} cancelled by user — aborting retry`);
+        console.log(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user — aborting retry`);
         return;
       }
       const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
-      console.log(`Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      console.log(`[${requestId || 'no-req-id'}] Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
       await sleep(delayMs);
 
       const cancelledAgain = await checkCancellation(dbCampaignId);
       if (cancelledAgain) {
-        console.log(`Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
+        console.log(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
         return;
       }
     }
 
     try {
       if (attempt === 0) {
-        console.log(`AI workflow started in background | campaign=${dbCampaignId}`);
+        console.log(`[${requestId || 'no-req-id'}] AI workflow started in background | campaign=${dbCampaignId}`);
       } else {
-        console.log(`AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
+        console.log(`[${requestId || 'no-req-id'}] AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
       }
 
-      await aiServiceClient.createCampaign(payload);
+      await aiServiceClient.createCampaign(payload, requestId);
       console.log(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
       return;
     } catch (err: any) {
@@ -207,6 +208,9 @@ async function runAIWorkflowBackground(
 export const createCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const data = createCampaignSchema.parse(req.body);
+    const requestId = (req.headers['x-request-id'] as string) || `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    res.setHeader('X-Request-ID', requestId);
+
     // LLM config comes from the x-llm-config request header.
     // The frontend axios interceptor (api.ts) attaches it automatically on every request.
     const llmConfigHeader = req.headers['x-llm-config'];
@@ -225,12 +229,13 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      return res.status(404).json({ error: 'Project not found', requestId });
     }
 
     if (!hasExplicitApiKeys(llmConfig)) {
       return res.status(400).json({
         error: 'Please add at least one valid API key in Settings > API Keys before launching a campaign.',
+        requestId,
       });
     }
 
@@ -251,7 +256,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
 
     // ── Step 1: Create DB record (status: "processing") ──────────────────────
     const campaign = await campaignService.create(projectId, { ...campaignData, brandName });
-    console.log(`Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
+    console.log(`[${requestId}] Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
 
     // Immediately create a lightweight user notification in the background.
     void notificationService.create(project.userId, {
@@ -261,9 +266,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
     });
 
     // ── Step 2: Respond 201 immediately ──────────────────────────────────────
-    // Frontend receives the campaign object and navigates to /live right away.
-    // No waiting — the 2-3 min AI pipeline runs entirely in the background.
-    res.status(201).json({ campaign });
+    res.status(201).json({ campaign, requestId });
 
     // ── Step 3: Fire AI workflow in background (fire-and-forget) ────────────
     // `void` intentionally suppresses the unhandled Promise lint warning.
@@ -296,17 +299,20 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
         llm_config: effectiveLlmConfig,
         campaign_id: campaign.id,
         client_memory_context: memoryContext?.formattedText ?? null,
-      }, io);
+      }, io, requestId);
     } else {
       // io not yet set (shouldn't happen in production — Redis init runs before any request)
       console.warn(`[Campaign] Socket.io not initialised — background runner will not emit socket events | campaign=${campaign.id}`);
     }
 
     } catch (error) {
+      const errRequestId = (req.headers['x-request-id'] as string) || `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      res.setHeader('X-Request-ID', errRequestId);
+
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        return res.status(400).json({ error: error.errors, requestId: errRequestId });
       }
-      console.error('Campaign creation error:', error);
+      console.error(`[${errRequestId}] Campaign creation error:`, error);
       next(error);
     }
   };

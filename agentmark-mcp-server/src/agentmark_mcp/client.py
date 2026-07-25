@@ -153,6 +153,7 @@ class AgentMarkClient:
             headers["X-MCP-Tool-Name"] = self.active_tool_name
         if self.invocation_id:
             headers["X-MCP-Invocation-ID"] = self.invocation_id
+            headers["X-Request-ID"] = f"mcp_{self.invocation_id[:12]}"
         if extra_headers:
             headers.update(extra_headers)
         return headers

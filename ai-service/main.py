@@ -62,6 +62,18 @@ app = FastAPI(
     redoc_url="/redoc" if os.getenv("ENV", "development") == "development" else None,
 )
 
+from fastapi import Request, Response
+import uuid
+
+# Request correlation ID middleware
+@app.middleware("http")
+async def add_request_id_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or f"req_{uuid.uuid4().hex[:10]}"
+    request.state.request_id = request_id
+    response: Response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
