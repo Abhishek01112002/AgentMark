@@ -28,6 +28,7 @@ export const getProjects = async (req: AuthRequest, res: Response, next: NextFun
       where: { userId: req.userId! },
       include: {
         campaigns: {
+          where: { status: { not: 'deleted' } },
           orderBy: { updatedAt: 'desc' },
           select: {
             status: true,
