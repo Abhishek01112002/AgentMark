@@ -169,6 +169,23 @@ async def run_focus_group_simulation(
     except Exception as e:
         logger.warning(f"Multi-Persona Debate Engine failed (non-fatal): {e}")
 
+    # Execute Phase 1C Persona Memory & Retrieval
+    try:
+        from services.persona_memory import save_simulation_memories
+        all_objections = [c.objection for c in valid_critiques]
+        all_fixes = [r.suggested_revision for r in report.actionable_recommendations]
+        
+        mem_res = save_simulation_memories(
+            project_id="proj-default",
+            persona_id=personas[0].id if personas else "persona-1",
+            objections=all_objections,
+            accepted_fixes=all_fixes,
+            trust_delta=round(report.gated_readiness.trust_score - 70.0, 1)
+        )
+        report.memory_summary = mem_res.model_dump()
+    except Exception as e:
+        logger.warning(f"Persona Memory Service failed (non-fatal): {e}")
+
     # Compute execution telemetry
     end_time = time.time()
     latency_ms = round((end_time - start_time) * 1000, 2)

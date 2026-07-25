@@ -8,7 +8,7 @@ constraints, custom validators, and performance configurations.
 
 import re
 import logging
-from typing import List
+from typing import List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict, field_validator, model_validator
 
 logger = logging.getLogger("agentmark.simulation")
@@ -272,6 +272,7 @@ class FocusGroupReport(BaseModel):
     trust_signal_analysis: TrustSignalAnalysis = Field(default_factory=TrustSignalAnalysis, description="Independent evidence signal audit")
     telemetry: ExecutionTelemetry = Field(default_factory=ExecutionTelemetry, description="Execution latency, token, and cost metrics")
     debate_summary: DebateSummary | None = Field(default=None, description="Optional Phase 1B Multi-Persona Debate Engine summary")
+    memory_summary: Dict[str, Any] | None = Field(default=None, description="Optional Phase 1C Persona Memory & Retrieval summary")
 
     @property
     def reasoning_summary(self) -> DecisionExplanation:

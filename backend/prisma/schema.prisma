@@ -39,6 +39,7 @@ model Project {
   
   campaigns       Campaign[]
   memorySnapshots CampaignMemorySnapshot[]
+  personaMemories PersonaMemory[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -166,6 +167,23 @@ model SimulationVersion {
   createdAt        DateTime @default(now())
 
   @@map("simulation_versions")
+}
+
+model PersonaMemory {
+  id             String   @id @default(uuid())
+  personaId      String
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  memoryType     String   // 'objection', 'accepted_fix', 'unresolved_risk', 'trust_delta'
+  summary        String   @db.Text
+  embeddingReady Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+
+  @@map("persona_memories")
+  @@index([projectId, personaId])
+  @@index([projectId, createdAt])
 }
 
 // ── Developer API Keys ─────────────────────────────────────────────────────────
