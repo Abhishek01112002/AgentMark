@@ -125,6 +125,9 @@ async def run_focus_group_simulation(
     return report
 
 
+from utils.guardrails import sanitize_copy_rewrites
+
+
 async def _run_single_persona_critique(
     client,
     persona: PersonaProfile,
@@ -135,28 +138,27 @@ async def _run_single_persona_critique(
     Roleplays as an individual consumer persona and critiques the ad copy.
     """
     system_prompt = (
-        f"You are roleplaying as {persona.name}, aged {persona.age}, working as a {persona.occupation}.\n"
+        f"You are roleplaying strictly as {persona.name}, aged {persona.age}, working as {persona.occupation}.\n"
         f"Income Bracket: {persona.income_bracket}\n"
-        f"Your personal buying barriers: {', '.join(persona.buying_barriers)}\n"
-        f"Your personal trust triggers: {', '.join(persona.trust_triggers)}\n"
-        f"Your cognitive behavioral profile: {persona.cognitive_profile}\n\n"
+        f"Buying Barriers: {', '.join(persona.buying_barriers)}\n"
+        f"Trust Triggers: {', '.join(persona.trust_triggers)}\n"
+        f"Behavioral Profile: {persona.cognitive_profile}\n\n"
         f"You are reviewing a proposed ad copy/pitch from the brand: {brand_name}.\n"
-        "CRITICAL ROLEPLAY INSTRUCTIONS:\n"
-        "- Be a critical, realistic consumer. You do not trust lazy marketing jargon or hyperbole.\n"
-        "- If the copy contains friction, false promises, or fails to address your buying barriers, write down your genuine objection and point of hesitation. In the 'clash_quote' field, quote the exact sentence from the copy that triggered this objection.\n"
-        "- If the copy is genuinely compelling, transparent, and speaks directly to your needs or triggers, you may award a high resonance score (e.g. 75+) and set click_intent to true. Do not force objections if they are resolved.\n"
-        "- Respond matching the PersonaCritique schema format."
+        "CRITICAL BEHAVIORAL DIRECTIVES:\n"
+        "1. You are a busy, skeptical, budget-conscious consumer. You do NOT want to be sold to.\n"
+        "2. DO NOT offer polite encouragement or praise generic marketing fluff (e.g., 'next-gen', 'revolutionary', 'best-in-class').\n"
+        "3. Evaluate the copy against your specific buying barriers. If a barrier is unaddressed, penalize the Trust score severely (1 or 2).\n"
+        "4. In the 'clash_quote' field, quote the EXACT sentence from the copy that triggered your doubt.\n"
+        "5. Rate each of the 4 rubric dimensions (Clarity, Trust, Value, Urgency) strictly between 1 (Worst) and 5 (Best)."
     )
     
     prompt = f"{system_prompt}\n\nAd Copy to Review:\n{copy_output}"
     
-    loop = asyncio.get_running_loop()  # Fix #7: get_event_loop() is deprecated in Python 3.10+
+    loop = asyncio.get_running_loop()
     critique = await loop.run_in_executor(
         None,
-        lambda: client.generate_structured(prompt=prompt, response_model=PersonaCritique, temperature=0.7)
+        lambda: client.generate_structured(prompt=prompt, response_model=PersonaCritique, temperature=0.2, seed=42)
     )
-    # Fix #4: Force-set persona_id to the known persona.id slug instead of
-    # trusting the LLM to self-report it correctly.
     critique.persona_id = persona.id
     return critique
 
@@ -165,8 +167,8 @@ async def _run_analyst_synthesis(
     client,
     critiques: List[PersonaCritique],
     copy_output: str,
-    personas: List[PersonaProfile],  # Fix #3: accept personas to attach to report
-    negativity_bias: float = 0.3     # Fix #11: configurable negativity bias
+    personas: List[PersonaProfile],
+    negativity_bias: float = 0.3
 ) -> FocusGroupReport:
     """
     Compiles individual critiques, computes a negativity-biased score,
@@ -187,11 +189,12 @@ async def _run_analyst_synthesis(
         f"- The overall negativity-biased score (already calculated as {overall_score})\n"
         "- Actionable recommendations: specific, text-level copy rewrites to resolve the objections "
         "raised by the personas. For each recommendation, suggest an exact replacement text.\n"
+        "SAFETY DIRECTIVE: Do NOT introduce unverified, illegal, or medical claims (e.g. 'FDA Approved', 'Guaranteed Returns').\n"
         "Respond matching the FocusGroupReport schema format."
     )
     
     critique_summaries = "\n\n".join([
-        f"Persona {c.persona_id} (Score: {c.resonance_score}):\n"
+        f"Persona {c.persona_id} (Score: {c.resonance_score}, Rubric: {c.rubric}):\n"
         f"- Objection: {c.objection}\n"
         f"- Trigger Quote: '{c.clash_quote}'"
         for c in critiques
@@ -204,16 +207,18 @@ async def _run_analyst_synthesis(
         f"{system_prompt}"
     )
     
-    loop = asyncio.get_running_loop()  # Fix #7: get_event_loop() is deprecated in Python 3.10+
+    loop = asyncio.get_running_loop()
     synthesis = await loop.run_in_executor(
         None,
-        lambda: client.generate_structured(prompt=prompt, response_model=AnalystSynthesis, temperature=0.5)
+        lambda: client.generate_structured(prompt=prompt, response_model=AnalystSynthesis, temperature=0.2, seed=42)
     )
     
-    # Fix #3: Construct complete FocusGroupReport including the personas list
+    # Apply claim guardrail sanitization to analyst recommendations
+    sanitized_recs = sanitize_copy_rewrites(synthesis.actionable_recommendations)
+    
     return FocusGroupReport(
         overall_score=overall_score,
         persona_critiques=critiques,
-        actionable_recommendations=synthesis.actionable_recommendations,
-        personas=personas  # Properly attached — no longer always empty
+        actionable_recommendations=sanitized_recs,
+        personas=personas
     )
