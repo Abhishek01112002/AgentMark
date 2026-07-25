@@ -172,9 +172,15 @@ class TestScenario3_CacheKeyCollision:
         # Should be available immediately
         assert llm_cache.get(key) == "data"
 
-        # Simulate TTL expiry by manipulating internal cache
+        # Simulate TTL expiry by manipulating internal cache and redis
         import time
         llm_cache._cache[key] = ("data", time.time() - llm_cache.CACHE_TTL - 1)
+        r = llm_cache._get_redis()
+        if r:
+            try:
+                r.delete(f"llm:cache:{key}")
+            except Exception:
+                pass
 
         assert llm_cache.get(key) is None  # expired
 
