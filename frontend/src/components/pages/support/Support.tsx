@@ -37,6 +37,26 @@ const SupportContent: React.FC = () => {
 
   const faqs: FAQItem[] = [
     {
+      question: 'What is Gated Readiness and why is a minimum Trust Score of 40% required?',
+      answer: 'Gated Readiness is an automated safety barrier. Before full persona simulation occurs, our Trust Analyzer audits your campaign copy for claim evidence, cognitive load, and brand risk. If the Trust Score falls below 40%, the simulation halts to prevent wasting evaluation time on copy with unverified or misleading claims.',
+    },
+    {
+      question: 'How does the Devil\'s Advocate audit identify regulatory and brand policy risks?',
+      answer: 'The Devil\'s Advocate agent acts as an adversarial auditor. It intentionally probes your copy for exaggerated promises, missing disclaimers, policy violations, or aggressive sales tactics, delivering actionable fixes to resolve compliance risks before publication.',
+    },
+    {
+      question: 'How does the Multi-Persona Debate Engine resolve conflicting audience opinions?',
+      answer: 'When synthetic audience personas disagree (e.g. a budget-conscious buyer vs. a premium seeker), our Debate Orchestrator runs a 3-round deliberation. Personas challenge each other\'s objections, producing a consensus score and identifying friction points that resonate across all segments.',
+    },
+    {
+      question: 'How does the Performance Calibration Engine use real Meta/Google/LinkedIn ad telemetry?',
+      answer: 'AgentMark ingests real post-launch performance data (CTR, CPC, CPA) via ad platform webhooks. Once 30+ campaign data points exist for an industry, our Empirical Bayes engine statistically recalibrates future pre-flight predictions to match real-world ad performance.',
+    },
+    {
+      question: 'How does the Hybrid Model Router optimize AI speed and token costs?',
+      answer: 'AgentMark intelligently routes task types across model tiers: Tier 1 (Fast/Cheap) for initial persona reviews, Tier 2 (Balanced) for Trust Analysis, and Tier 3 (High-Quality) for final Debate Orchestration. This achieves a 60% reduction in token costs while preserving high-tier evaluation quality.',
+    },
+    {
       question: 'How does the Synthetic Focus Group simulation evaluate my campaign copy?',
       answer: 'Our Focus Group engine runs parallel LLM persona agents representing diverse demographic and psychographic consumer segments. It analyzes your copy for sentiment score (0–100%), click-intent probability, primary objections, and actionable rewrite recommendations before you spend ad budget.',
     },
@@ -249,7 +269,7 @@ const SupportContent: React.FC = () => {
               <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 <div className="glass-card p-6 rounded-xl flex flex-col items-start group">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-6 group-hover:scale-110 transition-transform">
-                    <BookOpen size={32} style={{ color: '#c0c1ff' }} />
+                    <BookOpen size={32} className="text-violet-400 filter drop-shadow-[0_0_10px_rgba(167,139,250,0.7)]" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Documentation</h3>
                   <p className="text-sm mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
@@ -276,7 +296,7 @@ const SupportContent: React.FC = () => {
                   className="glass-card p-6 rounded-xl flex flex-col items-start group cursor-pointer w-full text-left bg-[#111118] border border-[#2A2A38]"
                 >
                   <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary mb-6 group-hover:scale-110 transition-transform">
-                    <PlayCircle size={32} style={{ color: '#4edea3' }} />
+                    <PlayCircle size={32} className="text-emerald-400 filter drop-shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>Video Tutorials</h3>
                   <p className="text-sm mb-4" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
@@ -324,23 +344,23 @@ const SupportContent: React.FC = () => {
                     className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#2A2A38] rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#464554]"
                     style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    <Mail size={24} style={{ color: '#c0c1ff' }} />
+                    <Mail size={24} className="text-sky-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
                     <div className="text-left">
                       <div className="text-xs mb-1" style={{ color: '#8B8B9E' }}>Email Us</div>
                       <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>info@novateches.com</div>
                     </div>
                   </a>
                   <a
-                    href="https://wa.me/916366411798"
+                    href="https://wa.me/916366411798?text=Hi%20AgentMark%20Support,%20I%20need%20help%20with%20my%20campaign."
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#25D366]/30 rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#25D366]/60"
+                    className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#25D366]/30 hover:border-[#25D366] rounded-xl transition-all hover:bg-[#25D366]/10"
                     style={{ fontFamily: 'JetBrains Mono, monospace' }}
                   >
-                    <WhatsAppLogo size={24} className="text-[#25D366]" />
+                    <WhatsAppLogo size={24} className="text-[#25D366] filter drop-shadow-[0_0_8px_rgba(37,211,102,0.7)]" />
                     <div className="text-left">
-                      <div className="text-xs mb-1" style={{ color: '#25D366' }}>WhatsApp Support</div>
-                      <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>+91 63664 11798</div>
+                      <div className="text-xs mb-1 text-[#25D366] font-semibold">WhatsApp Support</div>
+                      <div className="text-sm font-medium text-white">+91 63664 11798</div>
                     </div>
                   </a>
                 </div>

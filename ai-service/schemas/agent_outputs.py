@@ -295,6 +295,34 @@ class CompetitiveDifferentiation(BaseModel):
     unique_value_proposition: str = Field(default="", description="Unique value proposition")
     positioning_statement: str = Field(default="", description="Market positioning")
 
+    @field_validator("primary_differentiation", "competitive_advantage", "unique_value_proposition", "positioning_statement", mode="before")
+    @classmethod
+    def stringify_list_or_dict(cls, v):
+        if isinstance(v, list):
+            return " ".join(str(x) for x in v if x)
+        if isinstance(v, dict):
+            return " ".join(f"{k}: {val}" for k, val in v.items() if val)
+        return str(v) if v is not None else ""
+
+    @field_validator("competitors", mode="before")
+    @classmethod
+    def listify_competitors(cls, v):
+        if isinstance(v, str):
+            return [v]
+        if isinstance(v, dict):
+            return [f"{k}: {val}" for k, val in v.items() if val]
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, dict):
+                    name = item.get("name") or item.get("competitor") or (list(item.values())[0] if item else "")
+                    pos = item.get("positioning") or item.get("description") or ""
+                    res.append(f"{name}: {pos}" if pos else str(name))
+                else:
+                    res.append(str(item))
+            return res
+        return []
+
 class BudgetAllocation(BaseModel):
     high_priority_channels: str = Field(default="", description="Budget for high priority channels")
     medium_priority_channels: str = Field(default="", description="Budget for medium priority channels")
@@ -491,8 +519,14 @@ class CalendarActivity(BaseModel):
         if isinstance(v, dict):
             v = v.get("channel") or v.get("value") or v.get("name") or (list(v.values())[0] if v else "linkedin")
         if isinstance(v, str):
-            v = v.lower().strip().replace(" ", "_")
-        return v
+            norm = normalize_channel_name(v)
+            if norm and norm in _VALID_CHANNEL_NAMES:
+                return norm
+            clean = v.lower().strip().replace(" ", "_").replace("-", "_")
+            if clean in _VALID_CHANNEL_NAMES:
+                return clean
+            return "linkedin"
+        return "linkedin"
 
     @field_validator("effort", mode="before")
     @classmethod

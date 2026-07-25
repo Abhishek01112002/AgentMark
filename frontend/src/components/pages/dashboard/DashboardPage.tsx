@@ -120,7 +120,7 @@ function StatCard(props: {
           className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
           style={{ backgroundColor: iconBg }}
         >
-          <Icon size={18} style={{ color: iconColor }} />
+          <Icon size={18} style={{ color: iconColor, filter: `drop-shadow(0 0 6px ${iconColor}cc)` }} />
         </div>
       </div>
       {(trend || trendLabel) && (

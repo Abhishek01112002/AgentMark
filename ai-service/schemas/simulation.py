@@ -235,7 +235,9 @@ class ExecutionTelemetry(BaseModel):
     latency_ms: float = Field(default=0.0, ge=0.0, description="Execution duration in milliseconds")
     token_count: int = Field(default=0, ge=0, description="Total prompt + completion tokens used")
     model_used: str = Field(default="smart_client", description="Primary LLM provider/model used")
+    provider: str = Field(default="openai", description="Provider identifier used for inference")
     estimated_cost_usd: float = Field(default=0.0, ge=0.0, description="Estimated API cost in USD")
+    cache_hit: bool = Field(default=False, description="Whether simulation result was returned from cache")
 
 
 class DebateRound(BaseModel):

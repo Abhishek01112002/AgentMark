@@ -219,8 +219,8 @@ const MemoryHubPage: React.FC = () => {
                 >
                   <ArrowLeft size={18} />
                 </button>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(78,222,163,0.1))', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <Brain size={22} style={{ color: '#6366F1' }} />
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(244,114,182,0.15), rgba(99,102,241,0.1))', border: '1px solid rgba(244,114,182,0.3)' }}>
+                  <Brain size={22} className="text-pink-400 filter drop-shadow-[0_0_8px_rgba(244,114,182,0.7)]" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold leading-tight" style={{ color: '#F1F1F3' }}>Brand Memory Hub</h1>

@@ -271,7 +271,7 @@ const ProjectsContent: React.FC = () => {
                       className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
                       style={{ backgroundColor: 'rgba(99,102,241,0.12)' }}
                     >
-                      <FolderOpen size={20} style={{ color: '#6366F1' }} />
+                      <FolderOpen size={20} className="text-violet-400 filter drop-shadow-[0_0_8px_rgba(167,139,250,0.7)]" />
                     </div>
                   </div>
                 </div>

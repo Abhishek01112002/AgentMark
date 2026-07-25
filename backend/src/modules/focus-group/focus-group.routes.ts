@@ -23,7 +23,7 @@ const getHeaders = () => {
 router.use(authMiddleware);
 
 let activeSimulations = 0;
-const MAX_CONCURRENT_SIMULATIONS = 3;
+const MAX_CONCURRENT_SIMULATIONS = parseInt(process.env.MAX_CONCURRENT_SIMULATIONS || '20', 10);
 
 /**
  * POST /api/focus-group/simulate

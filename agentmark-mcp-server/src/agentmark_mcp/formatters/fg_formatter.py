@@ -79,6 +79,23 @@ def format_focus_group_report(report: Dict[str, Any]) -> str:
     md.append("**Overall Group Score:** `%.0f/100`" % overall_score)
     md.append("**Verdict:** %s" % verdict)
 
+    # Phase 0.5 Gated Readiness & Devil's Advocate Audit Summary
+    gated_readiness = report.get("gated_readiness")
+    if isinstance(gated_readiness, dict):
+        status = gated_readiness.get("status", "UNKNOWN")
+        trust_score = gated_readiness.get("trust_score", 0)
+        expl = gated_readiness.get("explanation", "")
+        md.append("**Gated Readiness Status:** `%s` (Trust Score: `%.0f/100`)" % (status, trust_score))
+        if expl:
+            md.append("> *%s*" % expl)
+
+    devils_issues = report.get("devils_advocate_issues") or []
+    if devils_issues and isinstance(devils_issues, list):
+        md.append("\n**Devil's Advocate Audit Findings (%d issues detected):**" % len(devils_issues))
+        for issue in devils_issues[:3]:
+            if isinstance(issue, dict):
+                md.append(" - ⚠️ **%s**: %s" % (issue.get("type", "Risk"), issue.get("description", "")))
+
     # Click-intent ratio summary: count how many personas indicate willingness to act
     if persona_critiques:
         click_count = sum(
@@ -169,5 +186,57 @@ def format_focus_group_report(report: Dict[str, Any]) -> str:
     else:
         md.append("\n---")
         md.append("\n*No actionable recommendations were provided.*")
+
+    # ── 3. Multi-Persona Debate Summary ──────────────────────────────────────────
+    debate_summary = report.get("debate_summary")
+    if isinstance(debate_summary, dict) and debate_summary:
+        md.append("\n---")
+        md.append("\n## Multi-Persona Debate Engine")
+        consensus = debate_summary.get("consensus", "N/A")
+        buying_prob = debate_summary.get("buying_probability")
+        md.append("**Committee Consensus:** `%s`" % consensus)
+        if buying_prob is not None:
+            prob_num = float(buying_prob)
+            md.append("**Buy Intent Probability:** `%.0f%%`" % (prob_num * 100 if prob_num <= 1.0 else prob_num))
+
+        rounds = debate_summary.get("rounds") or []
+        if isinstance(rounds, list) and rounds:
+            md.append("\n### Debate Transcript Highlights")
+            for r in rounds[:3]:
+                if isinstance(r, dict):
+                    sp = r.get("speaker_persona_id", "Persona")
+                    tr = r.get("transcript", "")
+                    md.append("- **%s**: *\"%s\"*" % (sp, tr))
+
+    # ── 4. Trust Signal Analysis ────────────────────────────────────────────────
+    trust_analysis = report.get("trust_signal_analysis")
+    if isinstance(trust_analysis, dict) and trust_analysis:
+        md.append("\n---")
+        md.append("\n## Trust Signal Analysis")
+        risk = trust_analysis.get("risk_level", "LOW")
+        score_val = trust_analysis.get("overall_trust_score")
+        if score_val is not None:
+            md.append("**Overall Trust Score:** `%.0f/100` (Risk Level: `%s`)" % (float(score_val), risk))
+
+        verified = trust_analysis.get("verified_claims") or []
+        missing = trust_analysis.get("missing_proofs") or []
+        if verified:
+            md.append("\n**Verified Claims:**")
+            for cl in verified[:3]:
+                md.append(" - ✅ %s" % cl)
+        if missing:
+            md.append("\n**Missing Proof Elements:**")
+            for mp in missing[:3]:
+                md.append(" - ⚠️ %s" % mp)
+
+    # ── 5. Execution Telemetry ──────────────────────────────────────────────────
+    telemetry = report.get("telemetry")
+    if isinstance(telemetry, dict) and telemetry:
+        md.append("\n---")
+        provider = telemetry.get("provider", "LLM")
+        model = telemetry.get("model", "N/A")
+        latency = telemetry.get("latency_ms", 0)
+        cache_hit = telemetry.get("cache_hit", False)
+        md.append("*Execution Telemetry: %s (%s) | Latency: %dms | L2 Cache: %s*" % (provider, model, latency, "HIT" if cache_hit else "MISS"))
 
     return "\n".join(md)

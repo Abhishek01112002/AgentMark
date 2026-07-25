@@ -70,7 +70,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onCrea
           {/* Quick Starter Templates */}
           <div className="mb-4">
             <label className="block text-xs font-semibold uppercase tracking-wider mb-2 text-[#A0A0D2] flex items-center gap-1.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              <Sparkles size={13} className="text-indigo-400" />
+              <Sparkles size={13} className="text-amber-400 filter drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
               Starter Templates
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -83,7 +83,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onCrea
                 className="p-2.5 text-left rounded-lg border border-[#2A2A38] bg-[#111118] hover:border-[#6366F1] hover:bg-[#1A1A24] transition-all group"
               >
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-[#F1F1F3] group-hover:text-indigo-300">
-                  <Rocket size={12} className="text-indigo-400" />
+                  <Rocket size={12} className="text-emerald-400 filter drop-shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
                   SaaS Launch
                 </div>
                 <div className="text-[10px] text-[#8B8B9E] truncate mt-0.5">B2B product release</div>

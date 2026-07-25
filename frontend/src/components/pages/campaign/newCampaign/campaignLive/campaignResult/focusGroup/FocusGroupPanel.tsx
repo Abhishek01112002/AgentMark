@@ -67,6 +67,40 @@ interface DecisionExplanation {
   confidence_score?: number;
 }
 
+export interface DebateRound {
+  round_number: number;
+  speaker_persona_id: string;
+  target_persona_id?: string;
+  transcript: string;
+}
+
+export interface DebateSummary {
+  rounds?: DebateRound[];
+  consensus?: string;
+  buying_probability?: number;
+}
+
+export interface TrustSignalAnalysis {
+  verified_claims?: string[];
+  missing_proofs?: string[];
+  risk_level?: "LOW" | "MEDIUM" | "HIGH";
+  overall_trust_score?: number;
+}
+
+export interface ExecutionTelemetry {
+  provider?: string;
+  model?: string;
+  latency_ms?: number;
+  tokens_used?: number;
+  cost_usd?: number;
+  cache_hit?: boolean;
+}
+
+export interface MemorySummary {
+  historical_objections_recalled?: number;
+  applied_brand_directives?: string[];
+}
+
 interface FocusGroupReport {
   overall_score: number;
   persona_critiques: PersonaCritique[];
@@ -75,6 +109,10 @@ interface FocusGroupReport {
   gated_readiness?: GatedReadiness;
   devils_advocate_issues?: DevilsAdvocateIssue[];
   decision_explanation?: DecisionExplanation;
+  debate_summary?: DebateSummary;
+  trust_signal_analysis?: TrustSignalAnalysis;
+  telemetry?: ExecutionTelemetry;
+  memory_summary?: MemorySummary;
 }
 
 
@@ -352,9 +390,10 @@ const ScoreGauge: React.FC<ScoreGaugeProps> = ({ score }) => {
 
 interface PulseBarProps {
   resonanceScore: number;
+  rubric?: PersonaRubric;
 }
 
-const PulseBar: React.FC<PulseBarProps> = ({ resonanceScore }) => {
+const PulseBar: React.FC<PulseBarProps> = ({ resonanceScore, rubric }) => {
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -362,9 +401,11 @@ const PulseBar: React.FC<PulseBarProps> = ({ resonanceScore }) => {
     return () => clearTimeout(t);
   }, []);
 
-  const trustWidth = animated ? `${resonanceScore}%` : '0%';
-  const confusionWidth = animated ? `${(100 - resonanceScore) * 0.4}%` : '0%';
-  const skeptWidth = animated ? `${(100 - resonanceScore) * 0.6}%` : '0%';
+  // Use exact Trust percentage from rubric if available (rubric.trust / 5 * 100), otherwise fallback to resonanceScore
+  const trustVal = rubric && typeof rubric.trust === 'number' ? (rubric.trust / 5) * 100 : resonanceScore;
+  const trustWidth = animated ? `${trustVal}%` : '0%';
+  const confusionWidth = animated ? `${(100 - trustVal) * 0.4}%` : '0%';
+  const skeptWidth = animated ? `${(100 - trustVal) * 0.6}%` : '0%';
 
   const segmentStyle = (color: string, width: string): React.CSSProperties => ({
     height: '100%',
@@ -723,7 +764,7 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
       {/* Emotional Pulse Bar */}
       <div style={{ marginTop: 'auto', paddingTop: 8 }}>
-        <PulseBar resonanceScore={critique.resonance_score} />
+        <PulseBar resonanceScore={critique.resonance_score} rubric={critique.rubric} />
       </div>
     </div>
   );
@@ -1106,160 +1147,345 @@ const SkeletonCard: React.FC<{ delay?: number }> = ({ delay = 0 }) => (
 interface EmptyStateProps {
   onRunSimulation?: () => void;
   error?: string | null;
+  targetAudience?: string;
+  copyText?: string;
+  previousScore?: number | null;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error }) => (
-  <div
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '48px 24px',
-      gap: 20,
-      textAlign: 'center',
-    }}
-  >
-    {/* SVG Icon: people silhouettes */}
-    <svg
-      width={64}
-      height={64}
-      viewBox="0 0 64 64"
-      fill="none"
-      aria-hidden
-    >
-      <circle cx={20} cy={18} r={8} fill={COLORS.border} />
-      <circle cx={44} cy={18} r={8} fill={COLORS.border} />
-      <circle cx={32} cy={20} r={9} fill="#2A2A48" />
-      <path
-        d="M4 50c0-8.837 7.163-16 16-16h4M60 50c0-8.837-7.163-16-16-16h-4M16 50c0-8.837 7.163-16 16-16s16 7.163 16 16"
-        stroke={COLORS.border}
-        strokeWidth={3}
-        strokeLinecap="round"
-      />
-      <path
-        d="M23 50c0-4.97 4.03-9 9-9s9 4.03 9 9"
-        stroke={COLORS.purple}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-      />
-    </svg>
+const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error, targetAudience, copyText, previousScore }) => {
+  const [personaCount, setPersonaCount] = useState<number>(5);
+  const [enableDebate, setEnableDebate] = useState<boolean>(true);
+  const [enableTrust, setEnableTrust] = useState<boolean>(true);
+  const [enableMemory, setEnableMemory] = useState<boolean>(true);
+  const [modelRoute, setModelRoute] = useState<string>('auto');
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <h3
-        style={{
-          fontFamily: "'Sora', sans-serif",
-          fontSize: 18,
-          fontWeight: 600,
-          color: COLORS.textPrimary,
-          margin: 0,
-        }}
-      >
-        Simulate Target Audience Reactions
-      </h3>
-      <p
-        style={{
-          fontFamily: "'Sora', sans-serif",
-          fontSize: 13,
-          color: COLORS.textMuted,
-          margin: '0 auto',
-          maxWidth: 420,
-          lineHeight: 1.6,
-        }}
-      >
-        Run a simulated focus group with 5 diverse AI buyer personas matching your target demographic to review copywriting objections before deploying live.
-      </p>
-    </div>
-
-    {error && (
-      <div
-        style={{
-          backgroundColor: 'rgba(244, 63, 94, 0.1)',
-          border: `1px solid ${COLORS.danger}`,
-          borderRadius: 10,
-          padding: '12px 18px',
-          maxWidth: 500,
-          fontSize: 13,
-          color: COLORS.danger,
-          lineHeight: 1.5,
-          textAlign: 'left',
-          marginTop: 8,
-        }}
-      >
-        <strong style={{ display: 'block', marginBottom: 4 }}>Simulation Error:</strong>
-        {error}
-      </div>
-    )}
-
-    {/* Benefits Card List */}
-    <div style={{
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: 12,
-      maxWidth: 600,
-      margin: '8px 0'
-    }}>
-      {[
-        { title: "Protect Ad Budget", desc: "Detect conversion barriers and copy friction before wasting budget on paid marketing channels." },
-        { title: "Predict Click Rates", desc: "Estimate click decisions and audience resonance ratings across key buyer demographics." },
-        { title: "Optimize Conversions", desc: "Verify copy revisions in real-time by directly interviewing the simulated consumer panel." }
-      ].map((item, idx) => {
-        const cardColors = [
-          { bar: 'linear-gradient(90deg, #6366F1, #818CF8)', bg: 'rgba(99,102,241,0.04)', border: 'rgba(99,102,241,0.12)', icon: '#818CF8' },
-          { bar: 'linear-gradient(90deg, #0D9488, #14B8A6)', bg: 'rgba(13,148,136,0.04)', border: 'rgba(13,148,136,0.12)', icon: '#14B8A6' },
-          { bar: 'linear-gradient(90deg, #F43F5E, #FB7185)', bg: 'rgba(244,63,94,0.04)', border: 'rgba(244,63,94,0.12)', icon: '#FB7185' },
-        ];
-        const c = cardColors[idx % cardColors.length];
-        return (
-          <div key={idx} className="relative overflow-hidden w-full sm:w-[170px] flex-grow sm:flex-grow-0" style={{
-            backgroundColor: c.bg,
-            border: `1px solid ${c.border}`,
-            borderRadius: 12,
-            padding: '12px 16px',
-            textAlign: 'left',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: c.bar }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: COLORS.textPrimary, fontFamily: "'Sora', sans-serif" }}>{item.title}</span>
-            <span style={{ fontSize: 11, color: COLORS.textMuted, lineHeight: 1.4 }}>{item.desc}</span>
+  return (
+    <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[420px] text-center">
+      <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 text-left">
+        
+        {/* 1. Campaign Pipeline Stage Tracker (Integrated Lifecycle Step Bar) */}
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-3.5 flex items-center justify-between overflow-x-auto text-xs font-mono">
+          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
+            Research
           </div>
-        );
-      })}
+          <span className="text-[#2A2A38]">→</span>
+          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
+            Strategy
+          </div>
+          <span className="text-[#2A2A38]">→</span>
+          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
+            Copy
+          </div>
+          <span className="text-[#2A2A38]">→</span>
+          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
+            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
+            Visuals
+          </div>
+          <span className="text-[#2A2A38]">→</span>
+          <div className="flex items-center gap-2 text-[#818CF8] font-bold bg-[#6366F1]/10 px-2.5 py-1 rounded-lg border border-[#6366F1]/30">
+            <span className="w-2 h-2 rounded-full bg-[#818CF8] animate-pulse" />
+            Stage 5: Pre-Flight Audit
+          </div>
+          <span className="text-[#2A2A38]">→</span>
+          <div className="flex items-center gap-2 text-[#8B8B9E]">
+            <span className="w-5 h-5 rounded-full bg-[#181824] border border-[#2A2A38] flex items-center justify-center text-[10px]">○</span>
+            Publishing
+          </div>
+        </div>
+
+        {/* 2. Top Campaign Context Hero Banner */}
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-transparent" />
+          
+          <div className="flex items-center gap-4">
+            {/* Subtle Radar Committee Neural Network Graphic */}
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#A855F7]/10 border border-[#6366F1]/30 flex items-center justify-center flex-shrink-0 relative">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="filter drop-shadow-[0_0_8px_rgba(129,140,248,0.6)]">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 3v3m0 12v3M3 12h3m12 0h3" />
+                <circle cx="12" cy="3" r="1.5" fill="#818CF8" />
+                <circle cx="12" cy="21" r="1.5" fill="#818CF8" />
+                <circle cx="3" cy="12" r="1.5" fill="#818CF8" />
+                <circle cx="21" cy="12" r="1.5" fill="#818CF8" />
+              </svg>
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#4edea3] animate-ping opacity-75" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#4edea3]" />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
+                  AI Pre-Flight Simulation Engine
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/30 text-[11px] font-mono text-[#818CF8]">
+                  v2.4 Enterprise
+                </span>
+              </div>
+              <p className="text-xs text-[#8B8B9E] mt-0.5" style={{ fontFamily: 'Sora, sans-serif' }}>
+                Validate campaign copy using AI buying committee simulation before publishing live.
+              </p>
+            </div>
+          </div>
+
+          {/* Campaign Metadata Badges */}
+          <div className="flex flex-wrap items-center gap-2 md:justify-end text-xs font-mono">
+            {previousScore != null && (
+              <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[#F59E0B] font-semibold">
+                <span>Prev Score:</span>
+                <span className="font-bold">{previousScore}/100</span>
+              </div>
+            )}
+            <div className="bg-[#181824] border border-[#2A2A38] px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <span className="text-[#8B8B9E]">Target:</span>
+              <span className="text-[#F1F1F3] font-semibold truncate max-w-[130px]" title={targetAudience}>
+                {targetAudience || 'B2B Buyers'}
+              </span>
+            </div>
+            <div className="bg-[#181824] border border-[#2A2A38] px-3 py-1.5 rounded-lg flex items-center gap-2">
+              <span className="text-[#8B8B9E]">Copy:</span>
+              <span className="text-[#34D399] font-semibold">
+                {copyText ? 'Variant Ready' : 'Active Copy'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E] rounded-xl p-4 text-xs text-[#F43F5E]">
+            <strong className="block mb-1 font-semibold">Simulation Error:</strong>
+            {error}
+          </div>
+        )}
+
+        {/* 3 & 4. Editable Interactive Simulation Controls Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          
+          {/* Editable Simulation Configuration */}
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-[#2A2A38] pb-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A0A0D2]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                Simulation Settings (Editable)
+              </span>
+              <span className="text-xs font-mono text-[#F59E0B] font-semibold">Est. ~40 sec</span>
+            </div>
+            
+            <div className="space-y-2.5 text-xs font-mono">
+              <div className="flex justify-between items-center text-[#8B8B9E]">
+                <span>Personas Panel:</span>
+                <select
+                  value={personaCount}
+                  onChange={(e) => setPersonaCount(Number(e.target.value))}
+                  className="bg-[#181824] border border-[#2A2A38] rounded px-2 py-1 text-xs text-[#F1F1F3] focus:outline-none focus:border-[#6366F1]"
+                >
+                  <option value={3}>3 Demographics</option>
+                  <option value={5}>5 Demographics (Default)</option>
+                  <option value={8}>8 Demographics</option>
+                  <option value={10}>10 Demographics</option>
+                </select>
+              </div>
+
+              <div className="flex justify-between items-center text-[#8B8B9E]">
+                <span>Committee Debate:</span>
+                <label className="flex items-center gap-2 cursor-pointer text-[#F1F1F3]">
+                  <input
+                    type="checkbox"
+                    checked={enableDebate}
+                    onChange={(e) => setEnableDebate(e.target.checked)}
+                    className="accent-[#6366F1] rounded"
+                  />
+                  <span>{enableDebate ? '3 Rounds Active' : 'Disabled'}</span>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center text-[#8B8B9E]">
+                <span>Trust Signal Audit:</span>
+                <label className="flex items-center gap-2 cursor-pointer text-[#F1F1F3]">
+                  <input
+                    type="checkbox"
+                    checked={enableTrust}
+                    onChange={(e) => setEnableTrust(e.target.checked)}
+                    className="accent-[#34D399] rounded"
+                  />
+                  <span>{enableTrust ? 'Claim Audit Active' : 'Disabled'}</span>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center text-[#8B8B9E]">
+                <span>Persona Memory Recall:</span>
+                <label className="flex items-center gap-2 cursor-pointer text-[#F1F1F3]">
+                  <input
+                    type="checkbox"
+                    checked={enableMemory}
+                    onChange={(e) => setEnableMemory(e.target.checked)}
+                    className="accent-[#A855F7] rounded"
+                  />
+                  <span>{enableMemory ? 'Memory Recalled' : 'Disabled'}</span>
+                </label>
+              </div>
+
+              <div className="flex justify-between items-center text-[#8B8B9E]">
+                <span>Model Failover Router:</span>
+                <select
+                  value={modelRoute}
+                  onChange={(e) => setModelRoute(e.target.value)}
+                  className="bg-[#181824] border border-[#2A2A38] rounded px-2 py-1 text-xs text-[#38BDF8] focus:outline-none focus:border-[#6366F1]"
+                >
+                  <option value="auto">Auto (Gemini + LLaMA)</option>
+                  <option value="gemini">Gemini 2.5 Pro</option>
+                  <option value="llama">Meta LLaMA 3.3 70B</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* You'll Receive (Output Deliverables) */}
+          <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-3">
+            <div className="flex items-center justify-between border-b border-[#2A2A38] pb-2.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A0A0D2]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                You'll Receive
+              </span>
+              <span className="text-[10px] font-mono text-[#34D399]">Full Audit Brief</span>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-1.5 text-xs text-[#C7C4D7]">
+              <div className="flex items-center gap-2">
+                <span className="text-[#34D399] font-bold">✓</span> <strong>Executive Decision</strong> &amp; Overall Score
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#34D399] font-bold">✓</span> <strong>Overall Buy Intent</strong> &amp; Click Rates
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#34D399] font-bold">✓</span> <strong>Top Persona Objections</strong> &amp; Friction Points
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#34D399] font-bold">✓</span> <strong>Committee Debate Transcript</strong> (3 Rounds)
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[#34D399] font-bold">✓</span> <strong>Trust &amp; Risk Report</strong> + Actionable Recommendations
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* 5. High-Confidence Action Area */}
+        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col text-left gap-1">
+            <div className="flex items-center gap-2 text-xs text-[#F1F1F3] font-semibold" style={{ fontFamily: 'Sora, sans-serif' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Zero Live Campaign Changes
+            </div>
+            <span className="text-[11px] text-[#8B8B9E] font-mono">
+              Runs in ~40 seconds • Unlimited pre-flight re-runs • Est. Cost: ~$0.04
+            </span>
+          </div>
+
+          {onRunSimulation && (
+            <button
+              onClick={onRunSimulation}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#4F46E5] hover:from-[#5254d8] hover:to-[#4338CA] text-white text-sm font-semibold transition-all shadow-[0_0_20px_rgba(99,102,241,0.35)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] active:scale-[0.98] flex items-center justify-center gap-2.5 shrink-0"
+              style={{ fontFamily: 'Sora, sans-serif' }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+              {previousScore != null ? 'Re-Run AI Pre-Flight Analysis' : 'Run AI Pre-Flight Analysis'}
+            </button>
+          )}
+        </div>
+
+      </div>
     </div>
+  );
+};
 
-    {onRunSimulation && (
-      <button
-        className="fgp-btn"
-        onClick={onRunSimulation}
-        style={{
-          background: 'linear-gradient(135deg, #6366F1, #818CF8)',
-          color: '#fff',
-          borderRadius: 10,
-          padding: '12px 28px',
-          fontSize: 14,
-          fontWeight: 600,
-          marginTop: 8,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          boxShadow: '0 4px 16px rgba(99, 102, 241, 0.3)',
-          transition: 'all 0.2s ease',
-          cursor: 'pointer',
-          border: '1px solid rgba(255,255,255,0.08)',
-        }}
-        aria-label="Run focus group simulation"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Run Simulation
-      </button>
-    )}
-  </div>
-);
+// ─── Multi-Persona Debate Summary Card ───────────────────────────────────────
 
-// ─── Actionable Recommendations ───────────────────────────────────────────────
+interface DebateSummaryCardProps {
+  summary: DebateSummary;
+}
+
+const DebateSummaryCard: React.FC<DebateSummaryCardProps> = ({ summary }) => {
+  return (
+    <div
+      className="fgp-fadeInUp border border-[#2A2A38] rounded-[16px] overflow-hidden"
+      style={{
+        backgroundColor: 'rgba(23, 23, 37, 0.5)',
+        padding: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(168,85,247,0.2))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.3)' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontFamily: "'Sora', sans-serif", fontSize: 16, fontWeight: 600, color: COLORS.textPrimary }}>
+              Multi-Persona Buying Committee Debate
+            </h3>
+            <span style={{ fontSize: 11, color: COLORS.textMuted }}>3-Round Deliberation & Consensus Engine</span>
+          </div>
+        </div>
+
+        {/* Buying Committee Consensus Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: COLORS.textMuted, textTransform: 'uppercase' }}>Committee Consensus</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: summary.consensus === 'approve' ? COLORS.green : summary.consensus === 'revise' ? COLORS.warning : COLORS.danger, textTransform: 'uppercase' }}>
+              {summary.consensus} ({summary.buying_probability?.toFixed(0)}% Buy Intent)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Debate Rounds Transcripts */}
+      {summary.rounds && summary.rounds.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Debate Transcripts ({summary.rounds.length} Rounds)
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {summary.rounds.map((rd: DebateRound, i: number) => (
+              <div
+                key={i}
+                style={{
+                  backgroundColor: 'rgba(18, 18, 26, 0.6)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderRadius: 10,
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: COLORS.purpleLight, fontWeight: 600 }}>
+                    ROUND {rd.round_number}: {rd.speaker_persona_id} {rd.target_persona_id ? `→ ${rd.target_persona_id}` : ''}
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: 12.5, color: COLORS.textPrimary, fontStyle: 'italic', lineHeight: 1.5 }}>
+                  "{rd.transcript}"
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Actionable Recommendations List ───────────────────────────────────────────────
 
 interface RecommendationsProps {
   recommendations: ActionableRecommendation[];
@@ -1594,7 +1820,7 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
             borderRadius: 16,
           }}
         >
-          <EmptyState onRunSimulation={onRunSimulation} error={error} />
+          <EmptyState onRunSimulation={onRunSimulation} error={error} targetAudience={targetAudience} copyText={copyText} previousScore={report ? (report as any).overall_score : null} />
         </div>
       )}
 
@@ -1880,7 +2106,12 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
             </div>
           )}
 
-          {/* ── Section 4: Actionable Recommendations ── */}
+          {/* ── Section 4: Multi-Persona Debate Summary ── */}
+          {report.debate_summary && (
+            <DebateSummaryCard summary={report.debate_summary} />
+          )}
+
+          {/* ── Section 5: Actionable Recommendations ── */}
           {report.actionable_recommendations?.length > 0 && (
             <Recommendations recommendations={report.actionable_recommendations} />
           )}

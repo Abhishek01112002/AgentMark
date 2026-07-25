@@ -623,8 +623,8 @@ const StrategyContent: React.FC<StrategyContentProps> = ({ data, campaign }) => 
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center text-[#6366F1]">
-                  <Compass size={22} />
+                <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center">
+                  <Compass size={22} className="text-purple-400 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.7)]" />
                 </div>
                 <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
                   Campaign Strategy

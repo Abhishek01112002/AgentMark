@@ -37,7 +37,7 @@ const sections: DocSection[] = [
     id: 'overview',
     title: '1. What is AgentMark?',
     category: 'Getting Started',
-    icon: <Sparkles size={16} className="text-indigo-400" />,
+    icon: <Sparkles size={16} className="text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-normal">
@@ -83,7 +83,7 @@ const sections: DocSection[] = [
     id: 'quickstart',
     title: '2. Quick Start User Guide',
     category: 'Getting Started',
-    icon: <Rocket size={16} className="text-indigo-400" />,
+    icon: <Rocket size={16} className="text-emerald-400 filter drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200">Creating and launching a campaign with AgentMark takes just 4 easy steps:</p>
@@ -158,7 +158,7 @@ const sections: DocSection[] = [
     id: 'usecases',
     title: '3. Real-World Use Cases & Prompt Examples',
     category: 'Guides',
-    icon: <Sparkles size={16} className="text-indigo-400" />,
+    icon: <Sparkles size={16} className="text-violet-400 filter drop-shadow-[0_0_8px_rgba(167,139,250,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200">Here are 3 concrete real-world campaign examples across different industries:</p>
@@ -269,7 +269,7 @@ const sections: DocSection[] = [
     id: 'variants',
     title: '4. Creative Copy Variants & Version History',
     category: 'Features',
-    icon: <Copy size={16} className="text-indigo-400" />,
+    icon: <Copy size={16} className="text-rose-400 filter drop-shadow-[0_0_8px_rgba(251,113,133,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200">Need alternative copy options for specific social channels? AgentMark allows on-demand copy variant generation and version tracking:</p>
@@ -302,7 +302,7 @@ const sections: DocSection[] = [
     id: 'concepts',
     title: '5. Campaign Lifecycle & Status Badges',
     category: 'Workflow',
-    icon: <Waypoints size={16} className="text-indigo-400" />,
+    icon: <Waypoints size={16} className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200">Every campaign in AgentMark moves through transparent lifecycle states so you always know what is happening:</p>
@@ -352,7 +352,7 @@ const sections: DocSection[] = [
     id: 'agents',
     title: '6. Meet Your 7 AI Specialist Agents',
     category: 'AI Agents',
-    icon: <Brain size={16} className="text-indigo-400" />,
+    icon: <Brain size={16} className="text-purple-400 filter drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200">Here is a breakdown of how each of the 7 AI agents contributes to your campaign:</p>
@@ -494,7 +494,7 @@ const sections: DocSection[] = [
     id: 'hitl',
     title: '7. Human Approval & Targeted Revisions',
     category: 'Workflow',
-    icon: <ShieldCheck size={16} className="text-indigo-400" />,
+    icon: <ShieldCheck size={16} className="text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">You hold <strong>100% creative control</strong>. When the AI agents finish their initial draft, the campaign pauses at the Human Approval Gate:</p>
@@ -525,30 +525,30 @@ const sections: DocSection[] = [
     id: 'focus-groups',
     title: '8. Synthetic Focus Group Audience Testing',
     category: 'Features',
-    icon: <Eye size={16} className="text-indigo-400" />,
+    icon: <Eye size={16} className="text-purple-400 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">Test your marketing copy against representative consumer personas before spending ad money:</p>
 
         <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
           <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-            <Users size={18} className="text-indigo-400" /> Focus Group Metrics & Objection Analysis:
+            <Users size={18} className="text-purple-400" /> Focus Group Metrics & Objection Analysis:
           </h4>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs md:text-sm text-slate-300">
             <li className="flex items-center gap-2">
-              <Check size={16} className="text-indigo-400 shrink-0" />
+              <Check size={16} className="text-purple-400 shrink-0" />
               <strong>Sentiment Score (0-100%):</strong> Persona approval rating.
             </li>
             <li className="flex items-center gap-2">
-              <Check size={16} className="text-indigo-400 shrink-0" />
+              <Check size={16} className="text-purple-400 shrink-0" />
               <strong>Click-Intent %:</strong> Probability of users clicking your CTA.
             </li>
             <li className="flex items-center gap-2">
-              <Check size={16} className="text-indigo-400 shrink-0" />
+              <Check size={16} className="text-purple-400 shrink-0" />
               <strong>Consumer Objections:</strong> Pinpoints exact hesitation reasons.
             </li>
             <li className="flex items-center gap-2">
-              <Check size={16} className="text-indigo-400 shrink-0" />
+              <Check size={16} className="text-purple-400 shrink-0" />
               <strong>Copy Rewrite Tips:</strong> Actionable suggestions per demographic.
             </li>
           </ul>
@@ -557,10 +557,76 @@ const sections: DocSection[] = [
     )
   },
   {
+    id: 'preflight-engine',
+    title: '8. Enterprise Pre-Flight Simulation & Calibration Engine',
+    category: 'Features',
+    icon: <ShieldCheck size={16} className="text-emerald-400 filter drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />,
+    content: (
+      <div className="space-y-6">
+        <p className="text-xs md:text-sm text-slate-200 leading-relaxed">
+          AgentMark’s <strong className="text-white font-semibold">Enterprise Pre-Flight Engine</strong> uses multi-agent orchestration, adversarial auditing, and empirical ad telemetry to predict and optimize campaign performance before launch:
+        </p>
+
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Card 1: Gated Readiness */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-emerald-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+              <ShieldCheck size={18} /> Gated Readiness & Trust Analyzer
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Audits copy for claim proof, cognitive load, and brand risk. If Trust Score falls below <strong>40%</strong>, simulation halts to prevent evaluating unverified copy.
+            </p>
+          </div>
+
+          {/* Card 2: Devil's Advocate */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-rose-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
+              <Zap size={18} /> Devil's Advocate Audit
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              An adversarial AI auditor probes your copy for exaggerated promises, policy violations, missing disclaimers, and aggressive sales tactics, delivering instant fixes.
+            </p>
+          </div>
+
+          {/* Card 3: Multi-Persona Debate */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-purple-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
+              <Users size={18} /> Multi-Persona Debate Engine
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Runs a 3-round deliberation between synthetic buyer personas with opposing priorities to find a true consensus score and resolve friction points.
+            </p>
+          </div>
+
+          {/* Card 4: Performance Calibration */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+              <Brain size={18} /> Empirical Bayes Calibration Engine
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Ingests real Meta, Google, and LinkedIn ad telemetry. Once 30+ campaign data points exist for an industry, Empirical Bayes statistically recalibrates future pre-flight predictions.
+            </p>
+          </div>
+
+          {/* Card 5: Hybrid Router */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-cyan-500/30 space-y-2 shadow-md md:col-span-2">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
+              <Workflow size={18} /> Hybrid Model Router (60% Token Cost Reduction)
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Dynamically routes initial reviews to Tier 1 (Fast/Cheap), trust checks to Tier 2 (Balanced), and complex debates to Tier 3 (High Quality), saving 60% on LLM inference costs while preserving accuracy.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
     id: 'mcp',
     title: '9. Claude Desktop & MCP Integration',
     category: 'Integrations',
-    icon: <Waypoints size={16} className="text-indigo-400" />,
+    icon: <Waypoints size={16} className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">
@@ -570,12 +636,12 @@ const sections: DocSection[] = [
         <div className="space-y-5">
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-              <Terminal size={18} className="text-indigo-400" /> Step 1: Install the MCP Server
+              <Terminal size={18} className="text-cyan-400" /> Step 1: Install the MCP Server
             </h4>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
               Make sure you have <strong>Node.js (v18 or higher)</strong> installed on your computer. Then open your terminal and run:
             </p>
-            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-indigo-300 leading-relaxed overflow-x-auto">
+            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-cyan-300 leading-relaxed overflow-x-auto">
               npx @novateches/agentmark-mcp
             </div>
             <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
@@ -585,12 +651,12 @@ const sections: DocSection[] = [
 
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-              <Terminal size={18} className="text-indigo-400" /> Step 2: Connect Claude Desktop to AgentMark
+              <Terminal size={18} className="text-cyan-400" /> Step 2: Connect Claude Desktop to AgentMark
             </h4>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
               Open <strong>Claude Desktop</strong> and go to <strong>Settings → MCP Servers</strong>. Click <strong>"Add Server"</strong> and paste the following:
             </p>
-            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-indigo-300 leading-relaxed overflow-x-auto">
+            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-cyan-300 leading-relaxed overflow-x-auto">
               {`{
   "mcpServers": {
     "agentmark": {
@@ -607,31 +673,31 @@ const sections: DocSection[] = [
 
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-              <Terminal size={18} className="text-indigo-400" /> Step 3: Start Using It
+              <Terminal size={18} className="text-cyan-400" /> Step 3: Start Using It
             </h4>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
               Once connected, just ask Claude in plain English. Here are some things you can say:
             </p>
             <ul className="space-y-3 text-xs md:text-sm text-slate-300">
               <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span className="text-cyan-400 mt-0.5 shrink-0">•</span>
                 <span><strong className="text-white">"Create a new campaign"</strong> — Claude will ask you for your campaign details (brand name, audience, goal, tone) and launch the full 7-agent pipeline.</span>
               </li>
               <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span className="text-cyan-400 mt-0.5 shrink-0">•</span>
                 <span><strong className="text-white">"Test my ad copy with a focus group"</strong> — Claude will run a synthetic focus group simulation on your latest campaign copy and show you feedback scores.</span>
               </li>
               <li className="flex items-start gap-3 p-3 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d]">
-                <span className="text-indigo-400 mt-0.5 shrink-0">•</span>
+                <span className="text-cyan-400 mt-0.5 shrink-0">•</span>
                 <span><strong className="text-white">"Publish my campaign"</strong> — Claude will finalize your approved campaign and prepare everything for publishing.</span>
               </li>
             </ul>
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2">
-          <p className="text-xs md:text-sm text-indigo-300 font-semibold flex items-center gap-2">
-            <Sparkles size={16} className="text-indigo-400 shrink-0" /> Need Help?
+        <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-cyan-500/30 space-y-2">
+          <p className="text-xs md:text-sm text-cyan-300 font-semibold flex items-center gap-2">
+            <Sparkles size={16} className="text-cyan-400 shrink-0" /> Need Help?
           </p>
           <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
             If you run into any issues, make sure the MCP server terminal is still running, and that you've added the configuration exactly as shown above. You can also reach out to us on WhatsApp for step-by-step guidance.
@@ -644,7 +710,7 @@ const sections: DocSection[] = [
     id: 'memory',
     title: '10. Memory Hub & Brand Intelligence',
     category: 'Features',
-    icon: <Brain size={16} className="text-indigo-400" />,
+    icon: <Brain size={16} className="text-pink-400 filter drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">Memory Hub records your brand guidelines, voice parameters, and revision history across past campaigns to guarantee continuous brand alignment over time.</p>
@@ -667,7 +733,7 @@ const sections: DocSection[] = [
     id: 'api-keys',
     title: '11. API Keys & Provider Configuration',
     category: 'Setup',
-    icon: <ShieldCheck size={16} className="text-indigo-400" />,
+    icon: <ShieldCheck size={16} className="text-yellow-400 filter drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">AgentMark uses your own API keys to run LLM calls across all 7 agents and the Research web search Tavily API. Keys are stored in your browser and sent per-request — no keys are stored on our servers.</p>
@@ -715,7 +781,7 @@ const sections: DocSection[] = [
     id: 'troubleshooting',
     title: '12. Frequently Asked Questions (FAQ)',
     category: 'Support',
-    icon: <HelpCircle size={16} className="text-indigo-400" />,
+    icon: <HelpCircle size={16} className="text-rose-400 filter drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]" />,
     content: (
       <div className="space-y-5">
         <div className="space-y-4">
@@ -736,9 +802,9 @@ const sections: DocSection[] = [
   },
   {
     id: 'contact',
-    title: '12. Dedicated Support & Assistance',
+    title: '13. Dedicated Support & Assistance',
     category: 'Support',
-    icon: <Mail size={16} className="text-indigo-400" />,
+    icon: <Mail size={16} className="text-sky-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]" />,
     content: (
       <div className="space-y-5">
         <p className="text-xs md:text-sm text-slate-200">Need 1-on-1 assistance setting up your brand memory, configuring Claude MCP, or optimizing campaign prompts?</p>
