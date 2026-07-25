@@ -124,6 +124,17 @@ def format_focus_group_report(report: Dict[str, Any]) -> str:
                 % (resonance_score, click_status)
             )
 
+            rubric = critique.get("rubric")
+            if isinstance(rubric, dict):
+                c_val = rubric.get("clarity", 3)
+                t_val = rubric.get("trust", 3)
+                v_val = rubric.get("value", 3)
+                u_val = rubric.get("urgency", 3)
+                md.append(
+                    "* **Rubric Breakdown:** Clarity: %d/5 | Trust: %d/5 | Value: %d/5 | Urgency: %d/5"
+                    % (c_val, t_val, v_val, u_val)
+                )
+
             verdict_text: str = critique.get("verdict") or "No verdict provided"
             md.append("* **Final Verdict:** *%s*" % verdict_text)
 

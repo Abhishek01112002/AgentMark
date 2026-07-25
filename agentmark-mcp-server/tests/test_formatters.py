@@ -172,6 +172,7 @@ def full_focus_group_report() -> dict:
         "persona_critiques": [
             {
                 "persona_id": "sarah-32",
+                "rubric": {"clarity": 4, "trust": 3, "value": 5, "urgency": 4},
                 "resonance_score": 80,
                 "click_intent": True,
                 "verdict": "Likely to sign up.",
