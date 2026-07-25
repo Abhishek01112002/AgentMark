@@ -43,7 +43,7 @@ describe('ApiKeys Component', () => {
     render(<ApiKeys />);
     expect(screen.getByPlaceholderText(/Paste your Gemini API key/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Paste your Groq API key/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Paste your OpenAI API key/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Paste OpenAI API key/i)).toBeInTheDocument();
   });
 
   it('allows entering and saving a Gemini API key', async () => {
