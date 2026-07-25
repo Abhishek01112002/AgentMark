@@ -184,6 +184,7 @@ model PersonaMemory {
   @@map("persona_memories")
   @@index([projectId, personaId])
   @@index([projectId, createdAt])
+  @@index([projectId, personaId, createdAt(sort: Desc)])
 }
 
 // ── Developer API Keys ─────────────────────────────────────────────────────────

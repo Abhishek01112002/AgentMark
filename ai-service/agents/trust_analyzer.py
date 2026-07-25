@@ -39,7 +39,7 @@ async def analyze_trust_signals(copy_text: str, client=None) -> TrustSignalAnaly
     if client is None:
         client = get_llm_client()
 
-    prompt = f"{SYSTEM_PROMPT}\n\nMarketing Copy to Analyze:\n{copy_text}"
+    prompt = f"{SYSTEM_PROMPT}\n\nMarketing Copy to Analyze:\n<campaign_copy>\n{copy_text}\n</campaign_copy>"
 
     try:
         loop = asyncio.get_running_loop()

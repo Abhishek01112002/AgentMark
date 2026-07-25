@@ -51,7 +51,7 @@ async def run_devils_advocate_audit(copy_text: str, brand_name: str, client=None
     if client is None:
         client = get_llm_client()
 
-    prompt = f"{SYSTEM_PROMPT}\n\nBrand: {brand_name}\nAd Copy to Audit:\n{copy_text}"
+    prompt = f"{SYSTEM_PROMPT}\n\nBrand: {brand_name}\nAd Copy to Audit:\n<campaign_copy>\n{copy_text}\n</campaign_copy>"
 
     try:
         loop = asyncio.get_running_loop()
