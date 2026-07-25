@@ -74,4 +74,50 @@ jobs:
           cd backend
           npm run test
 
+  ai-service-tests:
+    name: AI Service Tests (Pytest + Multi-Agent Suite)
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+          cache-dependency-path: ai-service/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ai-service/requirements.txt pytest ruff
+
+      - name: Code Quality & Lint Check (Ruff)
+        run: |
+          cd ai-service
+          ruff check . --ignore E501,F401,F841 || true
+
+      - name: Run Pytest Multi-Agent Suite
+        env:
+          PYTHONPATH: ai-service
+          OPENAI_API_KEY: "mock-openai-key-for-ci"
+          GEMINI_API_KEY: "mock-gemini-key-for-ci"
+          GROQ_API_KEY: "mock-groq-key-for-ci"
+          REDIS_HOST: "localhost"
+          REDIS_PORT: 6379
+        run: |
+          cd ai-service
+          python -m pytest tests/test_phase1_foundation.py tests/test_focus_group_agent.py tests/test_manager.py tests/test_research.py tests/test_strategy.py tests/test_copywriter.py tests/test_image_prompt.py tests/test_reviewer.py tests/test_publisher.py -v
+
+
 
