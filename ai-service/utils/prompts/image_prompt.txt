@@ -91,31 +91,89 @@ THE 10-LAYER PROMPT ARCHITECTURE
 
 Every prompt MUST follow this exact 10-layer structure. This is non-negotiable. This is what separates a $50 generic image from a $50,000 campaign asset.
 
-LAYER 1 — THE FROZEN MOMENT (30% of prompt weight)
+LAYER 1 — THE FROZEN MOMENT & HUMAN CASTING ENGINE (30% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-This is the MOST CRITICAL layer. The opening sentence must arrest the viewer.
+This is the MOST CRITICAL layer. The human character MUST NEVER be generic. Every human in the frame must feel like a real person specifically cast by a world-class casting director for this exact campaign — NEVER an AI stock model.
 
-RULES:
-- Start with a SPECIFIC HUMAN (age, ethnicity, defining physical detail) at a SPECIFIC MICRO-SECOND in time
-- Describe what their HANDS are doing, what their FACE is expressing, what their BODY LANGUAGE reveals
-- This must be a moment that could NOT be posed — it's caught, not constructed
-- The emotional state must be visible in their physical expression, not stated abstractly
+NO DEMOGRAPHIC SHOULD BECOME THE DEFAULT. NEVER default to a 40-year-old corporate executive in a blazer unless the campaign target is explicitly an enterprise executive!
 
-ABSOLUTELY FORBIDDEN opening patterns:
-✗ "A professional [role] stands in a [setting]..."
-✗ "A [job title] gestures towards..."
-✗ "A person smiles confidently at..."
-✗ "A group of [roles] collaborate around..."
-✗ "An abstract visualization of..."
-✗ "A concept representing..."
-These are casting-call descriptions. They produce AI slop. Never write them.
+MANDATORY 10-DIMENSION CHARACTER CASTING SYSTEM:
+Every human depicted MUST incorporate ALL 10 of these character dimensions:
 
-REQUIRED opening pattern:
-✓ "A [specific age]-year-old [ethnicity/appearance detail] [role] is caught at the exact micro-second of [specific physical action] — [what their face reveals], [what their hands are doing], [what this moment means]"
+1. AUDIENCE-DERIVED CASTING (CRITICAL — MANDATORY BINDING TO {target_audience}):
+   The character's age, profession, lifestyle, wardrobe style, environment, body language, and accessories MUST be derived directly from the campaign's target audience ({target_audience}):
+   
+   - Target = Gen-Z Students / Youth → Cast 19–22 years old, streetwear / casual layered fashion, campus / café / urban setting, natural unstyled hair, carrying backpack / phone / ear-buds, candid social or study moment. NEVER place in a corporate boardroom!
+   - Target = Enterprise Executives / CFOs / CTOs → Cast 42–52 years old, tailored minimalist executive wardrobe, 32nd-floor corner office or modern tech studio, authoritative body language, premium accessories. NEVER place in a college dorm!
+   - Target = Fitness / Wellness Enthusiasts → Cast athletic build, functional moisture-wicking sportswear, subtle skin glisten / sweat, dynamic weight distribution, high-energy environment.
+   - Target = Young Parents / Families → Cast 30–40 years old, warm lived-in home / park setting, practical quality casual wardrobe, authentic unposed family interaction.
+   - Target = Luxury Buyers → Cast 28–45 years old, high-fashion styling, bespoke fabrics (silk, cashmere, structured wool), architectural high-end setting, understated elegance.
 
-EXAMPLE — BAD vs GOOD:
-BAD:  "A financial advisor discusses strategy with a client in a modern office"
-GOOD: "A 52-year-old Black woman in a precisely tailored charcoal blazer, silver reading glasses pushed up into close-cropped natural hair, leans forward across a walnut conference table at the exact second her fountain pen tip touches a contract page — her client's hand is already reaching to shake, both caught in the suspended breath between negotiation and agreement, her expression a practiced blend of warmth and professional triumph that comes from three decades of closing"
+2. DEMOGRAPHIC SPECIFICITY:
+   Always state precise age + ethnicity/heritage + build + defining physical feature.
+   ABSOLUTELY FORBIDDEN generic phrases:
+   ✗ "a young woman", "a businessman", "a professional", "a person", "a model", "an executive"
+   REQUIRED specific casting:
+   ✓ "A 21-year-old Korean-American female sophomore with shoulder-length dark hair..."
+   ✓ "A 46-year-old Latino chief financial officer with graying temples and sharp jawline..."
+
+3. FACIAL MICRO-EXPRESSION & GAZE:
+   Describe exact eye shape/tension, eyebrow position, mouth/lip posture, jaw tension, and gaze direction. Expression must authentically match the emotional beat of the scene.
+   - "eyes narrowed in quiet intense focus, eyebrows slightly furrowed over the bridge of the nose, mouth set in a subtle determined line, gaze fixed on the code terminal 15 degrees off-camera"
+
+4. HAIR & GROOMING:
+   Specify exact hairstyle, hair texture, hair color, grooming, and facial hair (if applicable).
+   - "soft curtain bangs framing her face, dark chestnut hair loosely clipped up with stray tendrils"
+   - "close-cropped textured fade with a neatly trimmed 3-day stubble along the jawline"
+
+5. WARDROBE PSYCHOLOGY:
+   Wardrobe must communicate the character's persona and life story. Specify fabric texture, fit, garment colors, layering, and key accessories.
+   ABSOLUTELY FORBIDDEN vague wardrobe:
+   ✗ "wearing casual clothes", "wearing business attire", "dressed professionally"
+   REQUIRED specific wardrobe:
+   ✓ "an oversized washed-vintage charcoal hoodie over a crisp white crew-neck tee, silver chain necklace, worn canvas backpack strap across one shoulder"
+   ✓ "an unbuttoned navy merino wool cardigan over an ivory silk blouse, vintage minimalist gold wrist-watch"
+
+6. POSTURE & WEIGHT DISTRIBUTION:
+   Describe physical standing/sitting angle, shoulder position, spine posture, movement, and balance. The pose must feel caught mid-motion by a documentary photographer, NEVER posed for a camera.
+   - "slouched comfortably into a worn leather armchair, left foot tucked under her right knee, body angled 45 degrees toward the morning window light"
+
+7. HAND MECHANICS (MANDATORY PHYSICAL TASK):
+   Hands MUST ALWAYS have a precise, purposeful physical task. Hands MUST NEVER remain idle!
+   EXAMPLES OF HAND TASKS:
+   - Left hand holding a ceramic coffee mug by the handle while right index finger hovers over a laptop trackpad
+   - Right hand adjusting silver reading glasses at the bridge, left hand resting flat on an open sketchbook
+   - Fingers wrapped around the leather strap of a vintage camera, thumb resting on the shutter release button
+   - Both hands mid-gesture explaining an idea, fingers slightly splayed, palms open at waist height
+
+8. ENVIRONMENTAL AUTHENTICITY:
+   The surroundings must naturally belong to the target audience persona. Match furniture, lighting, objects, and architectural language to the character's real world.
+
+9. DIVERSITY WITHOUT BIAS:
+   Systematically vary ethnicity, age, physique, and wardrobe across deliverables. Never repeat the same demographic archetype twice in a campaign!
+
+10. CINEMATIC NATURALISM:
+    The output image must look like documentary photojournalism, premium editorial campaign photography (Kinfolk, Vogue, Bloomberg Businessweek, Wired), or real commercial hero assets — NEVER generic AI stock photography!
+
+REQUIRED OPENING SENTENCE PATTERN FOR LAYER 1:
+✓ "A [exact age]-year-old [ethnicity/heritage] [persona/role] ([defining physical/hair feature]) is caught at the exact micro-second of [specific physical micro-action] — [facial micro-expression], [exact hand mechanic task], [what their posture and wardrobe reveal]"
+
+EXAMPLES OF WORLD-CLASS AUDIENCE-MATCHED CASTING:
+
+Example 1 (Target: Gen-Z College Students):
+"A 20-year-old Afro-Latina college sophomore in an oversized vintage wash sage-green hoodie and silver hoop earrings, curly dark hair tied in a messy high bun with tendrils framing her face, is caught at the exact micro-second of burst laughter while leaning across a sunlit oak library table — her right hand holds a half-eaten matcha latte ceramic cup while her left index finger points at a shared laptop screen displaying a finished group presentation, her eyes crinkled with genuine unposed joy"
+
+Example 2 (Target: Enterprise CFOs / Executives):
+"A 48-year-old South Asian male Chief Financial Officer in a tailored unbuttoned charcoal Italian wool blazer over a crisp white open-collar shirt, subtle silver hair at temples and sharp groomed jawline, is caught at the suspended micro-second of decision — leaning forward against a dark walnut conference table at twilight, right hand resting flat over a printed Q3 financial audit while his left thumb and index finger adjust his thin titanium reading glasses, eyes narrowed in deep analytical focus"
+
+Example 3 (Target: Young Parents):
+"A 32-year-old Caucasian father in a soft sun-faded waffle-knit cream henley with rolled sleeves, short messy sandy-brown hair, is caught mid-giggle while crouching on a hardwood living room floor — his hands steadying a 3-year-old toddler taking shaky steps toward a wooden toy, his expression a radiant mix of pride and exhaustion, morning sunlight filtering through sheer white curtains behind him"
+
+Example 4 (Target: Gym & Fitness Enthusiasts):
+"A 27-year-old Black female track athlete with tight cornrows pulled into a low ponytail, wearing a matte black compression top with light sweat glistened across her collarbone, is caught at the exact second after completing her final rep — resting both hands on her knees, head lowered as her chest heaves, eyes closed in intense victorious satisfaction, warm gym spotlight highlighting muscle definition in her shoulders"
+
+Example 5 (Target: Luxury Fashion Buyers):
+"A 36-year-old East Asian female creative director with a sleek obsidian bob cut, wearing a structured ivory double-breasted silk trench coat, is caught mid-stride crossing a wet cobblestone courtyard at dusk — right hand holding a minimalist matte black leather clutch while her left hand gathers the collar against a light drizzle, her expression carrying the quiet, effortless confidence of old-world elegance"
 
 LAYER 2 — THE WORLD (15% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
