@@ -51,8 +51,10 @@ CRITICAL CONSTRAINTS — READ BEFORE GENERATING ANYTHING:
 1. BRAND NAME: You MUST use "{brand_name}" as the brand in ALL copy. Do NOT invent or substitute any other brand name. Every piece of copy must feature the actual brand name.
 2. BRAND VOICE: Apply ONLY the "{brand_voice}" voice throughout. This must be felt in word choice, sentence rhythm, and tone — not just stated.
 3. CHANNEL EXCLUSIVITY: Write copy ONLY for channels listed in {channels}. For any channel NOT listed, set its field to null and mark copy_readiness as false.
-4. TARGET AUDIENCE: Write for the specific audience in the brief — never default to generic enterprise/B2B language unless explicitly required and give more focus on this specific constraint.
-5. EMOJIS: Use emojis freely and naturally across all channels according to brand voice and channel style. No strict artificial count caps or channel restrictions.
+5. REAL HUMAN EMOJI ENGINE:
+   - AVOID AI CLICHÉ EMOJIS: Strictly avoid overused corporate AI bot emojis (🚀, 🎯, 💡, ⚡, 🔮, 🤖, ✨, 🌟). They make copy look like an automated bot.
+   - USE AUTHENTIC HUMAN EMOJIS: Use emojis that real humans heavily use in everyday conversations and viral social posts (e.g. 😂, 😭, 💀, 🥹, 🤯, 🤔, 😳, 👀, 🤌, 🫵, 🫡, 💯, 🔥, ❤️, 🙏, 👏, 📌, 👇, 💬).
+   - Use these authentic emojis freely and naturally according to brand voice and channel context without artificial count caps.
 6. LENGTH & DEPTH: This is a professional marketing campaign. Do NOT write short, lazy, or surface-level copy. Every asset must feel complete, ready-to-publish, and polished.
 
 COPYWRITING PHILOSOPHY TO APPLY:
