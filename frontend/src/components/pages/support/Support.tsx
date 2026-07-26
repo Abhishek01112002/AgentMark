@@ -45,16 +45,12 @@ const SupportContent: React.FC = () => {
       answer: 'The Devil\'s Advocate agent acts as an adversarial auditor. It intentionally probes your copy for exaggerated promises, missing disclaimers, policy violations, or aggressive sales tactics, delivering actionable fixes to resolve compliance risks before publication.',
     },
     {
-      question: 'How does the Multi-Persona Debate Engine resolve conflicting audience opinions?',
-      answer: 'When synthetic audience personas disagree (e.g. a budget-conscious buyer vs. a premium seeker), our Debate Orchestrator runs a 3-round deliberation. Personas challenge each other\'s objections, producing a consensus score and identifying friction points that resonate across all segments.',
-    },
-    {
       question: 'How does the Performance Calibration Engine use real Meta/Google/LinkedIn ad telemetry?',
       answer: 'AgentMark ingests real post-launch performance data (CTR, CPC, CPA) via ad platform webhooks. Once 30+ campaign data points exist for an industry, our Empirical Bayes engine statistically recalibrates future pre-flight predictions to match real-world ad performance.',
     },
     {
       question: 'How does the Hybrid Model Router optimize AI speed and token costs?',
-      answer: 'AgentMark intelligently routes task types across model tiers: Tier 1 (Fast/Cheap) for initial persona reviews, Tier 2 (Balanced) for Trust Analysis, and Tier 3 (High-Quality) for final Debate Orchestration. This achieves a 60% reduction in token costs while preserving high-tier evaluation quality.',
+      answer: 'AgentMark intelligently routes task types across model tiers: Tier 1 (Fast/Cheap) for initial persona reviews, Tier 2 (Balanced) for Trust Analysis, and Tier 3 (High-Quality) for Analyst Synthesis. This achieves a 60% reduction in token costs while preserving high-tier evaluation quality.',
     },
     {
       question: 'How does the Synthetic Focus Group simulation evaluate my campaign copy?',

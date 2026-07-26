@@ -187,27 +187,6 @@ def format_focus_group_report(report: Dict[str, Any]) -> str:
         md.append("\n---")
         md.append("\n*No actionable recommendations were provided.*")
 
-    # ── 3. Multi-Persona Debate Summary ──────────────────────────────────────────
-    debate_summary = report.get("debate_summary")
-    if isinstance(debate_summary, dict) and debate_summary:
-        md.append("\n---")
-        md.append("\n## Multi-Persona Debate Engine")
-        consensus = debate_summary.get("consensus", "N/A")
-        buying_prob = debate_summary.get("buying_probability")
-        md.append("**Committee Consensus:** `%s`" % consensus)
-        if buying_prob is not None:
-            prob_num = float(buying_prob)
-            md.append("**Buy Intent Probability:** `%.0f%%`" % (prob_num * 100 if prob_num <= 1.0 else prob_num))
-
-        rounds = debate_summary.get("rounds") or []
-        if isinstance(rounds, list) and rounds:
-            md.append("\n### Debate Transcript Highlights")
-            for r in rounds[:3]:
-                if isinstance(r, dict):
-                    sp = r.get("speaker_persona_id", "Persona")
-                    tr = r.get("transcript", "")
-                    md.append("- **%s**: *\"%s\"*" % (sp, tr))
-
     # ── 4. Trust Signal Analysis ────────────────────────────────────────────────
     trust_analysis = report.get("trust_signal_analysis")
     if isinstance(trust_analysis, dict) and trust_analysis:

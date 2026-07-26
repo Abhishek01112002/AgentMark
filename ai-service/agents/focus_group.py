@@ -158,7 +158,7 @@ async def run_focus_group_simulation(
     else:
         devils_issues = devils_result
 
-    # ── Step 2: Analyst Synthesis & Multi-Persona Debate Engine ──
+    # ── Step 2: Analyst Synthesis ──
     report = await _run_analyst_synthesis(
         client, 
         valid_critiques, 
@@ -168,19 +168,6 @@ async def run_focus_group_simulation(
         trust_analysis=trust_analysis,
         devils_issues=devils_issues
     )
-
-    # Execute Phase 1B Multi-Persona Debate Engine
-    try:
-        from agents.debate_orchestrator import run_multi_persona_debate
-        debate_summary = await run_multi_persona_debate(
-            campaign_copy=copy_output,
-            personas=personas,
-            critiques=valid_critiques,
-            client=client
-        )
-        report.debate_summary = debate_summary
-    except Exception as e:
-        logger.warning(f"Multi-Persona Debate Engine failed (non-fatal): {e}")
 
     # Execute Phase 1C Persona Memory & Retrieval
     try:

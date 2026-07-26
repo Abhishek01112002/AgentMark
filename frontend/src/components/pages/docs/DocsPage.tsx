@@ -589,16 +589,6 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Card 3: Multi-Persona Debate */}
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-purple-500/30 space-y-2 shadow-md">
-            <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
-              <Users size={18} /> Multi-Persona Debate Engine
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Runs a 3-round deliberation between synthetic buyer personas with opposing priorities to find a true consensus score and resolve friction points.
-            </p>
-          </div>
-
           {/* Card 4: Performance Calibration */}
           <div className="p-5 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2 shadow-md">
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
@@ -615,7 +605,7 @@ const sections: DocSection[] = [
               <Workflow size={18} /> Hybrid Model Router (60% Token Cost Reduction)
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Dynamically routes initial reviews to Tier 1 (Fast/Cheap), trust checks to Tier 2 (Balanced), and complex debates to Tier 3 (High Quality), saving 60% on LLM inference costs while preserving accuracy.
+              Dynamically routes initial reviews to Tier 1 (Fast/Cheap), trust checks to Tier 2 (Balanced), and complex synthesis to Tier 3 (High Quality), saving 60% on LLM inference costs while preserving accuracy.
             </p>
           </div>
         </div>

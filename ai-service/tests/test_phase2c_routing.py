@@ -34,7 +34,7 @@ class TestPhase2CRouting(unittest.TestCase):
         self.assertEqual(res_t1["tier"], 1)
 
         # Tier 3 task -> gpt-4o
-        res_t3 = route_model_request("debate_orchestration", feature_flag_override=True)
+        res_t3 = route_model_request("analyst_synthesis", feature_flag_override=True)
         self.assertEqual(res_t3["tier"], 3)
         self.assertEqual(res_t3["provider"], "openai")
 
@@ -47,7 +47,7 @@ class TestPhase2CRouting(unittest.TestCase):
         self.assertTrue(status["requires_downgrade"])
 
         # Tier 3 task should automatically downgrade to Tier 1
-        res = route_model_request("debate_orchestration", organization_id=org_id, feature_flag_override=True)
+        res = route_model_request("analyst_synthesis", organization_id=org_id, feature_flag_override=True)
         self.assertEqual(res["tier"], 1)
         self.assertIn("budget_threshold_exceeded", res["routing_reason"])
 
@@ -60,7 +60,7 @@ class TestPhase2CRouting(unittest.TestCase):
         self.assertFalse(global_circuit_breaker.is_provider_healthy("openai"))
 
         # Tier 3 task usually assigned to openai should fail over
-        res = route_model_request("debate_orchestration", feature_flag_override=True)
+        res = route_model_request("analyst_synthesis", feature_flag_override=True)
         self.assertNotEqual(res["provider"], "openai")
 
     def test_simulation_cache_behavior(self):

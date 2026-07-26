@@ -21,7 +21,6 @@ TASK_TIER_MAP = {
     "persona_critique": 1,      # Tier 1: Fast/Cheap for simple reviews
     "trust_analysis": 2,        # Tier 2: Balanced for signal detection
     "devils_advocate": 2,       # Tier 2: Balanced for adversarial analysis
-    "debate_orchestration": 3,  # Tier 3: High quality reasoning
     "analyst_synthesis": 3      # Tier 3: High quality synthesis
 }
 
