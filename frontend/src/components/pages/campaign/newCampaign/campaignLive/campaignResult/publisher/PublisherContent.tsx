@@ -444,30 +444,29 @@ const PublisherContent: React.FC<PublisherContentProps> = ({ data, campaignName,
           animation: taskCompletePulse 2s ease-in-out infinite;
         }
       `}</style>
-      {/* ── Header ── */}
-      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* ── Header (Apple Pro Luxury Header) ── */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 md:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center">
-                <Send size={22} className="text-teal-400 filter drop-shadow-[0_0_8px_rgba(45,212,191,0.7)]" />
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-[#14B8A6]/10 border border-[#14B8A6]/20 flex items-center justify-center">
+                <Send size={20} className="text-[#2DD4BF]" />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Publisher</h2>
+              <h2 className="text-2xl font-semibold tracking-tight font-sora text-white">Campaign Publisher</h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>AI-generated publishing strategy &amp; placements</p>
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">Autonomous multi-channel publishing strategy, placement schedules, and readiness metrics</p>
           </div>
           <div className="flex gap-3 flex-wrap items-center">
-            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+            <span className="px-3 py-1.5 rounded-full bg-[#14B8A6]/10 border border-[#14B8A6]/20 text-xs font-mono text-[#2DD4BF]">
               Goal: PUBLISHING
             </span>
             <button
               onClick={handleExportPDF}
               disabled={exportingPdf}
-              className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2 disabled:opacity-50"
-              style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
+              className="px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-xs font-semibold text-white transition-all shadow-md active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 font-sora"
             >
-              <FileDown size={16} />
-              {exportingPdf ? 'Preparing…' : 'Export PDF'}
+              <FileDown size={14} />
+              <span>{exportingPdf ? 'Preparing…' : 'Export PDF'}</span>
             </button>
           </div>
         </div>

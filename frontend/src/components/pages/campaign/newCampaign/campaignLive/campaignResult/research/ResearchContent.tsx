@@ -77,22 +77,22 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Page Header */}
-      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* Page Header (Apple Pro Luxury Header) */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 md:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center">
-                <Search size={22} className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-[#06B6D4]/10 border border-[#06B6D4]/20 flex items-center justify-center">
+                <Search size={20} className="text-[#22D3EE]" />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Market Research</h2>
+              <h2 className="text-2xl font-semibold tracking-tight font-sora text-white">Market Research</h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-              {hasRealData ? 'AI-powered market intelligence and audience insights' : 'Real-time market intelligence powered by autonomous agents.'}
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+              {hasRealData ? 'AI-powered market intelligence, competitor benchmark analysis, and audience insights' : 'Real-time market intelligence powered by autonomous agents.'}
             </p>
           </div>
           <div className="flex gap-3 flex-wrap items-center">
-            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+            <span className="px-3 py-1.5 rounded-full bg-[#06B6D4]/10 border border-[#06B6D4]/20 text-xs font-mono text-[#22D3EE]">
               Goal: RESEARCH
             </span>
           </div>
