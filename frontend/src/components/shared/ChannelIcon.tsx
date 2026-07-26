@@ -154,7 +154,7 @@ export const ChannelIcon: React.FC<ChannelIconProps> = ({ channel, size = 20, cl
     );
   }
 
-  if (name.includes('email') || name.includes('newsletter')) {
+  if (name.includes('email') || name.includes('gmail') || name.includes('newsletter')) {
     return (
       <svg 
         viewBox="0 0 24 24" 
@@ -163,10 +163,13 @@ export const ChannelIcon: React.FC<ChannelIconProps> = ({ channel, size = 20, cl
         className={className} 
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path d="M2 5.5V18.5C2 19.33 2.67 20 3.5 20H6V8.5L2 5.5Z" fill="#4285F4"/>
-        <path d="M22 5.5V18.5C22 19.33 21.33 20 20.5 20H18V8.5L22 5.5Z" fill="#34A853"/>
-        <path d="M18 8.5V5.5C18 4.67 17.33 4 16.5 4H7.5C6.67 4 6 4.67 6 5.5V8.5L12 13.5L18 8.5Z" fill="#EA4335"/>
-        <path d="M12 13.5L6 8.5V5.5L12 10.5L18 5.5V8.5L12 13.5Z" fill="#FBBC05"/>
+        {/* Official Google Gmail 4-Color Brand Vector */}
+        <path d="M20 18h-3V9.5L12 14 7 9.5V18H4c-1.1 0-2-.9-2-2V6.5l3.5 2.6L12 14l6.5-4.9L22 6.5V16c0 1.1-.9 2-2 2z" fill="#EA4335" />
+        <path d="M2 6.5V16c0 1.1.9 2 2 2h3V9.5L2 6.5z" fill="#4285F4" />
+        <path d="M22 6.5V16c0 1.1-.9 2-2 2h-3V9.5L22 6.5z" fill="#34A853" />
+        <path d="M20 4H4c-1.1 0-2 .9-2 2v.5l10 7.5 10-7.5V6c0-1.1-.9-2-2-2z" fill="#EA4335" />
+        <path d="M17.5 9.5L22 6.13V6c0-.52-.2-1.01-.55-1.37L17.5 9.5z" fill="#FBBC04" />
+        <path d="M6.5 9.5L2 6.13V6c0-.52.2-1.01.55-1.37L6.5 9.5z" fill="#C5221F" />
       </svg>
     );
   }
