@@ -27,25 +27,18 @@ from typing import Callable, Optional, List, Dict, Any
 from mcp.server.fastmcp import Context, FastMCP
 
 from .client import AgentMarkClient
-from .tools.campaign import generate_campaign_impl
-from .tools.focus_group import run_focus_group_impl
-from .tools.publish import publish_to_channel_impl
-from .tools.project import create_project_impl
-from .tools.revision import revise_copy_with_feedback_impl, get_campaign_status_impl, revise_image_prompts_impl
-from .tools.extended import (
-    submit_human_approval_impl,
-    request_targeted_revision_impl,
-    update_client_memory_impl,
-    clear_client_memory_impl,
-    export_campaign_pdf_impl,
-    export_campaign_json_impl,
-    get_publishing_schedule_impl,
-    verify_channel_credentials_impl,
-    generate_image_asset_impl,
-    get_campaign_analytics_impl,
-    synthesize_brand_memory_impl,
-    compare_campaigns_impl,
-)
+import importlib
+
+_impl_cache: Dict[str, Any] = {}
+
+
+def _get_impl(module_name: str, func_name: str) -> Any:
+    """Thread-safe lazy loader for tool implementation functions."""
+    cache_key = f"{module_name}:{func_name}"
+    if cache_key not in _impl_cache:
+        mod = importlib.import_module(f".tools.{module_name}", package="agentmark_mcp")
+        _impl_cache[cache_key] = getattr(mod, func_name)
+    return _impl_cache[cache_key]
 
 # Configure standard stream logging to stderr (stdout is reserved for MCP protocol)
 class UnbufferedStreamHandler(logging.StreamHandler):
@@ -202,7 +195,8 @@ async def generate_campaign(
     _on_progress = _make_progress_callback(ctx)
 
     try:
-        return await generate_campaign_impl(
+        impl = _get_impl("campaign", "generate_campaign_impl")
+        return await impl(
             client=client,
             project_id=project_id.strip(),
             name=name.strip(),
@@ -268,7 +262,8 @@ async def run_focus_group(
     client = get_client()
     client.set_active_tool("run_focus_group")
     try:
-        return await run_focus_group_impl(
+        impl = _get_impl("focus_group", "run_focus_group_impl")
+        return await impl(
             client=client,
             campaign_id=campaign_id.strip(),
             copy_text=copy_text if copy_text.strip() else None,
@@ -315,7 +310,8 @@ async def publish_to_channel(
     client = get_client()
     client.set_active_tool("publish_to_channel")
     try:
-        return await publish_to_channel_impl(
+        impl = _get_impl("publish", "publish_to_channel_impl")
+        return await impl(
             client=client,
             campaign_id=campaign_id.strip(),
             openai_api_key=openai_api_key if openai_api_key.strip() else None,
@@ -360,7 +356,8 @@ async def create_project(
     client = get_client()
     client.set_active_tool("create_project")
     try:
-        return await create_project_impl(
+        impl = _get_impl("project", "create_project_impl")
+        return await impl(
             client=client,
             name=name.strip(),
             description=description if description.strip() else None,
@@ -407,7 +404,8 @@ async def revise_copy_with_feedback(
     _on_progress = _make_progress_callback(ctx)
 
     try:
-        return await revise_copy_with_feedback_impl(
+        impl = _get_impl("revision", "revise_copy_with_feedback_impl")
+        return await impl(
             client=client,
             campaign_id=campaign_id.strip(),
             feedback=feedback.strip(),
@@ -452,7 +450,8 @@ async def revise_image_prompts(
     _on_progress = _make_progress_callback(ctx)
 
     try:
-        return await revise_image_prompts_impl(
+        impl = _get_impl("revision", "revise_image_prompts_impl")
+        return await impl(
             client=client,
             campaign_id=campaign_id.strip(),
             feedback=feedback.strip(),

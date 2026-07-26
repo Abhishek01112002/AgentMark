@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, getCampaignStatus, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
 
 import { verifyApiKeyScope } from '../developer/developer.controller';
 
@@ -25,6 +25,7 @@ router.get('/all', getAllCampaigns);
 router.post('/:id/variants/copy', campaignRateLimiter, generateCopyVariant);
 router.patch('/:id/variants/copy', updateCopyVariantMeta);
 
+router.get('/:id/status', getCampaignStatus);
 router.get('/:id', getCampaign);
 router.get('/:id/memory-insights', getMemoryInsights);
 router.delete('/:id', deleteCampaign);

@@ -160,14 +160,21 @@ async def generate_campaign_impl(
     elapsed_secs: float = 0.0
     consecutive_failures: int = 0
     last_milestone_emitted: Optional[str] = None
-    
-    # Compute maximum poll attempts from config
-    max_attempts = max(1, CAMPAIGN_TIMEOUT_SECS // POLL_INTERVAL_SECS)
+    attempt: int = 0
 
-    for attempt in range(max_attempts):
-        await asyncio.sleep(POLL_INTERVAL_SECS)
-        elapsed_secs += POLL_INTERVAL_SECS
-        
+    while elapsed_secs < CAMPAIGN_TIMEOUT_SECS:
+        # Determine adaptive sleep duration based on elapsed runtime
+        if elapsed_secs < 10.0:
+            sleep_duration = 2.0
+        elif elapsed_secs < 100.0:
+            sleep_duration = 4.0
+        else:
+            sleep_duration = 1.5
+
+        await asyncio.sleep(sleep_duration)
+        elapsed_secs += sleep_duration
+        attempt += 1
+
         # Emit simulated progress milestone if it changed
         current_milestone = _elapsed_milestone(elapsed_secs)
         if on_progress and current_milestone and current_milestone != last_milestone_emitted:
@@ -175,14 +182,17 @@ async def generate_campaign_impl(
             last_milestone_emitted = current_milestone
 
         logger.info(
-            "Polling campaign status | id=%s | attempt=%d/%d | elapsed=%.0fs",
-            campaign_id, attempt + 1, max_attempts, elapsed_secs
+            "Polling campaign status | id=%s | attempt=%d | elapsed=%.1fs | step_sleep=%.1fs",
+            campaign_id, attempt, elapsed_secs, sleep_duration
         )
 
-        # ── Fetch status with fault tolerance ─────────────────────────────────
+        # ── Fetch status via lightweight status endpoint ───────────────────────
         try:
-            campaign_details = await client.get_campaign(campaign_id)
+            status_data = await client.get_campaign_status(campaign_id)
             consecutive_failures = 0  # Reset on success
+        except asyncio.CancelledError:
+            logger.info("Campaign status polling cancelled by client | id=%s | elapsed=%.1fs", campaign_id, elapsed_secs)
+            raise
         except Exception as e:
             consecutive_failures += 1
             logger.warning(
@@ -203,17 +213,18 @@ async def generate_campaign_impl(
             continue
 
         # ── Inspect campaign status ────────────────────────────────────────────
-        raw_status = campaign_details.get("status", "processing")
+        raw_status = status_data.get("status", "processing")
         status = str(raw_status).lower() if raw_status is not None else "processing"
 
         if status == "completed":
-            # Extract and emit reviewer score if available for progress feedback
+            # Fetch full campaign payload ONCE upon completion for formatting
+            campaign_details = await client.get_campaign(campaign_id)
             review_score = _extract_review_score(campaign_details)
             if on_progress and review_score is not None:
                 on_progress(f"[AgentMark] Complete! Review Score: `{review_score}/100`")
-            
+
             logger.info(
-                "Campaign generation completed | id=%s | elapsed=%.0fs | score=%s",
+                "Campaign generation completed | id=%s | elapsed=%.1fs | score=%s",
                 campaign_id, elapsed_secs, review_score
             )
             try:
@@ -230,8 +241,10 @@ async def generate_campaign_impl(
                 )
 
         elif status == "awaiting_human_approval":
+            # Fetch full campaign payload ONCE upon completion for formatting
+            campaign_details = await client.get_campaign(campaign_id)
             logger.info(
-                "Campaign reached human approval gate | id=%s | elapsed=%.0fs",
+                "Campaign reached human approval gate | id=%s | elapsed=%.1fs",
                 campaign_id, elapsed_secs
             )
             try:

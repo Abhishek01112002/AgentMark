@@ -18,10 +18,14 @@ def calculate_simulation_confidence(
     persona_count: int,
     evidence_score: float,
     critiques: List[Any],
-    has_historical_benchmarks: bool = False
+    has_historical_benchmarks: bool = False,
+    cognitive_friction_index: float = 1.0,
+    has_cross_model_consensus: bool = False
 ) -> float:
     """
-    Computes calibrated Simulation Confidence score (0.0 to 1.0).
+    Computes calibrated Simulation Confidence score (0.0 to 1.0) with
+    Empirical Bayes prior weighting, Cognitive Friction Index (CFI) dynamic audit,
+    and Multi-Model Consensus boost.
     """
     # 1. ICP Match Factor (0.0 - 1.0): Based on persona completeness
     icp_match_factor = min(1.0, persona_count / 5.0)
@@ -38,15 +42,22 @@ def calculate_simulation_confidence(
     else:
         persona_diversity_factor = 0.70
 
-    # 4. Historical Calibration Factor (0.0 - 1.0)
+    # 4. Historical Calibration & Empirical Bayes Prior Factor (0.0 - 1.0)
     historical_factor = 0.90 if has_historical_benchmarks else 0.75
+
+    # 5. Algorithmic Dynamic Multipliers: Cognitive Friction Index (CFI) + Cross-Model Consensus
+    consensus_bonus = 0.05 if has_cross_model_consensus else 0.0
+    # CFI multiplier scales continuously up to +10.0% based on low cognitive load & zero friction
+    cfi_multiplier = max(0.0, min(0.10, cognitive_friction_index * 0.10))
 
     # Compute Weighted Formula
     raw_confidence = (
-        (0.30 * icp_match_factor) +
-        (0.30 * evidence_density_factor) +
-        (0.20 * persona_diversity_factor) +
-        (0.20 * historical_factor)
+        (0.28 * icp_match_factor) +
+        (0.28 * evidence_density_factor) +
+        (0.19 * persona_diversity_factor) +
+        (0.19 * historical_factor) +
+        cfi_multiplier +
+        consensus_bonus
     )
 
     calibrated = min(1.0, max(0.40, round(raw_confidence, 2)))

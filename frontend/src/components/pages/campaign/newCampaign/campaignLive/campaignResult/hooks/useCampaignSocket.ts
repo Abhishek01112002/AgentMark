@@ -2,28 +2,18 @@ import { useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import api from '../../../../../../../services/api';
-import { Campaign } from '../types';
+import { CampaignAction } from '../reducers/campaignReducer';
 
 interface UseCampaignSocketProps {
   campaignId: string | undefined;
-  setCampaign: React.Dispatch<React.SetStateAction<Campaign | null>>;
-  setFocusGroupReport: (report: any) => void;
-  setFocusGroupFetched: (fetched: boolean) => void;
-  setFocusGroupError: (error: string | null) => void;
-  setFocusGroupUpdatedViaMcp: (updated: boolean) => void;
+  dispatch: React.Dispatch<CampaignAction>;
   setShowHumanReview: (show: boolean) => void;
-  setQualityScore: (score: number | null) => void;
 }
 
 export const useCampaignSocket = ({
   campaignId,
-  setCampaign,
-  setFocusGroupReport,
-  setFocusGroupFetched,
-  setFocusGroupError,
-  setFocusGroupUpdatedViaMcp,
+  dispatch,
   setShowHumanReview,
-  setQualityScore,
 }: UseCampaignSocketProps) => {
   const socketRef = useRef<Socket | null>(null);
 
@@ -56,43 +46,22 @@ export const useCampaignSocket = ({
 
         socket.on('agent_update', (data: any) => {
           if (data && data.outputs && typeof data.outputs === 'object') {
-            setCampaign(prev => {
-              if (!prev) return null;
-              const currentOutputs = prev.aiOutputs
-                ? (typeof prev.aiOutputs === 'string' ? JSON.parse(prev.aiOutputs) : prev.aiOutputs)
-                : {};
-              return {
-                ...prev,
-                aiOutputs: {
-                  ...currentOutputs,
-                  ...data.outputs,
-                },
-              };
+            dispatch({
+              type: 'AGENT_OUTPUT_MERGED',
+              payload: data.outputs,
             });
           }
         });
 
         socket.on('focus_group_complete', (data: any) => {
           if (data?.report) {
-            setFocusGroupReport(data.report);
-            setFocusGroupFetched(true);
-            setFocusGroupError(null);
-            setFocusGroupUpdatedViaMcp(true);
-
-            setCampaign(prev => {
-              if (!prev) return null;
-              const currentOutputs = prev.aiOutputs || {};
-              const currentOutputsMap = currentOutputs.focus_group_outputs || {};
-              const hashKey = data.hashKey || currentOutputs.focus_group_output_hash || 'mcp';
-              return {
-                ...prev,
-                aiOutputs: {
-                  ...currentOutputs,
-                  focus_group_output: data.report,
-                  focus_group_output_hash: hashKey,
-                  focus_group_outputs: { ...currentOutputsMap, [hashKey]: data.report },
-                },
-              };
+            dispatch({
+              type: 'FOCUS_GROUP_COMPLETE',
+              payload: {
+                report: data.report,
+                hashKey: data.hashKey,
+                score: data.score ?? data.report?.overall_score,
+              },
             });
 
             const score = data.score ?? data.report?.overall_score;
@@ -109,7 +78,12 @@ export const useCampaignSocket = ({
           if (data?.campaignId === campaignId && data?.updatedField !== 'focus_group') {
             try {
               const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
-              setCampaign(response.data.campaign);
+              if (response.data?.campaign) {
+                dispatch({
+                  type: 'CAMPAIGN_LOADED',
+                  payload: response.data.campaign,
+                });
+              }
             } catch (err: any) {
               if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
               console.error('Failed to refresh campaign after MCP update:', err);
@@ -120,11 +94,15 @@ export const useCampaignSocket = ({
         socket.on('human_approval_required', async () => {
           try {
             const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
-            const campaignData = response.data.campaign;
-            setCampaign(campaignData);
-            setShowHumanReview(true);
-            if (campaignData.reviewScore) setQualityScore(campaignData.reviewScore);
-            toast.success('Copy revision complete — ready for review', { duration: 4000 });
+            const campaignData = response.data?.campaign;
+            if (campaignData) {
+              dispatch({
+                type: 'CAMPAIGN_LOADED',
+                payload: campaignData,
+              });
+              setShowHumanReview(true);
+              toast.success('Copy revision complete — ready for review', { duration: 4000 });
+            }
           } catch (err: any) {
             if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
             console.error('Failed to refresh campaign after revision:', err);
@@ -146,16 +124,7 @@ export const useCampaignSocket = ({
         socketRef.current = null;
       }
     };
-  }, [
-    campaignId,
-    setCampaign,
-    setFocusGroupReport,
-    setFocusGroupFetched,
-    setFocusGroupError,
-    setFocusGroupUpdatedViaMcp,
-    setShowHumanReview,
-    setQualityScore,
-  ]);
+  }, [campaignId, dispatch, setShowHumanReview]);
 
   return { socketRef };
 };

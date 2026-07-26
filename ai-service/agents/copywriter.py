@@ -479,19 +479,19 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         # Strategy fields
         positioning=positioning,
         inferred_goal=inferred_goal,
-        key_messages=json.dumps(key_messages, indent=2),
-        content_pillars=json.dumps(content_pillars, indent=2),
-        audience_segments=json.dumps(audience_segments, indent=2),
-        timeline=json.dumps(timeline, indent=2),
-        competitive_differentiation=json.dumps(competitive_differentiation, indent=2),
+        key_messages=json.dumps(key_messages, separators=(",", ":"), ensure_ascii=False),
+        content_pillars=json.dumps(content_pillars, separators=(",", ":"), ensure_ascii=False),
+        audience_segments=json.dumps(audience_segments, separators=(",", ":"), ensure_ascii=False),
+        timeline=json.dumps(timeline, separators=(",", ":"), ensure_ascii=False),
+        competitive_differentiation=json.dumps(competitive_differentiation, separators=(",", ":"), ensure_ascii=False),
         channels=(
-            f"ACTIVE CAMPAIGN CHANNELS (Generate copy ONLY for these): {json.dumps([c for c in channels if c])}\n"
-            f"FORBIDDEN CHANNELS (MUST set copy to null and copy_readiness to false): {json.dumps([c for c in ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube', 'email', 'google_ads'] if c not in channels])}"
+            f"ACTIVE CAMPAIGN CHANNELS (Generate copy ONLY for these): {json.dumps([c for c in channels if c], separators=(',', ':'), ensure_ascii=False)}\n"
+            f"FORBIDDEN CHANNELS (MUST set copy to null and copy_readiness to false): {json.dumps([c for c in ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube', 'email', 'google_ads'] if c not in channels], separators=(',', ':'), ensure_ascii=False)}"
         ),
         # Research insights
-        pain_points=json.dumps(pain_points, indent=2),
-        motivations=json.dumps(motivations, indent=2),
-        market_trends=json.dumps(market_trends, indent=2),
+        pain_points=json.dumps(pain_points, separators=(",", ":"), ensure_ascii=False),
+        motivations=json.dumps(motivations, separators=(",", ":"), ensure_ascii=False),
+        market_trends=json.dumps(market_trends, separators=(",", ":"), ensure_ascii=False),
         growth_rate=growth_rate,
         competitive_advantage=competitive_advantage,
         # Derived helper fields for the prompt

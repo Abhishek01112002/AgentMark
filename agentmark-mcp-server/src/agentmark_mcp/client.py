@@ -84,8 +84,28 @@ def _get_all_config_paths() -> List[Path]:
     return paths
 
 
+import time
+
+_api_key_cache: Optional[str] = None
+_api_key_cache_expiry: float = 0.0
+_API_KEY_CACHE_TTL_SECS: float = 10.0
+
+
 def get_live_api_key() -> Optional[str]:
-    """Read the latest API key from ALL Claude Desktop config paths (Win32 + UWP) or environment fallback."""
+    """Read the latest API key with environment variable precedence and in-memory TTL caching."""
+    global _api_key_cache, _api_key_cache_expiry
+
+    # 1. Environment variables take precedence
+    env_key = os.environ.get("AGENTMARK_API_KEY")
+    if env_key and isinstance(env_key, str) and env_key.startswith("am_"):
+        return env_key
+
+    # 2. Check in-memory TTL cache
+    now = time.time()
+    if _api_key_cache is not None and now < _api_key_cache_expiry:
+        return _api_key_cache
+
+    # 3. Read from Claude Desktop config paths
     for config_path in _get_all_config_paths():
         try:
             if config_path.exists():
@@ -94,10 +114,15 @@ def get_live_api_key() -> Optional[str]:
                     key = data.get("mcpServers", {}).get("agentmark", {}).get("env", {}).get("AGENTMARK_API_KEY")
                     if key and isinstance(key, str) and key.startswith("am_"):
                         logger.debug("Loaded live API key from: %s", config_path)
+                        _api_key_cache = key
+                        _api_key_cache_expiry = now + _API_KEY_CACHE_TTL_SECS
                         return key
         except Exception as exc:
             logger.debug("Failed to read dynamic key from %s: %s", config_path, exc)
 
+    # 4. Fallback to module-level config
+    _api_key_cache = AGENTMARK_API_KEY
+    _api_key_cache_expiry = now + _API_KEY_CACHE_TTL_SECS
     return AGENTMARK_API_KEY
 
 
@@ -133,8 +158,13 @@ class AgentMarkClient:
         )
 
     async def close(self) -> None:
-        """Release the underlying connection pool. Called during server lifespan teardown."""
-        await self.client.aclose()
+        """Release the underlying connection pool safely. Called during server lifespan teardown."""
+        if hasattr(self, "client") and self.client and not self.client.is_closed:
+            try:
+                await self.client.aclose()
+                logger.info("AgentMark Client connection pool closed cleanly.")
+            except Exception as exc:
+                logger.warning("Exception during connection pool teardown: %s", exc)
 
     # ── POST ──────────────────────────────────────────────────────────────────
 
@@ -404,6 +434,14 @@ class AgentMarkClient:
                 % (campaign_id, str(raw)[:300])
             )
         return campaign
+
+    async def get_campaign_status(self, campaign_id: str) -> Dict[str, Any]:
+        """
+        Fetch lightweight campaign status metadata via GET /api/campaigns/:id/status.
+        Returns a dict containing: { id, status, reviewScore, updatedAt }.
+        """
+        raw = await self.get(f"/api/campaigns/{campaign_id}/status")
+        return raw
 
     async def delete_campaign(self, campaign_id: str) -> Dict[str, Any]:
         """

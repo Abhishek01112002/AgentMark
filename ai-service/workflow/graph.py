@@ -102,7 +102,6 @@ def manager_node(state: CampaignState) -> dict:
     
     try:
         updated_state = manager_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         publish_agent_event(state.campaign_id, "manager", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"manager_output": _try_parse_json(updated_state.manager_output)}})
         return {
             "manager_output": updated_state.manager_output,
@@ -160,7 +159,6 @@ def research_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = research_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -236,7 +234,6 @@ def strategy_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = strategy_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -312,7 +309,6 @@ def copywriter_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = copywriter_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -386,7 +382,6 @@ def image_prompt_node(state: CampaignState) -> dict:
             state.review_output = None
         
         updated_state = image_prompt_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
@@ -444,7 +439,6 @@ def reviewer_node(state: CampaignState) -> dict:
     
     try:
         updated_state = reviewer_agent(state)
-        time.sleep(4.5)  # spacing between agent calls (aligns with 15 RPM limit)
         
         # Persist the targeted revision agent from the AI review status in human_revision_target
         if updated_state.review_output:
@@ -746,7 +740,22 @@ def create_campaign_graph():
     return compiled_graph
 
 
-# ==================== CONVENIENCE FUNCTION ====================
+import threading
+
+_compiled_graph = None
+_graph_lock = threading.Lock()
+
+
+def get_compiled_campaign_graph():
+    """Thread-safe singleton getter for compiled LangGraph workflow instance."""
+    global _compiled_graph
+    if _compiled_graph is not None:
+        return _compiled_graph
+    with _graph_lock:
+        if _compiled_graph is None:
+            _compiled_graph = create_campaign_graph()
+        return _compiled_graph
+
 
 def run_campaign(
     campaign_name: str,
@@ -784,8 +793,8 @@ def run_campaign(
         brief=brief
     )
     
-    # Create and run workflow
-    workflow = create_campaign_graph()
+    # Use thread-safe singleton compiled workflow
+    workflow = get_compiled_campaign_graph()
     final_state = workflow.invoke(initial_state)
     
     return final_state

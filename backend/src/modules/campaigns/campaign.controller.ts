@@ -368,6 +368,18 @@ export const getAllCampaigns = async (req: AuthRequest, res: Response, next: Nex
       where: {
         project: { userId: req.userId! }
       },
+      select: {
+        id: true,
+        name: true,
+        brandName: true,
+        industry: true,
+        primaryGoal: true,
+        status: true,
+        reviewScore: true,
+        projectId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ campaigns });
@@ -399,6 +411,38 @@ export const getCampaign = async (req: AuthRequest, res: Response, next: NextFun
 
     const { project, ...campaignData } = campaign;
     res.json({ campaign: campaignData });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCampaignStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        status: true,
+        reviewScore: true,
+        updatedAt: true,
+        project: { select: { userId: true } },
+      },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    if (campaign.project.userId !== req.userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({
+      id: campaign.id,
+      status: campaign.status,
+      reviewScore: campaign.reviewScore,
+      updatedAt: campaign.updatedAt,
+    });
   } catch (error) {
     next(error);
   }

@@ -91,6 +91,8 @@ model Campaign {
   @@index([projectId])
   @@index([status])
   @@index([createdAt])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
 }
 
 model Notification {

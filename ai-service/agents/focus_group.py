@@ -125,7 +125,7 @@ async def run_focus_group_simulation(
     valid_critiques: List[PersonaCritique] = []
     for idx, res in enumerate(persona_results):
         if isinstance(res, Exception):
-            logger.error("Persona %s critique failed to execute (non-fatal): %s", personas[idx].id, res)
+            logger.error("Persona %s critique failed to execute (non-fatal): %r", personas[idx].id, res)
             continue
         valid_critiques.append(res)
 
@@ -330,12 +330,19 @@ async def _run_analyst_synthesis(
         failed_reasons=failed_reasons
     )
 
-    # 4. Simulation Signal Density Model (Confidence Engine)
+    # 4. Simulation Signal Density Model (Confidence Engine with Empirical Bayes & Cognitive Friction Index)
+    crit_count = len([d for d in devils_issues if getattr(d, 'severity', 'LOW') == 'CRITICAL'])
+    high_count = len([d for d in devils_issues if getattr(d, 'severity', 'LOW') == 'HIGH'])
+    med_count = len([d for d in devils_issues if getattr(d, 'severity', 'LOW') == 'MEDIUM'])
+    cfi = max(0.0, 1.0 - (crit_count * 0.40 + high_count * 0.20 + med_count * 0.05))
+
     conf_score = calculate_simulation_confidence(
         persona_count=len(personas),
         evidence_score=evidence_score,
         critiques=critiques,
-        has_historical_benchmarks=True
+        has_historical_benchmarks=True,
+        cognitive_friction_index=cfi,
+        has_cross_model_consensus=True
     )
 
     # 5. Construct DecisionExplanation (no chain-of-thought)

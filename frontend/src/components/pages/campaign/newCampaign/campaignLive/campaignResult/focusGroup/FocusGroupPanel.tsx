@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
+import { useCampaignResultContext } from '../context/CampaignResultContext';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -627,10 +629,10 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
 // ─── Premium Loading Experience ─────────────────────────────────────────────
 
 const loadingStages = [
-  { label: 'Synthesizing 5 Buyer Persona Profiles', icon: '🧬', completed: true },
-  { label: 'Evaluating Copy Friction & Objections', icon: '🎯', completed: true },
-  { label: 'Auditing Trust Signals & Claims', icon: '🛡️', completed: false },
-  { label: 'Calibrating Empirical Bayes Benchmarks', icon: '📊', completed: false },
+  { label: 'Synthesizing 5 Buyer Persona Profiles', completed: true },
+  { label: 'Evaluating Copy Friction & Objections', completed: true },
+  { label: 'Auditing Trust Signals & Claims', completed: false },
+  { label: 'Calibrating Empirical Bayes Benchmarks', completed: false },
 ];
 
 const LoadingState: React.FC = () => {
@@ -664,11 +666,11 @@ const LoadingState: React.FC = () => {
   }, []);
 
   const personas = [
-    { name: 'Arjun', role: 'Tech Lead', color: '#6366F1' },
+    { name: 'Aarav', role: 'Tech Lead', color: '#6366F1' },
     { name: 'Ananya', role: 'VP Growth', color: '#A855F7' },
-    { name: 'Ravi', role: 'Finance Dir', color: '#EC4899' },
-    { name: 'Kavya', role: 'End User', color: '#38BDF8' },
-    { name: 'Vikram', role: 'Risk Officer', color: '#4edea3' },
+    { name: 'Ishaan', role: 'Finance Dir', color: '#EC4899' },
+    { name: 'Riya', role: 'End User', color: '#38BDF8' },
+    { name: 'Kabir', role: 'Risk Officer', color: '#4edea3' },
   ];
 
   return (
@@ -795,7 +797,7 @@ const LoadingState: React.FC = () => {
                     ? 'bg-[#6366F1]/20 text-[#818CF8] border border-[#6366F1]/40'
                     : 'bg-[#181824] text-[#8B8B9E] border border-[#2A2A38]'
               }`}>
-                {isDone ? '✓' : s.icon}
+                {isDone ? '✓' : (i + 1)}
               </div>
 
               {/* Stage Label */}
@@ -1052,7 +1054,25 @@ interface RecommendationsProps {
 }
 
 const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) => {
+  const resultCtx = useCampaignResultContext();
   if (!recommendations || recommendations.length === 0) return null;
+
+  const handleApplyToRevision = (rec: ActionableRecommendation) => {
+    if (!resultCtx) return;
+    const text = `Target Channel: ${rec.target_channel}\nDetected Friction: ${rec.friction_identified}\nSuggested Revision: "${rec.suggested_revision.replace(/^"|"$/g, '')}"`;
+    resultCtx.setRevisionFeedback(text);
+
+    if (resultCtx.campaign?.status === 'completed') {
+      toast('Campaign is already approved! Opening Create Variant to test this revision in a new draft...', { icon: '💡' });
+      resultCtx.setShowVariantModal(true);
+      return;
+    }
+
+    resultCtx.setSelectedAgent('copywriter');
+    resultCtx.setIsMinimized(false);
+    resultCtx.setDrawerTab('revise');
+    toast.success(`Applied focus group recommendation to Revision Panel! Click 'Request Revision' to submit.`);
+  };
 
   return (
     <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden shadow-lg">
@@ -1081,6 +1101,14 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
                 </span>
                 <span className="text-xs text-[#8B8B9E] font-mono">Target Channel Optimization</span>
               </div>
+              <button
+                onClick={() => handleApplyToRevision(rec)}
+                className="px-3 py-1.5 rounded-lg bg-[#6366F1]/15 hover:bg-[#6366F1]/25 border border-[#6366F1]/40 text-[#818CF8] hover:text-white text-xs font-semibold font-sora transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.97]"
+                title="Populate Inspector Panel's Revision box with this exact focus group recommendation"
+              >
+                <span>Auto-Inject to Revision Panel</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -1134,7 +1162,20 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
             objections are illustrative — validate with real audience data before major decisions.
           </p>
         </div>
-        {report && !isLoading && <ScoreGauge score={report.overall_score} />}
+        <div className="flex items-center gap-3">
+          {report && !isLoading && <ScoreGauge score={report.overall_score} />}
+          {onRunSimulation && !isLoading && (
+            <button
+              onClick={onRunSimulation}
+              className="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-[#1A1A24] border border-[#2A2A38] text-[#F1F1F3] hover:bg-[#222230] hover:border-[#6366F1]/50 transition-all flex items-center gap-2 cursor-pointer shadow-sm active:scale-[0.97]"
+              style={{ fontFamily: 'Sora, sans-serif' }}
+              title="Re-evaluate new copy with Synthetic Focus Group"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Re-run Simulation</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Onboarding Guide ── */}

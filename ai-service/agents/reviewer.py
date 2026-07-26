@@ -370,7 +370,11 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     target_audience = getattr(state, "target_audience", None) or "General target audience"
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
 
-    # Load reviewer prompt and format with ALL agent outputs
+    from utils.review_context import build_review_context, CompactPromptSerializer
+    review_context = build_review_context(state)
+    review_dict = CompactPromptSerializer.serialize(review_context)
+
+    # Load reviewer prompt and format with normalized agent output summaries
     prompt = load_prompt(
         "reviewer",
         # Campaign metadata
@@ -394,11 +398,11 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         strategy_revision_count=strategy_revision_count,
         copy_revision_count=copy_revision_count,
         image_revision_count=image_revision_count,
-        # All agent outputs (full JSON for LLM to analyze)
-        research_output=json.dumps(research_data, indent=2),
-        strategy_output=json.dumps(strategy_lean, indent=2),
-        copy_output=json.dumps(copy_data, indent=2),
-        image_output=json.dumps(image_data, indent=2)
+        # Normalized agent output summaries (saving 3,500-5,000 tokens)
+        research_output=review_dict["research_summary"],
+        strategy_output=review_dict["strategy_summary"],
+        copy_output=review_dict["copy_summary"],
+        image_output=review_dict["image_summary"]
     )
 
     logger.info("   Querying LLM with structured output...")

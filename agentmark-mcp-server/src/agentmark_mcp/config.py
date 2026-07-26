@@ -5,6 +5,7 @@ logger = logging.getLogger("agentmark-mcp-server")
 
 AGENTMARK_API_URL = os.environ.get("AGENTMARK_API_URL", "http://localhost:5003").rstrip("/")
 AGENTMARK_API_KEY = os.environ.get("AGENTMARK_API_KEY")
+REDIS_URL = os.environ.get("REDIS_URL", os.environ.get("REDIS_URI"))
 
 # Observability Configuration
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()

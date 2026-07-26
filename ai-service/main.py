@@ -39,12 +39,19 @@ logger = logging.getLogger("agentmark.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize workflow on startup, cleanup on shutdown."""
+    """Initialize workflow and prompt cache on startup, cleanup on shutdown."""
     logger.info("🚀 Starting AgentMark AI Service v%s", __version__)
     
-    # Compile LangGraph workflow once at startup
+    # Pre-load all prompt templates into thread-safe RAM cache
+    from utils.prompt_loader import preload_all_prompts
+    from workflow.graph import get_compiled_campaign_graph
+    
+    logger.info("📄 Pre-loading prompt templates into RAM cache...")
+    preload_all_prompts()
+    
+    # Compile LangGraph workflow once at startup (thread-safe singleton)
     logger.info("🔧 Compiling LangGraph workflow...")
-    workflow = create_campaign_graph()
+    workflow = get_compiled_campaign_graph()
     app.state.workflow = workflow
     logger.info("✅ Workflow compiled and cached")
     

@@ -174,11 +174,12 @@ class PersonaFactory:
             "You are a Lead Brand Auditor. Generate exactly 5 distinct, highly realistic, "
             "and demographically diverse target customer personas for the given brand "
             "and target audience brief.\n"
+            "INDIAN DEMOGRAPHIC DIRECTIVE: At least 80% of generated personas MUST use modern, new-generation Indian names (e.g. Aarav, Ananya, Ishaan, Riya, Kabir, Tanvi, Vivaan, Diya, Rohan, Tara).\n"
             "Ensure that each persona has a detailed and specific 'cognitive_profile' "
             "describing how they act as a consumer and what skeptical objections they have.\n"
             "CRITICAL FORMATTING RULES FOR OBJECTS:\n"
             "- The 'id' field MUST be a valid lowercase URL-friendly slug containing only "
-            "lowercase alphanumeric characters and hyphens (e.g. 'rajesh-45-investor' or 'priya-software-engineer'). "
+            "lowercase alphanumeric characters and hyphens (e.g. 'aarav-28-tech-lead' or 'ananya-growth-dir'). "
             "Do NOT use spaces, capital letters, or special characters in the 'id' field."
         )
         user_message = f"Brand Name: {brand_name}\nTarget Audience Brief: {target_audience}"

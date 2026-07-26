@@ -33,16 +33,20 @@ def _safe_parse_json(value: Any) -> Any:
     """
     Safely parse a value that may be a dict, list, or JSON string.
     Returns the parsed value or an empty dict on failure.
+    Eliminates redundant json.loads parsing on already-parsed dict/list types.
     """
     if value is None:
         return {}
     if isinstance(value, (dict, list)):
         return value
     if isinstance(value, str):
+        s = value.strip()
+        if not s or not (s.startswith('{') or s.startswith('[')):
+            return {}
         try:
-            return json.loads(value)
+            return json.loads(s)
         except (json.JSONDecodeError, ValueError):
-            logger.warning("Failed to parse JSON string (length=%d): %s...", len(value), value[:80])
+            logger.warning("Failed to parse JSON string (length=%d): %s...", len(s), s[:80])
             return {}
     return {}
 
