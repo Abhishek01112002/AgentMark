@@ -1055,31 +1055,35 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
       {/* Strategic Alignment */}
       {strategicAlignment.positioning_used && (
-        <div className="bg-[#0A0A1C] border border-[#8B5CF6]/25 rounded-xl p-5 relative overflow-hidden shadow-[0_8px_40px_rgba(139,92,246,0.12)]">
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#8B5CF6]/5 via-transparent to-[#6366F1]/3 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] to-transparent" />
-          <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-[#8B5CF6]/5 blur-3xl pointer-events-none" />
-          <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-            <Link size={20} className="text-[#8B5CF6]" />
-            Strategic Alignment
-          </h4>
-          <div className="space-y-3">
-            <div>
-              <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Positioning Used</span>
-              <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{strategicAlignment.positioning_used}</p>
+        <div className="card-elevate rounded-xl p-5 relative overflow-hidden shadow-[0_4px_24px_rgba(139,92,246,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(22,20,30,0.95) 100%)', border: '1px solid rgba(139,92,246,0.15)' }}>
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#8B5CF6]/4 via-transparent to-[#6366F1]/2 pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#8B5CF6] via-[#A78BFA] to-transparent" />
+          <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#8B5CF6]/4 blur-[60px] pointer-events-none" />
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#8B5CF6]/20 to-[#6366F1]/10 flex items-center justify-center shrink-0 border border-[#8B5CF6]/20">
+              <Link size={14} className="text-[#A78BFA]" />
+            </div>
+            <h4 className="m-0 text-sm font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              Strategic Alignment
+            </h4>
+          </div>
+          <div className="grid grid-cols-1 gap-4">
+            <div className="bg-[#111118]/60 border border-[#2A2A38]/60 rounded-xl p-4">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#A0A0D2] block mb-1.5">Positioning Used</span>
+              <p className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>{strategicAlignment.positioning_used}</p>
             </div>
             {strategicAlignment.key_messages_count && (
-              <div className="flex items-center gap-3">
-                <span className="text-xs uppercase" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Key Messages Integrated:</span>
-                <span className="px-2 py-1 rounded bg-[#6366F1]/10 text-sm font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>{strategicAlignment.key_messages_count}</span>
+              <div className="flex items-center gap-3 px-1">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#A0A0D2]">Key Messages Integrated:</span>
+                <span className="px-3 py-1 rounded-md bg-gradient-to-br from-[#8B5CF6]/15 to-[#6366F1]/10 text-sm font-bold font-mono text-[#A78BFA] border border-[#8B5CF6]/20">{strategicAlignment.key_messages_count}</span>
               </div>
             )}
             {strategicAlignment.deliverables?.length > 0 && (
               <div>
-                <span className="text-xs uppercase mb-2 block" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#A0A0D2' }}>Deliverables Covered</span>
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#A0A0D2] block mb-2">Deliverables Covered</span>
                 <div className="flex flex-wrap gap-2">
                   {strategicAlignment.deliverables.map((del: string, idx: number) => (
-                    <span key={idx} className="px-2 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>{del}</span>
+                    <span key={idx} className="px-3 py-1.5 rounded-lg text-xs font-mono tracking-wide" style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)', color: '#C4B5FD' }}>{del}</span>
                   ))}
                 </div>
               </div>

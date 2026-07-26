@@ -426,21 +426,21 @@ class TextOverlay(BaseModel):
     placement: str = Field(default="bottom-left", description="Placement")
 
 class ImagePrompt(BaseModel):
-    deliverable_name: str = Field(default="Main Asset", description="Name of deliverable")
-    prompt: str = Field(default="", description="DALL-E image generation prompt")
-    rationale: str = Field(default="", description="Reasoning for this prompt")
-    visual_elements: List[str] = Field(default_factory=list, description="Key visual elements")
-    style_keywords: List[str] = Field(default_factory=list, description="Style keywords for consistency")
-    aspect_ratio: str = Field(default="16:9", description="Aspect ratio")
-    style: str = Field(default="modern professional", description="Artistic style")
-    color_palette: str = Field(default="", description="Color palette recommendation")
-    text_overlay: Optional[TextOverlay] = Field(default=None, description="Suggested text overlay details")
+    deliverable_name: str = Field(default="Main Asset", description="Exact name of the deliverable from the campaign plan")
+    prompt: str = Field(default="", description="Production-ready AI image generation prompt (500-1000 characters). Must follow the 10-layer architecture: frozen moment, environment, atmospheric texture, surface materials, lighting design, lens physics, color science, composition, quality anchors, and safety tail. Must start with a specific person at a specific micro-moment, not an abstract concept.")
+    rationale: str = Field(default="", description="Strategic reasoning: which pain point or motivation this visual addresses, why the target audience will stop scrolling, and what emotional response serves the campaign objective")
+    visual_elements: List[str] = Field(default_factory=list, description="4-6 specific visual elements in the scene (e.g., 'fountain pen touching contract paper, ink glistening' not 'business documents')")
+    style_keywords: List[str] = Field(default_factory=list, description="4-6 precise style keywords (e.g., 'editorial documentary', 'Rembrandt lighting', 'telephoto compression', 'desaturated cool grade')")
+    aspect_ratio: str = Field(default="16:9", description="Aspect ratio matching deliverable type: 16:9 for banners, 1:1 for social posts, 9:16 for stories, 4:5 for portrait feed, 2:3 for pinterest")
+    style: str = Field(default="modern professional", description="Precise artistic direction (e.g., 'editorial documentary realism with commercial lighting precision' not just 'professional photography')")
+    color_palette: str = Field(default="", description="Deliverable-specific colors with hex codes and emotional role (e.g., 'deep midnight navy #0F1729 anchoring shadows, electric indigo #4F46E5 accent on screen reflections')")
+    text_overlay: Optional[TextOverlay] = Field(default=None, description="Suggested text overlay details — headline from copy context, CTA, and placement zone")
 
 class VisualDirection(BaseModel):
-    overall_style: str = Field(default="modern corporate photography", description="Overall visual style")
-    color_palette: List[str] = Field(default_factory=list, description="Color palette")
-    mood: str = Field(default="professional and inspiring", description="Visual mood and tone")
-    key_visual_themes: List[str] = Field(default_factory=list, description="Visual themes")
+    overall_style: str = Field(default="modern corporate photography", description="Comprehensive visual manifesto — the artistic DNA of this campaign. Not generic ('modern and professional') but specific and ownable ('Documentary realism meets editorial precision — candid human moments with commercial production value')")
+    color_palette: List[str] = Field(default_factory=list, description="4-5 specific colors with hex codes and emotional roles (e.g., 'Deep midnight navy #0F1729 — institutional trust and depth')")
+    mood: str = Field(default="professional and inspiring", description="Visceral emotional atmosphere in one sentence — not 'professional' but 'the quiet electricity of a room where something important is about to be decided'")
+    key_visual_themes: List[str] = Field(default_factory=list, description="3-4 specific visual motifs, not abstract concepts (e.g., 'Warm light through rain-beaded glass' not 'Innovation')")
 
 class ImagePromptOutput(BaseModel):
     visual_direction: VisualDirection = Field(default_factory=VisualDirection)

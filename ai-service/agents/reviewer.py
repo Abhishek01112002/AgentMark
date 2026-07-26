@@ -789,14 +789,16 @@ def _compute_objective_score(agent_data: dict, agent_type: str) -> int:
         prompts = agent_data.get("image_prompts", [])
         if prompts:
             avg_len = sum(len(str(p.get("prompt", ""))) for p in prompts) / len(prompts)
-            if avg_len > 400:
-                score += 4
-            elif avg_len < 200:
-                score -= 6
+            if avg_len > 700:
+                score += 6  # Rich, detailed world-class prompts
+            elif avg_len > 500:
+                score += 3  # Good prompt density
+            elif avg_len < 400:
+                score -= 8  # Too short, likely generic
         else:
             score -= 20
 
-        return max(60, min(90, score + hash_offset))
+        return max(60, min(92, score + hash_offset))
 
     return 80 + hash_offset
 

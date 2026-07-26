@@ -434,9 +434,11 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature reduces visual drift on unchanged prompts;
-    # extra token budget covers the existing-output context in the prompt
-    revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 8000 if is_human_revision else 5000
+    # extra token budget covers the existing-output context in the prompt.
+    # Standard runs use 0.85 temperature for more creative, unique scene descriptions
+    # and 8192 max tokens to give the LLM enough budget for rich 700-1000 char prompts.
+    revision_temperature = 0.0 if is_human_revision else 0.85
+    revision_max_tokens = 12000 if is_human_revision else 8192
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -509,10 +511,10 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             )
 
         # Check 2: Prompt too short — likely a generic placeholder
-        if len(text) < 300:
+        if len(text) < 500:
             issues.append(
                 f"⚠️  [{name}] Prompt too short ({len(text)} chars) — "
-                "likely abstract/generic. Target 450-900 chars."
+                "likely abstract/generic. Target 700-1000 chars."
             )
 
         # Check 3: Abstract concept instead of specific frozen scene
