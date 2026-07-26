@@ -630,61 +630,7 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
     }
   };
 
-  const getChannelTabStyle = (channelId: string, isActive: boolean) => {
-    const ch = channelId.toLowerCase();
-    
-    if (!isActive) {
-      return {
-        className: "bg-[#0A0A0F] border border-[#2A2A38] text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#111118] hover:border-[#3A3A4A]",
-        iconClass: "grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
-      };
-    }
-    
-    switch (ch) {
-      case 'instagram':
-        return {
-          className: "bg-[#E1306C]/10 border-[#E1306C]/30 text-[#E1306C] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'facebook':
-        return {
-          className: "bg-[#1877F2]/10 border-[#1877F2]/30 text-[#1877F2] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'linkedin':
-        return {
-          className: "bg-[#0077B5]/10 border-[#0077B5]/30 text-[#0077B5] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'youtube':
-        return {
-          className: "bg-[#FF0000]/10 border-[#FF0000]/30 text-[#FF0000] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'twitter':
-      case 'x':
-        return {
-          className: "bg-white/10 border-white/20 text-white scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'google_ads':
-      case 'google':
-        return {
-          className: "bg-[#4285F4]/10 border-[#4285F4]/30 text-[#4285F4] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      case 'email':
-        return {
-          className: "bg-[#6366F1]/10 border-[#6366F1]/30 text-[#818CF8] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-      default:
-        return {
-          className: "bg-[#6366F1]/10 border-[#6366F1]/30 text-[#818CF8] scale-[1.02]",
-          iconClass: "scale-110 transition-all duration-300"
-        };
-    }
-  };
+
 
   const platformLabel = tabs.find(t => t.id === activeTab)?.label || 'Copy';
   const hasRightPanelContent = Boolean(
@@ -695,59 +641,48 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
   return (
     <div className="space-y-6 md:space-y-6">
-      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* ── PAGE HEADER (Apple Pro Luxury Header) ───────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 md:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center">
-                <PenLine size={22} className="text-emerald-400 filter drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center">
+                <PenLine size={20} className="text-[#34D399]" />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Campaign Copywriter</h2>
+              <h2 className="text-2xl font-semibold tracking-tight font-sora text-white">Campaign Copywriter</h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hasRealData ? 'AI-generated marketing copy across channels' : 'Generating AI-optimized copy for your campaign.'}</p>
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+              {hasRealData ? 'AI-optimized channel marketing copy, A/B variants, and messaging frameworks' : 'Generating AI-optimized copy for your campaign.'}
+            </p>
           </div>
           <div className="flex gap-3 flex-wrap items-center">
-            <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+            <span className="px-3 py-1.5 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 text-xs font-mono text-[#6EE7B7]">
               Goal: CONTENT CREATION
             </span>
           </div>
         </div>
-      </div>
 
-      {!hasRealData && (
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 mb-6">
-          <p className="text-sm" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-            No copy data available yet. This will be populated after AI copywriter agent completes work.
-          </p>
-        </div>
-      )}
-
-      {/* Copy Readiness */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        {Object.entries(copyReadiness).filter(([_, ready]) => ready).length > 0 && (
-          <span className="px-3 py-1.5 rounded-full bg-[#4edea3]/10 border border-[#4edea3]/20 text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-            {Object.entries(copyReadiness).filter(([_, ready]) => ready).length} Channels Ready
-          </span>
-        )}
-      </div>
-
-      <div className="mb-8 overflow-x-auto">
-        <div className="flex gap-2.5 min-w-max p-1">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const tabStyle = getChannelTabStyle(tab.id, isActive);
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3 min-h-[44px] rounded-full text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 active:scale-95 group select-none cursor-pointer border ${tabStyle.className}`}
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                <ChannelIcon channel={tab.id} size={15} className={tabStyle.iconClass} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        {/* Platform Selection Segmented Control */}
+        <div className="mt-6 pt-5 border-t border-[#262636]">
+          <div className="flex items-center gap-1.5 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none flex items-center justify-center gap-2 ${
+                    isActive
+                      ? 'bg-[#6366F1] text-white shadow-sm font-semibold'
+                      : 'text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <ChannelIcon channel={tab.id} className="w-3.5 h-3.5" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

@@ -323,83 +323,62 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
   return (
     <div className="space-y-8" style={inter}>
 
-      {/* ── PAGE HEADER ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-[#2A2A38] bg-gradient-to-br from-[#111118] via-[#111118] to-[#0A0A0F] p-5 md:p-6 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+      {/* ── PAGE HEADER (Apple Pro Luxury Header) ───────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 md:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-lg bg-surface border border-[#2A2A38] flex items-center justify-center">
-                <Palette size={22} className="text-amber-400 filter drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+            <div className="flex items-center gap-3 mb-1.5">
+              <div className="w-10 h-10 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
+                <Palette size={20} className="text-[#818CF8]" />
               </div>
-              <h2 className="text-2xl md:text-3xl font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>Visual Assets</h2>
+              <h2 className="text-2xl font-semibold tracking-tight font-sora text-white">Visual Assets</h2>
             </div>
-            <p className="text-sm md:text-base" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>
-              Creative prompts and visual direction for every platform
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+              Generative prompt directions and visual asset specifications across all channels
             </p>
           </div>
           <div className="flex gap-3 flex-wrap items-center">
             {promptsList.length > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#6366F1' }}>
+              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs font-mono text-[#A5B4FC]">
                 Goal: VISUAL CREATION
               </span>
             )}
             <button
               onClick={handleCopyAllPrompts}
-              className="px-4 py-3 min-h-[44px] rounded-lg bg-[#6366F1] hover:bg-[#5254d8] text-sm font-semibold transition-all shadow-md shadow-[#6366F1]/10 hover:shadow-[#6366F1]/20 active:scale-[0.98] flex items-center gap-2"
-              style={{ fontFamily: 'Inter, sans-serif', color: '#FFFFFF' }}
+              className="px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-xs font-semibold text-white transition-all shadow-md active:scale-[0.98] flex items-center gap-2 font-sora"
             >
-              <Copy size={16} />Copy All Prompts
+              <Copy size={14} />
+              <span>Copy All Prompts</span>
             </button>
           </div>
         </div>
-      </div>
 
-
-      {/* ── PLATFORM TABS ─────────────────────────────────────────────────── */}
-      {promptsList.length > 0 && (
-        <div style={{ background: 'rgba(17,17,24,0.5)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
-          <div className="flex gap-1 overflow-x-auto scrollbar-none">
-            {activeTabs.map(tab => {
-              const count =
-                tab === 'all'
-                  ? promptsList.length
-                  : promptsList.filter(
-                      (p: any) => getPromptPlatformKey(p) === tab
-                    ).length;
-              const config = tab === 'all'
-                ? { accent: '#6366F1', label: 'All Platforms', bgAccent: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }
-                : PLATFORM_CONFIG[tab];
-              const isActive = activeTab === tab;
-              return (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className="whitespace-nowrap transition-all duration-200"
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    border: 'none',
-                    background: isActive ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(129,140,248,0.08))' : 'transparent',
-                    color: isActive ? '#E0E7FF' : '#6B6B80',
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    boxShadow: isActive ? '0 1px 4px rgba(99,102,241,0.1)' : 'none',
-                  }}
-                >
-                  {tab !== 'all' && <ChannelIcon channel={tab} size={14} />}
-                  <span>{config.label}</span>
-                  <span style={{ fontSize: 11, opacity: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>({count})</span>
-                </button>
-              );
-            })}
+        {/* Platform Selection Segmented Control */}
+        {activeTabs.length > 1 && (
+          <div className="mt-6 pt-5 border-t border-[#262636]">
+            <div className="flex items-center gap-1.5 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto">
+              {activeTabs.map(tab => {
+                const label = tab === 'all' ? 'All Visuals' : PLATFORM_CONFIG[tab]?.label || tab;
+                const isActive = activeTab === tab;
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none flex items-center justify-center gap-2 ${
+                      isActive
+                        ? 'bg-[#6366F1] text-white shadow-sm'
+                        : 'text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {tab !== 'all' && <ChannelIcon channel={tab} className="w-3.5 h-3.5" />}
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── PROMPT CARDS ──────────────────────────────────────────────────── */}
       {promptsList.length > 0 ? (
