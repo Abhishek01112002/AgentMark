@@ -854,123 +854,126 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error, targetA
   const [modelRoute, setModelRoute] = useState<string>('auto');
 
   return (
-    <div className="p-6 md:p-8 flex flex-col items-center justify-center min-h-[420px]">
-      <div className="w-full max-w-4xl mx-auto flex flex-col gap-6">
-        {/* Pipeline Stage Tracker */}
-        <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-3.5 flex items-center justify-between overflow-x-auto text-xs font-mono">
-          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
-            Research
+    <div className="py-4 sm:py-6 flex flex-col items-center justify-center font-sans">
+      <div className="w-full max-w-4xl mx-auto space-y-5">
+        {/* Apple Segmented Pipeline Stage Tracker */}
+        <div className="bg-[#0D0D14] border border-[#262636] rounded-2xl p-2 flex items-center justify-between overflow-x-auto text-xs font-sora shadow-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold shrink-0">
+            <span>✓</span>
+            <span>Research</span>
           </div>
-          <span className="text-[#2A2A38]">→</span>
-          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
-            Strategy
+          <span className="text-[#334155] shrink-0 font-mono">→</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold shrink-0">
+            <span>✓</span>
+            <span>Strategy</span>
           </div>
-          <span className="text-[#2A2A38]">→</span>
-          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
-            Copy
+          <span className="text-[#334155] shrink-0 font-mono">→</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold shrink-0">
+            <span>✓</span>
+            <span>Copy</span>
           </div>
-          <span className="text-[#2A2A38]">→</span>
-          <div className="flex items-center gap-2 text-[#34D399] font-semibold">
-            <span className="w-5 h-5 rounded-full bg-[#34D399]/10 border border-[#34D399]/30 flex items-center justify-center text-[10px]">✓</span>
-            Visuals
+          <span className="text-[#334155] shrink-0 font-mono">→</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px] font-semibold shrink-0">
+            <span>✓</span>
+            <span>Visuals</span>
           </div>
-          <span className="text-[#2A2A38]">→</span>
-          <div className="flex items-center gap-2 text-[#818CF8] font-bold bg-[#6366F1]/10 px-2.5 py-1 rounded-lg border border-[#6366F1]/30">
-            <span className="w-2 h-2 rounded-full bg-[#818CF8] animate-pulse" />
-            Stage 5: Pre-Flight Audit
+          <span className="text-[#334155] shrink-0 font-mono">→</span>
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#6366F1] text-white font-sora text-xs font-semibold shadow-sm shrink-0">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span>Stage 5: Pre-Flight Audit</span>
           </div>
-          <span className="text-[#2A2A38]">→</span>
-          <div className="flex items-center gap-2 text-[#8B8B9E]">
-            <span className="w-5 h-5 rounded-full bg-[#181824] border border-[#2A2A38] flex items-center justify-center text-[10px]">○</span>
-            Publishing
+          <span className="text-[#334155] shrink-0 font-mono">→</span>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-[#64748B] font-mono text-[11px] shrink-0">
+            <span>○</span>
+            <span>Publishing</span>
           </div>
         </div>
 
-        {/* Hero Banner */}
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-transparent" />
+        {/* Apple Pro Hero Banner Card */}
+        <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col md:flex-row md:items-center justify-between gap-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-transparent" />
+          
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#6366F1]/20 to-[#A855F7]/10 border border-[#6366F1]/30 flex items-center justify-center shrink-0 relative">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-[0_0_8px_rgba(129,140,248,0.6)]">
+            <div className="w-11 h-11 rounded-2xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center shrink-0 text-[#818CF8] relative">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" /><path d="M12 3v3m0 12v3M3 12h3m12 0h3" />
                 <circle cx="12" cy="3" r="1.5" fill="#818CF8" /><circle cx="12" cy="21" r="1.5" fill="#818CF8" />
-                <circle cx="3" cy="12" r="1.5" fill="#818CF8" /><circle cx="21" cy="12" r="1.5" fill="#818CF8" />
               </svg>
-              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#4edea3] animate-ping opacity-75" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#4edea3]" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#10B981]" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-[#F1F1F3] font-sora">AI Pre-Flight Simulation Engine</h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/30 text-[11px] font-mono text-[#818CF8]">v2.4 Enterprise</span>
+              <div className="flex items-center gap-2.5">
+                <h3 className="text-lg font-semibold font-sora text-white tracking-tight">AI Pre-Flight Simulation Engine</h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-[10px] font-mono font-bold text-[#818CF8] uppercase tracking-wider">v2.4 Enterprise</span>
               </div>
-              <p className="text-xs text-[#8B8B9E] mt-0.5 font-sora">Validate campaign copy using AI buying committee simulation before publishing live.</p>
+              <p className="text-xs text-[#94A3B8] font-sans mt-0.5 leading-relaxed">Validate campaign copy using AI buying committee simulation before publishing live</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 md:justify-end text-xs font-mono">
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {previousScore != null && (
-              <div className="bg-[#F59E0B]/10 border border-[#F59E0B]/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-[#F59E0B] font-semibold">
+              <div className="bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-amber-300 font-mono text-xs">
                 <span>Prev Score:</span>
                 <span className="font-bold">{previousScore}/100</span>
               </div>
             )}
-            <div className="bg-[#181824] border border-[#2A2A38] px-3 py-1.5 rounded-lg flex items-center gap-2">
-              <span className="text-[#8B8B9E]">Target:</span>
-              <span className="text-[#F1F1F3] font-semibold truncate max-w-[130px]" title={targetAudience}>{targetAudience || 'B2B Buyers'}</span>
+            <div className="bg-[#0B0B12] border border-[#262636] px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs font-sans text-slate-200">
+              <span className="text-[#94A3B8]">Target:</span>
+              <span className="font-semibold text-white truncate max-w-[140px]" title={targetAudience}>{targetAudience || 'B2B Buyers'}</span>
             </div>
-            <div className="bg-[#181824] border border-[#2A2A38] px-3 py-1.5 rounded-lg flex items-center gap-2">
-              <span className="text-[#8B8B9E]">Copy:</span>
-              <span className="text-[#34D399] font-semibold">{copyText ? 'Variant Ready' : 'Active Copy'}</span>
+            <div className="bg-[#0B0B12] border border-[#262636] px-3.5 py-1.5 rounded-xl flex items-center gap-2 text-xs font-sans text-slate-200">
+              <span className="text-[#94A3B8]">Copy:</span>
+              <span className="text-emerald-400 font-semibold">{copyText ? 'Variant Ready' : 'Active Copy'}</span>
             </div>
           </div>
         </div>
 
         {error && (
-          <div className="bg-[#F43F5E]/10 border border-[#F43F5E] rounded-xl p-4 text-xs text-[#F43F5E]">
-            <strong className="block mb-1 font-semibold">Simulation Error:</strong>
+          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/30 rounded-2xl p-4 text-xs text-[#FDA4AF] font-sans">
+            <strong className="block mb-1 font-sora font-semibold text-white">Simulation Error:</strong>
             {error}
           </div>
         )}
 
         {/* Simulation Controls Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-[#2A2A38] pb-2.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A0A0D2] font-mono">Simulation Settings (Editable)</span>
-              <span className="text-xs font-mono text-[#F59E0B] font-semibold">Est. ~40 sec</span>
+          {/* Settings Tile */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-5 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center justify-between border-b border-[#262636] pb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] font-mono">Simulation Settings (Editable)</span>
+              <span className="text-xs font-mono text-amber-400 font-semibold">Est. ~40 sec</span>
             </div>
-            <div className="space-y-2.5 text-xs font-mono">
-              <div className="flex justify-between items-center text-[#8B8B9E]">
+            
+            <div className="space-y-3 text-xs font-sans">
+              <div className="flex justify-between items-center text-[#94A3B8]">
                 <span>Personas Panel:</span>
                 <select value={personaCount} onChange={e => setPersonaCount(Number(e.target.value))}
-                  className="bg-[#181824] border border-[#2A2A38] rounded px-2 py-1 text-xs text-[#F1F1F3] focus:outline-none focus:border-[#6366F1]">
+                  className="bg-[#0B0B12] border border-[#262636] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-[#6366F1] font-sora cursor-pointer">
                   <option value={3}>3 Demographics</option>
                   <option value={5}>5 Demographics (Default)</option>
                   <option value={8}>8 Demographics</option>
                   <option value={10}>10 Demographics</option>
                 </select>
               </div>
-              <div className="flex justify-between items-center text-[#8B8B9E]">
+              <div className="flex justify-between items-center text-[#94A3B8]">
                 <span>Trust Signal Audit:</span>
-                <label className="flex items-center gap-2 cursor-pointer text-[#F1F1F3]">
-                  <input type="checkbox" checked={enableTrust} onChange={e => setEnableTrust(e.target.checked)} className="accent-[#34D399] rounded" />
+                <label className="flex items-center gap-2 cursor-pointer text-white">
+                  <input type="checkbox" checked={enableTrust} onChange={e => setEnableTrust(e.target.checked)} className="accent-[#6366F1] w-4 h-4 rounded border-[#262636] bg-[#0B0B12]" />
                   <span>{enableTrust ? 'Claim Audit Active' : 'Disabled'}</span>
                 </label>
               </div>
-              <div className="flex justify-between items-center text-[#8B8B9E]">
+              <div className="flex justify-between items-center text-[#94A3B8]">
                 <span>Persona Memory Recall:</span>
-                <label className="flex items-center gap-2 cursor-pointer text-[#F1F1F3]">
-                  <input type="checkbox" checked={enableMemory} onChange={e => setEnableMemory(e.target.checked)} className="accent-[#A855F7] rounded" />
+                <label className="flex items-center gap-2 cursor-pointer text-white">
+                  <input type="checkbox" checked={enableMemory} onChange={e => setEnableMemory(e.target.checked)} className="accent-[#6366F1] w-4 h-4 rounded border-[#262636] bg-[#0B0B12]" />
                   <span>{enableMemory ? 'Memory Recalled' : 'Disabled'}</span>
                 </label>
               </div>
-              <div className="flex justify-between items-center text-[#8B8B9E]">
+              <div className="flex justify-between items-center text-[#94A3B8]">
                 <span>Model Failover Router:</span>
                 <select value={modelRoute} onChange={e => setModelRoute(e.target.value)}
-                  className="bg-[#181824] border border-[#2A2A38] rounded px-2 py-1 text-xs text-[#38BDF8] focus:outline-none focus:border-[#6366F1]">
+                  className="bg-[#0B0B12] border border-[#262636] rounded-xl px-3 py-1.5 text-xs text-[#818CF8] focus:outline-none focus:border-[#6366F1] font-mono cursor-pointer">
                   <option value="auto">Auto (Gemini + LLaMA)</option>
                   <option value="gemini">Gemini 2.5 Pro</option>
                   <option value="llama">Meta LLaMA 3.3 70B</option>
@@ -979,36 +982,37 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onRunSimulation, error, targetA
             </div>
           </div>
 
-          <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-[#2A2A38] pb-2.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#A0A0D2] font-mono">You'll Receive</span>
-              <span className="text-[10px] font-mono text-[#34D399]">Full Audit Brief</span>
+          {/* You'll Receive Benefits Tile */}
+          <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-5 space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center justify-between border-b border-[#262636] pb-3">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#94A3B8] font-mono">You'll Receive</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold">FULL AUDIT BRIEF</span>
             </div>
-            <div className="grid grid-cols-1 gap-1.5 text-xs text-[#C7C4D7]">
-              <div className="flex items-center gap-2"><span className="text-[#34D399] font-bold">✓</span> <strong>Executive Decision</strong> &amp; Overall Score</div>
-              <div className="flex items-center gap-2"><span className="text-[#34D399] font-bold">✓</span> <strong>Overall Buy Intent</strong> &amp; Click Rates</div>
-              <div className="flex items-center gap-2"><span className="text-[#34D399] font-bold">✓</span> <strong>Top Persona Objections</strong> &amp; Friction Points</div>
-              <div className="flex items-center gap-2"><span className="text-[#34D399] font-bold">✓</span> <strong>Trust &amp; Risk Report</strong> + Actionable Recommendations</div>
+            <div className="space-y-2 text-xs text-slate-200 font-sans leading-relaxed">
+              <div className="flex items-center gap-2.5"><span className="text-emerald-400 font-bold">✓</span> <span><strong>Executive Decision</strong> &amp; Overall Score</span></div>
+              <div className="flex items-center gap-2.5"><span className="text-emerald-400 font-bold">✓</span> <span><strong>Overall Buy Intent</strong> &amp; Click Rates</span></div>
+              <div className="flex items-center gap-2.5"><span className="text-emerald-400 font-bold">✓</span> <span><strong>Top Persona Objections</strong> &amp; Friction Points</span></div>
+              <div className="flex items-center gap-2.5"><span className="text-emerald-400 font-bold">✓</span> <span><strong>Trust &amp; Risk Report</strong> + Actionable Recommendations</span></div>
             </div>
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 text-xs text-[#F1F1F3] font-semibold font-sora">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              Zero Live Campaign Changes
+        {/* Apple Pro Launch CTA Card */}
+        <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-white font-semibold font-sora">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>Zero Live Campaign Changes</span>
             </div>
-            <span className="text-[11px] text-[#8B8B9E] font-mono">Runs in ~40 seconds • Unlimited pre-flight re-runs • Est. Cost: ~$0.04</span>
+            <p className="text-[11px] text-[#94A3B8] font-mono">Runs in ~40 seconds • Unlimited pre-flight re-runs • Est. Cost: ~$0.04</p>
           </div>
           {onRunSimulation && (
             <button
               onClick={onRunSimulation}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#4F46E5] hover:from-[#5254d8] hover:to-[#4338CA] text-white text-sm font-semibold transition-all shadow-[0_0_20px_rgba(99,102,241,0.35)] hover:shadow-[0_0_30px_rgba(99,102,241,0.6)] active:scale-[0.98] flex items-center justify-center gap-2.5 shrink-0 font-sora"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254D8] text-white text-xs font-semibold font-sora transition-all shadow-sm active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer border-none shrink-0"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              {previousScore != null ? 'Re-Run AI Pre-Flight Analysis' : 'Run AI Pre-Flight Analysis'}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>{previousScore != null ? 'Re-Run AI Pre-Flight Analysis' : 'Run AI Pre-Flight Analysis'}</span>
             </button>
           )}
         </div>
