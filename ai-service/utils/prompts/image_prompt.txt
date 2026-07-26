@@ -241,8 +241,11 @@ Story formats (instagram story, tiktok cover, facebook story):
 Wide establishing shots (webinar banner, blog header, google display ad):
 → "Wide environmental perspective with dramatic foreground element anchoring the lower third. Three distinct depth planes visible — foreground texture, midground subject, background environment. Atmospheric perspective adds haze and color shift to distant elements, creating natural depth. Full-width panoramic composition designed for horizontal banner formats."
 
-Product / ecommerce (product showcase, podcast cover):
-→ "Macro-influenced perspective, product fills 65-75% of frame with pin-sharp detail on surface texture and material quality. Extreme shallow depth of field dissolves background into abstract color. Every surface imperfection, reflection, and material characteristic is rendered with obsessive clarity. The viewer should feel they could reach into the image and touch the product."
+Product / ecommerce & Demos (product showcase, product demos, comparison guides, feature showcases):
+→ "Macro-influenced perspective, product/subject fills 65-75% of frame with pin-sharp detail on surface texture and material quality. Extreme shallow depth of field dissolves background into soft bokeh. Every surface imperfection, reflection, and material characteristic is rendered with obsessive clarity."
+
+Testimonials & Case Studies (student testimonials, customer stories, case studies, interviews):
+→ "Medium portrait perspective, 85mm telephoto compression, shallow depth of field with subject's eyes in razor-sharp focus, soft creamy background blur separating the subject from the authentic background environment while maintaining intimate visual connection."
 
 LAYER 7 — COLOR SCIENCE (7% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

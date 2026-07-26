@@ -537,7 +537,10 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         lens_terms = [
             "depth of field", "bokeh", "shallow", "telephoto",
             "wide angle", "macro", "perspective", "aperture", "f/",
-            "compression", "shallow focus", "environmental perspective"
+            "compression", "shallow focus", "environmental perspective",
+            "portrait perspective", "medium shot", "wide shot", "close-up",
+            "sharp focus", "background blur", "soft background", "depth",
+            "tight framing", "focal", "35mm", "50mm", "85mm", "dramatic perspective"
         ]
         if not any(term in text.lower() for term in lens_terms):
             issues.append(
