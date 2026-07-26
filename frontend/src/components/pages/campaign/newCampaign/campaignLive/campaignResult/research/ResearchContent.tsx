@@ -280,21 +280,27 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
 
         {/* Audience Insights (Full Width) */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-          <h3 className="text-lg font-semibold mb-5 flex items-center gap-2 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <Users size={20} className="text-[#6366F1]" />
-            Audience Insights
-          </h3>
+        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(245,158,11,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(24,20,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.15)' }}>
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-[#F97316]/2 pointer-events-none" />
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
+          <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#F59E0B]/4 blur-[60px] pointer-events-none" />
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#F97316]/10 flex items-center justify-center shrink-0 border border-[#F59E0B]/20">
+              <Users size={16} className="text-[#FBBF24]" />
+            </div>
+            <h3 className="m-0 text-base font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+              Audience Insights
+            </h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {/* Pain Points */}
-            <div className="card-elevate bg-[#0A0A0F] border border-[#2A2A38]/50 rounded-xl p-4 md:p-5">
-              <h4 className="text-xs uppercase font-semibold tracking-wider text-[#8B8B9E] mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Pain Points
-              </h4>
+            <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(244,63,94,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(244,63,94,0.1)' }}>
+              <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #F43F5E, transparent)' }} />
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FB7185] mb-3">Pain Points</h4>
               <ul className="space-y-2">
                 {painPoints.slice(0, 5).map((point: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] flex-shrink-0 mt-[7px]" />
+                  <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] shrink-0 mt-[7px]" />
                     {point}
                   </li>
                 ))}
@@ -302,14 +308,13 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             </div>
 
             {/* Motivations */}
-            <div className="card-elevate bg-[#0A0A0F] border border-[#2A2A38]/50 rounded-xl p-4 md:p-5">
-              <h4 className="text-xs uppercase font-semibold tracking-wider text-[#8B8B9E] mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Motivations
-              </h4>
+            <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(245,158,11,0.1)' }}>
+              <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #F59E0B, transparent)' }} />
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FBBF24] mb-3">Motivations</h4>
               <ul className="space-y-2">
                 {motivations.slice(0, 5).map((motivation: string, idx: number) => (
-                  <li key={idx} className="flex items-start gap-2.5 text-sm text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] flex-shrink-0 mt-[7px]" />
+                  <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0 mt-[7px]" />
                     {motivation}
                   </li>
                 ))}
@@ -317,14 +322,13 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             </div>
 
             {/* Preferred Channels */}
-            <div className="card-elevate bg-[#0A0A0F] border border-[#2A2A38]/50 rounded-xl p-4 md:p-5">
-              <h4 className="text-xs uppercase font-semibold tracking-wider text-[#8B8B9E] mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Preferred Channels
-              </h4>
+            <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(14,165,233,0.1)' }}>
+              <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #0EA5E9, transparent)' }} />
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#38BDF8] mb-3">Preferred Channels</h4>
               <div className="flex flex-wrap gap-2">
                 {preferredChannels.slice(0, 5).map((channel: string, idx: number) => (
-                  <span key={idx} className="inline-flex items-start gap-1.5 px-2.5 py-1 rounded bg-[#1A1A24] border border-[#2A2A38] text-xs font-medium text-[#8B8B9E] hover:border-[#6366F1]/30 transition-colors" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <ChannelIcon channel={channel} size={12} className="text-[#6366F1] mt-[2px] flex-shrink-0" />
+                  <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.18)', color: '#7DD3FC' }}>
+                    <ChannelIcon channel={channel} size={12} className="text-[#38BDF8] shrink-0" />
                     {channel}
                   </span>
                 ))}
@@ -332,11 +336,10 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             </div>
 
             {/* Language Style */}
-            <div className="card-elevate bg-[#0A0A0F] border border-[#2A2A38]/50 rounded-xl p-4 md:p-5">
-              <h4 className="text-xs uppercase font-semibold tracking-wider text-[#8B8B9E] mb-3" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Language Style
-              </h4>
-              <p className="text-sm leading-relaxed text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(139,92,246,0.1)' }}>
+              <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #8B5CF6, transparent)' }} />
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#A78BFA] mb-3">Language Style</h4>
+              <p className="text-sm leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
                 {languageStyle}
               </p>
             </div>
@@ -346,16 +349,24 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
         {/* Market Opportunities */}
         {marketOpportunities.length > 0 && (
-          <div className="card-elevate-green rounded-xl p-5 md:p-6 lg:col-span-2" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-              <Rocket size={20} className="text-[#6366F1]" />
-              Market Opportunities
-            </h3>
+          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(16,185,129,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(17,24,20,0.95) 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#10B981]/4 via-transparent to-[#059669]/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#10B981] via-[#34D399] to-transparent" />
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#10B981]/4 blur-[60px] pointer-events-none" />
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 flex items-center justify-center shrink-0 border border-[#10B981]/20">
+                <Rocket size={16} className="text-[#34D399]" />
+              </div>
+              <h3 className="m-0 text-base font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                Market Opportunities
+              </h3>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {marketOpportunities.map((opp: string, idx: number) => (
-                <div key={idx} className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 md:p-5 flex items-start gap-3 hover:border-[#4edea3]/30 transition-all duration-200">
-                  <span className="w-6 h-6 rounded-full bg-[#4edea3]/10 flex items-center justify-center text-[#4edea3] flex-shrink-0 text-xs font-bold shadow-inner">{idx + 1}</span>
-                  <p className="text-sm leading-relaxed text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>{opp}</p>
+                <div key={idx} className="rounded-xl p-4 md:p-5 flex items-start gap-3 relative overflow-hidden transition-all duration-200" style={{ background: 'rgba(17,17,24,0.5)', border: '1px solid rgba(16,185,129,0.1)' }}>
+                  <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #10B981, transparent)' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)', color: '#34D399' }}>{idx + 1}</div>
+                  <p className="text-sm leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>{opp}</p>
                 </div>
               ))}
             </div>
@@ -364,13 +375,20 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
         {/* Recommended Strategic Approach */}
         {recommendedApproach && (
-          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-              <Workflow size={20} className="text-[#6366F1]" />
-              Recommended Strategic Approach
-            </h3>
-            <div className="card-elevate bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-5 md:p-6">
-              <p className="text-sm md:text-base leading-relaxed text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(99,102,241,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(20,17,26,0.95) 100%)', border: '1px solid rgba(99,102,241,0.15)' }}>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6366F1]/4 via-transparent to-[#818CF8]/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-transparent" />
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#6366F1]/4 blur-[60px] pointer-events-none" />
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366F1]/20 to-[#818CF8]/10 flex items-center justify-center shrink-0 border border-[#6366F1]/20">
+                <Workflow size={16} className="text-[#818CF8]" />
+              </div>
+              <h3 className="m-0 text-base font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                Recommended Strategic Approach
+              </h3>
+            </div>
+            <div className="relative pl-5 py-4 pr-2" style={{ borderLeft: '2px solid rgba(99,102,241,0.25)' }}>
+              <p className="text-sm md:text-base leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#C7C4D7' }}>
                 {recommendedApproach}
               </p>
             </div>

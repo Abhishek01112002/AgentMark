@@ -62,6 +62,7 @@ const ProjectDetailContent: React.FC = () => {
   const [project, setProject] = useState<Project | null>(initialProject);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(!initialProject);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; campaign: Campaign | null }>({ show: false, campaign: null });
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,16 +71,23 @@ const ProjectDetailContent: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  const fetchCampaigns = async (page: number, limit: number) => {
+  const fetchCampaigns = async (page: number, limit: number, signal?: AbortSignal) => {
     if (!id) return;
+    setCampaignsLoading(true);
     try {
-      const response = await api.get(`/campaigns?projectId=${id}&page=${page}&limit=${limit}`);
+      const response = await api.get(`/campaigns?projectId=${id}&page=${page}&limit=${limit}`, { signal });
       setCampaigns(response.data.campaigns || []);
       setTotalCampaigns(response.data.pagination?.total || 0);
       setTotalPages(response.data.pagination?.totalPages || 1);
     } catch (error: any) {
-      console.error('Failed to fetch campaigns:', error);
-      toast.error(error.response?.data?.message || 'Failed to load campaigns');
+      if (error?.name !== 'AbortError' && error?.code !== 'ERR_CANCELED') {
+        console.error('Failed to fetch campaigns:', error);
+        toast.error(error.response?.data?.message || 'Failed to load campaigns');
+      }
+    } finally {
+      if (!signal?.aborted) {
+        setCampaignsLoading(false);
+      }
     }
   };
 
@@ -106,7 +114,9 @@ const ProjectDetailContent: React.FC = () => {
           }
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     
@@ -116,9 +126,10 @@ const ProjectDetailContent: React.FC = () => {
   }, [id, navigate]);
 
   useEffect(() => {
-    if (id) {
-      fetchCampaigns(currentPage, itemsPerPage);
-    }
+    if (!id) return;
+    const controller = new AbortController();
+    fetchCampaigns(currentPage, itemsPerPage, controller.signal);
+    return () => controller.abort();
   }, [id, currentPage, itemsPerPage]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -431,7 +442,13 @@ const handlePageChange = (page: number) => {
                 Campaigns ({campaigns.length})
               </h2>
 
-              {campaigns.length === 0 ? (
+              {campaignsLoading ? (
+                <div className="rounded-xl p-8 space-y-4" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-10 rounded-lg animate-pulse" style={{ backgroundColor: '#1A1A24' }} />
+                  ))}
+                </div>
+              ) : campaigns.length === 0 ? (
                 <div
                   className="rounded-xl p-12 text-center"
                   style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}

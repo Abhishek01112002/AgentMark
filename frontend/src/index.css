@@ -318,3 +318,67 @@
   0% { opacity: 1; }
   100% { opacity: 0.15; }
 }
+
+/* ── Campaign Result Page Component Styles ────────────────────────── */
+.result-main {
+  margin-left: 0;
+  transition: margin-left 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (min-width: 768px) {
+  .result-main {
+    margin-left: var(--sidebar-w, 240px);
+  }
+}
+.result-shell {
+  background:
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(78, 222, 163, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 20%),
+    #0A0A0F;
+}
+.inspector-drawer {
+  transform: translate3d(100%, 0, 0);
+  will-change: transform;
+  transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.inspector-drawer.open {
+  transform: translate3d(0, 0, 0);
+}
+.drawer-tab-btn {
+  position: relative;
+  padding: 12px 0;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4A4A5E;
+  cursor: pointer;
+  border: none;
+  background: none;
+  flex: 1;
+  transition: color 200ms;
+}
+.drawer-tab-btn.active {
+  color: #c0c1ff;
+}
+.drawer-tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #c0c1ff;
+  border-radius: 2px 2px 0 0;
+}
+.score-ring {
+  transition: stroke-dashoffset 800ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.draft-card {
+  transition: border-color 200ms, background-color 200ms;
+}
+.draft-card:hover {
+  border-color: rgba(192, 193, 255, 0.3);
+  background-color: #13131a;
+}
+

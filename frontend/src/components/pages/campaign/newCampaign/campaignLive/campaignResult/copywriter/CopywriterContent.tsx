@@ -1032,18 +1032,31 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
 
           {/* Segment Messaging */}
           {messagingFramework.segment_messaging?.length > 0 && (
-            <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5">
-              <h4 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>
-                <Users size={16} className="text-[#6366F1]" />Segment Messaging
-              </h4>
+            <div className="card-elevate rounded-xl p-5 relative overflow-hidden shadow-[0_4px_24px_rgba(20,184,166,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(17,24,23,0.95) 100%)', border: '1px solid rgba(20,184,166,0.15)' }}>
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#14B8A6]/4 via-transparent to-[#0EA5E9]/2 pointer-events-none" />
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#14B8A6] via-[#2DD4BF] to-transparent" />
+              <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-[#14B8A6]/4 blur-[60px] pointer-events-none" />
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#14B8A6]/20 to-[#0EA5E9]/10 flex items-center justify-center shrink-0 border border-[#14B8A6]/20">
+                  <Users size={14} className="text-[#2DD4BF]" />
+                </div>
+                <h4 className="m-0 text-sm font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
+                  Segment Messaging
+                </h4>
+              </div>
               <div className="space-y-3">
                 {messagingFramework.segment_messaging.map((seg: any, idx: number) => (
-                  <div key={idx} className="bg-[#0A0A0F] border border-[#2A2A38] rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h5 className="text-sm font-semibold" style={{ fontFamily: 'Inter, sans-serif', color: '#F1F1F3' }}>{seg.segment_name}</h5>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#1A1A24] border border-[#2A2A38]" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{seg.tone}</span>
+                  <div key={idx} className="rounded-xl p-4 border" style={{ background: 'rgba(17,17,24,0.6)', borderColor: 'rgba(20,184,166,0.1)' }}>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[#14B8A6]/20 to-[#0EA5E9]/10 flex items-center justify-center border border-[#14B8A6]/20">
+                          <Users size={11} className="text-[#2DD4BF]" />
+                        </div>
+                        <h5 className="m-0 text-sm font-semibold" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>{seg.segment_name}</h5>
+                      </div>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full font-mono tracking-wide" style={{ background: 'rgba(20,184,166,0.1)', border: '1px solid rgba(20,184,166,0.2)', color: '#5EEAD4' }}>{seg.tone}</span>
                     </div>
-                    <p className="text-sm leading-relaxed" style={{ fontFamily: 'Inter, sans-serif', color: '#B0B0C0' }}>{seg.message}</p>
+                    <p className="text-sm leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#C4D4D0' }}>{seg.message}</p>
                   </div>
                 ))}
               </div>

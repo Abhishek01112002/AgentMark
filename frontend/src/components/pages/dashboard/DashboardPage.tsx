@@ -295,57 +295,121 @@ function DashboardContent() {
       <>
         {dashboardStyles}
         <style>{`
-          @keyframes skeleton-shimmer {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.45; }
+          @keyframes shimmer-loading {
+            to { background-position-x: -200%; }
           }
-          .sk { animation: skeleton-shimmer 1.5s ease-in-out infinite; background: #1A1A24; border-radius: 6px; }
+          @keyframes loading-bar {
+            0% { transform: scaleX(0); transform-origin: left; }
+            50% { transform: scaleX(1); transform-origin: left; }
+            51% { transform: scaleX(1); transform-origin: right; }
+            100% { transform: scaleX(0); transform-origin: right; }
+          }
+          .sk-el {
+            background: linear-gradient(110deg, #111118 8%, #1C1C28 18%, #111118 33%);
+            background-size: 200% 100%;
+            animation: shimmer-loading 1.5s linear infinite;
+            border-radius: 6px;
+          }
+          .sk-card {
+            background-color: #111118;
+            border: 1px solid #2A2A38;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+          }
+          .sk-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99,102,241,0.2), rgba(168,85,247,0.2), transparent);
+            animation: loading-bar 2s ease-in-out infinite;
+          }
         `}</style>
         <div className="min-h-screen overflow-x-hidden" style={{ backgroundColor: '#131318', color: '#F1F1F3' }}>
           <Sidebar />
           <TopNav title="Dashboard" stats={[]} />
-          <main className="dashboard-main pt-14 min-h-screen fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
+          <main className="dashboard-main pt-14 min-h-screen" style={{ fontFamily: 'Sora, sans-serif' }}>
             <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8 space-y-6 md:space-y-8">
+              {/* macOS-style loading indicator — glass pill with Apple spinner */}
+              <div
+                className="flex items-center justify-center gap-3 py-3"
+              >
+                <div
+                  className="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-full"
+                  style={{
+                    backgroundColor: 'rgba(17, 17, 24, 0.7)',
+                    backdropFilter: 'blur(16px)',
+                    WebkitBackdropFilter: 'blur(16px)',
+                    border: '0.5px solid rgba(255, 255, 255, 0.06)',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.3), inset 0 0 0 0.5px rgba(255, 255, 255, 0.04)',
+                  }}
+                >
+                  {/* macOS 12-spoke spinner */}
+                  <span className="relative flex items-center justify-center" style={{ width: 14, height: 14 }}>
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className="absolute apple-spinner-spoke"
+                        style={{
+                          width: 1.5,
+                          height: 5,
+                          borderRadius: 1,
+                          backgroundColor: '#8B8B9E',
+                          transform: `rotate(${i * 30}deg) translateY(-5px)`,
+                          animationDelay: `${i * (1 / 12)}s`,
+                        }}
+                      />
+                    ))}
+                  </span>
+                  <span className="text-[11px] font-mono text-[#8B8B9E] font-medium tracking-[0.08em]">
+                    Loading…
+                  </span>
+                </div>
+              </div>
+
               {/* 4 stat card skeletons */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 stagger-enter">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="rounded-xl p-5" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                  <div key={i} className="sk-card p-5">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="space-y-2">
-                        <div className="sk h-3 w-24 rounded" />
-                        <div className="sk h-8 w-16 rounded" />
+                      <div className="space-y-2.5 flex-1">
+                        <div className="sk-el h-3 w-24" />
+                        <div className="sk-el h-8 w-20" />
                       </div>
-                      <div className="sk w-10 h-10 rounded-lg" />
+                      <div className="sk-el w-10 h-10 rounded-lg flex-shrink-0" />
                     </div>
-                    <div className="sk h-3 w-32 rounded" />
+                    <div className="sk-el h-3 w-32" />
                   </div>
                 ))}
               </div>
+
               {/* CTA banner skeleton */}
-              <div className="rounded-xl p-8" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
-                <div className="sk h-6 w-64 rounded mb-3" />
-                <div className="sk h-4 w-80 rounded mb-6" />
+              <div className="sk-card p-8">
+                <div className="sk-el h-6 w-64 mb-3" />
+                <div className="sk-el h-4 w-80 mb-6" />
                 <div className="flex gap-3">
-                  <div className="sk h-10 w-36 rounded-lg" />
-                  <div className="sk h-10 w-32 rounded-lg" />
+                  <div className="sk-el h-10 w-36 rounded-lg" />
+                  <div className="sk-el h-10 w-32 rounded-lg" />
                 </div>
               </div>
+
               {/* Recent Projects table skeleton */}
-              <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+              <div className="sk-card">
                 <div className="px-5 py-4 flex justify-between items-center" style={{ borderBottom: '1px solid #2A2A38' }}>
-                  <div className="sk h-5 w-36 rounded" />
-                  <div className="sk h-4 w-20 rounded" />
+                  <div className="sk-el h-5 w-36" />
+                  <div className="sk-el h-4 w-20" />
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <tbody>
                       {Array.from({ length: 3 }).map((_, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid #1b1b20' }}>
-                          <td className="px-5 py-4"><div className="sk h-4 w-36 rounded" /></td>
-                          <td className="px-5 py-4"><div className="sk h-4 w-20 rounded-full" /></td>
-                          <td className="px-5 py-4"><div className="sk h-4 w-24 rounded" /></td>
-                          <td className="px-5 py-4"><div className="sk h-4 w-20 rounded" /></td>
-                          <td className="px-5 py-4 text-right"><div className="sk h-7 w-16 rounded-lg ml-auto" /></td>
+                          <td className="px-5 py-4"><div className="sk-el h-4 w-36" /></td>
+                          <td className="px-5 py-4"><div className="sk-el h-4 w-20 rounded-full" /></td>
+                          <td className="px-5 py-4"><div className="sk-el h-4 w-24" /></td>
+                          <td className="px-5 py-4"><div className="sk-el h-4 w-20" /></td>
+                          <td className="px-5 py-4 text-right"><div className="sk-el h-7 w-16 rounded-lg ml-auto" /></td>
                         </tr>
                       ))}
                     </tbody>

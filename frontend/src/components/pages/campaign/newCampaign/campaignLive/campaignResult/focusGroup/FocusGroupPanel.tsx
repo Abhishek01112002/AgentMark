@@ -664,11 +664,11 @@ const LoadingState: React.FC = () => {
   }, []);
 
   const personas = [
-    { name: 'Sarah', role: 'Tech Lead', color: '#6366F1' },
-    { name: 'Alex', role: 'VP Growth', color: '#A855F7' },
-    { name: 'Elena', role: 'Finance Dir', color: '#EC4899' },
-    { name: 'Marcus', role: 'End User', color: '#38BDF8' },
-    { name: 'Priya', role: 'Risk Officer', color: '#4edea3' },
+    { name: 'Arjun', role: 'Tech Lead', color: '#6366F1' },
+    { name: 'Ananya', role: 'VP Growth', color: '#A855F7' },
+    { name: 'Ravi', role: 'Finance Dir', color: '#EC4899' },
+    { name: 'Kavya', role: 'End User', color: '#38BDF8' },
+    { name: 'Vikram', role: 'Risk Officer', color: '#4edea3' },
   ];
 
   return (

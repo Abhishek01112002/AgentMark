@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FolderOpen, Plus, Calendar, LayoutDashboard, Trash2, Eye, Edit3, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -29,25 +29,25 @@ const ProjectsContent: React.FC = () => {
   const [deleteModal, setDeleteModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
   const [renameModal, setRenameModal] = useState<{ show: boolean; project: Project | null }>({ show: false, project: null });
   const [visibleCount, setVisibleCount] = useState(15);
-  const didFetchRef = useRef(false);
 
   useEffect(() => {
-    if (didFetchRef.current) return;
-    didFetchRef.current = true;
-
     const controller = new AbortController();
 
     const fetchProjects = async () => {
       try {
         const response = await api.get('/projects', { signal: controller.signal });
+        if (controller.signal.aborted) return;
         setProjects(response.data.projects || []);
       } catch (error: any) {
-        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
-          console.error('Failed to fetch projects:', error);
-          toast.error('Failed to load projects');
+        if (error.name === 'AbortError' || error.code === 'ERR_CANCELED' || controller.signal.aborted) {
+          return;
         }
+        console.error('Failed to fetch projects:', error);
+        toast.error('Failed to load projects');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -55,7 +55,6 @@ const ProjectsContent: React.FC = () => {
 
     return () => {
       controller.abort();
-      didFetchRef.current = false;
     };
   }, []);
 

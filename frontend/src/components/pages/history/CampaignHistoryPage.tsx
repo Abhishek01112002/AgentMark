@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -66,12 +66,8 @@ const CampaignHistoryContent: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'processing' | 'completed' | 'failed'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const didFetchRef = useRef(false);
 
   useEffect(() => {
-    if (didFetchRef.current) return;
-    didFetchRef.current = true;
-
     const controller = new AbortController();
 
     const fetchCampaigns = async () => {
@@ -81,25 +77,29 @@ const CampaignHistoryContent: React.FC = () => {
           api.get('/campaigns/all', { signal: controller.signal })
         ]);
         
+        if (controller.signal.aborted) return;
+
         const projectsData = projectsResponse.data.projects || [];
         setProjects(projectsData);
 
         const allCampaigns = campaignsResponse.data.campaigns || [];
         setCampaigns(allCampaigns);
       } catch (error: any) {
-        if (error.name !== 'AbortError' && error.code !== 'ERR_CANCELED') {
-          console.error('Failed to fetch campaigns:', error);
-          toast.error('Failed to load campaign history');
+        if (error.name === 'AbortError' || error.code === 'ERR_CANCELED' || controller.signal.aborted) {
+          return;
         }
+        console.error('Failed to fetch campaigns:', error);
+        toast.error('Failed to load campaign history');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
     fetchCampaigns();
     
     return () => {
       controller.abort();
-      didFetchRef.current = false;
     };
   }, []);
 
