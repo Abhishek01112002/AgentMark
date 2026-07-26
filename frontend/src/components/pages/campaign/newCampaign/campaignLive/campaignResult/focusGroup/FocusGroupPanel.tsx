@@ -1222,18 +1222,17 @@ const FocusGroupPanel: React.FC<FocusGroupPanelProps> = ({
 
           {/* ── Persona Panel ── */}
           {report.persona_critiques?.length > 0 && (
-            <div className="flex flex-col gap-5 mt-4 pt-2">
+            <div className="flex flex-col gap-5 mt-6 pt-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
                 <div>
                   <h3 className="m-0 text-base font-semibold text-[#E2E8F0] font-sora">Persona Evaluation Panel</h3>
-                  <p className="m-0 text-xs text-[#94A3B8] font-sora mt-0.5">Select a buyer persona to inspect individual resonance &amp; friction analysis</p>
                 </div>
               </div>
 
-              <div className="flex flex-col lg:flex-row gap-6 items-stretch mt-1">
+              <div className="flex flex-col lg:flex-row gap-6 items-stretch mt-2">
                 {/* Master Left Selector List */}
                 <div className="flex flex-col gap-3 w-full lg:w-[320px] shrink-0 pt-1">
                   {report.persona_critiques.map((critique, idx) => {
