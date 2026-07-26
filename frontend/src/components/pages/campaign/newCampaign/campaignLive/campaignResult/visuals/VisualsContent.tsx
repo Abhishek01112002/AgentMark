@@ -321,33 +321,33 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
     .sort((a, b) => b.score - a.score);
 
   return (
-    <div className="space-y-8" style={inter}>
+    <div className="space-y-6 font-sans text-slate-200">
 
-      {/* ── PAGE HEADER (Apple Pro Luxury Header) ───────────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 md:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+      {/* ── PAGE HEADER (Apple Pro Glassmorphic Card) ───────────────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1.5">
-              <div className="w-10 h-10 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center">
-                <Palette size={20} className="text-[#818CF8]" />
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+                <Palette size={20} />
               </div>
-              <h2 className="text-2xl font-semibold tracking-tight font-sora text-white">Visual Assets</h2>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight font-sora text-white">Visual Assets Studio</h2>
             </div>
-            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+            <p className="text-xs text-[#94A3B8] font-sans">
               Generative prompt directions and visual asset specifications across all channels
             </p>
           </div>
-          <div className="flex gap-3 flex-wrap items-center">
+          <div className="flex gap-2.5 flex-wrap items-center">
             {promptsList.length > 0 && (
-              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs font-mono text-[#A5B4FC]">
+              <span className="px-3 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/20 text-xs font-mono font-semibold text-[#818CF8]">
                 Goal: VISUAL CREATION
               </span>
             )}
             <button
               onClick={handleCopyAllPrompts}
-              className="px-4 py-2.5 rounded-xl bg-[#6366F1] hover:bg-[#5254d8] text-xs font-semibold text-white transition-all shadow-md active:scale-[0.98] flex items-center gap-2 font-sora"
+              className="px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#5254D8] text-xs font-semibold text-white transition-all shadow-sm active:scale-[0.98] flex items-center gap-2 font-sora border-none cursor-pointer"
             >
-              <Copy size={14} />
+              <Copy size={13} />
               <span>Copy All Prompts</span>
             </button>
           </div>
@@ -355,8 +355,8 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
         {/* Platform Selection Segmented Control */}
         {activeTabs.length > 1 && (
-          <div className="mt-6 pt-5 border-t border-[#262636]">
-            <div className="flex items-center gap-1.5 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto">
+          <div className="mt-5 pt-5 border-t border-[#262636]">
+            <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto">
               {activeTabs.map(tab => {
                 const label = tab === 'all' ? 'All Visuals' : PLATFORM_CONFIG[tab]?.label || tab;
                 const isActive = activeTab === tab;
@@ -364,10 +364,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`flex-1 whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none flex items-center justify-center gap-2 ${
+                    className={`flex-1 whitespace-nowrap px-4 py-2 rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none flex items-center justify-center gap-2 ${
                       isActive
                         ? 'bg-[#6366F1] text-white shadow-sm'
-                        : 'text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]'
+                        : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
                     {tab !== 'all' && <ChannelIcon channel={tab} className="w-3.5 h-3.5" />}
@@ -382,12 +382,11 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
       {/* ── PROMPT CARDS ──────────────────────────────────────────────────── */}
       {promptsList.length > 0 ? (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {displayPrompts.map(({ card, originalIdx }) => {
             const cardId = getCardId(card, originalIdx);
             const isUsed = usedPrompts.includes(cardId);
             const isCopied = copiedCardId === cardId;
-            const isAccordionOpen = expandedRationale.includes(cardId);
 
             const platformKey = getPromptPlatformKey(card);
             const { accent: brandAccent, bgAccent, borderColor, label } =
@@ -401,67 +400,58 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
             const enhancedPromptText = enhancedPrompt[cardId];
             const enhancedScore = enhancedPromptText ? scorePrompt(enhancedPromptText).score : score;
             const scoreDiff = enhancedPromptText ? enhancedScore - score : 0;
+            const isAccordionOpen = expandedRationale.includes(cardId);
             const isEnhancing = enhanceLoading[cardId] || false;
 
             return (
               <article
                 key={cardId}
-                className={`card-elevate bg-[#111118] border border-[#2A2A38] rounded-2xl overflow-hidden transition-all duration-300 hover:border-[#6366F1]/30 hover:shadow-xl hover:shadow-black/30 ${
-                  isUsed ? 'opacity-55' : ''
+                className={`rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl overflow-hidden transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.6)] ${
+                  isUsed ? 'opacity-60' : ''
                 }`}
               >
                 {/* ── CARD TOP BAR ── */}
-                <div className="flex items-center justify-between px-7 py-5 border-b border-[#2A2A38]/60" style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.02), transparent)' }}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-[#262636]">
                   <div className="flex items-center gap-3">
-                    {/* Platform accent stripe + badge */}
-                    <div className="w-1 h-7 rounded-full" style={{ backgroundColor: brandAccent, boxShadow: `0 0 8px ${brandAccent}40` }} />
+                    <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: brandAccent }} />
                     <span
-                      className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest border inline-flex items-center gap-1.5"
+                      className="px-3 py-1 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider border inline-flex items-center gap-1.5"
                       style={{ backgroundColor: bgAccent, color: brandAccent, borderColor }}
                     >
                       <ChannelIcon channel={platformKey} size={12} />
                       {label}
                     </span>
                     {card.style && (
-                      <span className="text-sm font-semibold text-[#F1F1F3] ml-1">
+                      <span className="text-xs font-semibold font-sora text-white ml-1">
                         {card.style}
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => handleToggleUsed(cardId)}
-                    className={`px-4 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold font-sora transition-all cursor-pointer border ${
                       isUsed
-                        ? 'bg-[#10B981] text-[#0A0A0F] border-[#10B981]'
-                        : 'bg-transparent text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-[#1A1A26] text-[#94A3B8] border-white/10 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {isUsed ? 'Marked as Used' : 'Mark as Used'}
+                    {isUsed ? '✓ Marked as Used' : 'Mark as Used'}
                   </button>
                 </div>
 
                 {/* ── CARD BODY ── */}
-                <div className="p-7 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8">
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
 
                   {/* LEFT – Visual mockup + specs */}
-                  <div className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-4">
                     {/* Mockup canvas */}
-                    <div className="group bg-[#0A0A0F] border border-[#2A2A38] rounded-xl flex items-center justify-center p-5 relative overflow-hidden hover:border-[#6366F1]/20 transition-all duration-300" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.02), 0 2px 12px rgba(0,0,0,0.15)' }}>
-                      {/* thirds grid overlay */}
-                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-0 group-hover:opacity-15 transition-opacity duration-300">
-                        {Array.from({ length: 9 }).map((_, i) => (
-                          <div key={i} className="border border-[#6366F1]/50" />
-                        ))}
-                      </div>
-
-                      {/* Aspect frame */}
+                    <div className="bg-[#0B0B12] border border-[#262636] rounded-2xl flex items-center justify-center p-5 relative overflow-hidden shadow-inner">
                       <div
-                        className="relative bg-gradient-to-br from-[#1A1A24] to-[#0A0A0F] border border-[#2A2A38] rounded-lg overflow-hidden flex flex-col items-center justify-center"
+                        className="relative bg-gradient-to-br from-[#161622] to-[#0B0B12] border border-[#262636] rounded-xl overflow-hidden flex flex-col items-center justify-center shadow-md"
                         style={{
                           width: '100%',
-                          maxWidth: ratio === '16:9' ? '220px' : ratio === '9:16' || ratio === '4:5' || ratio === '2:3' ? '100px' : '160px',
+                          maxWidth: ratio === '16:9' ? '220px' : ratio === '9:16' || ratio === '4:5' || ratio === '2:3' ? '100px' : '150px',
                           aspectRatio: ratio.replace(':', '/'),
-                          boxShadow: '0 0 20px rgba(99,102,241,0.04), inset 0 1px 0 rgba(255,255,255,0.03)',
                         }}
                       >
                         {headlineText ? (
@@ -469,11 +459,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             {headlineText}
                           </p>
                         ) : (
-                          <span className="text-[9px] text-[#8B8B9E]/40 italic select-none">No Text Overlay</span>
+                          <span className="text-[9px] text-[#94A3B8]/40 italic select-none">No Text Overlay</span>
                         )}
                         <div
-                          className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[8px] font-mono text-[#8B8B9E] border border-[#2A2A38]/60 select-none"
-                          style={{ background: 'rgba(5,5,8,0.85)' }}
+                          className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-md text-[9px] font-mono text-[#94A3B8] border border-white/10 bg-black/60 backdrop-blur-sm select-none"
                         >
                           {ratio}
                         </div>
@@ -481,97 +470,80 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                     </div>
 
                     {/* Specs table */}
-                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl p-4 space-y-3" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                      <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-1">
-                        Specs
+                    <div className="bg-[#0B0B12] border border-[#262636] rounded-2xl p-4 space-y-3 font-sans text-xs">
+                      <p className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8]">
+                        Technical Specs
                       </p>
                       {[
                         { label: 'Aspect Ratio', value: ratio },
                         { label: 'Text Zone', value: card.text_overlay?.placement || 'N/A' },
                         { label: 'Platform', value: label },
                       ].map(row => (
-                        <div key={row.label} className="flex items-center justify-between gap-3 px-1.5 py-1 rounded-md" style={{ background: 'rgba(255,255,255,0.015)' }}>
-                          <span className="text-xs text-[#8B8B9E]">{row.label}</span>
-                          <span className="text-xs font-semibold text-[#F1F1F3] font-mono truncate max-w-[110px]" title={row.value}>
+                        <div key={row.label} className="flex items-center justify-between gap-3 pb-2 border-b border-[#1F1F2E] last:border-none last:pb-0">
+                          <span className="text-[#94A3B8]">{row.label}</span>
+                          <span className="font-semibold text-white font-mono truncate max-w-[110px]" title={row.value}>
                             {row.value}
                           </span>
                         </div>
                       ))}
-                      {card.visual_elements?.length > 0 && (
-                        <div className="pt-3 border-t border-[#2A2A38]/60">
-                          <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-2">
-                            Elements
-                          </p>
-                          <ul className="space-y-1.5">
-                            {card.visual_elements.slice(0, 4).map((el: string, i: number) => (
-                              <li key={i} className="flex items-start gap-2 text-xs text-[#D1D1E0]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1]/60 flex-shrink-0 mt-1" />
-                                {el}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </div>
                   </div>
 
                   {/* RIGHT – Prompt + tools */}
-                  <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-5">
 
-                    {/* Prompt Strength score — compact bar + click-to-expand checks panel */}
-                    <div className="bg-[#0A0A0F] border border-[#2A2A38] rounded-xl overflow-hidden" style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
-                      {/* Top row: label + bar + score + toggle */}
+                    {/* Prompt Strength score — Apple Recessed Meter Tile */}
+                    <div className="bg-[#0B0B12] border border-[#262636] rounded-2xl overflow-hidden shadow-inner">
                       <button
                         onClick={() =>
                           setScoreOpen(prev =>
                             prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]
                           )
                         }
-                        className="w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-[#111118] transition-colors"
+                        className="w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors cursor-pointer border-none"
                       >
-                        <div className="flex flex-col shrink-0">
-                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
+                        <div className="flex flex-col shrink-0 font-sans">
+                          <span className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wider font-mono">
                             Prompt Strength
                           </span>
-                          <span className="text-[9px] text-[#4A4A5E]">
+                          <span className="text-[10px] text-[#64748B]">
                             Technical keywords check
                           </span>
                         </div>
-                        <div className="flex-1 h-2 rounded-full bg-[#1A1A24] overflow-hidden" style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)' }}>
+                        <div className="flex-1 h-2 rounded-full bg-[#181824] overflow-hidden">
                           <div
                             className="h-full rounded-full transition-all duration-700 ease-out"
                             style={{
                               width: `${score}%`,
                               background: score >= 80
-                                ? 'linear-gradient(90deg, #059669, #10B981)'
+                                ? 'linear-gradient(90deg, #10B981, #34D399)'
                                 : score >= 50
-                                ? 'linear-gradient(90deg, #D97706, #F59E0B)'
-                                : 'linear-gradient(90deg, #DC2626, #EF4444)',
-                              boxShadow: '0 0 6px rgba(16,185,129,0.15)',
+                                ? 'linear-gradient(90deg, #F59E0B, #FBBF24)'
+                                : 'linear-gradient(90deg, #EF4444, #F87171)',
                             }}
                           />
                         </div>
                         <span
-                          className="text-sm font-bold font-mono shrink-0"
-                          style={{ color: score >= 80 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444' }}
+                          className="text-xs font-bold font-mono shrink-0"
+                          style={{ color: score >= 80 ? '#34D399' : score >= 50 ? '#FBBF24' : '#F87171' }}
                         >
-                          {score}<span className="text-[10px] text-[#8B8B9E] font-normal">/100</span>
+                          {score}<span className="text-[10px] text-[#94A3B8] font-normal">/100</span>
                         </span>
-                        <span className="text-[#8B8B9E] shrink-0">
+                        <span className="text-[#94A3B8] shrink-0">
                           {scoreOpen.includes(cardId) ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                         </span>
                       </button>
 
                       {/* Expanded checks panel */}
                       {scoreOpen.includes(cardId) && (
-                        <div className="border-t border-[#2A2A38]/60 px-4 pt-4 pb-5 bg-[#0e0e13]/50">
-                          <p className="text-[10px] text-[#8B8B9E] leading-relaxed mb-3">
-                            ℹ️ This score checks the presence of optimal prompt engineering parameters (like lighting details, lens specifications, exclusion keywords, and composition frames) necessary for high-fidelity rendering on AI models.
+                        <div className="border-t border-[#262636] px-4 pt-3.5 pb-4 bg-black/20 font-sans text-xs">
+                          <p className="text-[11px] text-[#94A3B8] leading-relaxed mb-3">
+                            ℹ️ Checks presence of optimal prompt engineering parameters (lighting, lens, exclusion keywords, composition) for high-fidelity rendering.
                           </p>
-                          <p className="text-[10px] font-mono font-semibold uppercase tracking-widest text-[#8B8B9E] mb-3 border-t border-[#2A2A38]/40 pt-3">
+                          <p className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8] mb-2.5 border-t border-[#262636] pt-2.5">
                             Parameters Breakdown — {checks.filter((c: { passed: boolean }) => c.passed).length}/{checks.length} passed
                           </p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                             {checks.map((item: any, i: number) => {
                               const categoryMap: Record<string, string> = {
                                 subject: 'Subject',
@@ -593,18 +565,18 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                               const category = categoryMap[item.checkKey] || 'General';
 
                               return (
-                                <div key={i} className="flex items-center gap-2.5">
+                                <div key={i} className="flex items-center gap-2">
                                   {item.passed ? (
-                                    <CheckCircle2 size={13} className="text-[#10B981] shrink-0" />
+                                    <CheckCircle2 size={13} className="text-emerald-400 shrink-0" />
                                   ) : (
-                                    <AlertCircle size={13} className="text-[#F59E0B] shrink-0" />
+                                    <AlertCircle size={13} className="text-amber-400 shrink-0" />
                                   )}
                                   <span
                                     className={`text-xs font-medium ${
-                                      item.passed ? 'text-[#A7F3D0]' : 'text-[#FCD34D]'
+                                      item.passed ? 'text-emerald-300' : 'text-amber-200'
                                     }`}
                                   >
-                                    <span className="opacity-45 text-[9px] uppercase font-mono mr-1.5 border border-current px-1 rounded-sm">
+                                    <span className="opacity-50 text-[9px] uppercase font-mono mr-1.5 border border-current px-1 rounded-sm">
                                       {category}
                                     </span>
                                     {item.label}
@@ -621,110 +593,98 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                     <div className="flex flex-wrap gap-2">
                       {[
                         {
-                          name: 'DALL-E',
+                          name: 'DALL-E 3',
                           ready: readiness.dalle.ready,
                           issue: readiness.dalle.issue,
-                          notReadyColor: '#EF4444',
                         },
                         {
-                          name: 'Midjourney',
+                          name: 'Midjourney v6',
                           ready: readiness.midjourney.ready,
                           issue: readiness.midjourney.issue,
-                          notReadyColor: '#F59E0B',
                         },
                         {
-                          name: 'Stable Diffusion',
+                          name: 'Stable Diffusion XL',
                           ready: readiness.stable_diffusion.ready,
                           issue: readiness.stable_diffusion.issue,
-                          notReadyColor: '#F59E0B',
                         },
                       ].map(ai => (
                         <div key={ai.name} className="relative group/pill">
                           <div
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-default transition-all"
-                            style={
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-semibold transition-all ${
                               ai.ready
-                                ? { background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', color: '#10B981', borderColor: 'rgba(16,185,129,0.25)', boxShadow: '0 1px 4px rgba(16,185,129,0.06)' }
-                                : { background: ai.notReadyColor + '18', color: ai.notReadyColor, borderColor: ai.notReadyColor + '40' }
-                            }
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                            }`}
                           >
                             {ai.ready ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                            {ai.name}
+                            <span>{ai.name}</span>
                           </div>
-                          {!ai.ready && ai.issue && (
-                            <div className="absolute bottom-full left-0 mb-2 w-60 bg-[#111118] border border-[#2A2A38] p-3 rounded-xl shadow-2xl z-30 hidden group-hover/pill:block">
-                              <p className="text-xs font-semibold text-[#F59E0B] mb-1">{ai.name} Issue</p>
-                              <p className="text-xs text-[#8B8B9E] leading-relaxed">{ai.issue}</p>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
 
-                    {/* Original prompt */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
+                    {/* Original prompt box */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div style={{ width: 20, height: 20, borderRadius: 5, background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(129,140,248,0.05))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.1)' }}>
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                          <div className="w-5 h-5 rounded-md bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
                           </div>
-                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider">
-                            Image Prompt
+                          <span className="text-[11px] font-mono font-semibold text-[#94A3B8] uppercase tracking-wider">
+                            Generative Prompt
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleCopyPrompt(card.prompt || '', cardId)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-sora font-semibold border transition-all cursor-pointer ${
                               isCopied
-                                ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
-                                : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : 'bg-white/5 text-[#94A3B8] border-white/10 hover:text-white hover:bg-white/10'
                             }`}
                           >
-                            {isCopied ? <Check size={11} /> : <Copy size={11} />}
-                            {isCopied ? 'Copied' : 'Copy'}
+                            {isCopied ? <Check size={12} /> : <Copy size={12} />}
+                            <span>{isCopied ? 'Copied' : 'Copy'}</span>
                           </button>
                           <button
                             onClick={() => handleSharePrompt(card.prompt || '', `${card.platform || 'Platform'} Prompt`, cardId)}
-                            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-sora font-semibold border transition-all cursor-pointer ${
                               sharedCardId === cardId
-                                ? 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30'
-                                : 'bg-[#1A1A24] text-[#8B8B9E] border-[#2A2A38] hover:text-white hover:border-[#6366F1]/40'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : 'bg-white/5 text-[#94A3B8] border-white/10 hover:text-white hover:bg-white/10'
                             }`}
                             title="Share Prompt"
                           >
-                            {sharedCardId === cardId ? <Check size={11} /> : <Share2 size={11} />}
-                            {sharedCardId === cardId ? 'Shared' : 'Share'}
+                            {sharedCardId === cardId ? <Check size={12} /> : <Share2 size={12} />}
+                            <span>{sharedCardId === cardId ? 'Shared' : 'Share'}</span>
                           </button>
                           {/* AI Studio Bridges Dropdown */}
                           <div className="relative">
                             <button
                               onClick={() => setStudioDropdownOpen(prev => prev === cardId ? null : cardId)}
-                              className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border bg-gradient-to-r from-[#6366F1]/10 to-[#8B5CF6]/10 text-[#a3a5fc] border-[#6366F1]/25 hover:border-[#6366F1]/50 transition-all active:scale-95"
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-sora font-semibold border bg-[#6366F1] text-white hover:bg-[#5254D8] border-transparent transition-all cursor-pointer shadow-sm"
                               title="Open in AI Studio"
                             >
-                              <ExternalLink size={11} />
-                              Generate
-                              <ChevronDown size={10} className={`transition-transform ${studioDropdownOpen === cardId ? 'rotate-180' : ''}`} />
+                              <ExternalLink size={12} />
+                              <span>Generate</span>
+                              <ChevronDown size={11} className={`transition-transform ${studioDropdownOpen === cardId ? 'rotate-180' : ''}`} />
                             </button>
                             {studioDropdownOpen === cardId && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setStudioDropdownOpen(null)} />
-                                <div className="absolute right-0 top-full mt-2 w-56 bg-[#111118] border border-[#2A2A38] rounded-xl shadow-2xl z-50 overflow-hidden max-h-[300px] overflow-y-auto scrollbar-none animate-in fade-in slide-in-from-top-1">
-                                  <div className="px-3 py-2 border-b border-[#2A2A38]">
-                                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#8B8B9E]">Copy & Open in Studio</p>
+                                <div className="absolute right-0 top-full mt-2 w-60 bg-[#12121A]/95 border border-white/[0.12] rounded-2xl shadow-2xl z-50 p-1.5 backdrop-blur-2xl animate-in fade-in slide-in-from-top-1 space-y-1">
+                                  <div className="px-3 py-2 border-b border-[#262636]">
+                                    <p className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#94A3B8]">Copy &amp; Open Studio</p>
                                   </div>
                                   {AI_STUDIOS.map(studio => (
                                     <button
                                       key={studio.name}
                                       onClick={() => openInStudio(card.prompt || '', studio.name, studio.url)}
-                                      className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-xs font-medium text-[#D1D1E0] hover:bg-[#1A1A24] transition-colors group/studio"
+                                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-xs font-sora font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer border-none group/studio"
                                     >
-                                      <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#1F1F2E] border border-[#2A2A38]/60 rounded">{studio.icon}</span>
-                                      <div className="flex-1 min-w-0">
-                                        <span className="group-hover/studio:text-white transition-colors">{studio.label}</span>
-                                      </div>
-                                      <ExternalLink size={10} className="text-[#8B8B9E] group-hover/studio:text-[#6366F1] transition-colors shrink-0" />
+                                      <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#0B0B12] border border-[#262636] rounded-lg">{studio.icon}</span>
+                                      <span className="flex-1 truncate">{studio.label}</span>
+                                      <ExternalLink size={11} className="text-[#94A3B8] group-hover/studio:text-white transition-colors shrink-0" />
                                     </button>
                                   ))}
                                 </div>
@@ -734,17 +694,9 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                         </div>
                       </div>
                       <div
-                        className={`relative overflow-hidden rounded-xl text-sm leading-relaxed text-[#D1D1E0] min-h-[130px] max-h-[240px] overflow-y-auto whitespace-pre-wrap select-all transition-all ${
-                          isEnhancing
-                            ? 'border-[#6366F1]/50 animate-pulse'
-                            : ''
+                        className={`rounded-2xl bg-[#0B0B12] border border-[#262636] p-4 text-xs font-mono leading-relaxed text-slate-200 min-h-[120px] max-h-[220px] overflow-y-auto whitespace-pre-wrap select-all shadow-inner ${
+                          isEnhancing ? 'border-[#6366F1] animate-pulse' : ''
                         }`}
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(0,0,0,0.3), rgba(99,102,241,0.02))',
-                          border: isEnhancing ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(99,102,241,0.08)',
-                          fontFamily: "'JetBrains Mono', monospace",
-                          padding: 16,
-                        }}
                       >
                         {card.prompt || 'No prompt generated.'}
                       </div>
