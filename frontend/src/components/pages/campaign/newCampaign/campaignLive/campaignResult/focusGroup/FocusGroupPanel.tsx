@@ -193,30 +193,33 @@ interface PulseBarProps {
 
 const PulseBar: React.FC<PulseBarProps> = ({ resonanceScore, rubric }) => {
   const [animated, setAnimated] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setAnimated(true), 80); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setAnimated(true), 150); return () => clearTimeout(t); }, []);
 
-  const trustVal = rubric?.trust != null ? (rubric.trust / 5) * 100 : resonanceScore;
+  const trustVal = rubric?.trust != null ? Math.round((rubric.trust / 5) * 100) : resonanceScore;
   const trustWidth = animated ? `${trustVal}%` : '0%';
   const confusionWidth = animated ? `${(100 - trustVal) * 0.4}%` : '0%';
   const skeptWidth = animated ? `${(100 - trustVal) * 0.6}%` : '0%';
 
   return (
-    <div className="mt-3">
-      <span className="text-[10px] font-mono text-[#8B8B9E] uppercase tracking-wider block mb-1.5">Emotional Pulse</span>
-      <div className="w-full h-1.5 rounded overflow-hidden flex bg-[#2A2A38]">
-        <div className="h-full transition-all duration-800 ease-out" style={{ width: trustWidth, backgroundColor: '#4edea3' }} />
-        <div className="h-full transition-all duration-800 ease-out" style={{ width: confusionWidth, backgroundColor: '#F59E0B' }} />
-        <div className="h-full transition-all duration-800 ease-out" style={{ width: skeptWidth, backgroundColor: '#F43F5E' }} />
+    <div className="mt-3 bg-[#181826]/80 border border-white/[0.06] rounded-xl p-4 flex flex-col gap-2.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-mono font-semibold text-[#A5B4FC] uppercase tracking-wider">Emotional Pulse Assessment</span>
+        <span className="text-[10px] font-mono text-[#94A3B8]">{trustVal}% Trust Metric</span>
       </div>
-      <div className="flex gap-3 mt-1.5 flex-wrap">
+      <div className="w-full h-2 rounded-full overflow-hidden flex bg-[#0D0D14] p-0.5 border border-white/[0.04]">
+        <div className="h-full rounded-full transition-all duration-800 ease-out" style={{ width: trustWidth, backgroundColor: '#4edea3' }} />
+        <div className="h-full rounded-full transition-all duration-800 ease-out" style={{ width: confusionWidth, backgroundColor: '#F59E0B' }} />
+        <div className="h-full rounded-full transition-all duration-800 ease-out" style={{ width: skeptWidth, backgroundColor: '#F43F5E' }} />
+      </div>
+      <div className="flex gap-2.5 mt-1 flex-wrap">
         {[
           { color: '#4edea3', label: 'Trust' },
           { color: '#F59E0B', label: 'Confusion' },
           { color: '#F43F5E', label: 'Skepticism' },
         ].map(({ color, label }) => (
-          <div key={label} className="flex items-center gap-1">
-            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            <span className="text-[10px] font-mono text-[#8B8B9E]">{label}</span>
+          <div key={label} className="flex items-center gap-1.5 bg-white/[0.03] border border-white/[0.06] px-2.5 py-1 rounded-full">
+            <div className="w-2 h-2 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
+            <span className="text-[11px] font-mono font-medium text-[#E2E8F0]">{label}</span>
           </div>
         ))}
       </div>
@@ -277,27 +280,27 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
   return (
     <div
-      className="card-elevate bg-[#12121A]/90 border border-[#262636] rounded-2xl p-6 sm:p-7 flex flex-col gap-6 relative overflow-hidden shadow-2xl backdrop-blur-xl"
+      className="card-elevate bg-[#12121A]/95 border border-white/[0.08] rounded-2xl p-6 sm:p-7 flex flex-col gap-6 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
       style={{ animation: `fadeIn 0.35s ease both ${index * 80}ms` }}
     >
       {/* Top Hairline Ambient Accent */}
       <div className="absolute top-0 left-0 right-0 h-[1.5px]" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
 
       {/* Hero Persona Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#262636]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#262636]">
         <div className="flex items-center gap-3.5 min-w-0">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-md"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md ring-1 ring-white/20"
             style={{ background: avatarGradient }}
           >
             {initials}
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <h3 className="m-0 text-base font-semibold text-[#E2E8F0] truncate font-sora">{displayName}</h3>
+            <h3 className="m-0 text-lg font-semibold text-[#E2E8F0] truncate font-sora tracking-tight">{displayName}</h3>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-mono text-[#94A3B8]">Target Buyer Persona</span>
+              <span className="text-xs font-mono text-[#94A3B8]">Target Buyer Persona</span>
               {objectionChannel && (
-                <span className="text-[10px] font-mono font-semibold text-[#A5B4FC] bg-[#6366F1]/10 border border-[#6366F1]/20 rounded-md px-2 py-0.5 uppercase tracking-wider">
+                <span className="text-[10px] font-mono font-semibold text-[#A5B4FC] bg-[#6366F1]/10 border border-[#6366F1]/20 rounded-md px-2.5 py-0.5 uppercase tracking-wider">
                   Friction: {objectionChannel}
                 </span>
               )}
@@ -308,11 +311,11 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
         {/* Intent Badge */}
         <div className="flex items-center">
           <span
-            className="text-[11px] font-mono font-semibold px-3 py-1 rounded-full border whitespace-nowrap shadow-sm"
+            className="text-xs font-mono font-semibold px-3.5 py-1.5 rounded-full border whitespace-nowrap shadow-sm flex items-center gap-1.5"
             style={{
               color: critique.click_intent ? '#4edea3' : '#F43F5E',
-              backgroundColor: critique.click_intent ? 'rgba(78,222,163,0.08)' : 'rgba(244,63,94,0.08)',
-              borderColor: critique.click_intent ? 'rgba(78,222,163,0.25)' : 'rgba(244,63,94,0.25)',
+              backgroundColor: critique.click_intent ? 'rgba(78,222,163,0.1)' : 'rgba(244,63,94,0.1)',
+              borderColor: critique.click_intent ? 'rgba(78,222,163,0.3)' : 'rgba(244,63,94,0.3)',
             }}
           >
             {critique.click_intent ? '✓ Would Click Ad' : '✕ Would Scroll Past'}
@@ -320,49 +323,51 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
         </div>
       </div>
 
-      {/* Score & Rubric Card */}
-      <div className="relative overflow-hidden rounded-xl p-4 sm:p-5 flex flex-col gap-3.5 border bg-[#161622]" style={{ borderColor: `${color}25` }}>
+      {/* Score & Rubric Hero Metric Box */}
+      <div className="relative overflow-hidden rounded-xl p-5 flex flex-col gap-4 border bg-[#161622]/90" style={{ borderColor: `${color}30` }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center border shrink-0" style={{ backgroundColor: `${color}12`, borderColor: `${color}30` }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center border shrink-0 shadow-sm" style={{ backgroundColor: `${color}15`, borderColor: `${color}40` }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8]">Resonance Assessment</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold font-sora" style={{ color }}>{critique.resonance_score}</span>
-                <span className="text-[11px] font-mono text-[#94A3B8]">/ 100 Overall Score</span>
+              <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8]">Resonance Assessment Score</span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-extrabold font-sora tracking-tight" style={{ color }}>{critique.resonance_score}</span>
+                <span className="text-xs font-mono text-[#94A3B8]">/ 100 Overall Score</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Primary Objection Quote */}
+        {/* Primary Buyer Objection Block - Executive Left Accent Quote */}
         {critique.objection && (
-          <div className="pt-2 border-t border-[#262636]">
-            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8] block mb-1">Primary Buyer Objection</span>
-            <p className="text-xs sm:text-sm text-[#CBD5E1] font-sans leading-relaxed m-0">
-              "{critique.objection}"
-            </p>
+          <div className="pt-3 border-t border-[#262636]">
+            <span className="text-[11px] font-mono font-semibold uppercase tracking-wider text-[#94A3B8] block mb-2">Primary Buyer Objection</span>
+            <div className="border-l-3 border-[#6366F1] bg-[#181826]/90 rounded-r-xl p-4 shadow-inner">
+              <p className="text-sm text-[#E2E8F0] font-sans leading-relaxed m-0 italic">
+                "{critique.objection}"
+              </p>
+            </div>
           </div>
         )}
 
         {/* Apple System Sliders Rubric */}
         {critique.rubric && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2.5 border-t border-[#262636]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-3 border-t border-[#262636]">
             {[
               { label: 'Clarity', score: critique.rubric.clarity },
               { label: 'Trust', score: critique.rubric.trust },
               { label: 'Value', score: critique.rubric.value },
               { label: 'Urgency', score: critique.rubric.urgency },
             ].map(({ label, score }) => (
-              <div key={label} className="flex flex-col gap-1">
-                <div className="flex justify-between text-[11px] font-mono text-[#94A3B8]">
+              <div key={label} className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-xs font-mono text-[#94A3B8]">
                   <span>{label}</span>
                   <span className="font-semibold text-[#E2E8F0]">{score}/5</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[#262636] overflow-hidden p-0.5">
-                  <div className="h-full rounded-full transition-all duration-600" style={{ width: `${(score / 5) * 100}%`, backgroundColor: score >= 4 ? '#4edea3' : score >= 3 ? '#F59E0B' : '#F43F5E' }} />
+                <div className="h-2 rounded-full bg-[#0D0D14] overflow-hidden p-0.5 border border-white/[0.04]">
+                  <div className="h-full rounded-full transition-all duration-600 shadow-sm" style={{ width: `${(score / 5) * 100}%`, backgroundColor: score >= 4 ? '#4edea3' : score >= 3 ? '#F59E0B' : '#F43F5E' }} />
                 </div>
               </div>
             ))}
@@ -370,34 +375,29 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
         )}
       </div>
 
-      {/* Friction Phrase Highlight Box (Apple Editorial Callout Card) */}
+      {/* Friction Phrase Highlight Box (Apple Warning Callout Card) */}
       {critique.clash_quote && (
-        <div className="bg-[#F59E0B]/[0.06] border border-[#F59E0B]/25 rounded-xl p-4 flex flex-col gap-2.5 relative overflow-hidden shadow-sm">
-          {/* Top Hairline Accent */}
-          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
-
-          {/* Badge & Title */}
+        <div className="bg-amber-500/[0.07] border border-amber-500/25 rounded-xl p-5 flex flex-col gap-3 relative overflow-hidden shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-md bg-[#F59E0B]/15 border border-[#F59E0B]/30 flex items-center justify-center text-[#FBBF24]">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <div className="w-5 h-5 rounded-md bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
                   <line x1="12" y1="9" x2="12" y2="13"/>
                   <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
               </div>
-              <span className="text-[10px] font-mono font-semibold text-[#FBBF24] uppercase tracking-wider">
+              <span className="text-xs font-mono font-semibold text-amber-300 uppercase tracking-wider">
                 Detected Copy Friction Phrase
               </span>
             </div>
-            <span className="text-[10px] font-mono text-[#94A3B8]">
+            <span className="text-[11px] font-mono text-[#94A3B8]">
               High-Objection Segment
             </span>
           </div>
 
-          {/* Quote Body Box */}
-          <div className="bg-[#12121A]/80 border border-white/[0.08] rounded-lg p-3.5 shadow-inner">
-            <p className="m-0 text-xs sm:text-sm text-[#F1F1F3] font-sans italic leading-relaxed">
+          <div className="bg-[#0D0D14]/90 border border-amber-500/15 rounded-lg p-4 shadow-inner">
+            <p className="m-0 text-sm text-amber-100 font-sans italic leading-relaxed">
               "{critique.clash_quote}"
             </p>
           </div>
@@ -406,12 +406,12 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
       {/* Detailed Persona Verdict Card */}
       {critique.verdict && (
-        <div className="bg-[#161622] border border-[#262636] rounded-xl p-4 sm:p-4.5 flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-[#A5B4FC]">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span className="text-[10px] font-mono font-semibold uppercase tracking-wider">Detailed Persona Verdict</span>
+        <div className="bg-indigo-500/[0.05] border border-indigo-500/20 rounded-xl p-5 flex flex-col gap-2.5">
+          <div className="flex items-center gap-2 text-indigo-300">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider">Detailed Persona Verdict</span>
           </div>
-          <p className="text-xs sm:text-sm text-[#CBD5E1] font-sans leading-relaxed m-0">{critique.verdict}</p>
+          <p className="text-sm text-[#CBD5E1] font-sans leading-relaxed m-0">{critique.verdict}</p>
         </div>
       )}
 
