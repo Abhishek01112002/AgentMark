@@ -1108,7 +1108,7 @@ const DebateSummaryCard: React.FC<DebateSummaryCardProps> = ({ summary }) => {
           </div>
 
           {/* Transcript Dialogue List */}
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3.5">
             {filteredRounds.map((rd, i) => {
               const speakerFormatted = rd.speaker_persona_id
                 .replace(/[-_]/g, ' ')
@@ -1132,35 +1132,43 @@ const DebateSummaryCard: React.FC<DebateSummaryCardProps> = ({ summary }) => {
 
               const speakerInitial = speakerFormatted.charAt(0) || 'P';
 
+              // Persona-specific soft color accents
+              const accentColors = ['#6366F1', '#A855F7', '#EC4899', '#38BDF8', '#34D399'];
+              const accentColor = accentColors[i % accentColors.length];
+
               return (
                 <div
                   key={i}
-                  className="bg-[#151520] border border-[#2A2A38] rounded-xl p-4 flex flex-col gap-2.5 transition-all hover:border-[#6366F1]/30"
+                  className="bg-[#14141E] border border-[#262636] rounded-xl p-4 sm:p-5 flex flex-col gap-3 transition-all hover:border-[#6366F1]/30 relative overflow-hidden shadow-sm"
+                  style={{ borderLeft: `4px solid ${accentColor}` }}
                 >
                   {/* Speaker Header */}
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6366F1] to-[#A855F7] text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[#262636]">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center shadow-sm"
+                        style={{ backgroundColor: accentColor }}
+                      >
                         {speakerInitial}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs font-mono">
-                        <span className="font-semibold text-[#F1F1F3] font-sora">{speakerFormatted}</span>
+                      <div className="flex items-center gap-2 flex-wrap text-xs">
+                        <span className="font-semibold text-[#E2E8F0] font-sora text-sm">{speakerFormatted}</span>
                         {targetFormatted && (
-                          <>
-                            <span className="text-[#8B8B9E]">→</span>
-                            <span className="text-[#818CF8] font-sora">{targetFormatted}</span>
-                          </>
+                          <div className="flex items-center gap-1 bg-[#6366F1]/10 border border-[#6366F1]/20 px-2.5 py-0.5 rounded-full text-[11px] font-mono text-[#A5B4FC]">
+                            <span className="opacity-60">to</span>
+                            <span className="font-semibold">{targetFormatted}</span>
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-mono text-[#8B8B9E] bg-[#1C1C2A] px-2 py-0.5 rounded border border-[#2A2A38]">
+                    <span className="text-[11px] font-mono text-[#94A3B8] bg-[#1C1C2A] px-2.5 py-1 rounded-md border border-[#2A2A38]">
                       ROUND {rd.round_number}
                     </span>
                   </div>
 
-                  {/* Speech Content */}
-                  <p className="m-0 text-xs text-[#E2E8F0] font-sans leading-relaxed pl-9 border-l-2 border-[#6366F1]/40 py-0.5">
+                  {/* Speech Content - Softened Contrast for Eye Comfort */}
+                  <p className="m-0 text-sm text-[#CBD5E1] font-sans leading-relaxed pt-1">
                     "{rd.transcript}"
                   </p>
                 </div>
