@@ -947,50 +947,50 @@ const CampaignResultPage: React.FC = () => {
         <TopNav title="Campaign Results" />
 
         <main className={`result-main pt-14 min-h-screen fade-in ${campaign.status === 'awaiting_human_approval' ? 'pb-28' : 'pb-8'}`} style={{ fontFamily: 'Sora, sans-serif' }}>
-          <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
-            <div className="w-full space-y-6">
-              {/* Header */}
-              <div className="rounded-2xl border border-[#2A2A38] bg-[#111118]/90 backdrop-blur p-5 md:p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => navigate(`/projects/${campaign.projectId}`)}
-                      className="inline-flex items-center gap-1.5 text-xs text-[#8B8B9E] hover:text-[#6366F1] transition-colors mb-1 font-medium cursor-pointer"
-                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
-                    >
-                      ← Back to Project
-                    </button>
-                    <div className="flex items-center gap-2 flex-wrap">
+          <div className="px-3 py-4 sm:px-4 sm:py-5 md:px-6 lg:px-8">
+            <div className="w-full space-y-4">
+              {/* Apple Pro Compact Glassmorphic Header */}
+              <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-4 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        onClick={() => navigate(`/projects/${campaign.projectId}`)}
+                        className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-all font-sora font-medium cursor-pointer bg-white/5 hover:bg-white/10 px-3 py-1 rounded-xl border border-white/10"
+                      >
+                        <span>← Back to Project</span>
+                      </button>
+                      
                       <span
-                        className="px-2 py-0.5 rounded-full border text-xs cursor-help"
+                        className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border cursor-help"
                         title={`Campaign ID: ${campaignId}`}
                         style={{
-                          fontFamily: 'JetBrains Mono, monospace',
                           backgroundColor: statusStyle.bg,
-                          borderColor: statusStyle.text + '33',
+                          borderColor: statusStyle.text + '40',
                           color: statusStyle.text,
                         }}
                       >
                         {statusStyle.label}
                       </span>
                     </div>
+
                     <div>
-                      <h1 className="text-3xl md:text-4xl font-bold" style={{ fontFamily: 'Sora, sans-serif', background: 'linear-gradient(135deg, #FFFFFF 0%, #A5B4FC 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textShadow: '0 0 40px rgba(99,102,241,0.15)' }}>
+                      <h1 className="text-xl sm:text-2xl font-bold font-sora text-white tracking-tight">
                         {campaign.name}
                       </h1>
-                      <p className="text-sm mt-1" style={{ color: '#8B8B9E' }}>
+                      <p className="text-xs text-[#94A3B8] font-sans mt-0.5">
                         {headerIndustry} • {headerGoal}
                       </p>
                     </div>
                   </div>
-                  <div className="flex-shrink-0 flex items-start">
+
+                  <div className="shrink-0 self-start sm:self-center">
                     <button
                       onClick={() => setShowVariantModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-3 min-h-[44px] rounded-xl text-sm font-medium transition-all w-full sm:w-auto justify-center bg-[#1A1A24] text-[#c0c1ff] border border-[#2A2A38] hover:bg-[#2A2A38] hover:border-[#6366F180]"
-                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#5254D8] text-white text-xs font-semibold font-sora transition-all shadow-sm active:scale-[0.98] cursor-pointer border-none"
                     >
-                      <GitBranch size={16} />
-                      Create Variant
+                      <GitBranch size={14} />
+                      <span>Create Variant</span>
                     </button>
                   </div>
                 </div>
@@ -1005,9 +1005,9 @@ const CampaignResultPage: React.FC = () => {
                 />
               )}
 
-              {/* Tab Navigation */}
-              <div className="rounded-2xl border border-[#2A2A38] bg-[#111118]/80 backdrop-blur p-2 overflow-x-auto">
-                <div className="flex gap-2 min-w-max w-full stagger-enter">
+              {/* Apple Segmented Pill Tab Bar */}
+              <div className="rounded-2xl border border-[#262636] bg-[#0D0D14] p-1.5 overflow-x-auto">
+                <div className="flex gap-1 min-w-max w-full">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -1019,30 +1019,20 @@ const CampaignResultPage: React.FC = () => {
                           setActiveTab(tab.id);
                           if (tab.id === 'focus-group') setFocusGroupUpdatedViaMcp(false);
                         }}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-all relative whitespace-nowrap border ${
-                          isActive ? 'text-[#c0c1ff]' : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-sora font-semibold transition-all border-none cursor-pointer ${
+                          isActive
+                            ? 'bg-[#6366F1] text-white shadow-sm'
+                            : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
                         }`}
-                        style={{
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '14px',
-                          fontWeight: isActive ? 600 : 500,
-                          background: isActive ? 'rgba(99, 102, 241, 0.12)' : 'transparent',
-                          borderColor: isActive ? 'rgba(99, 102, 241, 0.28)' : 'transparent',
-                          cursor: 'pointer',
-                          boxShadow: isActive ? '0 8px 24px rgba(99, 102, 241, 0.12)' : 'none',
-                        }}
                       >
-                        <Icon size={16} />
-                        {tab.label}
-                        {/* Pulsing notification dot when Focus Group updated via MCP while on another tab */}
+                        <Icon size={14} />
+                        <span>{tab.label}</span>
                         {tab.id === 'focus-group' && focusGroupUpdatedViaMcp && activeTab !== 'focus-group' ? (
                           <span className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)] flex-shrink-0" />
                         ) : (
-                          <span 
-                            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
-                              isCompleted ? 'bg-[#4edea3] shadow-[0_0_8px_rgba(78,222,163,0.4)]' : 'bg-[#4A4A5E]'
-                            }`} 
-                          />
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
+                            isCompleted ? (isActive ? 'bg-emerald-300' : 'bg-emerald-400/80') : 'bg-white/10'
+                          }`} />
                         )}
                       </button>
                     );
