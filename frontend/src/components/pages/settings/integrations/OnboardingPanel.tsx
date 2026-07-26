@@ -87,86 +87,61 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
   }
 
   return (
-    <div className="space-y-6">
-      
-      {/* Onboarding Checklist */}
-      <div className="p-5 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-4">
-        <div className="flex items-center gap-2 border-b border-[#2A2A38]/40 pb-3">
-          <BookOpen size={14} className="text-[#c0c1ff]" />
-          <h4 className="font-semibold text-xs uppercase tracking-wider text-text-secondary" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
+    <div className="space-y-5">
+      {/* Onboarding Checklist Card */}
+      <div className="p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center gap-2 border-b border-[#262636] pb-3">
+          <BookOpen size={14} className="text-[#818CF8]" />
+          <h4 className="font-semibold text-xs uppercase tracking-wider text-[#94A3B8] font-mono">
             Setup Checklist
           </h4>
         </div>
         
-        <div className="space-y-4">
-          {steps.map((step, idx) => (
-            <div key={idx} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div
-                  className={`w-5 h-5 rounded-full flex items-center justify-center border text-[10px] font-bold ${
-                    step.done
-                      ? 'border-[#10B981] bg-[#10B981]/10 text-[#10B981]'
-                      : 'border-[#2A2A38] bg-[#0E0E13] text-[#8B8B9E]'
-                  }`}
-                >
-                  {step.done ? <Check size={10} strokeWidth={3} /> : idx + 1}
-                </div>
-                {idx < steps.length - 1 && (
-                  <div className="w-[1px] h-8 bg-[#2A2A38] mt-1" />
-                )}
+        <div className="space-y-3">
+          {steps.map((s, i) => (
+            <div key={i} className="flex items-start gap-3 text-xs font-sans">
+              <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                s.done ? 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30' : 'bg-white/5 text-[#94A3B8] border border-white/10'
+              }`}>
+                {s.done ? <Check size={10} /> : i + 1}
               </div>
               <div className="space-y-0.5">
-                <p className="text-xs font-semibold text-text-primary leading-tight">
-                  {step.label}
-                </p>
-                <p className="text-[11px] text-text-secondary leading-normal" style={{ color: '#8B8B9E' }}>
-                  {step.desc}
-                </p>
+                <p className={`font-semibold font-sora ${s.done ? 'text-white' : 'text-[#CBD5E1]'}`}>{s.label}</p>
+                <p className="text-[11px] text-[#94A3B8] leading-relaxed">{s.desc}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Troubleshooting Accordions */}
-      <div className="p-5 rounded-xl border border-[#2A2A38] bg-[#111118] space-y-4">
-        <div className="flex items-center gap-2 border-b border-[#2A2A38]/40 pb-3">
-          <ShieldAlert size={14} className="text-[#c0c1ff]" />
-          <h4 className="font-semibold text-xs uppercase tracking-wider text-text-secondary" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>
-            Troubleshooting
+      {/* Troubleshooting & FAQ Card */}
+      <div className="p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center gap-2 border-b border-[#262636] pb-3">
+          <ShieldAlert size={14} className="text-[#F59E0B]" />
+          <h4 className="font-semibold text-xs uppercase tracking-wider text-[#94A3B8] font-mono">
+            Troubleshooting & FAQ
           </h4>
         </div>
 
-        <div className="divide-y divide-[#2A2A38]/40 space-y-2">
-          {faqs.map((faq, i) => {
-            const isOpen = openFaq === i;
-            return (
-              <div key={i} className="pt-2 first:pt-0">
-                <button
-                  onClick={() => setOpenFaq(isOpen ? null : i)}
-                  className="w-full flex items-center justify-between text-left hover:text-[#c0c1ff] transition-colors"
-                  style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  <span className="text-xs font-medium text-text-primary">
-                    {faq.q}
-                  </span>
-                  {isOpen ? (
-                    <ChevronUp size={12} className="text-text-muted" style={{ color: '#8B8B9E' }} />
-                  ) : (
-                    <ChevronDown size={12} className="text-text-muted" style={{ color: '#8B8B9E' }} />
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="text-[11px] text-text-secondary mt-1.5 leading-relaxed bg-[#0E0E13] p-2.5 rounded-lg border border-[#2A2A38]/40" style={{ color: '#8B8B9E' }}>
-                    {faq.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="space-y-2">
+          {faqs.map((faq, idx) => (
+            <div key={idx} className="border border-[#262636] rounded-xl overflow-hidden bg-[#0B0B12]">
+              <button
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full text-left p-3 flex items-center justify-between text-xs font-semibold font-sora text-white hover:bg-white/[0.02] transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <span className="pr-2">{faq.q}</span>
+                {openFaq === idx ? <ChevronUp size={14} className="text-[#818CF8] shrink-0" /> : <ChevronDown size={14} className="text-[#94A3B8] shrink-0" />}
+              </button>
+              {openFaq === idx && (
+                <div className="px-3 pb-3 pt-1 text-[11px] text-[#94A3B8] font-sans leading-relaxed border-t border-[#262636]/60">
+                  {faq.a}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
-
     </div>
   );
 };
