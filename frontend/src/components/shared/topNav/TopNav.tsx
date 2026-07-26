@@ -31,15 +31,10 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
   const [unreadCount, setUnreadCount] = useState(0);
   const headerRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
-  const [notifPos, setNotifPos] = useState<{ top: number; right: number } | null>(null);
 
   const displayTitle = title || routeTitles[location.pathname] || 'AgentMark';
 
   const handleDropdownToggle = (dropdown: 'profile' | 'notification') => {
-    if (dropdown === 'notification' && openDropdown !== 'notification' && bellRef.current) {
-      const rect = bellRef.current.getBoundingClientRect();
-      setNotifPos({ top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) });
-    }
     setOpenDropdown(openDropdown === dropdown ? null : dropdown);
   };
 
