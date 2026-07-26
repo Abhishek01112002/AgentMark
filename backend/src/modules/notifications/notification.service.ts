@@ -42,21 +42,31 @@ export const notificationService = {
   },
 
   async unreadCount(userId: string) {
-    return prisma.notification.count({
-      where: { userId, isRead: false },
-    });
+    try {
+      return await prisma.notification.count({
+        where: { userId, isRead: false },
+      });
+    } catch (err: any) {
+      console.error('[NotificationService] unreadCount DB error:', err?.message || err);
+      return 0;
+    }
   },
 
   async markAsRead(id: string, userId: string) {
-    const result = await prisma.notification.updateMany({
-      where: { id, userId },
-      data: { isRead: true },
-    });
+    try {
+      const result = await prisma.notification.updateMany({
+        where: { id, userId },
+        data: { isRead: true },
+      });
 
-    if (result.count === 0) return null;
+      if (result.count === 0) return null;
 
-    const notification = await prisma.notification.findUnique({ where: { id } });
-    return notification as NotificationRow | null;
+      const notification = await prisma.notification.findUnique({ where: { id } });
+      return notification as NotificationRow | null;
+    } catch (err: any) {
+      console.error('[NotificationService] markAsRead DB error:', err?.message || err);
+      return null;
+    }
   },
 
   async markAllAsRead(userId: string) {

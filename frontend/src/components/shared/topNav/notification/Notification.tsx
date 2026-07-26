@@ -37,12 +37,18 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   useEffect(() => {
     loadNotifications().catch(console.error);
 
+    // Fast 4-second polling while notification panel is open
+    const interval = setInterval(() => {
+      loadNotifications().catch(() => {});
+    }, 4000);
+
     const handleUpdate = () => {
       loadNotifications().catch(console.error);
     };
 
     window.addEventListener('notifications-updated', handleUpdate);
     return () => {
+      clearInterval(interval);
       window.removeEventListener('notifications-updated', handleUpdate);
     };
   }, []);

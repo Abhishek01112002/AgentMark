@@ -50,6 +50,11 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
     void loadUnreadCount();
 
+    // Fast 5-second polling so notification count updates in real-time
+    const interval = setInterval(() => {
+      void loadUnreadCount();
+    }, 5000);
+
     const handleUpdate = () => {
       void loadUnreadCount();
     };
@@ -70,6 +75,7 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('touchstart', handleClickOutside);
     return () => {
+      clearInterval(interval);
       window.removeEventListener('notifications-updated', handleUpdate);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
