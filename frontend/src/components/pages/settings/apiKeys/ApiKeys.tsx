@@ -229,14 +229,6 @@ const ApiKeys: React.FC = () => {
     }
   }, [newKeyValues, testKey, doSaveKey]);
 
-  const addEmptyKey = useCallback((provider: LlmProviderId) => {
-    const lastKey = settings[provider].keys.length;
-    const sk = `${provider}-add-${lastKey}`;
-    setHiddenKeys((prev) => ({ ...prev, [sk]: false }));
-    setNewKeyValues((prev) => ({ ...prev, [provider]: '' }));
-    document.getElementById(`new-key-input-${provider}`)?.focus();
-  }, [settings]);
-
   return (
     <div className="space-y-6">
       {deleteTarget && (
@@ -261,206 +253,191 @@ const ApiKeys: React.FC = () => {
         document.body
       )}
 
-      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
-        <div className="pb-5 mb-5 border-b border-[#262636]">
-          <h2 className="text-xl font-semibold font-sora text-white">LLM & Search API Keys</h2>
-          <p className="text-xs sm:text-sm text-[#94A3B8] font-sans mt-1">Configure your API provider keys with automatic multi-agent failover support.</p>
+      {/* Apple Pro Header Card */}
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center shrink-0">
+            <Plus size={20} className="text-[#818CF8]" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold font-sora text-white">LLM & Search API Credentials</h2>
+            <p className="text-xs sm:text-sm text-[#94A3B8] font-sans mt-0.5">
+              Manage API keys for Gemini, Groq, OpenAI, and Tavily with intelligent multi-agent failover
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="divide-y divide-[#262636]">
-          {order.map((id) => {
-            const meta = PROVIDERS.find((p) => p.id === id);
-            if (!meta) return null; // Defensive: skip unknown providers to prevent crash
-            const savedKeys = settings[id].keys;
-            const newVal = newKeyValues[id];
-            const isDuplicate = newVal.trim().length > 0 && savedKeys.some((k) => k.value === newVal.trim());
+      {/* Provider Cards Stack */}
+      <div className="space-y-5">
+        {order.map((id) => {
+          const meta = PROVIDERS.find((p) => p.id === id);
+          if (!meta) return null;
+          const savedKeys = settings[id].keys;
+          const newVal = newKeyValues[id];
+          const isDuplicate = newVal.trim().length > 0 && savedKeys.some((k) => k.value === newVal.trim());
+          const style = TAG_STYLES[meta.tag];
 
-            return (
-              <div key={id} className="p-4 sm:p-5 md:p-6">
-                <div className="flex flex-col lg:flex-row gap-4 sm:gap-5 md:gap-6">
-                  {/* Main: Key Management */}
-                  <div className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-                    {/* Header */}
+          return (
+            <div key={id} className="rounded-2xl border border-white/[0.08] bg-[#12121A]/90 p-5 sm:p-6 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-all hover:border-white/[0.14] space-y-4">
+              {/* Header Row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#262636]">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs font-sora text-white shrink-0">
+                    {meta.name.charAt(0)}
+                  </div>
+                  <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-headline-sm text-headline-sm text-text-primary">{meta.name}</h3>
-                      {(() => {
-                        const style = TAG_STYLES[meta.tag];
-                        return (
-                          <span className={`px-1.5 py-0.5 ${style.bg} border ${style.border} rounded ${style.text} font-label-sm text-label-sm`}>
-                            {style.label}
-                          </span>
-                        );
-                      })()}
+                      <h3 className="font-sora text-base font-semibold text-white">{meta.name}</h3>
+                      <span className={`px-2 py-0.5 ${style.bg} border ${style.border} rounded-full ${style.text} text-[10px] font-mono tracking-wider font-semibold`}>
+                        {style.label}
+                      </span>
                     </div>
-
-                    <p className="text-sm text-text-secondary leading-relaxed">
+                    <p className="text-xs text-[#94A3B8] font-sans mt-0.5 leading-relaxed">
                       {meta.description}
                     </p>
-
-                    {/* Saved keys */}
-                    {savedKeys.length > 0 && (
-                      <div className="space-y-1.5">
-                        <div className="text-label-xs text-text-muted font-medium uppercase tracking-wider">
-                          Saved keys ({savedKeys.length})
-                        </div>
-                        {savedKeys.map((keyEntry, idx) => {
-                          const keyId = `${id}-${idx}`;
-                          const isVisible = !hiddenKeys[keyId];
-                          const tStatus = testStatus[keyId] || 'idle';
-                          return (
-                            <div key={keyId} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 rounded-lg border" style={{ background: 'linear-gradient(135deg, rgba(20,20,30,0.8), rgba(15,15,22,0.6))', borderColor: '#2A2A38', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)' }}>
-                              <div className="flex-1 font-mono text-sm text-text-primary truncate min-w-0 w-full">
-                                {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
-                              </div>
-                              <div className="flex items-center gap-1 justify-end shrink-0 w-full sm:w-auto">
-                                <button
-                                  onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
-                                  className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
-                                  aria-label="Toggle key visibility"
-                                >
-                                  {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
-                                </button>
-                                {id !== 'tavily' && (
-                                  <TestKeyButton
-                                    status={tStatus}
-                                    onClick={() => testKey(id, keyEntry.value, keyId)}
-                                    disabled={tStatus === 'testing'}
-                                  />
-                                )}
-                                <button
-                                  onClick={() => setDeleteTarget({ provider: id, index: idx })}
-                                  className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-danger transition-colors"
-                                  title={`Delete key #${idx + 1}`}
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {/* New key input */}
-                    <div className="space-y-1.5">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 sm:p-3 rounded-lg border border-dashed" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.03), transparent)', borderColor: '#6366F1/25' }}>
-                        <div className="flex items-center flex-1 gap-2 min-w-0 w-full">
-                          <input
-                            id={`new-key-input-${id}`}
-                            type={hiddenKeys[`${id}-new-input`] ? 'password' : 'text'}
-                            placeholder={meta.placeholder}
-                            value={newVal}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setNewKeyValues((prev) => ({ ...prev, [id]: val }));
-                              setTestStatus((prev) => {
-                                const k = `${id}-new`;
-                                return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
-                              });
-                              if (val.trim()) {
-                                const isValid = validateKey(id, val);
-                                setFormatErrors((prev) => ({
-                                  ...prev,
-                                  [id]: isValid ? '' : `Invalid format. Expected: ${meta.format}`,
-                                }));
-                              } else {
-                                setFormatErrors((prev) => ({ ...prev, [id]: '' }));
-                              }
-                            }}
-                            className="flex-1 bg-transparent text-sm text-text-primary placeholder-text-muted outline-none font-mono min-w-0"
-                          />
-                          <button
-                            onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
-                            className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
-                            aria-label="Toggle key visibility"
-                          >
-                            {hiddenKeys[`${id}-new-input`] ? <EyeOff size={13} /> : <Eye size={13} />}
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2 justify-end shrink-0 w-full sm:w-auto">
-                          {id !== 'tavily' && (
-                            <TestKeyButton
-                              status={testStatus[`${id}-new`] || 'idle'}
-                              onClick={() => testKey(id, newVal, `${id}-new`)}
-                              disabled={testStatus[`${id}-new`] === 'testing' || !newVal.trim()}
-                            />
-                          )}
-                          <button
-                            onClick={() => handleSaveNewKey(id)}
-                            disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
-                            className="px-4 py-3 min-h-[44px] bg-primary text-on-primary rounded-lg text-xs font-label-sm hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center justify-center"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                      {isDuplicate && (
-                        <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
-                          <AlertCircle size={12} />
-                          This API key is already saved. Add a different key instead.
-                        </p>
-                      )}
-                      {formatErrors[id] && !isDuplicate && (
-                        <p className="flex items-center gap-1 text-xs text-danger mt-1.5 ml-1">
-                          <AlertCircle size={12} />
-                          {formatErrors[id]}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Add another key */}
-                    <button
-                      onClick={() => addEmptyKey(id)}
-                      className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary transition-colors py-3 min-h-[44px] px-2 rounded hover:bg-surface-container-low"
-                    >
-                      <Plus size={13} />
-                      Add another {meta.name} key
-                    </button>
-                  </div>
-
-                  {/* Sidebar: Provider Details — hidden on mobile, visible on lg+ */}
-                  <div className="hidden lg:block lg:w-64 xl:w-72 shrink-0">
-                    <div className="p-4 rounded-xl bg-surface-container-low border border-border-base h-full flex flex-col gap-3">
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                        Provider Details
-                      </div>
-                      <div className="space-y-3 text-xs">
-                        <div>
-                          <div className="text-text-primary font-medium text-[11px] mb-1">Powers</div>
-                          <div className="text-text-secondary leading-relaxed">{meta.usage}</div>
-                        </div>
-                        <div>
-                          <div className="text-text-primary font-medium text-[11px] mb-1">Expected Format</div>
-                          <code className="inline-block bg-surface-container-high px-2 py-1 rounded font-mono text-[10px] text-text-primary border border-border-base">
-                            {meta.format}
-                          </code>
-                        </div>
-                      </div>
-                      <div className="mt-auto pt-2">
-                        <a
-                          href={meta.docs}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full px-4 py-3 min-h-[44px] rounded-lg border border-border-base bg-surface hover:bg-surface-container-high text-xs text-text-primary hover:text-primary transition-all font-semibold"
-                        >
-                          Get API Key
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M7 17L17 7M17 7H7M17 7V17" />
-                          </svg>
-                        </a>
-                      </div>
-                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
 
-        <div className="bg-gradient-to-r from-[#6366F1]/5 to-transparent px-5 sm:px-6 py-3.5 flex items-center gap-3 text-xs" style={{ color: '#6B6B7E', borderTop: '1px solid rgba(42,42,56,0.5)' }}>
-          <div className="w-1.5 h-1.5 rounded-full bg-[#6366F1]/40" />
-          <span>Keys are stored locally in your browser and sent per-request via headers.</span>
-        </div>
+                <a
+                  href={meta.docs}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-[#818CF8] hover:text-white transition-colors font-sans shrink-0 self-start sm:self-center"
+                >
+                  <span>Get API Key</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M7 17L17 7M17 7H7M17 7V17" />
+                  </svg>
+                </a>
+              </div>
+
+              {/* Usage & Format Meta */}
+              <div className="bg-[#0B0B12]/80 border border-[#262636] rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-sans">
+                <span className="text-[#94A3B8]"><strong className="text-white font-medium">Powers:</strong> {meta.usage}</span>
+                <span className="text-[#94A3B8] shrink-0"><strong className="text-white font-medium">Expected Format:</strong> <code className="bg-[#1A1A26] px-2 py-0.5 rounded text-[11px] font-mono text-slate-200 border border-white/5">{meta.format}</code></span>
+              </div>
+
+              {/* Saved Keys List */}
+              {savedKeys.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[11px] text-[#94A3B8] font-mono uppercase tracking-wider font-semibold">
+                    Saved Keys ({savedKeys.length})
+                  </div>
+                  <div className="bg-[#0B0B12] border border-[#262636] rounded-xl overflow-hidden divide-y divide-[#1F1F2E]">
+                    {savedKeys.map((keyEntry, idx) => {
+                      const keyId = `${id}-${idx}`;
+                      const isVisible = !hiddenKeys[keyId];
+                      const tStatus = testStatus[keyId] || 'idle';
+                      return (
+                        <div key={keyId} className="flex items-center justify-between gap-3 p-3 transition-colors hover:bg-white/[0.02]">
+                          <div className="font-mono text-xs text-slate-200 truncate bg-[#161622] px-3 py-1.5 rounded-lg border border-white/5 flex-1 min-w-0">
+                            {isVisible ? keyEntry.value : maskKey(keyEntry.value)}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => setHiddenKeys((prev) => ({ ...prev, [keyId]: !prev[keyId] }))}
+                              className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer"
+                              aria-label="Toggle key visibility"
+                            >
+                              {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            {id !== 'tavily' && (
+                              <TestKeyButton
+                                status={tStatus}
+                                onClick={() => testKey(id, keyEntry.value, keyId)}
+                                disabled={tStatus === 'testing'}
+                              />
+                            )}
+                            <button
+                              onClick={() => setDeleteTarget({ provider: id, index: idx })}
+                              className="p-1.5 rounded-lg text-[#94A3B8] hover:text-[#F43F5E] hover:bg-[#F43F5E]/10 transition-colors border-none bg-transparent cursor-pointer"
+                              title={`Delete key #${idx + 1}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Input New Key Bar */}
+              <div className="space-y-1.5">
+                <div className="bg-[#0B0B12] border border-[#262636] focus-within:border-[#6366F1] rounded-2xl p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 transition-all shadow-inner">
+                  <div className="flex items-center flex-1 min-w-0 px-2">
+                    <input
+                      id={`new-key-input-${id}`}
+                      type={hiddenKeys[`${id}-new-input`] ? 'password' : 'text'}
+                      placeholder={meta.placeholder}
+                      value={newVal}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewKeyValues((prev) => ({ ...prev, [id]: val }));
+                        setTestStatus((prev) => {
+                          const k = `${id}-new`;
+                          return prev[k] && prev[k] !== 'idle' ? { ...prev, [k]: 'idle' } : prev;
+                        });
+                        if (val.trim()) {
+                          const isValid = validateKey(id, val);
+                          setFormatErrors((prev) => ({
+                            ...prev,
+                            [id]: isValid ? '' : `Invalid format. Expected: ${meta.format}`,
+                          }));
+                        } else {
+                          setFormatErrors((prev) => ({ ...prev, [id]: '' }));
+                        }
+                      }}
+                      className="w-full bg-transparent text-xs font-mono text-white placeholder-[#64748B] outline-none py-1.5"
+                    />
+                    <button
+                      onClick={() => setHiddenKeys((prev) => ({ ...prev, [`${id}-new-input`]: !prev[`${id}-new-input`] }))}
+                      className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white transition-colors border-none bg-transparent cursor-pointer shrink-0"
+                      aria-label="Toggle key visibility"
+                    >
+                      {hiddenKeys[`${id}-new-input`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 justify-end shrink-0">
+                    {id !== 'tavily' && (
+                      <TestKeyButton
+                        status={testStatus[`${id}-new`] || 'idle'}
+                        onClick={() => testKey(id, newVal, `${id}-new`)}
+                        disabled={testStatus[`${id}-new`] === 'testing' || !newVal.trim()}
+                      />
+                    )}
+                    <button
+                      onClick={() => handleSaveNewKey(id)}
+                      disabled={!newVal.trim() || isDuplicate || !!formatErrors[id]}
+                      className="px-4 py-2 rounded-xl bg-[#6366F1] hover:bg-[#5254D8] text-white text-xs font-semibold transition-all shadow-sm active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed font-sora cursor-pointer border-none"
+                    >
+                      Save Key
+                    </button>
+                  </div>
+                </div>
+                {isDuplicate && (
+                  <p className="flex items-center gap-1.5 text-xs text-[#F43F5E] mt-1 ml-1 font-sans">
+                    <AlertCircle size={12} />
+                    This API key is already saved. Add a different key instead.
+                  </p>
+                )}
+                {formatErrors[id] && !isDuplicate && (
+                  <p className="flex items-center gap-1.5 text-xs text-[#F43F5E] mt-1 ml-1 font-sans">
+                    <AlertCircle size={12} />
+                    {formatErrors[id]}
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl border border-white/[0.06] bg-[#12121A]/60 px-5 py-3.5 flex items-center gap-3 text-xs text-[#94A3B8] font-sans">
+        <div className="w-2 h-2 rounded-full bg-[#6366F1] shrink-0" />
+        <span>Keys are stored locally in your browser workspace and transmitted over encrypted HTTPS headers per request.</span>
       </div>
     </div>
   );
