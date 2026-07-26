@@ -52,7 +52,7 @@ CRITICAL CONSTRAINTS — READ BEFORE GENERATING ANYTHING:
 2. BRAND VOICE: Apply ONLY the "{brand_voice}" voice throughout. This must be felt in word choice, sentence rhythm, and tone — not just stated.
 3. CHANNEL EXCLUSIVITY: Write copy ONLY for channels listed in {channels}. For any channel NOT listed, set its field to null and mark copy_readiness as false.
 4. TARGET AUDIENCE: Write for the specific audience in the brief — never default to generic enterprise/B2B language unless explicitly required and give more focus on this specific constraint.
-5. EMOJI RULES: No emojis except in Instagram and TikTok captions (max 2 per post, only common ones like ❤️ 😊 🔥 ✨ — nothing corporate or techy).
+5. EXPRESSIVE EMOJI ENGINE: Use popular, highly expressive emojis — especially face & emotional reaction emojis (e.g. 🤔, 💡, 🤯, 🚀, 🤩, 👏, 🎯, 😃, 🙌, 📈, 💬, 📌, 🔥, ✨) naturally across social media (Instagram, TikTok, LinkedIn, Facebook, Twitter) and email bullet points. Emojis break up text, emphasize key insights, add human warmth, and make copy 10x more engaging.
 6. LENGTH & DEPTH: This is a professional marketing campaign. Do NOT write short, lazy, or surface-level copy. Every asset must feel complete, ready-to-publish, and polished.
 
 COPYWRITING PHILOSOPHY TO APPLY:
@@ -66,12 +66,12 @@ COPYWRITING PHILOSOPHY TO APPLY:
 CHANNEL-SPECIFIC GUIDELINES & MANDATORY LENGTH REQUIREMENTS:
 
 1. EMAIL (Long-form — Minimum 280-380 words):
-   Subject line: Under 55 characters — curiosity or benefit driven (no emojis)
-   - Greeting: Warm and personal (e.g., "Hi [Name],")
+   Subject line: Under 55 characters — curiosity or benefit driven (tasteful emoji like 💡 or 🚀 is welcome if it fits)
+   - Greeting: Warm and personal (e.g., "Hi [Name], 👋")
    - Para 1 (Hook): Open with the reader's lived experience — a relatable pain point, aspiration, or scenario. 3-5 sentences.
    - Para 2 (Problem/Agitate): Deepen the problem — show you understand WHY it matters and what's at stake if it stays unsolved. 3-4 sentences.
    - Para 3 (Solution intro): Introduce {brand_name} as the answer — specifically how it addresses the pain. 3-4 sentences.
-   - Bulleted proof section: 4-5 specific benefits or features with brief explanations (not just feature names)
+   - Bulleted proof section: 4-5 specific benefits or features with brief explanations (use bullet emojis like 🎯, 💡, 📈, ✅)
    - Para 4 (Urgency/Close): Create reason to act now — urgency, social proof, or a clear next step. 2-3 sentences.
    - Sign-off: Professional and warm (e.g., "Warmly, The {brand_name} Team")
 
@@ -79,9 +79,9 @@ CHANNEL-SPECIFIC GUIDELINES & MANDATORY LENGTH REQUIREMENTS:
    - Line 1: A single powerful statement that provokes thought or challenges a common belief — this is what shows in the feed before "see more"
    - Para 2: Expand on the tension — share a specific insight, statistic, or pattern you've observed
    - Para 3: The {brand_name} perspective — how the brand thinks about this differently
-   - Bulleted list: 4-5 specific, numbered insights or advantages
+   - Bulleted list: 4-5 specific, numbered or emoji-bulleted insights or advantages (e.g. 💡, 🎯, 📌, 📈)
    - Closing: A question to spark comments, followed by the CTA
-   - No emojis. Heavy on white space for LinkedIn readability.
+   - Use 3-5 professional & expressive face/reaction emojis (e.g. 💡, 🤔, 🚀, 🎯, 📌, 📈, 👏) to anchor insights and maintain high readability.
 
 3. FACEBOOK (Engaging long-form — Minimum 180-250 words):
    - Hook: A relatable, conversational opener — feels like something a friend would share
@@ -89,21 +89,21 @@ CHANNEL-SPECIFIC GUIDELINES & MANDATORY LENGTH REQUIREMENTS:
    - Brand solution: How {brand_name} approaches this differently, with specific proof
    - Social proof element: Reference community, testimonials, or a specific result (e.g., "Over X people have already...")
    - CTA: Clear, direct, single action
-   - Warm, conversational tone — not corporate
+   - Warm, conversational tone — use 3-5 relatable emojis (e.g. 😊, 💡, 🙌, 🎯, 😃, 📌)
 
 4. INSTAGRAM (Engaging caption — Minimum 130-180 words):
    - Line 1: THE scroll-stop hook — surprising, bold, relatable, or provocative (under 15 words)
    - Body: Build the story in short paragraphs (2-3 lines max per block — Instagram readability)
    - Visual context cue: One sentence hinting at the visual or vibe of the post
    - CTA: Link in bio + one soft action prompt
-   - 1-2 emojis (❤️ or ✨ or 🔥 or face emojis only)
+   - 3-6 vibrant face & expressive emojis (e.g. 🤯, 🤩, 😃, 🔥, ✨, 💡, 👇, 💬) strategically placed
    - Hashtag block: 8-12 highly relevant hashtags (mix of niche + broad)
 
 5. TIKTOK (Short-form hook caption — Minimum 80-120 words):
    - Line 1: THE hook — must read like a TikTok opening line that makes you stay
    - Body: Fast-paced, punchy. Maximum 2-3 lines per paragraph. Young, direct, authentic voice.
    - CTA: One clear action + follow prompt
-   - 1-2 emojis max
+   - 3-5 high-energy face & reaction emojis (e.g. 🤯, 😳, 🔥, 🚀, 💬, 🤩)
    - 5-8 trending-style hashtags
 
 6. YOUTUBE (Video description — Minimum 180-250 words):
@@ -286,7 +286,6 @@ FINAL QUALITY CHECKLIST — BEFORE YOU RESPOND:
 ✅ segment_messaging has a tailored entry per segment with unique tone
 ✅ channel_messaging has 3-4 specific talking points per channel
 ✅ Only campaign channels are marked true in copy_readiness
-✅ Zero emojis in LinkedIn,  Email (except ✅ in lists is fine)
-✅ Max 2 emojis in Instagram,facebook and TikTok, and only common ones
+✅ Expressive & popular emojis (including common face & reaction emojis 🤔, 💡, 🤯, 😃, 🚀, 🎯, 👏) integrated naturally across social & marketing copy to enhance readability and engagement
 
 {human_feedback_section}
