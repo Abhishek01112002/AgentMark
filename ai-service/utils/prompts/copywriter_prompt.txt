@@ -55,7 +55,8 @@ CRITICAL CONSTRAINTS — READ BEFORE GENERATING ANYTHING:
 5. EMOJI RULES (STRICT & RESTRICTED):
    - PERMANENTLY BANNED EMOJIS: NEVER use 🚀 (rocket) or 🎯 (bullseye) under any circumstances. They are cliché and look like low-quality sales spam.
    - PROFESSIONAL CHANNELS (LinkedIn & Email): Highly restricted. Use maximum 0 to 1 subtle emoji per entire post/email (e.g., 💡 or 📌 for a key bullet). Never use cheesy face emojis in professional copy. ZERO emojis in subject lines or headlines.
-   - SOCIAL CHANNELS (Instagram, TikTok, Facebook, Twitter): Industry-standard common limit — maximum 1 to 2 tasteful emojis per post (e.g., ✨, 🔥, 💡, 💬). Never spam emojis. Keep text clean, authoritative, and readable.
+   - ENGAGING SOCIAL CHANNELS (Instagram, Facebook, TikTok): Maximum 2 to 3 tasteful emojis per post (e.g., ✨, 🔥, 💡, 💬). Never spam emojis. Keep text clean, readable, and balanced.
+   - TWITTER / X: Maximum 1 to 2 tasteful emojis per tweet.
 6. LENGTH & DEPTH: This is a professional marketing campaign. Do NOT write short, lazy, or surface-level copy. Every asset must feel complete, ready-to-publish, and polished.
 
 COPYWRITING PHILOSOPHY TO APPLY:
@@ -92,21 +93,21 @@ CHANNEL-SPECIFIC GUIDELINES & MANDATORY LENGTH REQUIREMENTS:
    - Brand solution: How {brand_name} approaches this differently, with specific proof
    - Social proof element: Reference community, testimonials, or a specific result (e.g., "Over X people have already...")
    - CTA: Clear, direct, single action
-   - Conversational tone — maximum 1 to 2 common emojis per post (e.g. ✨ or 💡)
+   - Conversational tone — maximum 2 to 3 common emojis per post (e.g. ✨, 🔥, 💡)
 
 4. INSTAGRAM (Engaging caption — Minimum 130-180 words):
    - Line 1: THE scroll-stop hook — surprising, bold, relatable, or provocative (under 15 words)
    - Body: Build the story in short paragraphs (2-3 lines max per block — Instagram readability)
    - Visual context cue: One sentence hinting at the visual or vibe of the post
    - CTA: Link in bio + one soft action prompt
-   - Maximum 1 to 2 common emojis per post (e.g. ✨ or 🔥)
+   - Maximum 2 to 3 common emojis per post (e.g. ✨, 🔥, 💬)
    - Hashtag block: 8-12 highly relevant hashtags (mix of niche + broad)
 
 5. TIKTOK (Short-form hook caption — Minimum 80-120 words):
    - Line 1: THE hook — must read like a TikTok opening line that makes you stay
    - Body: Fast-paced, punchy. Maximum 2-3 lines per paragraph. Young, direct, authentic voice.
    - CTA: One clear action + follow prompt
-   - Maximum 1 to 2 common emojis per post (e.g. 🔥 or ✨)
+   - Maximum 2 to 3 common emojis per post (e.g. 🔥, ✨, 💬)
    - 5-8 trending-style hashtags
 
 6. YOUTUBE (Video description — Minimum 180-250 words):
