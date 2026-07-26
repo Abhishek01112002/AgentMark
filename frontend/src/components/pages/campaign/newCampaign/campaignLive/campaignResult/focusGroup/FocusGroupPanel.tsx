@@ -73,6 +73,7 @@ export interface DebateSummary {
   rounds?: DebateRound[];
   consensus?: string;
   buying_probability?: number;
+  key_takeaways?: string[];
 }
 
 export interface TrustSignalAnalysis {
@@ -981,45 +982,186 @@ interface DebateSummaryCardProps {
   summary: DebateSummary;
 }
 
-const DebateSummaryCard: React.FC<DebateSummaryCardProps> = ({ summary }) => (
-  <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden">
-    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A855F7] via-[#6366F1] to-transparent" />
-    <div className="flex items-center justify-between flex-wrap gap-3">
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[rgba(99,102,241,0.3)] to-[rgba(168,85,247,0.2)] flex items-center justify-center border border-[rgba(99,102,241,0.3)]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A855F7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </div>
-        <div>
-          <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">Multi-Persona Buying Committee Debate</h3>
-          <span className="text-[11px] text-[#8B8B9E]">3-Round Deliberation & Consensus Engine</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <div className="text-[10px] font-mono text-[#8B8B9E] uppercase">Committee Consensus</div>
-          <div className="text-sm font-bold uppercase" style={{ color: summary.consensus === 'approve' ? '#4edea3' : summary.consensus === 'revise' ? '#F59E0B' : '#F43F5E' }}>
-            {summary.consensus} ({summary.buying_probability?.toFixed(0)}% Buy Intent)
+const DebateSummaryCard: React.FC<DebateSummaryCardProps> = ({ summary }) => {
+  const [activeRoundTab, setActiveRoundTab] = useState<number | 'all'>('all');
+
+  const rounds = summary.rounds || [];
+  const filteredRounds = activeRoundTab === 'all'
+    ? rounds
+    : rounds.filter(r => r.round_number === activeRoundTab);
+
+  const consensusColor = summary.consensus === 'approve'
+    ? '#4edea3'
+    : summary.consensus === 'revise'
+      ? '#F59E0B'
+      : '#F43F5E';
+
+  const consensusBg = summary.consensus === 'approve'
+    ? 'rgba(78, 222, 163, 0.08)'
+    : summary.consensus === 'revise'
+      ? 'rgba(245, 158, 11, 0.08)'
+      : 'rgba(244, 63, 94, 0.08)';
+
+  const consensusBorder = summary.consensus === 'approve'
+    ? 'rgba(78, 222, 163, 0.25)'
+    : summary.consensus === 'revise'
+      ? 'rgba(245, 158, 11, 0.25)'
+      : 'rgba(244, 63, 94, 0.25)';
+
+  return (
+    <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden shadow-lg">
+      {/* Top Accent Gradient */}
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A855F7] via-[#6366F1] to-transparent" />
+
+      {/* Header Section */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">
+              Buying Committee Deliberation
+            </h3>
+            <p className="m-0 text-xs text-[#8B8B9E] font-sora mt-0.5">
+              Multi-persona objections, rebuttals &amp; final consensus
+            </p>
           </div>
         </div>
-      </div>
-    </div>
-    {summary.rounds && summary.rounds.length > 0 && (
-      <div className="flex flex-col gap-2.5 mt-2">
-        <div className="text-[11px] font-semibold font-mono text-[#8B8B9E] uppercase tracking-wider">Debate Transcripts ({summary.rounds.length} Rounds)</div>
-        <div className="flex flex-col gap-2">
-          {summary.rounds.map((rd, i) => (
-            <div key={i} className="bg-[rgba(18,18,26,0.6)] border border-[rgba(255,255,255,0.05)] rounded-xl p-3 flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono text-[#c0c1ff] font-semibold">ROUND {rd.round_number}: {rd.speaker_persona_id}{rd.target_persona_id ? ` → ${rd.target_persona_id}` : ''}</span>
-              </div>
-              <p className="m-0 text-xs text-[#F1F1F3] italic leading-relaxed">"{rd.transcript}"</p>
-            </div>
-          ))}
+
+        {/* Consensus Badge Pill */}
+        <div
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-mono font-semibold tracking-wide"
+          style={{ backgroundColor: consensusBg, borderColor: consensusBorder, color: consensusColor }}
+        >
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: consensusColor }} />
+          <span className="uppercase">{summary.consensus}</span>
+          <span className="opacity-40">•</span>
+          <span>{summary.buying_probability?.toFixed(0)}% Buy Intent</span>
         </div>
       </div>
-    )}
-  </div>
-);
+
+      {/* Executive Key Takeaways Summary (If Available) */}
+      {summary.key_takeaways && summary.key_takeaways.length > 0 && (
+        <div className="bg-[#161622] border border-[#2A2A38] rounded-xl p-4 flex flex-col gap-2">
+          <div className="text-[11px] font-mono font-semibold text-[#818CF8] uppercase tracking-wider flex items-center gap-1.5">
+            <span>⚡ Committee Consensus Highlights</span>
+          </div>
+          <ul className="m-0 pl-4 text-xs text-[#8B8B9E] space-y-1 font-sora leading-relaxed">
+            {summary.key_takeaways.map((takeaway, idx) => (
+              <li key={idx} className="text-[#F1F1F3]">{takeaway}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Round Filter Tabs */}
+      {rounds.length > 0 && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between border-b border-[#2A2A38] pb-3">
+            <div className="text-xs font-mono font-semibold text-[#8B8B9E] uppercase tracking-wider">
+              Debate Transcript ({rounds.length} Rounds)
+            </div>
+
+            {/* Filter Tabs */}
+            <div className="flex items-center gap-1.5 bg-[#0D0D14] p-1 rounded-lg border border-[#2A2A38]">
+              <button
+                onClick={() => setActiveRoundTab('all')}
+                className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+                  activeRoundTab === 'all'
+                    ? 'bg-[#6366F1] text-white font-semibold shadow-sm'
+                    : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                }`}
+              >
+                All Rounds ({rounds.length})
+              </button>
+              {[1, 2, 3].map(roundNum => {
+                const hasRound = rounds.some(r => r.round_number === roundNum);
+                if (!hasRound) return null;
+                return (
+                  <button
+                    key={roundNum}
+                    onClick={() => setActiveRoundTab(roundNum)}
+                    className={`px-2.5 py-1 rounded-md text-xs font-mono transition-all ${
+                      activeRoundTab === roundNum
+                        ? 'bg-[#6366F1] text-white font-semibold shadow-sm'
+                        : 'text-[#8B8B9E] hover:text-[#F1F1F3]'
+                    }`}
+                  >
+                    Round {roundNum}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Transcript Dialogue List */}
+          <div className="flex flex-col gap-3">
+            {filteredRounds.map((rd, i) => {
+              const speakerFormatted = rd.speaker_persona_id
+                .replace(/[-_]/g, ' ')
+                .replace(/\b\d+\b/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .split(' ')
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(' ');
+
+              const targetFormatted = rd.target_persona_id
+                ? rd.target_persona_id
+                    .replace(/[-_]/g, ' ')
+                    .replace(/\b\d+\b/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .split(' ')
+                    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ')
+                : null;
+
+              const speakerInitial = speakerFormatted.charAt(0) || 'P';
+
+              return (
+                <div
+                  key={i}
+                  className="bg-[#151520] border border-[#2A2A38] rounded-xl p-4 flex flex-col gap-2.5 transition-all hover:border-[#6366F1]/30"
+                >
+                  {/* Speaker Header */}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#6366F1] to-[#A855F7] text-white text-xs font-bold flex items-center justify-center shadow-sm">
+                        {speakerInitial}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs font-mono">
+                        <span className="font-semibold text-[#F1F1F3] font-sora">{speakerFormatted}</span>
+                        {targetFormatted && (
+                          <>
+                            <span className="text-[#8B8B9E]">→</span>
+                            <span className="text-[#818CF8] font-sora">{targetFormatted}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-mono text-[#8B8B9E] bg-[#1C1C2A] px-2 py-0.5 rounded border border-[#2A2A38]">
+                      ROUND {rd.round_number}
+                    </span>
+                  </div>
+
+                  {/* Speech Content */}
+                  <p className="m-0 text-xs text-[#E2E8F0] font-sans leading-relaxed pl-9 border-l-2 border-[#6366F1]/40 py-0.5">
+                    "{rd.transcript}"
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // ─── Metric Badge Card ───────────────────────────────────────────────────────
 
