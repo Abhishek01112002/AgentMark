@@ -83,6 +83,13 @@ const CreateVariantModal: React.FC<CreateVariantModalProps> = ({ campaign, onClo
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  useEffect(() => {
     const el = inputRef.current;
     if (el) {
       el.focus();

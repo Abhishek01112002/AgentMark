@@ -468,7 +468,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleRenameClick(project);
                         }}
-                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#6366F1] hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.3)]"
+                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#6366F1] hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.3)]"
                       >
                         <Edit3 size={14} />
                       </button>
@@ -478,7 +478,7 @@ const ProjectsContent: React.FC = () => {
                           e.stopPropagation();
                           handleDeleteClick(project);
                         }}
-                        className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] hover:border-[rgba(244,63,94,0.3)]"
+                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all text-[#8B8B9E] border border-[#2A2A38] hover:text-[#F43F5E] hover:bg-[rgba(244,63,94,0.1)] hover:border-[rgba(244,63,94,0.3)]"
                       >
                         <Trash2 size={14} />
                       </button>

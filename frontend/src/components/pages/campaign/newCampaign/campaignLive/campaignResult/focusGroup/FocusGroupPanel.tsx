@@ -547,7 +547,7 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
             {channels.length > 0 && (
               <div className="flex flex-col gap-2">
                 <span className="text-[11px] font-mono text-[#94A3B8] uppercase tracking-wider">Filter by Ad Channel</span>
-                <div className="flex gap-1.5 p-1 bg-[#0D0D14] rounded-xl border border-[#262636] overflow-x-auto">
+                <div className="flex gap-1.5 p-1 bg-[#0D0D14] rounded-xl border border-[#262636] overflow-x-auto scroll-touch">
                   {channels.map(ch => {
                     const isActive = ch === selectedChannel;
                     return (

@@ -24,7 +24,7 @@ export const ResultTabs: React.FC = React.memo(() => {
   } = useCampaignResultContext();
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-x-auto">
+    <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-x-auto scroll-touch">
       <div className="flex items-center gap-1 w-full min-w-max sm:min-w-0">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -37,7 +37,7 @@ export const ResultTabs: React.FC = React.memo(() => {
                 setActiveTab(tab.id);
                 if (tab.id === 'focus-group') setFocusGroupUpdatedViaMcp(false);
               }}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-sora font-semibold transition-all border cursor-pointer whitespace-nowrap ${
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-xl text-xs font-sora font-semibold transition-all border cursor-pointer whitespace-nowrap ${
                 isActive
                   ? 'bg-[#6366F1] text-white shadow-sm border-[#818CF8]/30'
                   : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.05] border-transparent'

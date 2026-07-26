@@ -382,3 +382,54 @@
   background-color: #13131a;
 }
 
+/* ── FAANG-Grade Adaptive UX Design System Tokens ─────────────────── */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.touch-target-sm {
+  min-height: 38px;
+  min-width: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Touch-friendly smooth scrolling container */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.scroll-touch::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile Safe Area Padding */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.pt-safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+/* Accessibility: Focus Visible Ring */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #818CF8;
+  outline-offset: 2px;
+}
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+

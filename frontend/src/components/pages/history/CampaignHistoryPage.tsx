@@ -295,12 +295,12 @@ const CampaignHistoryContent: React.FC = () => {
                   </div>
 
                   {/* Apple Segmented Control Pill Filters */}
-                  <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto shrink-0">
+                  <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto scroll-touch shrink-0">
                     {(['all', 'processing', 'completed', 'failed'] as const).map((st) => (
                       <button
                         key={st}
                         onClick={() => { setStatusFilter(st); setCurrentPage(1); }}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 capitalize cursor-pointer border-none ${
+                        className={`px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-semibold font-sora transition-all duration-200 capitalize cursor-pointer border-none flex items-center justify-center ${
                           statusFilter === st
                             ? 'bg-[#6366F1] text-white shadow-sm'
                             : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'

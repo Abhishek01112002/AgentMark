@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   FolderOpen,
   CheckCircle,
@@ -6,7 +6,6 @@ import {
   Star,
   Plus,
   ArrowRight,
-  TrendingUp,
   Terminal,
   ExternalLink,
   Layers,
@@ -15,7 +14,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -25,6 +23,7 @@ import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
 import { formatDDMonYYYY } from '../../../utils/formatDate';
 import { io } from 'socket.io-client';
+import { ResponsiveStatCard } from '../../shared/responsive/ResponsiveStatCard';
 
 type ProjectRow = {
   id: string;
@@ -51,101 +50,6 @@ const statusPill: Record<string, { text: string; dot: string }> = {
   'idle': { text: '#8B8B9E', dot: '#8B8B9E' },
 };
 
-function StatCard(props: {
-  icon: LucideIcon;
-  label: string;
-  value: React.ReactNode;
-  trend?: string;
-  trendLabel?: string;
-  iconBg: string;
-  iconColor: string;
-  pulse?: boolean;
-}) {
-  const { icon: Icon, label, value, trend, trendLabel, iconBg, iconColor, pulse } = props;
-
-  return (
-    <div
-      className="relative overflow-hidden rounded-xl p-4 sm:p-5 group transition-colors"
-      style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}
-    >
-      {pulse && (
-        <div
-          className="absolute top-0 right-0 w-24 h-24 rounded-full"
-          style={{ backgroundColor: 'rgba(99,102,241,0.05)', filter: 'blur(40px)' }}
-        />
-      )}
-      <div className="flex justify-between items-start mb-3 sm:mb-4 relative z-10">
-        <div className="min-w-0">
-          <p
-            className="truncate"
-            style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '12px',
-              lineHeight: '16px',
-              letterSpacing: '0.05em',
-              fontWeight: 500,
-              color: '#8B8B9E',
-              textTransform: 'uppercase',
-              marginBottom: '4px',
-            }}
-          >
-            {label}
-          </p>
-          <div
-            style={{
-              fontFamily: 'Sora, sans-serif',
-              fontSize: 'clamp(24px, 4vw, 32px)',
-              lineHeight: '1.2',
-              letterSpacing: '-0.01em',
-              fontWeight: 600,
-              color: '#F1F1F3',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-            }}
-          >
-            {value}
-            {pulse && (
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{
-                  backgroundColor: '#4edea3',
-                  animation: 'pulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
-                }}
-              />
-            )}
-          </div>
-        </div>
-        <div
-          className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors"
-          style={{ backgroundColor: iconBg }}
-        >
-          <Icon size={18} style={{ color: iconColor, filter: `drop-shadow(0 0 6px ${iconColor}cc)` }} />
-        </div>
-      </div>
-      {(trend || trendLabel) && (
-        <div
-          className="flex flex-wrap items-center gap-2 relative z-10"
-          style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '11px',
-            lineHeight: '16px',
-            letterSpacing: '0.05em',
-            fontWeight: 500,
-          }}
-        >
-          {trend && (
-            <span className="flex items-center" style={{ color: '#4edea3' }}>
-              <TrendingUp size={13} style={{ marginRight: '4px' }} />
-              {trend}
-            </span>
-          )}
-          {trendLabel && <span style={{ color: '#8B8B9E' }}>{trendLabel}</span>}
-        </div>
-      )}
-    </div>
-  );
-}
 
 const dashboardStyles = (
   <style>{`
@@ -477,7 +381,7 @@ function DashboardContent() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-              <StatCard
+              <ResponsiveStatCard
                 icon={FolderOpen}
                 label="Total Projects"
                 value={metrics.totalProjects}
@@ -485,7 +389,7 @@ function DashboardContent() {
                 iconBg="rgba(99,102,241,0.12)"
                 iconColor="#6366F1"
               />
-              <StatCard
+              <ResponsiveStatCard
                 icon={CheckCircle}
                 label="Completed Campaigns"
                 value={metrics.completedCampaigns}
@@ -493,7 +397,7 @@ function DashboardContent() {
                 iconBg="rgba(0,165,114,0.12)"
                 iconColor="#4edea3"
               />
-              <StatCard
+              <ResponsiveStatCard
                 icon={RefreshCw}
                 label="Running Campaigns"
                 value={metrics.runningCampaigns}
@@ -502,7 +406,7 @@ function DashboardContent() {
                 iconColor="#ffb783"
                 pulse={metrics.runningCampaigns > 0}
               />
-              <StatCard
+              <ResponsiveStatCard
                 icon={Star}
                 label="Avg Review Score"
                 value={metrics.avgReviewScore && metrics.avgReviewScore > 0 ? `${metrics.avgReviewScore}/100` : '—'}
