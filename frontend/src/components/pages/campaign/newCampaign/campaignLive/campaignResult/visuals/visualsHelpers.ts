@@ -95,102 +95,100 @@ export const scorePrompt = (prompt: string): { score: number; checks: CheckItem[
   const wordCount = p.trim().split(/\s+/).filter(Boolean).length;
 
   const checks: CheckItem[] = [
-    // ── SUBJECT & CLARITY (critical) ────────────────────────────
+    // ── LAYER 1: FROZEN MOMENT — Subject + Micro-Action (most critical) ──
     {
-      label: 'Subject clearly defined',
+      label: 'Specific subject defined',
       checkKey: 'subject',
-      passed: /\b(person|model|woman|man|girl|boy|guy|lady|gentleman|animal|dog|cat|vehicle|car|building|landscape|product|object|character|figure|brand|logo|item|subject|shot of|photo of|image of|portraying|showcasing|displaying|featuring)\b/i.test(p),
-      points: 12,
-    },
-    {
-      label: 'Action or pose described',
-      checkKey: 'action',
-      passed: /\b(holding|wearing|standing|sitting|looking|running|smiling|walking|posing|facing|carrying|surrounded by|jumping|dancing|interacting|pointing|talking|speaking|reaching|laying|lying down|leaning|relaxing|working|playing|eating|drinking)\b/i.test(p),
-      points: 7,
-    },
-    // ── TECHNICAL QUALITY ────────────────────────────────────────
-    {
-      label: 'Camera / lens specified',
-      checkKey: 'camera',
-      passed: /\b(\d+mm|shot on|dslr|mirrorless|f\/\d|bokeh|depth of field|telephoto|wide angle|macro lens|drone|gopro|polaroid|film camera|35mm|medium format|fisheye|zoom|close-up|aperture|iso|shutter speed)\b/i.test(p),
-      points: 8,
-    },
-    {
-      label: 'Resolution / detail quality',
-      checkKey: 'resolution',
-      passed: /\b(8k|4k|hd|uhd|1080p|masterpiece|best quality|ultra-detailed|ultra detailed|highly detailed|intricate details|hyper-realistic|photorealistic|high resolution|sharp focus|super detailed|crisp|clear|realistic|lifelike)\b/i.test(p),
-      points: 6,
-    },
-    {
-      label: 'Render engine / style tag',
-      checkKey: 'render',
-      passed: /\b(octane|unreal engine|redshift|v-ray|blender|ray tracing|rendered|cgi|3d render|digital art|illustration|painting|drawing|sketch|watercolor|oil painting|anime|cartoon|vector|flat design|3d|maya|zbrush|cinema 4d|concept art|matte painting|advertising photography|commercial campaign|professional studio|professional production)\b/i.test(p),
-      points: 5,
-    },
-    // ── LIGHTING ─────────────────────────────────────────────────
-    {
-      label: 'Lighting direction / type',
-      checkKey: 'lighting',
-      passed: /\b(light|lighting|lightning|sunlight|sunburst|flare|lens flare|bouncing light|volumetric|god rays|darkness|dim|moody lighting|studio lighting|natural lighting|backlit|golden hour|soft box|neon|ambient|shadow|diffused|candlelight|overcast|illuminated|bright|glow)\b/i.test(p),
+      passed: /\b(\d{2}.?year.?old|woman|man|person|girl|boy|lady|gentleman|model|figure|character|cmo|ceo|cto|founder|advisor|manager|engineer|designer|director|chef|nurse|doctor|teacher|student|athlete|artist|photographer|developer|marketer|consultant|entrepreneur|professional)\b/i.test(p),
       points: 10,
     },
-    // ── COMPOSITION & FRAMING ─────────────────────────────────────
     {
-      label: 'Composition or framing',
-      checkKey: 'composition',
-      passed: /\b(close.?up|medium shot|long shot|extreme close-up|point of view|pov|symmetrical|asymmetrical|foreground|background focus|depth|panoramic|landscape format|portrait format|wide shot|overhead|top.?down|bird.?s.?eye|macro|portrait|full body|half body|low angle|high angle|dutch angle|rule of thirds|centered|side profile)\b/i.test(p),
-      points: 8,
-    },
-    {
-      label: 'Background / setting defined',
-      checkKey: 'background',
-      passed: /\b(background|backdrop|setting|environment|scene|interior|exterior|studio|outdoor|urban|forest|minimal|seamless|street|city|nature|beach|mountains|room|office|cafe|sky|space|water|isolated|white background|black background|transparent|solid color|pattern|texture)\b/i.test(p),
-      points: 7,
-    },
-    // ── STYLE & MOOD ─────────────────────────────────────────────
-    {
-      label: 'Visual style direction',
-      checkKey: 'style',
-      passed: /\b(editorial|cinematic|luxury|bold|minimalist|vintage|retro|futuristic|dark|moody|vibrant|clean|elegant|gritty|high.?fashion|commercial|lifestyle|documentary|cyberpunk|steampunk|gothic|bohemian|rustic|modern|abstract|surreal|pop art|classic|traditional|minimalistic|aesthetic|dreamy|ethereal|grunge)\b/i.test(p),
+      label: 'Frozen moment or action',
+      checkKey: 'action',
+      passed: /\b(at the (exact |precise )?((micro.?)?second|moment|instant)|caught (at|in)|leans? (forward|back|across|in)|reaches?|shifts?|turns?|lifts?|pushes?|pulls?|grips?|touches?|points?|hovers?|pauses?|freezes?|gazes?|glances?|squints?|furrows?|smiles?|grins?|frowns?|stands?|sits?|walks?|runs?|holds?|carries?|wears?|faces?|poses?|works?|reads?|writes?|types?|scrolls?|sips?|drinks?|eats?|laughs?|speaks?|whispers?|nods?|shakes?|crosses?|folds?|rests?|relaxes?|stretches?|bends?|kneels?|crouches?)\b/i.test(p),
       points: 9,
     },
     {
-      label: 'Color palette / tone',
-      checkKey: 'color',
-      passed: /\b(color palette|warm tones|cool tones|monochrome|pastel|neon|earth tones|desaturated|vivid|muted|navy|gold|black and white|duotone|gradient|colorful|b&w|grayscale|sepia|vibrant colors|primary colors|complementary colors|analogous|high contrast|low contrast|bright colors|dark colors|silver|bronze|copper|metallic)\b/i.test(p),
+      label: 'Emotional state visible',
+      checkKey: 'emotion',
+      passed: /\b(confidence|satisfaction|triumph|determination|relief|tension|joy|calm|surprise|wonder|focus|concentration|warmth|pride|doubt|resolve|curiosity|delight|amusement|contemplation|exhaustion|anticipation|serene|dramatic|empowering|aspirational|nostalgic|authentic|inspiring|mysterious|luxurious|sophisticated|playful|energetic|confident|expression|face reveals?|eyes? (widen|narrow|soften|brighten|light up)|brow|posture|body language)\b/i.test(p),
       points: 7,
     },
+    // ── LAYER 2: ENVIRONMENT ──────────────────────────────────────
     {
-      label: 'Emotional tone or mood',
-      checkKey: 'emotion',
-      passed: /\b(luxurious|aspirational|energetic|serene|dramatic|empowering|playful|sophisticated|nostalgic|authentic|confident|inspiring|joyful|mysterious|calm|tense|happy|sad|angry|excited|peaceful|romantic|scary|creepy|funny|humorous|serious|professional|casual|inviting|welcoming|intimidating)\b/i.test(p),
+      label: 'Environment or setting',
+      checkKey: 'environment',
+      passed: /\b(office|studio|room|kitchen|street|city|skyline|window|desk|table|chair|couch|bed|garden|park|beach|mountain|forest|warehouse|loft|penthouse|balcony|corridor|lobby|boardroom|conference|cafe|restaurant|bar|rooftop|sidewalk|alley|bridge|market|shop|store|library|gym|classroom|laboratory|hospital|clinic|workspace|workstation|apartment|home|porch|patio|doorway|staircase|elevator|stage|gallery|museum|courthouse|temple|church|campus|field|meadow|riverbank|lakeside|waterfront|harbor|airport|station|floor.to.ceiling|corner office|open.plan|coworking|background|backdrop|setting|interior|exterior|environment|scene)\b/i.test(p),
+      points: 8,
+    },
+    // ── LAYER 3: ATMOSPHERIC TEXTURE ──────────────────────────────
+    {
+      label: 'Atmospheric or sensory detail',
+      checkKey: 'atmosphere',
+      passed: /\b(dust motes?|haze|fog|mist|steam|smoke|rain|snow|wind|condensation|dew|frost|humidity|warmth|chill|glow|shimmer|reflection|refraction|diffus(ed|ing)|scatter(ed|ing)|particles?|atmosphere|atmospheric|ambient|air|breeze|draft|current|rustl(e|ing)|murmur|hum|buzz|silence|stillness|fragrance|aroma|scent|texture of (light|air|space))\b/i.test(p),
       points: 6,
     },
-    // ── BRAND & SAFETY ───────────────────────────────────────────
+    // ── LAYER 4: SURFACE & MATERIAL ──────────────────────────────
     {
-      label: 'Negative / exclusion prompt',
-      checkKey: 'negative',
-      passed: /(?:no text|no words|no logo|no watermark|avoid|without text|without logo|do not include|exclude|minus|free from|bare|empty|--no)/i.test(p),
+      label: 'Material or surface texture',
+      checkKey: 'material',
+      passed: /\b(leather|marble|wood|walnut|oak|mahogany|teak|bamboo|glass|metal|steel|brass|copper|gold|silver|chrome|aluminum|concrete|stone|granite|slate|brick|ceramic|porcelain|fabric|cotton|linen|silk|satin|velvet|cashmere|wool|denim|suede|canvas|paper|cardboard|plastic|acrylic|rubber|foam|cork|ivory|bone|crystal|diamond|pearl|lacquer|enamel|matte|glossy|brushed|polished|weathered|worn|aged|distressed|patina|rustic|raw|smooth|rough|textured|crisp|soft|plush|supple|coarse|fine|grain(ed)?|woven|knit(ted)?)\b/i.test(p),
+      points: 6,
+    },
+    // ── LAYER 5: LIGHTING DESIGN ─────────────────────────────────
+    {
+      label: 'Lighting design specified',
+      checkKey: 'lighting',
+      passed: /\b(key light|fill light|rim light|back ?light|edge light|hair light|practical light|bounce light|spill|falloff|shadow|shadows|rembrandt|split light|butterfly light|loop light|broad light|short light|chiaroscuro|high.key|low.key|diffused|soft ?box|beauty dish|reflector|flag|scrim|barn doors?|tungsten|daylight|fluorescent|neon|led|candlelight|firelight|moonlight|starlight|sunlight|golden hour|magic hour|blue hour|overcast|dappled|spotlight|flood|ambient|volumetric|god ?rays|light(ing|ed|s)?|illuminat(ed|ion)|glow(ing|s)?|bright|dim|dark|warm light|cool light|color temperature|2700k|3200k|4000k|5600k|6500k)\b/i.test(p),
+      points: 9,
+    },
+    // ── LAYER 6: LENS PHYSICS & PERSPECTIVE ───────────────────────
+    {
+      label: 'Lens perspective or depth',
+      checkKey: 'lens',
+      passed: /\b(depth of field|shallow (depth|focus)|deep focus|bokeh|telephoto|wide.?angle|macro|fisheye|tilt.?shift|perspective|compression|distortion|focal (length|point|plane)|aperture|f\/?[\d.]+|\d+mm|close.?up|medium (shot|close)|long shot|extreme close|full (body|frame)|half (body|length)|portrait (orientation|format)|landscape (format|orientation)|rule of thirds|centered|symmetr(ical|y)|foreground|midground|background|three (depth )?planes|framing|crop(ped|ping)?|aspect ratio|wide (shot|establish)|eye.?level|low angle|high angle|dutch angle|bird.?s?.?eye|worm.?s?.?eye|overhead|drone|aerial|pov|point of view)\b/i.test(p),
+      points: 8,
+    },
+    // ── LAYER 7: COLOR SCIENCE ───────────────────────────────────
+    {
+      label: 'Color palette or grade',
+      checkKey: 'color',
+      passed: /\b(color (palette|grade|grading|science|cast|shift|temperature|theory|harmony)|warm tones?|cool tones?|monochrome|desaturat(ed|ion)|saturat(ed|ion)|vivid|muted|pastel|neon|earth tones?|jewel tones?|neutral(s)?|complementary|analogous|triadic|split.complement|high contrast|low contrast|tonal (range|depth|variation)|midtones?|highlights?|shadow(s)?|blacks?|whites?|lifted blacks|crushed blacks|cross.process|teal|amber|navy|burgundy|emerald|cobalt|indigo|coral|crimson|charcoal|ivory|slate|olive|ochre|sienna|umber|cyan|magenta|#[0-9a-f]{3,6})\b/i.test(p),
+      points: 7,
+    },
+    // ── LAYER 8: COMPOSITION & NEGATIVE SPACE ─────────────────────
+    {
+      label: 'Composition intent',
+      checkKey: 'composition',
+      passed: /\b(negative space|clean space|breathing room|text overlay|headline (space|area)|copy (space|area)|left.third|right.third|upper.third|lower.third|center(ed)?|frame|composition|visual hierarchy|eye.?path|leading lines|golden ratio|diagonal|horizontal|vertical|balance|asymmetr(y|ical)|dynamic|static|minimal(ist)?|dense|layered|stacked|grid|organic|geometric|flowing|angular|curved|circular|radial|spiral)\b/i.test(p),
+      points: 6,
+    },
+    // ── LAYER 9: QUALITY ANCHORS ──────────────────────────────────
+    {
+      label: 'Quality or style anchors',
+      checkKey: 'quality',
+      passed: /\b(8k|4k|uhd|masterpiece|best quality|ultra.?detail(ed)?|highly detailed|intricate|hyper.?realistic|photorealistic|high resolution|sharp focus|crisp|lifelike|advertising photography|commercial (campaign|aesthetic|production|quality)|award.?winning|cannes|editorial|magazine quality|professional (production|studio|quality)|campaign.?hero|production.?value|gallery.?quality|museum.?quality|cinema(tic)?|film(ic)?|fine art)\b/i.test(p),
+      points: 6,
+    },
+    // ── LAYER 10: SAFETY TAIL ────────────────────────────────────
+    {
+      label: 'Safety tail (no text/logos)',
+      checkKey: 'safety',
+      passed: /\bno (text|words|letters|logos?|watermarks?|labels?|typography|captions?|signatures?|stamps?)\b/i.test(p),
+      points: 5,
+    },
+    // ── DEPTH & RICHNESS BONUSES ──────────────────────────────────
+    {
+      label: 'Rich detail (≥ 80 words)',
+      checkKey: 'length',
+      passed: wordCount >= 80,
       points: 7,
     },
     {
-      label: 'Brand or product mentioned',
-      checkKey: 'brand',
-      passed: /\b(brand|logo|product|packaging|label|bottle|box|container|tag|branded|merchandise|swag|apparel|shirt|mug|device|phone|laptop|screen|display|billboard|poster|flyer|brochure)\b/i.test(p),
-      points: 5,
-    },
-    // ── DEPTH & LENGTH ───────────────────────────────────────────
-    {
-      label: 'Prompt length ≥ 40 words',
-      checkKey: 'length',
-      passed: wordCount >= 40,
-      points: 5,
-    },
-    {
-      label: 'Highly detailed (≥ 70 words)',
+      label: 'Cinematic depth (≥ 120 words)',
       checkKey: 'depth',
-      passed: wordCount >= 70,
-      points: 8,
+      passed: wordCount >= 120,
+      points: 6,
     },
   ];
 
