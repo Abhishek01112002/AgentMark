@@ -1006,8 +1006,8 @@ const CampaignResultPage: React.FC = () => {
               )}
 
               {/* Apple Segmented Pill Tab Bar */}
-              <div className="rounded-2xl border border-[#262636] bg-[#0D0D14] p-1.5 overflow-x-auto">
-                <div className="flex gap-1 min-w-max w-full">
+              <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-x-auto">
+                <div className="flex items-center gap-1 w-full min-w-max sm:min-w-0">
                   {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -1019,19 +1019,19 @@ const CampaignResultPage: React.FC = () => {
                           setActiveTab(tab.id);
                           if (tab.id === 'focus-group') setFocusGroupUpdatedViaMcp(false);
                         }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-sora font-semibold transition-all border-none cursor-pointer ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-sora font-semibold transition-all border cursor-pointer whitespace-nowrap ${
                           isActive
-                            ? 'bg-[#6366F1] text-white shadow-sm'
-                            : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
+                            ? 'bg-[#6366F1] text-white shadow-sm border-[#818CF8]/30'
+                            : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.05] border-transparent'
                         }`}
                       >
-                        <Icon size={14} />
+                        <Icon size={14} className="shrink-0" />
                         <span>{tab.label}</span>
                         {tab.id === 'focus-group' && focusGroupUpdatedViaMcp && activeTab !== 'focus-group' ? (
                           <span className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.6)] flex-shrink-0" />
                         ) : (
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 transition-colors ${
-                            isCompleted ? (isActive ? 'bg-emerald-300' : 'bg-emerald-400/80') : 'bg-white/10'
+                            isCompleted ? (isActive ? 'bg-emerald-300' : 'bg-emerald-400') : 'bg-white/10'
                           }`} />
                         )}
                       </button>
