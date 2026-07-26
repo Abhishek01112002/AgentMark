@@ -186,14 +186,17 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
           <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               ref={bellRef}
-              className="relative transition-colors hover:text-[#c0c1ff]"
-              style={{ color: openDropdown === 'notification' ? '#c0c1ff' : '#c7c4d7' }}
+              className={`p-2 rounded-xl transition-all border cursor-pointer ${
+                openDropdown === 'notification'
+                  ? 'bg-[#6366F1]/20 text-[#818CF8] border-[#6366F1]/40 shadow-sm'
+                  : 'bg-white/5 hover:bg-white/10 text-[#94A3B8] hover:text-white border-white/10'
+              }`}
               onClick={() => handleDropdownToggle('notification')}
               aria-label="Notifications"
             >
-              <Bell size={20} className="text-amber-400 filter drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+              <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute -top-2 -right-2 min-w-5 h-5 px-1 rounded-full border border-[#1b1b20] bg-primary text-on-primary text-[11px] leading-4 flex items-center justify-center font-semibold">
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-4 px-1 rounded-full bg-[#6366F1] text-white text-[10px] font-mono font-bold flex items-center justify-center border border-[#0D0D14] shadow-md animate-pulse">
                   {unreadCount}
                 </span>
               )}
@@ -207,17 +210,10 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
         </div>
       </header>
 
-      {/* Notification panel — fixed so it never overflows the header or sidebar */}
-      {openDropdown === 'notification' && notifPos && (
+      {/* Notification panel — Right screen touch alignment */}
+      {openDropdown === 'notification' && (
         <div
-          className="dropdown-enter notification-panel-container"
-          style={{
-            position: 'fixed',
-            top: notifPos.top,
-            right: notifPos.right,
-            zIndex: 9999,
-            width: 'clamp(280px, 40vw, 480px)',
-          }}
+          className="fixed top-16 right-4 sm:right-6 z-50 notification-panel-container animate-in fade-in slide-in-from-top-2 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           <NotificationPanel onChangeUnreadCount={setUnreadCount} />

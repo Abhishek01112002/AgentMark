@@ -3,13 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { notificationsService, Notification } from '../../../../services/notifications.service';
 import { Check } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { formatDDMonYYYY } from '../../../../utils/formatDate';
 
 const iconMap: Record<string, { icon: string; bg: string; color: string }> = {
-  success: { icon: 'task_alt', bg: 'bg-secondary-container/20', color: 'text-secondary' },
-  warning: { icon: 'warning', bg: 'bg-tertiary-container/20', color: 'text-tertiary' },
-  error: { icon: 'error', bg: 'bg-error-container/20', color: 'text-error' },
-  info: { icon: 'notifications', bg: 'bg-primary/10', color: 'text-primary' },
+  success: { icon: '✓', bg: 'bg-emerald-500/15 border border-emerald-500/30', color: 'text-emerald-400' },
+  warning: { icon: '!', bg: 'bg-amber-500/15 border border-amber-500/30', color: 'text-amber-400' },
+  error: { icon: '✕', bg: 'bg-rose-500/15 border border-rose-500/30', color: 'text-rose-400' },
+  info: { icon: 'i', bg: 'bg-[#6366F1]/15 border border-[#6366F1]/30', color: 'text-[#818CF8]' },
 };
 
 interface NotificationPanelProps {
@@ -68,93 +67,95 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   return (
-    <div className="bg-surface border border-border-base rounded-xl overflow-hidden shadow-2xl w-full">
-        <div className="p-4 border-b border-border-base flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="font-headline-md text-headline-md text-text-primary">Notifications</h2>
-            {notifications.length > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary text-on-primary">
-                {notifications.length}
-              </span>
-            )}
-          </div>
+    <div className="rounded-2xl border border-white/[0.12] bg-[#12121A]/95 backdrop-blur-2xl shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden w-80 sm:w-96 font-sans">
+      {/* Header */}
+      <div className="p-4 border-b border-[#262636] flex items-center justify-between bg-white/[0.02]">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-[#6366F1] animate-pulse" />
+          <h2 className="text-xs font-bold font-sora uppercase tracking-wider text-white">Notification Center</h2>
           {notifications.length > 0 && (
-            <button
-              onClick={handleMarkAllRead}
-              className="text-xs text-primary hover:underline font-semibold"
-            >
-              Mark all as read
-            </button>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#6366F1]/20 text-[#818CF8] border border-[#6366F1]/30">
+              {notifications.length}
+            </span>
           )}
         </div>
+        {notifications.length > 0 && (
+          <button
+            onClick={handleMarkAllRead}
+            className="text-[11px] font-sora font-semibold text-[#818CF8] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+          >
+            Mark all read
+          </button>
+        )}
+      </div>
 
-        {loading ? (
-          <div className="p-6 text-sm text-text-secondary">Loading notifications...</div>
-        ) : notifications.length > 0 ? (
-          <div className="flex flex-col">
-            {notifications.map((notification, index) => {
-              const meta = iconMap[notification.type] || iconMap.info;
-              return (
-                <div
-                  key={notification.id}
-                  onClick={() => void handleNotificationClick(notification.id)}
-                  className={`p-4 hover:bg-surface-container-low transition-colors cursor-pointer group ${
-                    index !== notifications.length - 1 ? 'border-b border-border-base' : ''
-                  }`}
-                >
-                  <div className="flex gap-3">
-                    <div className={`mt-1 w-9 h-9 shrink-0 rounded-lg ${meta.bg} flex items-center justify-center ${meta.color}`}>
-                      <span className="material-symbols-outlined text-[20px]">{meta.icon}</span>
-                    </div>
+      {/* Body */}
+      {loading ? (
+        <div className="p-6 text-xs text-[#94A3B8] font-sans text-center">Loading notifications...</div>
+      ) : notifications.length > 0 ? (
+        <div className="p-3 space-y-2.5 max-h-[380px] overflow-y-auto">
+          {notifications.map((notification) => {
+            const meta = iconMap[notification.type] || iconMap.info;
+            return (
+              <div
+                key={notification.id}
+                onClick={() => void handleNotificationClick(notification.id)}
+                className="bg-[#0B0B12] hover:bg-[#161622] border border-[#262636] hover:border-[#6366F1]/30 rounded-xl p-3.5 space-y-2 transition-all cursor-pointer shadow-sm group"
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-6 h-6 shrink-0 rounded-lg ${meta.bg} flex items-center justify-center font-mono font-bold text-xs ${meta.color} mt-0.5`}>
+                    {meta.icon}
+                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap justify-between items-start gap-x-2 gap-y-0.5">
-                        <p className="font-body-md text-body-md text-text-primary font-semibold truncate max-w-[60%]">
-                          {notification.title}
-                        </p>
-                        <span className="font-label-sm text-label-sm text-text-muted whitespace-nowrap text-[10px]">
-                          {(() => {
-                            const d = new Date(notification.createdAt);
-                            return formatDDMonYYYY(d) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-                          })()}
-                        </span>
-                      </div>
-                      <p className="font-body-sm text-body-sm text-text-secondary mt-1 line-clamp-2">
-                        {notification.message}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className="text-xs font-semibold font-sora text-white truncate group-hover:text-[#818CF8] transition-colors">
+                        {notification.title}
                       </p>
+                      <span className="text-[9px] font-mono text-[#64748B] shrink-0">
+                        {(() => {
+                          const d = new Date(notification.createdAt);
+                          return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                        })()}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#94A3B8] leading-relaxed line-clamp-2 font-sans">
+                      {notification.message}
+                    </p>
+                    <div className="mt-2.5 flex justify-end">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleNotificationClick(notification.id);
                         }}
-                        className="mt-2 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-primary/30 text-primary hover:bg-primary/10 transition-colors text-[11px] font-semibold"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all text-[10px] font-sora font-semibold cursor-pointer"
                       >
-                        <Check size={12} />
-                        Read
+                        <Check size={11} className="text-emerald-400" />
+                        <span>Dismiss</span>
                       </button>
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-8 text-center">
-            <span className="material-symbols-outlined text-4xl text-text-muted block mb-2">
-              notifications_none
-            </span>
-            <p className="font-body-sm text-body-sm text-text-secondary">All caught up! No new notifications.</p>
-          </div>
-        )}
-
-        <div className="bg-surface-container-lowest p-3 text-center border-t border-border-base">
-          <button
-            onClick={handleViewAllActivity}
-            className="font-label-md text-label-md text-text-secondary hover:text-text-primary transition-colors py-3 w-full flex items-center justify-center min-h-[44px]"
-          >
-            View all activity
-          </button>
+              </div>
+            );
+          })}
         </div>
+      ) : (
+        <div className="p-8 text-center space-y-2">
+          <span className="text-2xl block opacity-60">🔔</span>
+          <p className="text-xs text-[#94A3B8] font-sans">All caught up! No unread notifications.</p>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="p-3 text-center border-t border-[#262636] bg-black/20">
+        <button
+          onClick={handleViewAllActivity}
+          className="text-xs font-sora font-semibold text-[#818CF8] hover:text-white transition-colors py-1 w-full flex items-center justify-center border-none bg-transparent cursor-pointer"
+        >
+          View Notification Settings &rarr;
+        </button>
+      </div>
     </div>
   );
 };
