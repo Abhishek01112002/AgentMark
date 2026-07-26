@@ -17,10 +17,10 @@ const Settings = React.lazy(() => import('./components/pages/settings/Settings')
 const Support = React.lazy(() => import('./components/pages/support/Support'));
 const DocsPage = React.lazy(() => import('./components/pages/docs/DocsPage'));
 
+import { GlobalSpinner } from './components/shared/GlobalSpinner';
+
 const PageLoader = () => (
-  <div className="min-h-screen flex items-center justify-center bg-surface-container-lowest">
-    <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-  </div>
+  <GlobalSpinner fullPage label="AgentMark AI Engine" sublabel="Loading workspace..." />
 );
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

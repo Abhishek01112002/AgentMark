@@ -21,10 +21,12 @@ const ReviewContent      = lazy(() => import('./review/ReviewContent'));
 const PublisherContent   = lazy(() => import('./publisher/PublisherContent'));
 const FocusGroupContent  = lazy(() => import('./focusGroup/FocusGroupPanel'));
 
+import { GlobalSpinner } from '../../../../../shared/GlobalSpinner';
+
 /** Minimal fallback rendered while a tab's chunk is being fetched. */
 const TabLoader = () => (
-  <div className="flex items-center justify-center py-20">
-    <Loader2 size={24} className="animate-spin text-[#6366F1]/60" />
+  <div className="py-12 flex items-center justify-center">
+    <GlobalSpinner size="md" label="Loading module chunk..." />
   </div>
 );
 
@@ -709,11 +711,7 @@ const CampaignResultPage: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0A0A0F' }}>
-        <Loader2 size={32} className="animate-spin text-[#6366F1]" />
-      </div>
-    );
+    return <GlobalSpinner fullPage label="Loading Campaign Results..." sublabel="Fetching artifacts & AI simulation context..." />;
   }
 
   if (notFound || !campaign) {
