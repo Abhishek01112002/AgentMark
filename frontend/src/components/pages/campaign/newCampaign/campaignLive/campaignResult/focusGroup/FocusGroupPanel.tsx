@@ -298,72 +298,77 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
 
   return (
     <div
-      className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-4 relative overflow-hidden"
+      className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-5 relative overflow-hidden shadow-lg"
       style={{ animation: `fadeIn 0.35s ease both ${index * 80}ms` }}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}, transparent)` }} />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3.5 min-w-0">
           <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-            style={{ background: avatarGradient, boxShadow: '0 4px 10px rgba(0,0,0,0.15)' }}
+            className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-base shrink-0 shadow-md"
+            style={{ background: avatarGradient }}
           >
             {initials}
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-sm font-semibold text-[#F1F1F3] truncate font-sora">{displayName}</span>
-            <span className="text-[11px] text-[#8B8B9E]">Virtual Persona</span>
+            <span className="text-base font-semibold text-[#F1F1F3] truncate font-sora">{displayName}</span>
+            <span className="text-xs text-[#8B8B9E] font-mono">Target Buyer Persona</span>
           </div>
         </div>
 
         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 flex-wrap">
           <span
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap"
+            className="text-xs font-semibold px-3 py-1.5 rounded-full border whitespace-nowrap font-mono"
             style={{
               color: critique.click_intent ? '#4edea3' : '#F43F5E',
               backgroundColor: critique.click_intent ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-              borderColor: critique.click_intent ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
+              borderColor: critique.click_intent ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)',
             }}
           >
-            {critique.click_intent ? 'Would Click' : 'Would Scroll Past'}
+            {critique.click_intent ? '✓ Would Click Ad' : '✕ Would Scroll Past'}
           </span>
           {objectionChannel && (
-            <span className="text-[9px] font-mono font-semibold text-[#c0c1ff] bg-[rgba(99,102,241,0.1)] border border-[rgba(99,102,241,0.25)] rounded px-1.5 py-0.5 uppercase tracking-wider whitespace-nowrap">
+            <span className="text-xs font-mono font-semibold text-[#818CF8] bg-[#6366F1]/10 border border-[#6366F1]/20 rounded-md px-2.5 py-0.5 uppercase tracking-wider whitespace-nowrap">
               Friction: {objectionChannel}
             </span>
           )}
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-xl p-4 flex flex-col gap-2.5 border" style={{ backgroundColor: `${color}08`, borderColor: `${color}22` }}>
-        <div className="absolute top-0 left-0 bottom-0 w-0.5" style={{ background: `linear-gradient(180deg, ${color}, transparent)` }} />
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center border" style={{ backgroundColor: `${color}15`, borderColor: `${color}30` }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      {/* Score Header */}
+      <div className="relative overflow-hidden rounded-xl p-5 flex flex-col gap-3 border" style={{ backgroundColor: `${color}08`, borderColor: `${color}22` }}>
+        <div className="absolute top-0 left-0 bottom-0 w-1" style={{ background: `linear-gradient(180deg, ${color}, transparent)` }} />
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border" style={{ backgroundColor: `${color}15`, borderColor: `${color}30` }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           </div>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold font-sora" style={{ color }}>{critique.resonance_score}</span>
-            <span className="text-xs text-[#8B8B9E] font-sora">/100 Resonance</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold font-sora" style={{ color }}>{critique.resonance_score}</span>
+            <span className="text-xs font-mono text-[#8B8B9E] font-semibold uppercase tracking-wider">/100 Resonance Score</span>
           </div>
         </div>
+
         {critique.objection && (
-          <p className="text-xs text-[#8B8B9E] italic leading-relaxed m-0">"{critique.objection}"</p>
+          <p className="text-sm text-[#E2E8F0] font-sans leading-relaxed m-0 pt-1">
+            "{critique.objection}"
+          </p>
         )}
+
         {critique.rubric && (
-          <div className="grid grid-cols-2 gap-2 gap-x-4 mt-1 pt-2.5 border-t border-[rgba(255,255,255,0.06)]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2 pt-3 border-t border-[rgba(255,255,255,0.06)]">
             {[
               { label: 'Clarity', score: critique.rubric.clarity },
               { label: 'Trust', score: critique.rubric.trust },
               { label: 'Value', score: critique.rubric.value },
               { label: 'Urgency', score: critique.rubric.urgency },
             ].map(({ label, score }) => (
-              <div key={label} className="flex flex-col gap-0.5">
-                <div className="flex justify-between text-[10px] font-mono text-[#8B8B9E]">
+              <div key={label} className="flex flex-col gap-1">
+                <div className="flex justify-between text-xs font-mono text-[#8B8B9E]">
                   <span>{label}</span>
                   <span className="font-semibold text-[#F1F1F3]">{score}/5</span>
                 </div>
-                <div className="h-1 rounded bg-[#2A2A38] overflow-hidden">
+                <div className="h-1.5 rounded bg-[#2A2A38] overflow-hidden">
                   <div className="h-full rounded transition-all duration-600" style={{ width: `${(score / 5) * 100}%`, backgroundColor: score >= 4 ? '#4edea3' : score >= 3 ? '#F59E0B' : '#F43F5E' }} />
                 </div>
               </div>
@@ -373,21 +378,26 @@ const PersonaCard: React.FC<PersonaCardProps> = ({ critique, index, copies }) =>
       </div>
 
       {critique.clash_quote && (
-        <div className="bg-[rgba(245,158,11,0.04)] border border-[rgba(245,158,11,0.12)] rounded-xl p-3 text-xs text-[#8B8B9E] leading-relaxed">
-          <div className="flex items-center gap-1.5 mb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            <span className="text-[10px] font-semibold text-[#F59E0B] uppercase tracking-wider">Friction Phrase</span>
+        <div className="bg-[#F59E0B]/5 border border-[#F59E0B]/20 rounded-xl p-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span className="text-xs font-mono font-semibold text-[#F59E0B] uppercase tracking-wider">Detected Copy Friction Phrase</span>
           </div>
-          "{critique.clash_quote}"
+          <p className="m-0 text-sm font-mono text-[#F1F1F3] leading-relaxed">
+            "{critique.clash_quote}"
+          </p>
         </div>
       )}
 
       {critique.verdict && (
-        <div className="bg-[rgba(99,102,241,0.03)] border border-[rgba(99,102,241,0.08)] rounded-xl p-4 flex gap-2.5 items-start">
-          <div className="w-6 h-6 rounded-md bg-[rgba(99,102,241,0.1)] flex items-center justify-center shrink-0 mt-0.5">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <div className="bg-[#6366F1]/5 border border-[#6366F1]/20 rounded-xl p-4 flex gap-3 items-start">
+          <div className="w-7 h-7 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center shrink-0 text-[#818CF8] mt-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <p className="text-xs text-[#F1F1F3] leading-relaxed m-0 flex-1">{critique.verdict}</p>
+          <div>
+            <span className="text-xs font-mono font-semibold text-[#818CF8] uppercase tracking-wider block mb-1">Detailed Persona Verdict</span>
+            <p className="text-sm text-[#F1F1F3] font-sans leading-relaxed m-0">{critique.verdict}</p>
+          </div>
         </div>
       )}
 
@@ -1195,47 +1205,51 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
   if (!recommendations || recommendations.length === 0) return null;
 
   return (
-    <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-5 relative overflow-hidden">
+    <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden shadow-lg">
       {primaryAccent}
-      <div className="flex items-center gap-2.5">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[rgba(99,102,241,0.2)] to-[rgba(129,140,248,0.1)] flex items-center justify-center border border-[rgba(99,102,241,0.2)]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
         </div>
-        <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">Actionable Recommendations</h3>
+        <div>
+          <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">Actionable Copy Optimization Directives</h3>
+          <p className="m-0 text-xs text-[#8B8B9E] font-sora mt-0.5">High-impact revisions to increase conversion resonance &amp; eliminate objections</p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4">
         {recommendations.map((rec, i) => (
           <div
             key={i}
-            className="card-elevate bg-[#13131a] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-3.5"
+            className="card-elevate bg-[#151520] border border-[#2A2A38] rounded-xl p-5 flex flex-col gap-4"
             style={{ animation: `fadeIn 0.35s ease both ${i * 60}ms` }}
           >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-[rgba(99,102,241,0.2)] to-[rgba(129,140,248,0.1)] flex items-center justify-center border border-[rgba(99,102,241,0.2)]">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-[#2A2A38]">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-semibold text-[#818CF8] bg-[#6366F1]/10 border border-[#6366F1]/20 rounded-md px-3 py-1 uppercase tracking-wider">
+                  {rec.target_channel}
+                </span>
+                <span className="text-xs text-[#8B8B9E] font-mono">Target Channel Optimization</span>
               </div>
-              <span className="text-[10px] font-mono font-semibold text-[#c0c1ff] bg-[rgba(99,102,241,0.08)] border border-[rgba(99,102,241,0.2)] rounded-md px-2 py-0.5 uppercase tracking-wider">{rec.target_channel}</span>
-              <span className="text-xs text-[#8B8B9E] font-medium">Optimization Directives</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative overflow-hidden bg-[rgba(239,68,68,0.04)] border border-[rgba(239,68,68,0.12)] rounded-xl p-4 flex flex-col gap-2">
-                <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-b from-[#F43F5E] to-[#FB7185]" />
-                <div className="flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <span className="text-[10px] font-mono font-semibold text-[#F43F5E] uppercase tracking-wider">Detected Friction</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="relative overflow-hidden bg-[#F43F5E]/5 border border-[#F43F5E]/20 rounded-xl p-4 flex flex-col gap-2">
+                <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#F43F5E] to-[#FB7185]" />
+                <div className="flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span className="text-xs font-mono font-semibold text-[#F43F5E] uppercase tracking-wider">Detected Copy Friction</span>
                 </div>
-                <p className="m-0 text-xs text-[#8B8B9E] leading-relaxed">{rec.friction_identified}</p>
+                <p className="m-0 text-sm text-[#E2E8F0] font-sans leading-relaxed">{rec.friction_identified}</p>
               </div>
 
-              <div className="relative overflow-hidden bg-[rgba(16,185,129,0.04)] border border-[rgba(16,185,129,0.12)] rounded-xl p-4 flex flex-col gap-2">
-                <div className="absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-b from-[#10B981] to-[#34D399]" />
-                <div className="flex items-center gap-1.5">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                  <span className="text-[10px] font-mono font-semibold text-[#10B981] uppercase tracking-wider">Suggested Copy Revision</span>
+              <div className="relative overflow-hidden bg-[#34D399]/5 border border-[#34D399]/20 rounded-xl p-4 flex flex-col gap-2">
+                <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-[#10B981] to-[#34D399]" />
+                <div className="flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span className="text-xs font-mono font-semibold text-[#34D399] uppercase tracking-wider">Recommended Copy Revision</span>
                 </div>
-                <p className="m-0 text-xs text-[#F1F1F3] italic leading-relaxed">"{rec.suggested_revision.replace(/^"|"$/g, '')}"</p>
+                <p className="m-0 text-sm text-[#F1F1F3] font-sans font-medium leading-relaxed">"{rec.suggested_revision.replace(/^"|"$/g, '')}"</p>
               </div>
             </div>
           </div>
