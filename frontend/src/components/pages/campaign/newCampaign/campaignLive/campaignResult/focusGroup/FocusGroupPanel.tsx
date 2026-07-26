@@ -132,13 +132,7 @@ interface TooltipState {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const HIGHLIGHT_COLORS = [
-  'rgba(244,63,94,0.3)',
-  'rgba(245,158,11,0.25)',
-  'rgba(99,102,241,0.25)',
-  'rgba(78,222,163,0.2)',
-  'rgba(192,193,255,0.2)',
-];
+
 
 const scoreColor = (score: number): string => {
   if (score < 40) return '#F43F5E';
@@ -505,54 +499,66 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
   return (
     <>
       {tooltip && createPortal(
-        <div className="fixed z-[9999] pointer-events-none max-w-[280px] bg-[#1A1A28] border border-[#2A2A38] rounded-xl p-3 shadow-[0_8px_32px_rgba(0,0,0,0.6)] font-sora text-xs text-[#F1F1F3] leading-relaxed" style={{ left: tooltip.x, top: tooltip.y }}>
-          <div className="text-[10px] font-mono text-[#c0c1ff] uppercase tracking-wider mb-1">{tooltip.personaId}</div>
-          {tooltip.objection && <div className="mb-1 text-[#8B8B9E]">{tooltip.objection}</div>}
-          {tooltip.verdict && <div className="italic">{tooltip.verdict}</div>}
+        <div className="fixed z-[9999] pointer-events-none max-w-[320px] bg-[#161622]/95 border border-[#262636] rounded-xl p-4 shadow-[0_16px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl font-sans text-xs text-[#E2E8F0] leading-relaxed" style={{ left: tooltip.x, top: tooltip.y }}>
+          <div className="text-[11px] font-mono font-semibold text-[#A5B4FC] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#6366F1]" />
+            {tooltip.personaId.replace(/[-_]/g, ' ')}
+          </div>
+          {tooltip.objection && <div className="mb-2 text-[#CBD5E1] font-medium">"{tooltip.objection}"</div>}
+          {tooltip.verdict && <div className="text-[#94A3B8] italic border-t border-[#262636] pt-1.5 mt-1.5">{tooltip.verdict}</div>}
         </div>,
         document.body
       )}
 
-      <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl overflow-hidden">
+      <div className="card-elevate bg-[#12121A]/90 border border-[#262636] rounded-2xl overflow-hidden shadow-xl backdrop-blur-xl">
         {primaryAccent}
-        <div className="flex items-center gap-2 px-5 pt-3.5 text-[11px] text-[#818CF8]">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          Hover highlighted text to see persona objections
-        </div>
 
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(79,70,229,0.12)]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[rgba(79,70,229,0.2)] to-[rgba(129,140,248,0.1)] flex items-center justify-center border border-[rgba(79,70,229,0.2)]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4M16 16l-4-4-4 4"/></svg>
+        {/* Card Header */}
+        <div className="flex items-center justify-between flex-wrap gap-3 px-6 py-4 border-b border-[#262636] bg-[#161622]/60">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8l-4 4-4-4M16 16l-4-4-4 4"/></svg>
             </div>
-            <h3 className="m-0 text-sm font-semibold text-[#F1F1F3] font-sora">Copy Friction Analysis</h3>
+            <div>
+              <h3 className="m-0 text-base font-semibold text-[#E2E8F0] font-sora">Copy Friction Analysis</h3>
+              <p className="m-0 text-xs text-[#94A3B8] font-sora mt-0.5">Interactive heatmap of persona objections across ad copy channels</p>
+            </div>
           </div>
-          <button
-            onClick={() => setIsExpanded(v => !v)}
-            className="bg-none border border-[#2A2A38] rounded-md px-2.5 py-1 font-mono text-[11px] text-[#8B8B9E] cursor-pointer transition-all duration-200 hover:border-[#6366F1] hover:text-[#c0c1ff]"
-            aria-expanded={isExpanded}
-          >
-            {isExpanded ? 'Collapse' : 'Expand'}
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 bg-[#6366F1]/10 border border-[#6366F1]/20 px-3 py-1 rounded-full text-xs font-mono text-[#A5B4FC]">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Hover highlighted text to see objections
+            </div>
+
+            <button
+              onClick={() => setIsExpanded(v => !v)}
+              className="bg-[#181824] border border-[#262636] rounded-lg px-3 py-1.5 font-mono text-xs text-[#94A3B8] cursor-pointer transition-all duration-200 hover:border-[#6366F1]/50 hover:text-[#E2E8F0]"
+              aria-expanded={isExpanded}
+            >
+              {isExpanded ? 'Collapse' : 'Expand'}
+            </button>
+          </div>
         </div>
 
         {isExpanded && (
-          <div className="p-5 pt-4">
+          <div className="p-6 flex flex-col gap-5">
+            {/* Channel Selection Segmented Control */}
             {channels.length > 0 && (
-              <div className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><path d="M6 6h.01M6 18h.01"/></svg>
-                  <span className="text-[10px] text-[#8B8B9E] uppercase tracking-wider">Filter by channel</span>
-                </div>
-                <div className="flex gap-1 p-0.5 bg-[rgba(0,0,0,0.2)] rounded-xl border border-[rgba(255,255,255,0.03)] overflow-x-auto">
+              <div className="flex flex-col gap-2">
+                <span className="text-[11px] font-mono text-[#94A3B8] uppercase tracking-wider">Filter by Ad Channel</span>
+                <div className="flex gap-1.5 p-1 bg-[#0D0D14] rounded-xl border border-[#262636] overflow-x-auto">
                   {channels.map(ch => {
                     const isActive = ch === selectedChannel;
                     return (
                       <button
                         key={ch}
                         onClick={() => setSelectedChannel(ch)}
-                        className={`flex-1 whitespace-nowrap px-3.5 py-1.5 rounded-lg border-none text-[11.5px] font-semibold uppercase tracking-wider cursor-pointer transition-all duration-200 font-sora ${isActive ? 'text-[#E0E7FF] shadow-[0_1px_6px_rgba(79,70,229,0.15)]' : 'text-[#6B6B80]'}`}
-                        style={{ background: isActive ? 'linear-gradient(135deg, rgba(79,70,229,0.3), rgba(129,140,248,0.12))' : 'transparent' }}
+                        className={`flex-1 whitespace-nowrap px-4 py-2 rounded-lg border-none text-xs font-semibold capitalize cursor-pointer transition-all duration-200 font-sora ${
+                          isActive
+                            ? 'bg-[#6366F1] text-white shadow-sm font-semibold'
+                            : 'text-[#94A3B8] hover:text-[#E2E8F0] hover:bg-white/[0.04]'
+                        }`}
                       >
                         {ch}
                       </button>
@@ -562,20 +568,34 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
               </div>
             )}
 
-            <div className="font-mono text-xs leading-relaxed whitespace-pre-wrap text-[#F1F1F3] break-words bg-gradient-to-br from-[rgba(0,0,0,0.3)] to-[rgba(79,70,229,0.02)] border border-[rgba(79,70,229,0.1)] rounded-xl p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]">
-              <div className="flex items-center gap-1.5 mb-3 pb-2.5 border-b border-[rgba(255,255,255,0.04)]">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span className="text-[10px] text-[#8B8B9E] uppercase tracking-wider">Copy Content</span>
-                <span className="text-[9px] text-[rgba(139,139,158,0.5)] ml-auto font-mono">{segments.filter(s => s.highlighted).length} friction pts</span>
+            {/* Main Ad Copy Text Box - High Readability Proportional Sans-Serif */}
+            <div className="bg-[#161622] border border-[#262636] rounded-xl p-5 sm:p-6 font-sans text-sm leading-relaxed text-[#CBD5E1] whitespace-pre-wrap break-words relative">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#262636]">
+                <div className="flex items-center gap-2 text-xs font-mono text-[#94A3B8]">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <span className="uppercase font-semibold tracking-wider">Copy Content</span>
+                </div>
+                <span className="text-xs font-mono font-semibold text-[#FBBF24] bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-2.5 py-0.5 rounded-full">
+                  {segments.filter(s => s.highlighted).length} Friction Point{segments.filter(s => s.highlighted).length !== 1 ? 's' : ''} Detected
+                </span>
               </div>
+
               {segments.map((seg, i) => {
                 if (!seg.highlighted) return <span key={i}>{seg.text}</span>;
                 const critique = critiques[seg.critiqueIndex];
+                const score = critique?.resonance_score ?? 50;
+
+                // Situation & Severity-based Dynamic Highlight Palette
+                const highlightStyle = score < 40
+                  ? 'bg-[#F43F5E]/15 text-[#FDA4AF] border-b-2 border-[#F43F5E] hover:bg-[#F43F5E]/30'
+                  : score < 70
+                    ? 'bg-[#F59E0B]/15 text-[#FDE68A] border-b-2 border-[#F59E0B] hover:bg-[#F59E0B]/30'
+                    : 'bg-[#6366F1]/15 text-[#C7D2FE] border-b-2 border-[#6366F1] hover:bg-[#6366F1]/30';
+
                 return (
                   <span
                     key={i}
-                    className="rounded-sm px-0.5 cursor-help transition-all duration-150 hover:brightness-125"
-                    style={{ backgroundColor: HIGHLIGHT_COLORS[seg.critiqueIndex % HIGHLIGHT_COLORS.length] }}
+                    className={`${highlightStyle} px-1 py-0.5 rounded-sm cursor-help transition-all duration-150 font-medium`}
                     onClick={() => onSelectPersona?.(seg.critiqueIndex)}
                     onMouseEnter={e => handleMouseEnter(e, critique)}
                     onMouseMove={e => {
@@ -583,7 +603,7 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
                       setTooltip(prev => prev ? { ...prev, x: pos.x, y: pos.y } : null);
                     }}
                     onMouseLeave={() => setTooltip(null)}
-                    aria-label={`Friction point: ${critique.persona_id}`}
+                    aria-label={`Friction point: ${critique?.persona_id}`}
                   >
                     {seg.text}
                   </span>
@@ -592,7 +612,7 @@ const CopyHighlightOverlay: React.FC<CopyHighlightOverlayProps> = ({ copyText, c
             </div>
 
             {!hasHighlights && (
-              <div className="mt-3 p-3 rounded-xl bg-[rgba(16,185,129,0.04)] border border-[rgba(16,185,129,0.12)] text-xs text-[#4edea3] flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-[#10B981]/10 border border-[#10B981]/25 text-xs text-[#4edea3] flex items-center gap-2 font-sora">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4edea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 No direct friction points identified in this channel's copy.
               </div>
