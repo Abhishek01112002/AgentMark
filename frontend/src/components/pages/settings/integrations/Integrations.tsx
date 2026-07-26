@@ -359,8 +359,8 @@ export const Integrations: React.FC = () => {
             </div>
           ) : null}
 
-          {/* Main Info Card */}
-          <div className="p-6 rounded-xl space-y-5 shadow-[0_8px_40px_rgba(0,0,0,0.25)] relative overflow-hidden" style={{ background: 'linear-gradient(180deg, rgba(17,17,24,1) 0%, rgba(12,12,18,0.95) 100%)', border: '1px solid #2A2A38' }}>
+          {/* Main Info Card (Apple Pro Glassmorphic Card) */}
+          <div className="p-6 sm:p-7 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] to-transparent opacity-60" />
             
             <div className="flex items-start justify-between border-b border-[#2A2A38]/40 pb-4">

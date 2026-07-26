@@ -267,76 +267,48 @@ const CampaignHistoryContent: React.FC = () => {
         <main className="history-main pt-14">
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div className="space-y-8">
-              <header>
-                <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                  Past Campaigns & Activity
-                </h2>
-                <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                  Review and analyze past and currently active marketing initiatives.
-                </p>
+              {/* Apple Pro Header Card */}
+              <header className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight font-sora text-white mb-1.5">
+                      Past Campaigns & Activity
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+                      Review, audit, and analyze historical and active multi-agent marketing initiatives
+                    </p>
+                  </div>
+                </div>
               </header>
 
               <div className="space-y-6">
-                <div className="flex flex-col gap-4">
-                  <div className="relative w-full">
+                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
+                  {/* Apple Search Bar */}
+                  <div className="relative flex-1">
                     <input
-                      className="w-full rounded-lg px-4 py-2 text-sm border transition-all focus:outline-none focus:border-[#6366F1]"
-                      style={{ backgroundColor: '#111118', borderColor: '#2A2A38', color: '#F1F1F3', fontFamily: 'Sora, sans-serif' }}
-                      placeholder="Search campaigns..."
+                      className="w-full rounded-2xl px-4 py-2.5 text-xs sm:text-sm bg-[#0D0D14] border border-[#262636] text-white placeholder-[#64748B] transition-all focus:outline-none focus:border-[#6366F1] font-sans shadow-inner"
+                      placeholder="Search by campaign name, industry, or goal..."
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => setStatusFilter('all')}
-                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
-                      style={{
-                        backgroundColor: statusFilter === 'all' ? 'rgba(99,102,241,0.1)' : '#111118',
-                        color: statusFilter === 'all' ? '#6366F1' : '#8B8B9E',
-                        border: `1px solid ${statusFilter === 'all' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      All Campaigns
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('processing')}
-                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
-                      style={{
-                        backgroundColor: statusFilter === 'processing' ? 'rgba(99,102,241,0.1)' : '#111118',
-                        color: statusFilter === 'processing' ? '#6366F1' : '#8B8B9E',
-                        border: `1px solid ${statusFilter === 'processing' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] flex-shrink-0" /> Processing
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('completed')}
-                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
-                      style={{
-                        backgroundColor: statusFilter === 'completed' ? 'rgba(99,102,241,0.1)' : '#111118',
-                        color: statusFilter === 'completed' ? '#6366F1' : '#8B8B9E',
-                        border: `1px solid ${statusFilter === 'completed' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] flex-shrink-0" /> Completed
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('failed')}
-                      className="px-3 md:px-4 py-2 md:py-3 rounded-lg text-xs whitespace-nowrap flex items-center gap-1 md:gap-2 transition-colors min-h-[40px] md:min-h-[44px] flex-1 sm:flex-none"
-                      style={{
-                        backgroundColor: statusFilter === 'failed' ? 'rgba(99,102,241,0.1)' : '#111118',
-                        color: statusFilter === 'failed' ? '#6366F1' : '#8B8B9E',
-                        border: `1px solid ${statusFilter === 'failed' ? 'rgba(99,102,241,0.2)' : '#2A2A38'}`,
-                        fontFamily: 'JetBrains Mono, monospace',
-                      }}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#F43F5E] flex-shrink-0" /> Failed
-                    </button>
+
+                  {/* Apple Segmented Control Pill Filters */}
+                  <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto shrink-0">
+                    {(['all', 'processing', 'completed', 'failed'] as const).map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => { setStatusFilter(st); setCurrentPage(1); }}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 capitalize cursor-pointer border-none ${
+                          statusFilter === st
+                            ? 'bg-[#6366F1] text-white shadow-sm'
+                            : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
                   </div>
                 </div>
 

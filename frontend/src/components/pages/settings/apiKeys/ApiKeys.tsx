@@ -261,13 +261,13 @@ const ApiKeys: React.FC = () => {
         document.body
       )}
 
-      <div className="rounded-2xl overflow-hidden shadow-[0_8px_40px_rgba(0,0,0,0.25)]" style={{ background: 'linear-gradient(180deg, rgba(17,17,24,1) 0%, rgba(12,12,18,0.95) 100%)', border: '1px solid #2A2A38' }}>
-        <div className="p-5 sm:p-6 border-b border-[#2A2A38] bg-gradient-to-r from-[#6366F1]/5 to-transparent">
-          <h2 className="text-lg font-semibold text-text-primary">API Keys</h2>
-          <p className="text-sm text-text-secondary mt-0.5">Add API keys for LLM and search providers.</p>
+      <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="pb-5 mb-5 border-b border-[#262636]">
+          <h2 className="text-xl font-semibold font-sora text-white">LLM & Search API Keys</h2>
+          <p className="text-xs sm:text-sm text-[#94A3B8] font-sans mt-1">Configure your API provider keys with automatic multi-agent failover support.</p>
         </div>
 
-        <div className="divide-y divide-border-base">
+        <div className="divide-y divide-[#262636]">
           {order.map((id) => {
             const meta = PROVIDERS.find((p) => p.id === id);
             if (!meta) return null; // Defensive: skip unknown providers to prevent crash

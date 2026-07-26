@@ -50,32 +50,32 @@ const SettingsContent: React.FC = () => {
         <main className="settings-main pt-14 min-h-screen fade-in" style={{ fontFamily: 'Sora, sans-serif' }}>
           <div className="px-3 py-5 sm:px-4 sm:py-6 md:px-6 lg:px-8">
             <div className="space-y-8">
-              {/* Header */}
-              <header>
-                <h1 className="text-3xl md:text-4xl font-bold mb-3" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                  Account & Preferences
+              {/* Apple Pro Header Card */}
+              <header className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 p-6 sm:p-7 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+                <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight font-sora text-white mb-1.5">
+                  Account & System Settings
                 </h1>
-                <p className="text-base" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                  Manage your account preferences and integrations.
+                <p className="text-xs sm:text-sm text-[#94A3B8] font-sans">
+                  Manage user profiles, notifications, LLM API key failovers, and Claude Desktop MCP integrations
                 </p>
               </header>
 
-              {/* Tabs */}
-              <div className="flex gap-1.5 p-1.5 bg-[#0A0A0F] border border-[#2A2A38]/60 rounded-xl w-fit overflow-x-auto">
+              {/* Apple Segmented Control Navigation Bar */}
+              <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto w-fit">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 px-4 py-2.5 font-medium text-sm transition-all relative whitespace-nowrap rounded-lg ${
-                        activeTab === tab.id
-                          ? 'bg-gradient-to-r from-[#6366F1]/20 to-[#8B5CF6]/10 text-[#C7D2FE] shadow-[0_0_20px_rgba(99,102,241,0.1)] border border-[#6366F1]/25'
-                          : 'text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]'
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none whitespace-nowrap ${
+                        isActive
+                          ? 'bg-[#6366F1] text-white shadow-sm font-semibold'
+                          : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
                       }`}
-                      style={{ fontFamily: 'JetBrains Mono, monospace' }}
                     >
-                      <Icon size={16} className={activeTab === tab.id ? 'text-[#818CF8]' : ''} />
+                      <Icon size={14} className={isActive ? 'text-white' : 'text-[#94A3B8]'} />
                       <span>{tab.label}</span>
                     </button>
                   );
