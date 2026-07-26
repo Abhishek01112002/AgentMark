@@ -4,8 +4,8 @@ import Redis from 'ioredis';
 export const redis = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  lazyConnect: true,
-  enableOfflineQueue: false, // Prevent hanging if Redis is offline
+  lazyConnect: false, // Connect immediately on app startup
+  enableOfflineQueue: true, // Queue commands safely during connection setup
   maxRetriesPerRequest: 3,
   retryStrategy: (times) => Math.min(times * 500, 10000),
 });

@@ -227,10 +227,12 @@ export const campaignService = {
 
     // Set Redis cancellation flag
     try {
-      await redis.set(`cancel:${id}`, "true", "EX", 3600);
-      console.log(`[Campaign Service] Set cancellation flag in Redis for campaign ${id}`);
-    } catch (error) {
-      console.error("Failed to set cancellation flag in Redis:", error);
+      if (redis.status === 'ready' || redis.status === 'connecting') {
+        await redis.set(`cancel:${id}`, "true", "EX", 3600);
+        console.log(`[Campaign Service] Set cancellation flag in Redis for campaign ${id}`);
+      }
+    } catch (error: any) {
+      console.error("Failed to set cancellation flag in Redis:", error?.message || error);
     }
 
     if (campaign.status === 'completed' || campaign.status === 'failed') {
