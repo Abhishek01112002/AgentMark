@@ -19,6 +19,7 @@ const OverviewContent    = lazy(() => import('./overview/OverviewContent'));
 const ResearchContent    = lazy(() => import('./research/ResearchContent'));
 const StrategyContent    = lazy(() => import('./strategy/StrategyContent'));
 const CopywriterContent  = lazy(() => import('./copywriter/CopywriterContent'));
+const CreativeHooksContent = lazy(() => import('./creativeHooks/CreativeHooksContent'));
 const VisualsContent     = lazy(() => import('./visuals/VisualsContent'));
 const ReviewContent      = lazy(() => import('./review/ReviewContent'));
 const PublisherContent   = lazy(() => import('./publisher/PublisherContent'));
@@ -39,6 +40,7 @@ const CampaignResultPageContent: React.FC = () => {
     loading,
     notFound,
     activeTab,
+    setActiveTab,
     memoryInsights,
     memoryCount,
     showVariantModal,
@@ -49,8 +51,10 @@ const CampaignResultPageContent: React.FC = () => {
     getOutputField,
     resolvedChannels,
     activeCopyText,
+    creativeHookMatrixEnabled,
     memoizedStrategyData,
     handleCopyVariantsUpdate,
+    handleCreativeHookMatrixUpdate,
     handleRunSimulation,
     handleVariantCreated,
     handleRetryCampaign,
@@ -69,7 +73,28 @@ const CampaignResultPageContent: React.FC = () => {
       case 'strategy':
         return <StrategyContent data={memoizedStrategyData} campaign={campaign} />;
       case 'copy':
-        return <CopywriterContent data={getOutputField('copy_output') || getOutputField('copyOutput')} campaign={campaign} campaignId={campaign.id} onCopyVariantsUpdate={handleCopyVariantsUpdate} />;
+        return (
+          <CopywriterContent
+            data={getOutputField('copy_output') || getOutputField('copyOutput')}
+            campaign={campaign}
+            campaignId={campaign.id}
+            onCopyVariantsUpdate={handleCopyVariantsUpdate}
+            showCreativeHooksBanner={creativeHookMatrixEnabled}
+            onOpenCreativeHooks={() => setActiveTab('creative-hooks')}
+          />
+        );
+      case 'creative-hooks':
+        if (!creativeHookMatrixEnabled) return null;
+        return (
+          <CreativeHooksContent
+            data={campaign.creativeHooks}
+            campaignId={campaign.id}
+            channels={resolvedChannels.channels}
+            copyVariants={campaign.copyVariants}
+            onCreativeHooksUpdate={handleCreativeHookMatrixUpdate}
+            onCopyVariantsUpdate={handleCopyVariantsUpdate}
+          />
+        );
       case 'images':
         return <VisualsContent data={getOutputField('image_output') || getOutputField('imageOutput')} campaignId={campaignId} />;
       case 'review':

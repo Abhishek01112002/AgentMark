@@ -16,6 +16,8 @@ import {
   selectResolvedChannels,
   selectActiveCopyText,
   selectCopyHash,
+  selectCreativeHooks,
+  selectHookMatrixStats,
 } from '../selectors/campaignSelectors';
 
 interface CampaignResultContextType {
@@ -27,6 +29,7 @@ interface CampaignResultContextType {
   setActiveTab: (tab: TabId) => void;
   memoryInsights: any[];
   memoryCount: number;
+  creativeHookMatrixEnabled: boolean;
   showHumanReview: boolean;
   setShowHumanReview: (show: boolean) => void;
   isMinimized: boolean;
@@ -55,11 +58,14 @@ interface CampaignResultContextType {
   copyHash: string;
   parsedCampaignOutputs: any;
   memoizedStrategyData: any;
+  creativeHooks: any[];
+  hookMatrixStats: { count: number; averageQuality: number; averageVirality: number; approved: number };
   isTabCompleted: (tabId: TabId) => boolean;
   handleApprove: () => Promise<void>;
   handleRequestRevision: () => Promise<void>;
   handleRunSimulation: () => Promise<void>;
   handleCopyVariantsUpdate: (updatedCopyVariants: any) => void;
+  handleCreativeHookMatrixUpdate: (updatedMatrix: any) => void;
   handleVariantCreated: (newCampaignId: string, projectId: string, selectedStage?: string) => void;
   handleRetryCampaign: () => Promise<void>;
   handleEditBrief: () => void;
@@ -79,6 +85,7 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
     notFound,
     memoryInsights,
     memoryCount,
+    creativeHookMatrixEnabled,
     decisionMadeRef,
     showHumanReview,
     setShowHumanReview,
@@ -115,6 +122,8 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
   const agentScores = useMemo(() => selectAgentScores(campaign), [campaign]);
   const revisionCounts = useMemo(() => selectRevisionCounts(campaign), [campaign]);
   const reviewerNotes = useMemo(() => selectReviewerNotes(campaign), [campaign]);
+  const creativeHooks = useMemo(() => selectCreativeHooks(campaign), [campaign]);
+  const hookMatrixStats = useMemo(() => selectHookMatrixStats(campaign), [campaign]);
 
   const { handleRunSimulation } = useCampaignPolling({
     campaign,
@@ -203,6 +212,16 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
       dispatch({
         type: 'COPY_VARIANTS_UPDATED',
         payload: updatedCopyVariants,
+      });
+    },
+    [dispatch]
+  );
+
+  const handleCreativeHookMatrixUpdate = useCallback(
+    (updatedMatrix: any) => {
+      dispatch({
+        type: 'CREATIVE_HOOK_MATRIX_UPDATED',
+        payload: updatedMatrix,
       });
     },
     [dispatch]
@@ -307,6 +326,8 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
           return Boolean(campaign.strategy);
         case 'copy':
           return Boolean(campaign.copy);
+        case 'creative-hooks':
+          return Boolean(campaign.creativeHooks?.hooks?.length);
         case 'images':
           return Boolean(campaign.visuals);
         case 'review':
@@ -333,6 +354,7 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
         setActiveTab,
         memoryInsights,
         memoryCount,
+        creativeHookMatrixEnabled,
         showHumanReview,
         setShowHumanReview,
         isMinimized,
@@ -366,11 +388,14 @@ export const CampaignResultProvider: React.FC<{ children: React.ReactNode }> = (
           managerData: campaign?.manager,
         },
         memoizedStrategyData,
+        creativeHooks,
+        hookMatrixStats,
         isTabCompleted,
         handleApprove,
         handleRequestRevision,
         handleRunSimulation,
         handleCopyVariantsUpdate,
+        handleCreativeHookMatrixUpdate,
         handleVariantCreated,
         handleRetryCampaign,
         handleEditBrief,

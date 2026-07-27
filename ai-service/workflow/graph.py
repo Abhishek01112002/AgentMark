@@ -51,14 +51,18 @@ from agents.manager import manager_agent
 from agents.research import research_agent
 from agents.strategy import strategy_agent
 from agents.copywriter import copywriter_agent
+from agents.creative_hook_matrix import creative_hook_matrix_agent
 from agents.image_prompt import image_prompt_agent
+
 from agents.reviewer import reviewer_agent
 from agents.publisher import publisher_agent
 from agents.human_approval import human_approval_node
 from workflow.routing import should_continue_after_reviewer, route_after_human_approval
 from utils.redis_publisher import publish_agent_event
 from utils.cancellation import is_campaign_cancelled
+from config.settings import ENABLE_CREATIVE_HOOK_MATRIX
 import json
+
 
 def _try_parse_json(val):
     if not val:
@@ -74,7 +78,38 @@ def _try_parse_json(val):
 # ==================== NODE WRAPPER FUNCTIONS ====================
 # These wrap your existing agent functions to work with LangGraph
 
+_step_counter = 0
+
+def _log_node_execution(node_name: str, state: CampaignState, skipped: bool = False):
+    global _step_counter
+    _step_counter += 1
+    has_hooks = bool(getattr(state, "creative_hook_matrix_output", None))
+    is_cancelled = is_campaign_cancelled(state.campaign_id) if (hasattr(state, "campaign_id") and state.campaign_id) else False
+    rev_counts = (
+        f"research={getattr(state, 'research_revision_count', 0) or 0}, "
+        f"strategy={getattr(state, 'strategy_revision_count', 0) or 0}, "
+        f"copy={getattr(state, 'copy_revision_count', 0) or 0}, "
+        f"image={getattr(state, 'image_revision_count', 0) or 0}"
+    )
+    log_msg = (
+        f"\nStep {_step_counter}\n"
+        f"[{node_name}]\n"
+        f"  - skipped: {skipped}\n"
+        f"  - status: {getattr(state, 'status', None)}\n"
+        f"  - human_status: {getattr(state, 'human_approval_status', None)}\n"
+        f"  - human_revision_target: {getattr(state, 'human_revision_target', None)}\n"
+        f"  - cancellation: {is_cancelled}\n"
+        f"  - creative_hook_matrix_output exists: {has_hooks}\n"
+        f"  - revision_counts: {rev_counts}\n"
+        f"v"
+
+    )
+    logger.info(log_msg)
+    print(log_msg, flush=True)
+
+
 def _get_revision_counts_extra(state: CampaignState) -> dict:
+
     return {
         "research_revision_count": state.research_revision_count or 0,
         "strategy_revision_count": state.strategy_revision_count or 0,
@@ -279,7 +314,7 @@ def copywriter_node(state: CampaignState) -> dict:
     logger.info("="*80)
     
     if state.error or state.status == "error":
-        logger.info("⏭️ Skipping Copywriter Node due to upstream error")
+        _log_node_execution("copywriter", state, skipped=True)
         return {}
     
     # Check if this agent is targeted for revision
@@ -296,8 +331,10 @@ def copywriter_node(state: CampaignState) -> dict:
         logger.info("   🔄 Running copywriter (no existing output)...")
     elif state.copy_output:
         # Already has output and not in revision mode - skip
-        logger.info("⏭️  Skipping Copywriter (already completed)")
+        _log_node_execution("copywriter", state, skipped=True)
         return {}
+
+    _log_node_execution("copywriter", state, skipped=False)
     
     publish_agent_event(state.campaign_id, "copywriter", "running", extra=_get_revision_counts_extra(state))
     
@@ -342,6 +379,62 @@ def copywriter_node(state: CampaignState) -> dict:
         }
 
 
+def creative_hook_matrix_node(state: CampaignState) -> dict:
+    """
+    Creative Intelligence node for hook generation.
+    This node is non-blocking: agent-level failures are persisted as diagnostic
+    hook output and the graph continues to Image Prompt.
+    """
+    logger.info("\n" + "="*80)
+    logger.info("LANGGRAPH: EXECUTING CREATIVE HOOK MATRIX NODE")
+    logger.info("="*80)
+
+    if state.error or state.status == "error":
+        _log_node_execution("creative_hook_matrix", state, skipped=True)
+        return {}
+
+    is_targeted_for_revision = (state.human_revision_target == "creative_hook_matrix") or (state.status == "creative_hook_matrix_revision_required")
+
+    if is_targeted_for_revision:
+        if state.creative_hook_matrix_output:
+            logger.info("   🔄 Clearing previous creative hook matrix output for revision...")
+            state.creative_hook_matrix_output = None
+    elif state.creative_hook_matrix_output:
+        _log_node_execution("creative_hook_matrix", state, skipped=True)
+        return {}
+
+    _log_node_execution("creative_hook_matrix", state, skipped=False)
+
+    publish_agent_event(state.campaign_id, "creative_hook_matrix", "running", extra=_get_revision_counts_extra(state))
+
+    if is_targeted_for_revision:
+        state.image_output = None
+        state.review_output = None
+
+    updated_state = creative_hook_matrix_agent(state)
+
+    if is_targeted_for_revision:
+        updated_state.human_revision_target = None
+
+    publish_agent_event(
+        state.campaign_id,
+        "creative_hook_matrix",
+        "completed",
+        extra={
+            **_get_revision_counts_extra(updated_state),
+            "outputs": {"creative_hook_matrix_output": _try_parse_json(updated_state.creative_hook_matrix_output)}
+        },
+    )
+    return {
+        "creative_hook_matrix_output": updated_state.creative_hook_matrix_output,
+        "image_output": updated_state.image_output,
+        "review_output": updated_state.review_output,
+        "human_revision_target": updated_state.human_revision_target,
+        "status": updated_state.status,
+        "error": updated_state.error,
+    }
+
+
 def image_prompt_node(state: CampaignState) -> dict:
     """
     Node 5: Image Prompt Agent
@@ -353,7 +446,7 @@ def image_prompt_node(state: CampaignState) -> dict:
     logger.info("="*80)
     
     if state.error or state.status == "error":
-        logger.info("⏭️ Skipping Image Prompt Node due to upstream error")
+        _log_node_execution("image_prompt", state, skipped=True)
         return {}
     
     # Check if this agent is targeted for revision
@@ -370,8 +463,10 @@ def image_prompt_node(state: CampaignState) -> dict:
         logger.info("   🔄 Running image prompt (no existing output)...")
     elif state.image_output:
         # Already has output and not in revision mode - skip
-        logger.info("⏭️  Skipping Image Prompt (already completed)")
+        _log_node_execution("image_prompt", state, skipped=True)
         return {}
+
+    _log_node_execution("image_prompt", state, skipped=False)
     
     publish_agent_event(state.campaign_id, "image_prompt", "running", extra=_get_revision_counts_extra(state))
     
@@ -426,59 +521,25 @@ def reviewer_node(state: CampaignState) -> dict:
     logger.info("="*80)
     
     if state.error or state.status == "error":
-        logger.info("⏭️ Skipping Reviewer Node due to upstream error")
+        _log_node_execution("reviewer", state, skipped=True)
         return {}
     
     # CRITICAL: Skip if human already approved
     # After human approval, workflow should go directly to publisher, not back through reviewer
     if state.human_approval_status == "approved":
-        logger.info("⏭️  Skipping Reviewer (human already approved - going to publisher)")
+        _log_node_execution("reviewer", state, skipped=True)
         return {}
+
+    _log_node_execution("reviewer", state, skipped=False)
+
     
     publish_agent_event(state.campaign_id, "reviewer", "running", extra=_get_revision_counts_extra(state))
     
     try:
         updated_state = reviewer_agent(state)
         
-        # Persist the targeted revision agent from the AI review status in human_revision_target
-        if updated_state.review_output:
-            import json
-            try:
-                review_data = json.loads(updated_state.review_output)
-                status = review_data.get("status", "approved")
-                if status == "revision_required":
-                    research_review = review_data.get("research_review", {})
-                    strategy_review = review_data.get("strategy_review", {})
-                    copy_review = review_data.get("copy_review", {})
-                    image_review = review_data.get("image_review", {})
-                    
-                    research_score = research_review.get("score", 100)
-                    strategy_score = strategy_review.get("score", 100)
-                    copy_score = copy_review.get("score", 100)
-                    image_score = image_review.get("score", 100)
-                    
-                    research_approved = research_review.get("approved", True)
-                    strategy_approved = strategy_review.get("approved", True)
-                    copy_approved = copy_review.get("approved", True)
-                    image_approved = image_review.get("approved", True)
-                    
-                    research_revisions = updated_state.research_revision_count or 0
-                    strategy_revisions = updated_state.strategy_revision_count or 0
-                    copy_revisions = updated_state.copy_revision_count or 0
-                    image_revisions = updated_state.image_revision_count or 0
-                    
-                    if (not research_approved or research_score < 75) and research_revisions < 3:
-                        updated_state.human_revision_target = "research"
-                    elif (not strategy_approved or strategy_score < 75) and strategy_revisions < 3:
-                        updated_state.human_revision_target = "strategy"
-                    elif (not copy_approved or copy_score < 75) and copy_revisions < 3:
-                        updated_state.human_revision_target = "copywriter"
-                    elif (not image_approved or image_score < 75) and image_revisions < 3:
-                        updated_state.human_revision_target = "image_prompt"
-            except Exception as parse_err:
-                logger.info(f"Error parsing review output in reviewer_node: {parse_err}")
-                
         publish_agent_event(state.campaign_id, "reviewer", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"review_output": _try_parse_json(updated_state.review_output)}})
+
         return {
             "review_output": updated_state.review_output,
             "human_revision_target": updated_state.human_revision_target,
@@ -519,9 +580,11 @@ def human_approval_wrapper(state: CampaignState) -> dict:
         state.error = ""
 
     if state.status == "error" or (state.error and len(str(state.error).strip()) > 0):
-        logger.info("⏭️ Skipping Human Approval Node due to upstream error")
+        _log_node_execution("human_approval", state, skipped=True)
         return {}
     
+    _log_node_execution("human_approval", state, skipped=False)
+
     try:
         updated_state = human_approval_node(state)
         return {
@@ -556,15 +619,16 @@ def publisher_node(state: CampaignState) -> dict:
     logger.info("="*80)
     
     if state.error or state.status == "error":
-        logger.info("⏭️ Skipping Publisher Node due to upstream error")
+        _log_node_execution("publisher", state, skipped=True)
         return {}
     
     # Check if we're actually waiting for human approval
     if state.awaiting_human_approval:
-        logger.info("Workflow paused - awaiting human approval")
-        logger.info("   Publisher will NOT execute")
-        logger.info("   After human approves, invoke workflow again")
+        _log_node_execution("publisher", state, skipped=True)
         return {}
+
+    _log_node_execution("publisher", state, skipped=False)
+
     
     publish_agent_event(state.campaign_id, "publisher", "running", extra=_get_revision_counts_extra(state))
     
@@ -592,10 +656,12 @@ def check_cancellation(state: CampaignState) -> str:
     Conditional edge function checked at agent boundaries.
     Returns 'cancelled' to route to cancelled_node, or 'continue' to proceed.
     """
+    from workflow.routing import _log_routing
     if is_campaign_cancelled(state.campaign_id):
         logger.info(f"Campaign {state.campaign_id} cancellation detected — routing to cancelled_node")
-        return "cancelled"
-    return "continue"
+        return _log_routing("check_cancellation", state, "cancelled")
+    return _log_routing("check_cancellation", state, "continue")
+
 
 
 def cancelled_node(state: CampaignState) -> dict:
@@ -644,6 +710,8 @@ def create_campaign_graph():
     graph.add_node("research", research_node)
     graph.add_node("strategy", strategy_node)
     graph.add_node("copywriter", copywriter_node)
+    if ENABLE_CREATIVE_HOOK_MATRIX:
+        graph.add_node("creative_hook_matrix", creative_hook_matrix_node)
     graph.add_node("image_prompt", image_prompt_node)
     graph.add_node("reviewer", reviewer_node)
     graph.add_node("human_approval", human_approval_wrapper)
@@ -682,9 +750,18 @@ def create_campaign_graph():
         check_cancellation,
         {
             "cancelled": "cancelled_node",
-            "continue": "image_prompt"
+            "continue": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "image_prompt"
         }
     )
+    if ENABLE_CREATIVE_HOOK_MATRIX:
+        graph.add_conditional_edges(
+            "creative_hook_matrix",
+            check_cancellation,
+            {
+                "cancelled": "cancelled_node",
+                "continue": "image_prompt"
+            }
+        )
     graph.add_conditional_edges(
         "image_prompt",
         check_cancellation,
@@ -704,6 +781,7 @@ def create_campaign_graph():
             "revise_research": "research",       # If research needs revision → back to research
             "revise_strategy": "strategy",       # If strategy needs revision → back to strategy
             "revise_copy": "copywriter",         # If copy needs revision → back to copywriter
+            "revise_hooks": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "copywriter",
             "revise_image": "image_prompt",      # If image needs revision → back to image_prompt
             "end": END,                           # If max revisions reached → END
             "cancelled": "cancelled_node"        # If campaign cancelled
@@ -720,11 +798,13 @@ def create_campaign_graph():
             "revise_research": "research",       # If human wants research revision → back to research
             "revise_strategy": "strategy",       # If human wants strategy revision → back to strategy
             "revise_copy": "copywriter",         # If human wants copy revision → back to copywriter
+            "revise_hooks": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "copywriter",
             "revise_image": "image_prompt",      # If human wants image revision → back to image_prompt
             "end": END,                          # If awaiting human approval → END
             "cancelled": "cancelled_node"        # If campaign cancelled
         }
     )
+
     
     # 6. Add final edges
     graph.add_edge("publisher", END)              # publisher → END

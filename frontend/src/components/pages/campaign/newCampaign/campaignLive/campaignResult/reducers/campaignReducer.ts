@@ -7,6 +7,7 @@ export type CampaignAction =
   | { type: 'CAMPAIGN_UPDATED'; payload: Partial<Campaign> }
   | { type: 'FOCUS_GROUP_COMPLETE'; payload: { report: NormalizedFocusGroupReport; hashKey?: string; score?: number } }
   | { type: 'COPY_VARIANTS_UPDATED'; payload: Record<string, any[]> }
+  | { type: 'CREATIVE_HOOK_MATRIX_UPDATED'; payload: Record<string, any> }
   | { type: 'AGENT_OUTPUT_MERGED'; payload: Record<string, any> }
   | { type: 'RESET_CAMPAIGN' };
 
@@ -55,6 +56,18 @@ export const campaignReducer = (
         aiOutputs: {
           ...(typeof state._raw.aiOutputs === 'object' ? state._raw.aiOutputs : {}),
           copy_variants: action.payload,
+        },
+      };
+      return normalizeCampaign(updatedRaw, state);
+    }
+
+    case 'CREATIVE_HOOK_MATRIX_UPDATED': {
+      if (!state) return null;
+      const updatedRaw: Campaign = {
+        ...state._raw,
+        aiOutputs: {
+          ...(typeof state._raw.aiOutputs === 'object' ? state._raw.aiOutputs : {}),
+          creative_hook_matrix_output: action.payload,
         },
       };
       return normalizeCampaign(updatedRaw, state);

@@ -30,4 +30,7 @@ BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5001")
 # WebSocket Configuration
 WS_URL = os.getenv("WS_URL", "ws://localhost:5002")
 
+# Feature Flags
+ENABLE_CREATIVE_HOOK_MATRIX = os.getenv("ENABLE_CREATIVE_HOOK_MATRIX", "false").lower() in ("true", "1")
+
 # Keys are optional now; the frontend can supply them per request.

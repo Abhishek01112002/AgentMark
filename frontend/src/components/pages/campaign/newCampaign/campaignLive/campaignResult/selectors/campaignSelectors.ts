@@ -121,3 +121,21 @@ export const selectCopyHash = (campaign: NormalizedCampaign | null): string => {
   const activeCopyText = selectActiveCopyText(campaign);
   return computeCopyHash(activeCopyText, 4000);
 };
+
+export const selectCreativeHooks = (campaign: NormalizedCampaign | null): any[] => {
+  if (!campaign?.creativeHooks?.hooks || !Array.isArray(campaign.creativeHooks.hooks)) {
+    return [];
+  }
+  return campaign.creativeHooks.hooks;
+};
+
+export const selectHookMatrixStats = (campaign: NormalizedCampaign | null) => {
+  const hooks = selectCreativeHooks(campaign);
+  if (!hooks.length) {
+    return { count: 0, averageQuality: 0, averageVirality: 0, approved: 0 };
+  }
+  const averageQuality = Math.round(hooks.reduce((sum, hook) => sum + Number(hook.quality_score || 0), 0) / hooks.length);
+  const averageVirality = Math.round(hooks.reduce((sum, hook) => sum + Number(hook.virality_score || 0), 0) / hooks.length);
+  const approved = hooks.filter((hook) => hook.status === 'approved').length;
+  return { count: hooks.length, averageQuality, averageVirality, approved };
+};

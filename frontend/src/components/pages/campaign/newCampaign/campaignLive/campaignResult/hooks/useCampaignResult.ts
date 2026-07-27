@@ -10,6 +10,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
   const [notFound, setNotFound] = useState(false);
   const [memoryInsights, setMemoryInsights] = useState<any[]>([]);
   const [memoryCount, setMemoryCount] = useState<number>(0);
+  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(false);
 
   // Transient UI-only State
   const decisionMadeRef = useRef(false);
@@ -76,8 +77,19 @@ export const useCampaignResult = (campaignId: string | undefined) => {
       }
     };
 
+    const fetchFeatureFlags = async () => {
+      try {
+        const res = await api.get('/constants', { signal });
+        setCreativeHookMatrixEnabled(Boolean(res.data?.featureFlags?.creativeHookMatrix));
+      } catch (err: any) {
+        if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
+        setCreativeHookMatrixEnabled(false);
+      }
+    };
+
     fetchCampaign();
     fetchMemoryInsights();
+    fetchFeatureFlags();
 
     return () => controller.abort();
   }, [campaignId]);
@@ -91,6 +103,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
     setNotFound,
     memoryInsights,
     memoryCount,
+    creativeHookMatrixEnabled,
     decisionMadeRef,
     showHumanReview,
     setShowHumanReview,

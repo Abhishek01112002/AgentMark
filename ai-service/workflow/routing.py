@@ -47,7 +47,27 @@ MAX_REVISIONS = 1
 MIN_AGENT_SCORE = 60
 
 
+def _log_routing(func_name: str, state: CampaignState, decision: str) -> str:
+    rev_counts = (
+        f"research={getattr(state, 'research_revision_count', 0) or 0}, "
+        f"strategy={getattr(state, 'strategy_revision_count', 0) or 0}, "
+        f"copy={getattr(state, 'copy_revision_count', 0) or 0}, "
+        f"image={getattr(state, 'image_revision_count', 0) or 0}"
+    )
+    log_msg = (
+        f"\n[ROUTING: {func_name}] Decision -> '{decision}'\n"
+        f"  - status: {getattr(state, 'status', None)}\n"
+        f"  - human_status: {getattr(state, 'human_approval_status', None)}\n"
+        f"  - human_revision_target: {getattr(state, 'human_revision_target', None)}\n"
+        f"  - revision_counts: {rev_counts}"
+    )
+    logger.info(log_msg)
+    print(log_msg, flush=True)
+    return decision
+
+
 def should_continue_after_reviewer(state: CampaignState) -> str:
+
     """
     Decision function called after reviewer_node.
     
@@ -67,19 +87,27 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
     logger.info("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
     logger.info("="*80)
 
+    # 1. Cancellation check
     if is_campaign_cancelled(state.campaign_id):
         logger.info(f"Campaign {state.campaign_id} cancelled during Reviewer routing — halting graph")
-        return "cancelled"
+        return _log_routing("should_continue_after_reviewer", state, "cancelled")
     
-    # If human already approved, route straight to human_approval node to proceed to publisher
-    if state.human_approval_status == "approved":
-        logger.info("✅ Human already approved, routing directly to human_approval node")
-        return "human_approval"
-        
-    # Check for upstream errors to prevent infinite loops
+    # 2. Fatal error check
     if state.status == "error" or state.error:
         logger.info("💥 Upstream error detected - ending workflow")
-        return "end"
+        return _log_routing("should_continue_after_reviewer", state, "end")
+
+    # 3. Workflow AI complete check (terminal for AI orchestration)
+    if state.status == "review_complete":
+        logger.info("✅ Review complete in state — routing to Human Approval (HITL)")
+        return _log_routing("should_continue_after_reviewer", state, "human_approval")
+        
+    # 4. Human already approved check
+    if state.human_approval_status == "approved":
+        logger.info("✅ Human already approved, routing directly to human_approval node")
+        return _log_routing("should_continue_after_reviewer", state, "human_approval")
+
+
         
     # Check if review output exists
     if not state.review_output:
@@ -142,7 +170,7 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
                 logger.info(f"   Score: {research_score}/100")
                 logger.info(f"   Issues: {research_review.get('issues', [])}")
                 logger.info("   🧹 Agent will clear research_output and re-run")
-                return "revise_research"
+                return _log_routing("should_continue_after_reviewer", state, "revise_research")
             else:
                 logger.info(f"\n⚠️  Research hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
@@ -153,7 +181,7 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
                 logger.info(f"   Score: {strategy_score}/100")
                 logger.info(f"   Issues: {strategy_review.get('issues', [])}")
                 logger.info("   🧹 Agent will clear strategy_output and re-run")
-                return "revise_strategy"
+                return _log_routing("should_continue_after_reviewer", state, "revise_strategy")
             else:
                 logger.info(f"\n⚠️  Strategy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
@@ -164,7 +192,7 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
                 logger.info(f"   Score: {copy_score}/100")
                 logger.info(f"   Issues: {copy_review.get('issues', [])}")
                 logger.info("   🧹 Agent will clear copy_output and re-run")
-                return "revise_copy"
+                return _log_routing("should_continue_after_reviewer", state, "revise_copy")
             else:
                 logger.info(f"\n⚠️  Copy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
@@ -175,17 +203,17 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
                 logger.info(f"   Score: {image_score}/100")
                 logger.info(f"   Issues: {image_review.get('issues', [])}")
                 logger.info("   🧹 Agent will clear image_output and re-run")
-                return "revise_image"
+                return _log_routing("should_continue_after_reviewer", state, "revise_image")
             else:
                 logger.info(f"\n⚠️  Image hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
         
         # If we get here, all agents hit max revisions but still not approved
         logger.info("\n⚠️  All agents hit MAX_REVISIONS - proceeding to human approval with current quality")
-        return "human_approval"
+        return _log_routing("should_continue_after_reviewer", state, "human_approval")
     
     # Default: proceed to human approval
     logger.info("✅ No blocking issues - Routing to Human Approval")
-    return "human_approval"
+    return _log_routing("should_continue_after_reviewer", state, "human_approval")
 
 
 def route_after_human_approval(state: CampaignState) -> str:
@@ -209,7 +237,7 @@ def route_after_human_approval(state: CampaignState) -> str:
 
     if is_campaign_cancelled(state.campaign_id):
         logger.info(f"Campaign {state.campaign_id} cancelled during Human Approval routing — halting graph")
-        return "cancelled"
+        return _log_routing("route_after_human_approval", state, "cancelled")
     
     # Clear prior error state if human user has given an approval/rejection decision
     if state.human_approval_status:
@@ -220,13 +248,13 @@ def route_after_human_approval(state: CampaignState) -> str:
     # Check for upstream errors to prevent infinite loops
     if state.status == "error" or (state.error and len(str(state.error).strip()) > 0):
         logger.info("💥 Upstream error detected - ending workflow")
-        return "end"
+        return _log_routing("route_after_human_approval", state, "end")
         
     # Check if still awaiting human approval
     if state.awaiting_human_approval:
         logger.info("⏸️  Awaiting human approval - workflow will END here")
         logger.info("   After human approves, call workflow.invoke(state) again")
-        return "end"
+        return _log_routing("route_after_human_approval", state, "end")
     
     # Check human decision
     human_status = state.human_approval_status
@@ -238,30 +266,35 @@ def route_after_human_approval(state: CampaignState) -> str:
         if state.human_feedback:
             logger.info(f"   Human Feedback: {state.human_feedback}")
         # CRITICAL: Go directly to publisher, do NOT go back through reviewer
-        return "publish"
+        return _log_routing("route_after_human_approval", state, "publish")
     
-    elif human_status == "rejected" or bool(state.human_revision_target):
+    elif human_status == "rejected":
         target = state.human_revision_target or "copywriter"
+
         logger.info(f"⚠️  REVISION REQUESTED - Routing to {target.upper()} for revision")
         if state.human_feedback:
             logger.info(f"   Feedback: {state.human_feedback}")
         
         # Route to appropriate agent
         if target == "research":
-            return "revise_research"
+            return _log_routing("route_after_human_approval", state, "revise_research")
         elif target == "strategy":
-            return "revise_strategy"
+            return _log_routing("route_after_human_approval", state, "revise_strategy")
         elif target == "copywriter":
-            return "revise_copy"
+            return _log_routing("route_after_human_approval", state, "revise_copy")
+        elif target in ("creative_hook_matrix", "hooks"):
+            return _log_routing("route_after_human_approval", state, "revise_hooks")
         elif target == "image_prompt":
-            return "revise_image"
+            return _log_routing("route_after_human_approval", state, "revise_image")
         else:
             logger.info(f"⚠️  Unknown revision target: {target} - defaulting to publish")
-            return "publish"
+            return _log_routing("route_after_human_approval", state, "publish")
+
     
     # Default: proceed to publish
     logger.info("✅ No specific action - Routing to Publisher")
-    return "publish"
+    return _log_routing("route_after_human_approval", state, "publish")
+
 
 
 def route_revisions(state: CampaignState) -> list[str]:

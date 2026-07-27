@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator
-from typing import List, Dict, Optional, Literal
+from typing import List, Dict, Optional, Literal, Any
 
 
 # ==================== CHANNEL ENUM ====================
@@ -416,6 +416,103 @@ class CopywriterOutput(BaseModel):
     @classmethod
     def normalize_inferred_goal(cls, value):
         return normalize_campaign_goal(value)
+
+
+# ==================== CREATIVE HOOK MATRIX OUTPUT SCHEMA ====================
+
+HookCategory = Literal[
+    "Question",
+    "Fear",
+    "Negative",
+    "Contrarian",
+    "Social Proof",
+    "Statistic",
+    "Story",
+    "Curiosity",
+    "Urgency",
+    "Benefit",
+]
+
+FunnelStage = Literal["awareness", "consideration", "conversion", "retention"]
+HookStatus = Literal["draft", "approved", "rejected", "archived"]
+
+
+class HookScoreBreakdown(BaseModel):
+    clarity: int = Field(default=80, ge=0, le=100)
+    novelty: int = Field(default=80, ge=0, le=100)
+    pattern_interrupt: int = Field(default=80, ge=0, le=100)
+    cta_strength: int = Field(default=80, ge=0, le=100)
+    brand_alignment: int = Field(default=80, ge=0, le=100)
+
+
+class HookCTA(BaseModel):
+    text: str = Field(default="", max_length=120)
+    intent: str = Field(default="", max_length=160)
+
+
+class CreativeHook(BaseModel):
+    id: str = Field(default="")
+    headline: str = Field(default="", min_length=1, max_length=220)
+    category: HookCategory
+    psychological_angle: str = Field(default="", min_length=1, max_length=600)
+    ctas: List[HookCTA] = Field(default_factory=list, min_length=2, max_length=3)
+    quality_score: int = Field(default=80, ge=0, le=100)
+    virality_score: int = Field(default=70, ge=0, le=100)
+    platform_suitability: List[str] = Field(default_factory=list)
+    funnel_stage: FunnelStage = Field(default="awareness")
+    score_breakdown: HookScoreBreakdown = Field(default_factory=HookScoreBreakdown)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    is_favorite: bool = Field(default=False)
+    is_pinned: bool = Field(default=False)
+    is_locked: bool = Field(default=False)
+    status: HookStatus = Field(default="draft")
+
+    @field_validator("platform_suitability", mode="before")
+    @classmethod
+    def normalize_platforms(cls, v):
+        if not isinstance(v, list):
+            return []
+        normalized: List[str] = []
+        for item in v:
+            norm = normalize_channel_name(str(item))
+            if norm and norm not in normalized:
+                normalized.append(norm)
+        return normalized
+
+    @field_validator("ctas", mode="after")
+    @classmethod
+    def ensure_cta_count(cls, v):
+        if len(v) < 2:
+            raise ValueError("Each hook must include at least 2 CTAs")
+        return v[:3]
+
+
+class CreativeHookMatrixOutput(BaseModel):
+    hooks: List[CreativeHook] = Field(default_factory=list, min_length=0, max_length=20)
+    archetypes_generated: List[HookCategory] = Field(default_factory=list)
+    evaluation_config: Dict[str, Any] = Field(default_factory=dict)
+    revision: int = Field(default=1)
+    generated_at: str = Field(default="")
+    status: Literal["completed", "skipped", "failed"] = Field(default="completed")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    revisions: List[Dict[str, Any]] = Field(default_factory=list)
+
+    @field_validator("hooks", mode="after")
+    @classmethod
+    def ensure_unique_categories_when_completed(cls, v):
+        if not v:
+            return v
+        categories = [hook.category for hook in v]
+        if len(categories) != len(set(categories)):
+            raise ValueError("Hook categories must be unique")
+        required = {
+            "Question", "Fear", "Negative", "Contrarian", "Social Proof",
+            "Statistic", "Story", "Curiosity", "Urgency", "Benefit"
+        }
+        missing = required - set(categories)
+        if missing:
+            raise ValueError(f"Missing hook categories: {sorted(missing)}")
+        return v
 
 
 # ==================== IMAGE PROMPT OUTPUT SCHEMA ====================

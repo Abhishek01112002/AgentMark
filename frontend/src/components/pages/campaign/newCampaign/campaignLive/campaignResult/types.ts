@@ -1,6 +1,6 @@
 import { LucideIcon } from 'lucide-react';
 
-export type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'images' | 'review' | 'published' | 'focus-group';
+export type TabId = 'overview' | 'research' | 'strategy' | 'copy' | 'creative-hooks' | 'images' | 'review' | 'published' | 'focus-group';
 
 export interface Tab {
   id: TabId;

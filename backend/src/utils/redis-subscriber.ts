@@ -190,7 +190,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               currentOutputs.completed_agents = [];
             }
 
-            const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+            const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'creative_hook_matrix', 'image_prompt', 'reviewer', 'publisher'];
             if (status === 'running') {
               const runningIdx = pipelineKeys.indexOf(data.agent);
               if (runningIdx !== -1) {

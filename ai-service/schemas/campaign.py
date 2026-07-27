@@ -67,6 +67,7 @@ class CampaignCreateRequest(BaseModel):
     research_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     strategy_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     copy_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
+    creative_hook_matrix_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     image_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     review_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
     publisher_output: Optional[Union[str, Dict[str, Any], Any]] = Field(default=None)
@@ -91,6 +92,7 @@ class AgentOutputs(BaseModel):
     research_output: Optional[dict] = None
     strategy_output: Optional[dict] = None
     copy_output: Optional[dict] = None
+    creative_hook_matrix_output: Optional[dict] = None
     image_output: Optional[dict] = None
     review_output: Optional[dict] = None
     publisher_output: Optional[dict] = None

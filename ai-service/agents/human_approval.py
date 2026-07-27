@@ -61,10 +61,25 @@ def human_approval_node(state: CampaignState) -> CampaignState:
     logger.info("👤 HUMAN APPROVAL REQUIRED")
     logger.info("="*80)
     
+    # If a human decision (reject with target or approve) is pending routing, do not overwrite it on node re-entry
+    if state.human_approval_status == "rejected" and state.human_revision_target is not None:
+        logger.info(f"✓ Human rejection decision pending routing to {state.human_revision_target}")
+        return state
+
+    # If a human revision was requested and completed (human_revision_target was cleared),
+    # reset status to "pending" for fresh human review of the revised deliverables.
+    if state.human_approval_status == "rejected" and state.human_revision_target is None:
+        logger.info("🔄 Human revision complete — resetting status to pending for fresh human review")
+        state.human_approval_status = "pending"
+        state.human_feedback = None
+
     # Check if already approved (skip on re-entry after approval)
     if state.human_approval_status == "approved" and not state.human_revision_target:
         logger.info("✓ Campaign already approved by human")
         return state
+
+
+
     
     # RESET revision counts when entering human approval for the FIRST time (after AI auto-revisions)
     # This ensures AI auto-revisions don't block human revisions, while preserving human revision counts.
@@ -188,11 +203,13 @@ def submit_human_approval(state: CampaignState, decision: dict) -> CampaignState
     if action not in ["approve", "reject"]:
         raise ValueError("Action must be 'approve' or 'reject'")
     
+    valid_targets = ["research", "strategy", "copywriter", "creative_hook_matrix", "image_prompt"]
     if action == "reject" and not revision_target:
-        raise ValueError("revision_target required when rejecting (research, strategy, copywriter, image_prompt)")
+        raise ValueError(f"revision_target required when rejecting ({', '.join(valid_targets)})")
     
-    if action == "reject" and revision_target not in ["research", "strategy", "copywriter", "image_prompt"]:
-        raise ValueError(f"Invalid revision_target: {revision_target}")
+    if action == "reject" and revision_target not in valid_targets:
+        raise ValueError(f"Invalid revision_target: {revision_target}. Valid options: {', '.join(valid_targets)}")
+
     
     # Check if target agent has hit max revisions (3)
     MAX_REVISIONS = 3

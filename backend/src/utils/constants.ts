@@ -26,6 +26,10 @@ const constants = {
     { value: 'trustworthy', label: 'Trustworthy' },
     { value: 'other', label: 'Other (Specify)' },
   ],
+  featureFlags: {
+    creativeHookMatrix: process.env.ENABLE_CREATIVE_HOOK_MATRIX !== 'false' && process.env.ENABLE_CREATIVE_HOOK_MATRIX !== '0',
+  },
 };
+
 
 export const getConstants = () => constants;

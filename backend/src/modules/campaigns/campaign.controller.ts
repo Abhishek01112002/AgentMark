@@ -115,6 +115,7 @@ async function emitCampaignFailed(
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
+const isCreativeHookMatrixEnabled = () => process.env.ENABLE_CREATIVE_HOOK_MATRIX === 'true' || process.env.ENABLE_CREATIVE_HOOK_MATRIX === '1';
 
 /**
  * Background AI workflow runner with exponential backoff retry.
@@ -530,7 +531,9 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
       : {};
 
     if (action === 'reject' && revisionTarget) {
-      const agentsPriority = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+      const agentsPriority = isCreativeHookMatrixEnabled()
+        ? ['manager', 'research', 'strategy', 'copywriter', 'creative_hook_matrix', 'image_prompt', 'reviewer', 'publisher']
+        : ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
       const targetIdx = agentsPriority.indexOf(revisionTarget);
       if (targetIdx !== -1) {
         const completedAgents = currentOutputs.completed_agents || [];
@@ -648,6 +651,7 @@ async function runApprovalBackground(
       research_output: context.currentOutputs.research_output ? JSON.stringify(context.currentOutputs.research_output) : null,
       strategy_output: context.currentOutputs.strategy_output ? JSON.stringify(context.currentOutputs.strategy_output) : null,
       copy_output: context.currentOutputs.copy_output ? JSON.stringify(context.currentOutputs.copy_output) : null,
+      creative_hook_matrix_output: context.currentOutputs.creative_hook_matrix_output ? JSON.stringify(context.currentOutputs.creative_hook_matrix_output) : null,
       image_output: context.currentOutputs.image_output ? JSON.stringify(context.currentOutputs.image_output) : null,
       review_output: context.currentOutputs.review_output ? JSON.stringify(context.currentOutputs.review_output) : null,
       human_approval_status: context.action === 'approve' ? 'approved' : 'rejected',
@@ -845,6 +849,16 @@ const updateCopyVariantMetaSchema = z.object({
   channel: z.string().min(1).max(50),
   variantId: z.string().min(1),
   action: z.enum(['pin', 'hide', 'unhide']),
+});
+
+const updateCreativeHookSchema = z.object({
+  action: z.enum(['favorite', 'pin', 'approve', 'reject', 'archive', 'lock', 'edit']),
+  headline: z.string().min(1).max(220).optional(),
+  psychologicalAngle: z.string().min(1).max(600).optional(),
+  ctas: z.array(z.object({
+    text: z.string().min(1).max(120),
+    intent: z.string().max(160).optional(),
+  })).min(2).max(3).optional(),
 });
 
 export const generateCopyVariant = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -1082,6 +1096,121 @@ export const updateCopyVariantMeta = async (req: AuthRequest, res: Response, nex
   }
 };
 
+export const updateCreativeHookMeta = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  const { id, hookId } = req.params;
+  try {
+    if (!isCreativeHookMatrixEnabled()) {
+      return res.status(404).json({ error: 'Creative Hook Matrix is not enabled' });
+    }
+
+    const { action, headline, psychologicalAngle, ctas } = updateCreativeHookSchema.parse(req.body);
+
+    const campaign = await prisma.campaign.findFirst({
+      where: { id, project: { userId: req.userId! } },
+      select: { aiOutputs: true, status: true },
+    });
+
+    if (!campaign) {
+      return res.status(404).json({ error: 'Campaign not found' });
+    }
+
+    const aiOutputs = campaign.aiOutputs
+      ? (typeof campaign.aiOutputs === 'string'
+          ? JSON.parse(campaign.aiOutputs)
+          : campaign.aiOutputs) as Record<string, any>
+      : {};
+
+    const matrix = aiOutputs.creative_hook_matrix_output;
+    if (!matrix || !Array.isArray(matrix.hooks)) {
+      return res.status(404).json({ error: 'Creative Hook Matrix output not found' });
+    }
+
+    let hookFound = false;
+    const updatedHooks = matrix.hooks.map((hook: any) => {
+      if (hook.id !== hookId) {
+        if (action === 'pin') {
+          return { ...hook, is_pinned: false };
+        }
+        return hook;
+      }
+
+      hookFound = true;
+      if (hook.is_locked && action === 'edit') {
+        throw Object.assign(new Error('Locked hooks cannot be edited'), { statusCode: 409 });
+      }
+
+      if (action === 'favorite') {
+        return { ...hook, is_favorite: !hook.is_favorite };
+      }
+      if (action === 'pin') {
+        return { ...hook, is_pinned: !hook.is_pinned };
+      }
+      if (action === 'approve') {
+        return { ...hook, status: 'approved' };
+      }
+      if (action === 'reject') {
+        return { ...hook, status: 'rejected' };
+      }
+      if (action === 'archive') {
+        return { ...hook, status: 'archived' };
+      }
+      if (action === 'lock') {
+        return { ...hook, is_locked: !hook.is_locked };
+      }
+
+      return {
+        ...hook,
+        ...(headline ? { headline } : {}),
+        ...(psychologicalAngle ? { psychological_angle: psychologicalAngle } : {}),
+        ...(ctas ? { ctas } : {}),
+        metadata: {
+          ...(hook.metadata || {}),
+          edited_at: new Date().toISOString(),
+        },
+      };
+    });
+
+    if (!hookFound) {
+      return res.status(404).json({ error: 'Hook not found' });
+    }
+
+    const updatedMatrix = {
+      ...matrix,
+      hooks: updatedHooks,
+      metadata: {
+        ...(matrix.metadata || {}),
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    const updatedCampaign = await campaignService.updateWithAIOutputs(
+      id,
+      id,
+      { creative_hook_matrix_output: updatedMatrix } as any,
+      campaign.status as any
+    );
+
+    const parsedUpdatedOutputs = updatedCampaign.aiOutputs
+      ? (typeof updatedCampaign.aiOutputs === 'string'
+          ? JSON.parse(updatedCampaign.aiOutputs)
+          : updatedCampaign.aiOutputs) as Record<string, any>
+      : {};
+
+    return res.json({
+      success: true,
+      creative_hook_matrix_output: parsedUpdatedOutputs.creative_hook_matrix_output,
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    if (error?.statusCode === 409) {
+      return res.status(409).json({ error: error.message });
+    }
+    next(error);
+  }
+};
+
 const saveCopyVersionSchema = z.object({
   feedbackUsed: z.string().max(500).optional(),
 });
@@ -1266,6 +1395,7 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
       if (parentOutputs.research_output) forkedOutputs.research_output = parentOutputs.research_output;
       if (parentOutputs.strategy_output) forkedOutputs.strategy_output = parentOutputs.strategy_output;
       if (parentOutputs.copy_output) forkedOutputs.copy_output = parentOutputs.copy_output;
+      if (parentOutputs.creative_hook_matrix_output) forkedOutputs.creative_hook_matrix_output = parentOutputs.creative_hook_matrix_output;
       if (parentOutputs.focus_group_output) forkedOutputs.focus_group_output = parentOutputs.focus_group_output;
       if (parentOutputs.copy_versions) forkedOutputs.copy_versions = parentOutputs.copy_versions;
     } else if (selectedStage === 'strategy') {
@@ -1387,6 +1517,7 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
           research_output: forkedOutputs.research_output ? JSON.stringify(forkedOutputs.research_output) : null,
           strategy_output: forkedOutputs.strategy_output ? JSON.stringify(forkedOutputs.strategy_output) : null,
           copy_output: forkedOutputs.copy_output ? JSON.stringify(forkedOutputs.copy_output) : null,
+          creative_hook_matrix_output: forkedOutputs.creative_hook_matrix_output ? JSON.stringify(forkedOutputs.creative_hook_matrix_output) : null,
           image_output: forkedOutputs.image_output ? JSON.stringify(forkedOutputs.image_output) : null,
           human_feedback: focusGroupFeedback,
           human_revision_target: selectedStage === 'fresh' || selectedStage === 'research' ? null : selectedStage,
@@ -1557,6 +1688,7 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
         research_output: toStr(existingOutputs.research_output),
         strategy_output: toStr(existingOutputs.strategy_output),
         copy_output: toStr(existingOutputs.copy_output),
+        creative_hook_matrix_output: toStr(existingOutputs.creative_hook_matrix_output),
         image_output: toStr(existingOutputs.image_output),
         review_output: toStr(existingOutputs.review_output),
         research_revision_count: campaign.researchRevisionCount ?? 0,

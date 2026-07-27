@@ -28,6 +28,12 @@ from .agent_outputs import (
     StrategicAlignment,
     SegmentMessaging,
     ChannelMessaging,
+
+    # Creative Hook Matrix
+    CreativeHookMatrixOutput,
+    CreativeHook,
+    HookCTA,
+    HookScoreBreakdown,
     
     # Image Prompt
     ImagePromptOutput,
@@ -80,6 +86,10 @@ __all__ = [
     "StrategicAlignment",
     "SegmentMessaging",
     "ChannelMessaging",
+    "CreativeHookMatrixOutput",
+    "CreativeHook",
+    "HookCTA",
+    "HookScoreBreakdown",
     "ImagePromptOutput",
     "ImagePrompt",
     "VisualDirection",

@@ -67,10 +67,59 @@ const INITIAL_AGENTS: Agent[] = [
   { id: 2, key: 'research',    name: 'Research Agent',     status: 'pending',  description: 'Waiting for Manager signal...' },
   { id: 3, key: 'strategy',    name: 'Strategy Agent',     status: 'pending',  description: 'Waiting for Research output...' },
   { id: 4, key: 'copywriter',  name: 'Copywriter Agent',   status: 'pending',  description: 'Waiting for Strategy output...' },
-  { id: 5, key: 'image_prompt',name: 'Image Prompt Agent', status: 'pending',  description: 'Waiting for Copywriter output...' },
-  { id: 6, key: 'reviewer',    name: 'Reviewer Agent',     status: 'pending',  description: 'Waiting for Image Prompt output...' },
-  { id: 7, key: 'publisher',   name: 'Publisher Agent',    status: 'pending',  description: 'Awaiting human approval' },
+  { id: 5, key: 'creative_hook_matrix', name: 'Creative Hook Matrix', status: 'pending', description: 'Waiting for Copywriter output...' },
+  { id: 6, key: 'image_prompt',name: 'Image Prompt Agent', status: 'pending',  description: 'Waiting for Creative Hook Matrix...' },
+  { id: 7, key: 'reviewer',    name: 'Reviewer Agent',     status: 'pending',  description: 'Waiting for Image Prompt output...' },
+  { id: 8, key: 'publisher',   name: 'Publisher Agent',    status: 'pending',  description: 'Awaiting human approval' },
 ];
+
+const getInitialAgents = (creativeHookMatrixEnabled: boolean) =>
+  (creativeHookMatrixEnabled
+    ? INITIAL_AGENTS
+    : INITIAL_AGENTS.filter((agent) => agent.key !== 'creative_hook_matrix').map((agent) =>
+        agent.key === 'image_prompt'
+          ? { ...agent, description: 'Waiting for Copywriter output...' }
+          : agent
+      )
+  ).map((agent, index) => ({ ...agent, id: index + 1 }));
+
+const getPipelineKeys = (creativeHookMatrixEnabled: boolean) =>
+  getInitialAgents(creativeHookMatrixEnabled).map((agent) => agent.key);
+
+const getInitialAgentDescription = (agentKey: string, creativeHookMatrixEnabled: boolean) =>
+  getInitialAgents(creativeHookMatrixEnabled).find((agent) => agent.key === agentKey)?.description ?? 'Pending...';
+
+const buildInitialAgentState = (initialActiveAgent: string | undefined, creativeHookMatrixEnabled: boolean): Agent[] => {
+  const initialAgents = getInitialAgents(creativeHookMatrixEnabled);
+  if (!initialActiveAgent) return initialAgents;
+
+  const pipelineKeys = getPipelineKeys(creativeHookMatrixEnabled);
+  const activeIdx = pipelineKeys.indexOf(initialActiveAgent);
+  if (activeIdx === -1) return initialAgents;
+
+  return initialAgents.map((agent) => {
+    const currentIdx = pipelineKeys.indexOf(agent.key);
+    if (agent.key === initialActiveAgent) {
+      return {
+        ...agent,
+        status: 'running' as AgentStatus,
+        description: RUNNING_DESCRIPTIONS[agent.key] ?? 'Processing...',
+      };
+    }
+    if (currentIdx !== -1 && currentIdx < activeIdx) {
+      return {
+        ...agent,
+        status: 'completed' as AgentStatus,
+        description: DONE_DESCRIPTIONS[agent.key] ?? 'Completed',
+      };
+    }
+    return {
+      ...agent,
+      status: 'pending' as AgentStatus,
+      description: getInitialAgentDescription(agent.key, creativeHookMatrixEnabled),
+    };
+  });
+};
 
 /** Description shown when an agent transitions to "running" */
 const RUNNING_DESCRIPTIONS: Record<string, string> = {
@@ -78,6 +127,7 @@ const RUNNING_DESCRIPTIONS: Record<string, string> = {
   research:     'Performing market intelligence & competitor analysis...',
   strategy:     'Developing strategic angles and positioning...',
   copywriter:   'Crafting high-conversion ad copy variants...',
+  creative_hook_matrix: 'Generating psychological hook archetypes...',
   image_prompt: 'Generating visual creatives and imagery...',
   reviewer:     'Running quality assurance and compliance checks...',
   publisher:    'Finalising and publishing campaign deliverables...',
@@ -89,6 +139,7 @@ const DONE_DESCRIPTIONS: Record<string, string> = {
   research:     'Market intelligence gathered',
   strategy:     'Strategic framework established',
   copywriter:   'Ad copy variants generated',
+  creative_hook_matrix: 'Creative hook matrix generated',
   image_prompt: 'Visual creatives produced',
   reviewer:     'Quality checks passed',
   publisher:    'Campaign deliverables finalised',
@@ -100,36 +151,10 @@ const CampaignLivePage: React.FC = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const location = useLocation();
+  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(false);
 
   const [agents, setAgents] = useState<Agent[]>(() => {
-    const initialActiveAgent = location.state?.initialActiveAgent;
-    if (initialActiveAgent) {
-      const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
-      const activeIdx = pipelineKeys.indexOf(initialActiveAgent);
-      return INITIAL_AGENTS.map((a) => {
-        const currentIdx = pipelineKeys.indexOf(a.key);
-        if (a.key === initialActiveAgent) {
-          return {
-            ...a,
-            status: 'running' as AgentStatus,
-            description: RUNNING_DESCRIPTIONS[a.key] ?? 'Processing...',
-          };
-        }
-        if (activeIdx !== -1 && currentIdx !== -1 && currentIdx < activeIdx) {
-          return {
-            ...a,
-            status: 'completed' as AgentStatus,
-            description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
-          };
-        }
-        return {
-          ...a,
-          status: 'pending' as AgentStatus,
-          description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
-        };
-      });
-    }
-    return INITIAL_AGENTS;
+    return buildInitialAgentState(location.state?.initialActiveAgent, false);
   });
 
   const [isInitialLoading, setIsInitialLoading] = useState(() => {
@@ -147,6 +172,39 @@ const CampaignLivePage: React.FC = () => {
       setIsMinimized(false);
     }
   }, [showHumanReview]);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.get('/constants')
+      .then((response) => {
+        if (!isMounted) return;
+        setCreativeHookMatrixEnabled(Boolean(response.data?.featureFlags?.creativeHookMatrix));
+      })
+      .catch(() => {
+        if (isMounted) setCreativeHookMatrixEnabled(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    setAgents((prev) => {
+      const nextAgents = getInitialAgents(creativeHookMatrixEnabled);
+      return nextAgents.map((agent) => {
+        const existing = prev.find((item) => item.key === agent.key);
+        return existing
+          ? {
+              ...agent,
+              ...existing,
+              id: agent.id,
+              description: existing.status === 'pending' ? agent.description : existing.description || agent.description,
+            }
+          : agent;
+      });
+    });
+  }, [creativeHookMatrixEnabled]);
 
   const [campaignFailed, setCampaignFailed] = useState(false);
   const [failedError, setFailedError] = useState<string>('');
@@ -308,7 +366,7 @@ const CampaignLivePage: React.FC = () => {
 
           setAgents((prev) =>
             prev.map((a) => {
-              const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+              const pipelineKeys = getPipelineKeys(creativeHookMatrixEnabled);
               const activeIdx = pipelineKeys.indexOf(activeAgentKey);
               const currentIdx = pipelineKeys.indexOf(a.key);
 
@@ -331,7 +389,7 @@ const CampaignLivePage: React.FC = () => {
               return {
                 ...a,
                 status: 'pending' as AgentStatus,
-                description: INITIAL_AGENTS.find((i) => i.key === a.key)?.description ?? 'Pending...',
+                description: getInitialAgentDescription(a.key, creativeHookMatrixEnabled),
               };
             })
           );
@@ -402,13 +460,13 @@ const CampaignLivePage: React.FC = () => {
 
           setAgents((prev) =>
             prev.map((a) => {
-              const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+              const pipelineKeys = getPipelineKeys(creativeHookMatrixEnabled);
               const activeIdx = pipelineKeys.indexOf(activeAgentKey || '');
               const currentIdx = pipelineKeys.indexOf(a.key);
 
               if (activeIdx !== -1 && currentIdx !== -1) {
                 if (currentIdx > activeIdx) {
-                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
+                  const initialAgent = getInitialAgents(creativeHookMatrixEnabled).find((i) => i.key === a.key);
                   return {
                     ...a,
                     status: 'pending' as AgentStatus,
@@ -456,7 +514,7 @@ const CampaignLivePage: React.FC = () => {
         statusCheckControllerRef.current = null;
       }
     }
-  }, [campaignId, navigate]);
+  }, [campaignId, navigate, creativeHookMatrixEnabled]);
 
   useEffect(() => {
     // campaignFailed is intentionally NOT in this guard:
@@ -560,7 +618,7 @@ const CampaignLivePage: React.FC = () => {
 
       if (status === 'completed' || status === 'running' || status === 'failed') {
         setAgents((prev) => {
-          const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'image_prompt', 'reviewer', 'publisher'];
+          const pipelineKeys = getPipelineKeys(creativeHookMatrixEnabled);
           const targetIdx = pipelineKeys.indexOf(agentKey);
 
           const updated = prev.map((a) => {
@@ -601,7 +659,7 @@ const CampaignLivePage: React.FC = () => {
                 }
                 if (currentIdx > targetIdx) {
                   // Subsequent agents MUST be pending
-                  const initialAgent = INITIAL_AGENTS.find((i) => i.key === a.key);
+                  const initialAgent = getInitialAgents(creativeHookMatrixEnabled).find((i) => i.key === a.key);
                   return {
                     ...a,
                     status: 'pending' as AgentStatus,
@@ -638,7 +696,7 @@ const CampaignLivePage: React.FC = () => {
               };
               // Reset any agents after nextPendingIdx to pending
               for (let i = nextPendingIdx + 1; i < updated.length; i++) {
-                const initialAgent = INITIAL_AGENTS.find((item) => item.key === updated[i].key);
+                const initialAgent = getInitialAgents(creativeHookMatrixEnabled).find((item) => item.key === updated[i].key);
                 updated[i] = {
                   ...updated[i],
                   status: 'pending',
@@ -759,7 +817,7 @@ const CampaignLivePage: React.FC = () => {
       socket.emit('leave_campaign', campaignId);
       socket.disconnect();
     };
-  }, [campaignId, navigate]);
+  }, [campaignId, navigate, creativeHookMatrixEnabled]);
 
   // ── Human review handlers ────────────────────────────────────────────────────
 
@@ -803,10 +861,15 @@ const CampaignLivePage: React.FC = () => {
       
       // Add downstream agents that depend on the selected agent
       if (selectedAgent === 'research') {
-        agentsToReRun.push('strategy', 'copywriter', 'image_prompt', 'reviewer');
+        agentsToReRun.push('strategy', 'copywriter');
+        if (creativeHookMatrixEnabled) agentsToReRun.push('creative_hook_matrix');
+        agentsToReRun.push('image_prompt', 'reviewer');
       } else if (selectedAgent === 'strategy') {
-        agentsToReRun.push('copywriter', 'image_prompt', 'reviewer');
+        agentsToReRun.push('copywriter');
+        if (creativeHookMatrixEnabled) agentsToReRun.push('creative_hook_matrix');
+        agentsToReRun.push('image_prompt', 'reviewer');
       } else if (selectedAgent === 'copywriter') {
+        if (creativeHookMatrixEnabled) agentsToReRun.push('creative_hook_matrix');
         agentsToReRun.push('image_prompt', 'reviewer');
       } else if (selectedAgent === 'image_prompt') {
         agentsToReRun.push('reviewer');
@@ -1626,9 +1689,24 @@ const CampaignLivePage: React.FC = () => {
                   <label className="block text-[10px] font-medium uppercase tracking-[0.08em] mb-2.5" style={{ fontFamily: 'Sora, sans-serif', color: '#5A5A6E' }}>Select Agent to Revise</label>
                   <div className="grid grid-cols-2 gap-2">
                     {([
-                      { key: 'research', label: 'Research', icon: 'search', downstream: 'Re-runs Strategy → Copy → Image → Reviewer' },
-                      { key: 'strategy', label: 'Strategy', icon: 'lightbulb', downstream: 'Re-runs Copy → Image → Reviewer' },
-                      { key: 'copywriter', label: 'Copywriter', icon: 'edit_note', downstream: 'Re-runs Image → Reviewer' },
+                      {
+                        key: 'research',
+                        label: 'Research',
+                        icon: 'search',
+                        downstream: creativeHookMatrixEnabled ? 'Re-runs Strategy → Copy → Creative Hooks → Image → Reviewer' : 'Re-runs Strategy → Copy → Image → Reviewer',
+                      },
+                      {
+                        key: 'strategy',
+                        label: 'Strategy',
+                        icon: 'lightbulb',
+                        downstream: creativeHookMatrixEnabled ? 'Re-runs Copy → Creative Hooks → Image → Reviewer' : 'Re-runs Copy → Image → Reviewer',
+                      },
+                      {
+                        key: 'copywriter',
+                        label: 'Copywriter',
+                        icon: 'edit_note',
+                        downstream: creativeHookMatrixEnabled ? 'Re-runs Creative Hooks → Image → Reviewer' : 'Re-runs Image → Reviewer',
+                      },
                       { key: 'image_prompt', label: 'Image Prompt', icon: 'image', downstream: 'Re-runs Reviewer only' },
                     ] as const).map(({ key, label, icon, downstream }) => {
                       const count = revisionCounts[key as keyof typeof revisionCounts];

@@ -1,13 +1,14 @@
 import React from 'react';
-import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, Users } from 'lucide-react';
+import { FileText, Compass, PenTool, Image as ImageIcon, CheckSquare, Send, LayoutDashboard, Users, Lightbulb } from 'lucide-react';
 import { useCampaignResultContext } from '../context/CampaignResultContext';
 import { Tab } from '../types';
 
-export const tabs: Tab[] = [
+export const baseTabs: Tab[] = [
   { id: 'overview',     label: 'Overview',     icon: LayoutDashboard },
   { id: 'research',    label: 'Research',     icon: FileText },
   { id: 'strategy',    label: 'Strategy',     icon: Compass },
   { id: 'copy',        label: 'Copy',         icon: PenTool },
+  { id: 'creative-hooks', label: 'Creative Hooks', icon: Lightbulb },
   { id: 'images',      label: 'Images',       icon: ImageIcon },
   { id: 'review',      label: 'Review',       icon: CheckSquare },
   { id: 'published',   label: 'Publishing',   icon: Send },
@@ -21,7 +22,9 @@ export const ResultTabs: React.FC = React.memo(() => {
     focusGroupUpdatedViaMcp,
     setFocusGroupUpdatedViaMcp,
     isTabCompleted,
+    creativeHookMatrixEnabled,
   } = useCampaignResultContext();
+  const tabs = creativeHookMatrixEnabled ? baseTabs : baseTabs.filter((tab) => tab.id !== 'creative-hooks');
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-x-auto scroll-touch">
@@ -59,4 +62,3 @@ export const ResultTabs: React.FC = React.memo(() => {
     </div>
   );
 });
-

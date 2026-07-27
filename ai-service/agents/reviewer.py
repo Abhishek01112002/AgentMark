@@ -634,11 +634,20 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info(f"   status:    {state.status}")
     logger.info(f"   next_step: {state.next_step}")
 
+    # Production Safeguard: Ensure human_revision_target is None when review_complete
+    if state.status == "review_complete" and state.human_revision_target is not None:
+        logger.warning(
+            "⚠️ WARNING: review_complete set while human_revision_target is still populated (%s) - clearing target",
+            state.human_revision_target
+        )
+        state.human_revision_target = None
+
     logger.info("\n" + "=" * 80)
     logger.info("✅ REVIEWER AGENT COMPLETE")
     logger.info("=" * 80)
 
     return state
+
 
 
 # ==================== HELPER FUNCTIONS ====================

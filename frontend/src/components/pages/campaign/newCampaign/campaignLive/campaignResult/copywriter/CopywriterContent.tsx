@@ -10,6 +10,8 @@ interface CopywriterContentProps {
   campaignId?: string;
   campaign?: any;
   onCopyVariantsUpdate?: (variants: CopyVariantsMap) => void;
+  showCreativeHooksBanner?: boolean;
+  onOpenCreativeHooks?: () => void;
 }
 
 const platforms = [
@@ -47,7 +49,7 @@ function getVariantsForChannel(
   }];
 }
 
-const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId, campaign, onCopyVariantsUpdate }) => {
+const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId, campaign, onCopyVariantsUpdate, showCreativeHooksBanner, onOpenCreativeHooks }) => {
   const createVariantSignature = (variant: Partial<CopyVariant>) =>
     [
       (variant.headline || '').trim().toLowerCase(),
@@ -678,6 +680,22 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
           </div>
         </div>
       </div>
+
+      {showCreativeHooksBanner && (
+        <button
+          onClick={onOpenCreativeHooks}
+          className="w-full rounded-2xl border border-[#6366F1]/25 bg-[#111118] px-5 py-4 text-left flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:border-[#818CF8]/50 transition-all"
+        >
+          <span>
+            <span className="block text-sm font-semibold text-[#F8FAFC]">Explore Creative Hook Matrix</span>
+            <span className="block text-xs text-[#94A3B8] mt-1">Turn psychological hook angles into copy variants without leaving the campaign workflow.</span>
+          </span>
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#A5B4FC]">
+            Open hooks
+            <GitBranch size={14} />
+          </span>
+        </button>
+      )}
 
       <div className={`grid grid-cols-1 ${hasRightPanelContent ? 'xl:grid-cols-12' : 'xl:grid-cols-1'} gap-5`}>
         {/* Channel Strategy Angle - Full Width */}

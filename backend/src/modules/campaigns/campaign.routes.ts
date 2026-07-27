@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, getCampaignStatus, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, getCampaignStatus, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, updateCreativeHookMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
 
 import { verifyApiKeyScope } from '../developer/developer.controller';
 
@@ -24,6 +24,7 @@ router.get('/all', getAllCampaigns);
 // Variants Management Routes
 router.post('/:id/variants/copy', campaignRateLimiter, generateCopyVariant);
 router.patch('/:id/variants/copy', updateCopyVariantMeta);
+router.patch('/:id/hooks/:hookId', updateCreativeHookMeta);
 
 router.get('/:id/status', getCampaignStatus);
 router.get('/:id', getCampaign);

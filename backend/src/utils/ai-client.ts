@@ -25,6 +25,7 @@ export interface AIServiceCampaignRequest {
   research_output?: string | null;
   strategy_output?: string | null;
   copy_output?: string | null;
+  creative_hook_matrix_output?: string | null;
   image_output?: string | null;
   review_output?: string | null;
   publisher_output?: string | null;
@@ -51,6 +52,7 @@ interface AIServiceCampaignResponse {
     research_output?: any;
     strategy_output?: any;
     copy_output?: any;
+    creative_hook_matrix_output?: any;
     image_output?: any;
     review_output?: any;
     publisher_output?: any;

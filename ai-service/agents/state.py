@@ -111,6 +111,12 @@ class CampaignState(BaseModel):
         default=None,
         description="Copywriter Agent output - Headlines, body copy, CTAs, messaging"
     )
+
+    # ==================== CREATIVE INTELLIGENCE: HOOK MATRIX OUTPUT ====================
+    creative_hook_matrix_output: Optional[str] = Field(
+        default=None,
+        description="Creative Hook Matrix output - Psychological hook archetypes, CTAs, scores, and metadata"
+    )
     
     # ==================== AGENT 5: IMAGE PROMPT AGENT OUTPUT ====================
     image_output: Optional[str] = Field(

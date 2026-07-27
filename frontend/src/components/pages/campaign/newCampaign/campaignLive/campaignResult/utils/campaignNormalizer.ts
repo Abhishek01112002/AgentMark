@@ -34,6 +34,9 @@ export const normalizeCampaign = (
   // 4. Copy Output & Variants
   const copy = safeParseJson(outputs.copy_output || outputs.copyOutput);
   const copyVariants = safeParseJson(outputs.copy_variants) || {};
+
+  // 4b. Creative Hook Matrix
+  const creativeHooks = safeParseJson(outputs.creative_hook_matrix_output || outputs.creativeHookMatrixOutput);
   
   // 5. Visuals Output
   const visuals = safeParseJson(outputs.image_output || outputs.imageOutput);
@@ -96,6 +99,7 @@ export const normalizeCampaign = (
     strategy,
     copy,
     copyVariants,
+    creativeHooks,
     visuals,
     review,
     publisher,

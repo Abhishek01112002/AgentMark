@@ -49,7 +49,8 @@ class TestTrustModelAndConfidenceEngine(unittest.TestCase):
         )
         self.assertGreaterEqual(confidence, 0.40)
         self.assertLessEqual(confidence, 1.0)
-        self.assertEqual(confidence, 0.86)
+        self.assertEqual(confidence, 0.91)
+
 
 
 if __name__ == "__main__":

@@ -27,6 +27,17 @@ export interface NormalizedReviewOutput {
   feedback?: string;
 }
 
+export interface NormalizedCreativeHookMatrix {
+  hooks: any[];
+  archetypes_generated?: string[];
+  evaluation_config?: Record<string, any>;
+  revision?: number;
+  generated_at?: string;
+  status?: string;
+  metadata?: Record<string, any>;
+  revisions?: any[];
+}
+
 export interface NormalizedCampaign {
   id: string;
   name: string;
@@ -47,6 +58,7 @@ export interface NormalizedCampaign {
   strategy: any | null;
   copy: any | null;
   copyVariants: Record<string, any[]>;
+  creativeHooks: NormalizedCreativeHookMatrix | null;
   visuals: any | null;
   review: NormalizedReviewOutput | null;
   publisher: any | null;
