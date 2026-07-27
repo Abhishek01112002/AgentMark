@@ -121,6 +121,22 @@ export const projectService = {
 
     if (!project) return null;
 
+    // Set Redis cancellation flags for active running campaigns in this project
+    try {
+      if (redis.status === 'ready' || redis.status === 'connecting') {
+        const activeCampaigns = await prisma.campaign.findMany({
+          where: { projectId: id, status: { notIn: ['completed', 'failed'] } },
+          select: { id: true }
+        });
+        for (const c of activeCampaigns) {
+          await redis.set(`cancel:${c.id}`, "true", "EX", 3600);
+          console.log(`[Project Service] Set cancellation flag in Redis for running campaign ${c.id}`);
+        }
+      }
+    } catch (err: any) {
+      console.error("[Project Service] Failed to set cancellation flags for project campaigns:", err?.message || err);
+    }
+
     // Run deletions in a transaction to prevent partial-deletion orphan data
     await prisma.$transaction([
       prisma.campaignMemorySnapshot.deleteMany({ where: { projectId: id } }),

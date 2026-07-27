@@ -116,11 +116,12 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       reasons = [{ targetAgent: campaign.humanRevisionTarget, feedbackText: campaign.humanFeedback }];
     }
 
+    const wasRejected = (existing?.humanApprovedOnFirstTry === false) || reasons.length > 0;
     const data: any = {
       projectId,
       campaignId,
       finalReviewScore: campaign.reviewScore ?? null,
-      humanApprovedOnFirstTry: !campaign.humanRevisionTarget,
+      humanApprovedOnFirstTry: !wasRejected,
       finalApprovedTone: campaign.brandVoice ? [campaign.brandVoice] : [],
       finalChannelsUsed: channels,
       rejectionReasons: reasons,
