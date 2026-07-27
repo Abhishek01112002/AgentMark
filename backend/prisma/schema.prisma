@@ -316,3 +316,33 @@ model CalibrationModelSnapshot {
   @@map("calibration_model_snapshots")
   @@index([industry, createdAt(sort: Desc)])
 }
+
+// ── EMOS Phase 1 Foundation Models ──────────────────────────────────────────────
+
+model BrandVaultEvent {
+  id           String   @id @default(uuid())
+  projectId    String
+  eventType    String   // BRAND_ATTRIBUTE_UPDATED, BRAND_CREATED, BRAND_VERIFIED
+  attributeKey String
+  previousVal  String?  @db.Text
+  newVal       String   @db.Text
+  actorId      String
+  version      Int
+  timestamp    DateTime @default(now())
+
+  @@map("brand_vault_events")
+  @@index([projectId, version])
+  @@index([projectId, timestamp(sort: Desc)])
+}
+
+model BrandVaultSnapshot {
+  id           String   @id @default(uuid())
+  projectId    String
+  brandVersion Int
+  snapshotData Json     // Materialized immutable JSON vault snapshot
+  verifiedAt   DateTime @default(now())
+
+  @@map("brand_vault_snapshots")
+  @@index([projectId, brandVersion])
+}
+

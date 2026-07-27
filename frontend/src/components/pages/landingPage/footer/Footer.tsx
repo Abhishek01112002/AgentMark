@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import PrivacyTermsModal from '../../../shared/PrivacyTermsModal';
 
-export const Footer = () => {
+export const Footer = memo(() => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<'privacy' | 'terms'>('privacy');
 
@@ -18,7 +18,7 @@ export const Footer = () => {
           
           {/* Left: Logo */}
           <div className="flex items-center gap-2">
-            <img src="/novateches.png" alt="AgentMark Logo" className="h-5 sm:h-6 w-auto" />
+            <img src="/novateches.png" alt="AgentMark Logo" width="24" height="24" loading="lazy" className="h-5 sm:h-6 w-auto" />
             <span className="text-lg sm:text-xl font-bold">
               AgentMark
             </span>
@@ -55,4 +55,4 @@ export const Footer = () => {
       />
     </>
   );
-};
+});

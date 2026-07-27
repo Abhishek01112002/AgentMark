@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { 
   BriefcaseIcon, 
   SearchIcon, 
@@ -19,7 +19,7 @@ const PIPELINE_STEPS = [
   { icon: <SendIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Publish", text: "Packaging the final campaign assets and preparing everything for deployment..." },
 ] as const;
 
-export const WorkflowSection = () => {
+export const WorkflowSection = memo(() => {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [displayedText, setDisplayedText] = useState('');
 
@@ -251,4 +251,4 @@ export const WorkflowSection = () => {
       </section>
     </>
   );
-};
+});

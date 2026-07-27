@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from './navbar/Navbar';
 import { HeroSection } from './hero/HeroSection';
@@ -7,6 +7,53 @@ import { TeamSection } from './teams/TeamSection';
 import { ScaleSection } from './scale/ScaleSection';
 import { SavingsSection } from './saving/SavingsSection';
 import { Footer } from './footer/Footer';
+
+const TUTORIALS = [
+  {
+    title: 'How to Launch Your First Campaign',
+    duration: '3:32',
+    videoUrl: '/create_campaign.mp4',
+    description: 'A quick walkthrough showing how to enter target parameters and trigger the multi-agent campaign runner.',
+    steps: [
+      'Click on "New Campaign" in the sidebar dashboard.',
+      'Fill in the target audience, industry, and primary campaign goals.',
+      'Choose a brand voice and click "Launch Campaign" to start the AI runner.',
+    ],
+  },
+  {
+    title: 'Reviewing & Sharing Copy Variants',
+    duration: '1:04',
+    videoUrl: '/customize_copy.mp4',
+    description: 'Learn how to inspect the generated copywriter outputs and use the one-click brand bridges.',
+    steps: [
+      'Navigate to the Copywriter tab in your completed campaign results.',
+      'Select any channel tab (e.g., X, LinkedIn, Email) to view the generated drafts.',
+      'Click the bottom CTA button (like "Compose in Gmail" or "Post on X") to copy the text and open the bridge.',
+    ],
+  },
+  {
+    title: 'Generating Visual Prompts via AI Bridges',
+    duration: '0:55',
+    videoUrl: '/visual_studio_bridges.mp4',
+    description: 'Learn how to copy generated image prompts and launch external image generation tools.',
+    steps: [
+      'Navigate to the Visuals tab in your campaign results.',
+      'Scroll to any generated prompt card.',
+      'Click the "Generate" button on the card, select an AI Studio engine (like DALL-E or Imagen 3), and let the bridge pre-fill the prompt.',
+    ],
+  },
+  {
+    title: 'Configuring API Keys & Credentials',
+    duration: '0:38',
+    videoUrl: '/setup_api_keys.mp4',
+    description: 'A step-by-step guide to adding your LLM credentials for campaign execution.',
+    steps: [
+      'Click on "Settings" in the main sidebar.',
+      'Add your Gemini or OpenAI API keys into the respective input fields.',
+      'Click "Save Credentials" and wait for the green confirmation toast.',
+    ],
+  },
+];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -21,58 +68,13 @@ export default function LandingPage() {
     }
   }, [playbackSpeed, activeVideoIndex, showTutorialModal]);
 
-  const tutorials = [
-    {
-      title: 'How to Launch Your First Campaign',
-      duration: '3:32',
-      videoUrl: '/create_campaign.mp4',
-      description: 'A quick walkthrough showing how to enter target parameters and trigger the multi-agent campaign runner.',
-      steps: [
-        'Click on "New Campaign" in the sidebar dashboard.',
-        'Fill in the target audience, industry, and primary campaign goals.',
-        'Choose a brand voice and click "Launch Campaign" to start the AI runner.'
-      ]
-    },
-    {
-      title: 'Reviewing & Sharing Copy Variants',
-      duration: '1:04',
-      videoUrl: '/customize_copy.mp4',
-      description: 'Learn how to inspect the generated copywriter outputs and use the one-click brand bridges.',
-      steps: [
-        'Navigate to the Copywriter tab in your completed campaign results.',
-        'Select any channel tab (e.g., X, LinkedIn, Email) to view the generated drafts.',
-        'Click the bottom CTA button (like "Compose in Gmail" or "Post on X") to copy the text and open the bridge.'
-      ]
-    },
-    {
-      title: 'Generating Visual Prompts via AI Bridges',
-      duration: '0:55',
-      videoUrl: '/visual_studio_bridges.mp4',
-      description: 'Learn how to copy generated image prompts and launch external image generation tools.',
-      steps: [
-        'Navigate to the Visuals tab in your campaign results.',
-        'Scroll to any generated prompt card.',
-        'Click the "Generate" button on the card, select an AI Studio engine (like DALL-E or Imagen 3), and let the bridge pre-fill the prompt.'
-      ]
-    },
-    {
-      title: 'Configuring API Keys & Credentials',
-      duration: '0:38',
-      videoUrl: '/setup_api_keys.mp4',
-      description: 'A step-by-step guide to adding your LLM credentials for campaign execution.',
-      steps: [
-        'Click on "Settings" in the main sidebar.',
-        'Add your Gemini or OpenAI API keys into the respective input fields.',
-        'Click "Save Credentials" and wait for the green confirmation toast.'
-      ]
-    },
-  ];
+  const handleLoginClick = useCallback(() => navigate('/login'), [navigate]);
+  const handleGetStartedClick = useCallback(() => navigate('/signup'), [navigate]);
+  const handleViewDemoClick = useCallback(() => setShowTutorialModal(true), []);
 
   return (
     <div className="min-h-screen overflow-x-hidden antialiased bg-[#0A0A0F] text-[#F1F1F3]">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap');
-
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
@@ -178,11 +180,11 @@ export default function LandingPage() {
       `}</style>
 
       <Navbar
-        onLoginClick={() => navigate('/login')}
-        onGetStartedClick={() => navigate('/signup')}
+        onLoginClick={handleLoginClick}
+        onGetStartedClick={handleGetStartedClick}
       />
 
-      <HeroSection onViewDemoClick={() => setShowTutorialModal(true)} />
+      <HeroSection onViewDemoClick={handleViewDemoClick} />
 
       <main className="relative w-full overflow-hidden">
         <div className="pointer-events-none absolute left-[-4rem] sm:left-[-6rem] top-20 h-48 w-48 sm:h-64 sm:w-64 rounded-full bg-[radial-gradient(circle,rgba(99,102,241,0.12)_0%,rgba(99,102,241,0.04)_58%,transparent_80%)] blur-3xl" />
@@ -228,7 +230,7 @@ export default function LandingPage() {
                   muted
                   playsInline
                   className="absolute inset-0 w-full h-full object-contain"
-                  src={tutorials[activeVideoIndex].videoUrl}
+                  src={TUTORIALS[activeVideoIndex].videoUrl}
                   onPlay={() => {
                     if (videoRef.current) {
                       videoRef.current.playbackRate = playbackSpeed;
@@ -245,7 +247,7 @@ export default function LandingPage() {
                     SILENT WALKTHROUGH
                   </span>
                   <span className="text-xs text-[#8B8B9E] font-mono">
-                    Duration: {tutorials[activeVideoIndex].duration}
+                    Duration: {TUTORIALS[activeVideoIndex].duration}
                   </span>
                   
                   {/* Playback Speed Toggles */}
@@ -267,20 +269,20 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <h4 className="text-xl font-bold mb-2 text-[#F1F1F3]" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  {tutorials[activeVideoIndex].title}
+                  {TUTORIALS[activeVideoIndex].title}
                 </h4>
                 <p className="text-sm text-[#8B8B9E] leading-relaxed mb-4" style={{ fontFamily: 'Sora, sans-serif' }}>
-                  {tutorials[activeVideoIndex].description}
+                  {TUTORIALS[activeVideoIndex].description}
                 </p>
 
                 {/* Step by Step Guide */}
-                {tutorials[activeVideoIndex].steps && (
+                {TUTORIALS[activeVideoIndex].steps && (
                   <div className="mt-4 pt-4 border-t border-[#2A2A38]/50">
                     <span className="text-[10px] font-semibold tracking-wider font-mono text-[#A0A0D2] uppercase block mb-2">
                       Key Steps Shown in Video:
                     </span>
                     <ul className="space-y-1.5">
-                      {tutorials[activeVideoIndex].steps.map((step, sIdx) => (
+                      {TUTORIALS[activeVideoIndex].steps.map((step, sIdx) => (
                         <li key={sIdx} className="text-xs text-[#8B8B9E] flex items-start gap-2 leading-relaxed">
                           <span className="text-[#4edea3] font-mono font-semibold mt-0.5 shrink-0">{sIdx + 1}.</span>
                           <span>{step}</span>
@@ -303,7 +305,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="flex-1 divide-y divide-[#2A2A38]/50">
-                {tutorials.map((video, idx) => {
+                {TUTORIALS.map((video, idx) => {
                   const isActive = idx === activeVideoIndex;
                   return (
                     <button

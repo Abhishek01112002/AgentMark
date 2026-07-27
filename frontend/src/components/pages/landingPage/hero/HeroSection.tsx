@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SparklesIcon, ArrowRightIcon } from '../icons';
 
-export const HeroSection = ({ onViewDemoClick }: { onViewDemoClick?: () => void }) => {
+export const HeroSection = memo(({ onViewDemoClick }: { onViewDemoClick?: () => void }) => {
   const navigate = useNavigate();
 
   return (
@@ -61,5 +62,5 @@ export const HeroSection = ({ onViewDemoClick }: { onViewDemoClick?: () => void 
       </div>
     </header>
   );
-};
+});
 

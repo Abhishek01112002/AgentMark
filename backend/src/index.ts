@@ -19,6 +19,7 @@ import imagekitRoutes from './modules/imagekit/imagekit.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
 import focusGroupRoutes from './modules/focus-group/focus-group.routes';
 import developerRoutes from './modules/developer/developer.routes';
+import brandVaultRoutes from './modules/brand-vault/brand-vault.routes';
 import { errorHandler } from './middlewares/error.middleware';
 import prisma from './db';
 import { notificationService } from './modules/notifications/notification.service';
@@ -74,6 +75,7 @@ app.use('/api/imagekit', imagekitRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/focus-group', focusGroupRoutes);
 app.use('/api/developer', developerRoutes);
+app.use('/api/brand-vault', brandVaultRoutes);
 
 app.use(errorHandler);
 

@@ -1,4 +1,6 @@
-export const SavingsSection = () => {
+import { memo } from 'react';
+
+export const SavingsSection = memo(() => {
   return (
     <section id="why-agentmark" className="relative z-10 w-full overflow-hidden py-12 sm:py-16 md:py-20 lg:py-24">
       <div className="section-veil" />
@@ -49,4 +51,4 @@ export const SavingsSection = () => {
       </div>
     </section>
   );
-};
+});

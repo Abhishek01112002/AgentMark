@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { 
   BriefcaseIcon, 
   SearchIcon, 
@@ -8,7 +9,7 @@ import {
   SendIcon 
 } from '../icons';
 
-export const TeamSection = () => {
+export const TeamSection = memo(() => {
   const agents = [
     {
       icon: <BriefcaseIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
@@ -83,4 +84,4 @@ export const TeamSection = () => {
       </div>
     </section>
   );
-};
+});

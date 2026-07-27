@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 
 interface NavbarProps {
   onLoginClick: () => void;
@@ -12,13 +12,13 @@ const navItems = [
   { label: "Why AgentMark", href: "#why-agentmark" },
 ];
 
-export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
+export const Navbar = memo(({ onLoginClick, onGetStartedClick }: NavbarProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <nav className="fixed top-0 w-full z-50 border-b flex justify-between items-center h-14 sm:h-16 px-3 sm:px-6 md:px-12 bg-[rgba(10,10,15,0.85)] backdrop-blur-xl border-[#2A2A38]">
       <div className="flex items-center gap-2">
-        <img src="/novateches.png" alt="AgentMark Logo" className="h-6 sm:h-7 w-auto" />
+        <img src="/novateches.png" alt="AgentMark Logo" width="28" height="28" fetchPriority="high" className="h-6 sm:h-7 w-auto" />
         <span className="font-bold text-lg sm:text-xl text-[#F1F1F3]">
           AgentMark
         </span>
@@ -121,4 +121,4 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
       )}
     </nav>
   );
-};
+});
