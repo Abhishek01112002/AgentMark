@@ -1597,6 +1597,11 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
       return;
     }
 
+    if (campaign.status !== 'failed') {
+      res.status(400).json({ error: `Cannot retry campaign in status '${campaign.status}'. Only failed campaigns can be retried.` });
+      return;
+    }
+
     const llmConfigHeader = req.headers['x-llm-config'];
     let llmConfig: any = undefined;
     if (typeof llmConfigHeader === 'string') {

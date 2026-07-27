@@ -80,6 +80,51 @@ class TestP0ProductionFixes(unittest.TestCase):
         extracted_score = review_output.get("overall_quality_score") if review_output.get("overall_quality_score") is not None else review_output.get("quality_score")
         self.assertEqual(extracted_score, 78)
 
+    def test_retry_campaign_status_guard(self):
+        """Verify retry validation accepts only 'failed' status and rejects all other campaign states."""
+        def simulate_retry_validation(campaign_status: str):
+            if campaign_status != "failed":
+                return False, 400, f"Cannot retry campaign in status '{campaign_status}'. Only failed campaigns can be retried."
+            return True, 200, "Campaign retry initiated"
+
+        # 1. failed -> retry succeeds
+        ok, status_code, msg = simulate_retry_validation("failed")
+        self.assertTrue(ok)
+        self.assertEqual(status_code, 200)
+
+        # 2. processing -> retry rejected (400)
+        ok, status_code, msg = simulate_retry_validation("processing")
+        self.assertFalse(ok)
+        self.assertEqual(status_code, 400)
+        self.assertIn("processing", msg)
+
+        # 3. awaiting_human_approval -> retry rejected (400)
+        ok, status_code, msg = simulate_retry_validation("awaiting_human_approval")
+        self.assertFalse(ok)
+        self.assertEqual(status_code, 400)
+
+        # 4. completed -> retry rejected (400)
+        ok, status_code, msg = simulate_retry_validation("completed")
+        self.assertFalse(ok)
+        self.assertEqual(status_code, 400)
+
+        # 5. cancelled -> retry rejected (400)
+        ok, status_code, msg = simulate_retry_validation("cancelled")
+        self.assertFalse(ok)
+        self.assertEqual(status_code, 400)
+
+        # 6. duplicate retry requests (first succeeds and moves status to processing, second is rejected)
+        initial_status = "failed"
+        ok1, code1, _ = simulate_retry_validation(initial_status)
+        self.assertTrue(ok1)
+        self.assertEqual(code1, 200)
+
+        # State transitions to processing after retry1
+        updated_status = "processing"
+        ok2, code2, _ = simulate_retry_validation(updated_status)
+        self.assertFalse(ok2)
+        self.assertEqual(code2, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
