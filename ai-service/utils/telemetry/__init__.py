@@ -6,6 +6,7 @@ from utils.telemetry.pipeline_tracer import PipelineTracer, CampaignTrace, Agent
 from utils.telemetry.token_diagnostics import TokenDiagnostics, PromptTokenReport
 from utils.telemetry.execution_report import CampaignExecutionReport
 from utils.telemetry.execution_analyzer import ExecutionAnalyzer
+from utils.telemetry.emos_tracer import TelemetryContext, log_component_audit
 
 __all__ = [
     "PipelineTracer",
@@ -16,4 +17,6 @@ __all__ = [
     "PromptTokenReport",
     "CampaignExecutionReport",
     "ExecutionAnalyzer",
+    "TelemetryContext",
+    "log_component_audit",
 ]
