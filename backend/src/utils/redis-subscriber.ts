@@ -321,9 +321,9 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                   const qualityScore = reviewOutput.overall_quality_score ?? reviewOutput.quality_score;
                   
                   if (typeof qualityScore === 'number') {
-                    // Convert from 0-100 scale to 0-10 scale for frontend display
-                    updateData.reviewScore = qualityScore / 10;
-                    console.log(`[Redis Subscriber] Extracted review score: ${qualityScore}/100 (stored as ${qualityScore/10}/10)`);
+                    // Store qualityScore consistently on 0-100 scale
+                    updateData.reviewScore = qualityScore;
+                    console.log(`[Redis Subscriber] Extracted review score: ${qualityScore}/100 (stored as ${qualityScore}/100)`);
                   } else {
                     console.log(`[Redis Subscriber] No quality score found in review_output`);
                   }

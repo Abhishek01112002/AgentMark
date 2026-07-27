@@ -143,9 +143,45 @@ function DashboardContent() {
     };
   }, [user?.id]);
 
+  const [apiKeyHealthStatus, setApiKeyHealthStatus] = useState<'checking' | 'healthy' | 'invalid' | 'missing'>('checking');
+
   useEffect(() => {
-    const settings = llmSettingsService.get(user?.id);
-    setHasApiKeys(llmSettingsService.hasValidApiKeys(settings));
+    const KEY_CACHE_KEY = `agentmark_key_health_${user?.id || 'guest'}`;
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+
+    const timer = setTimeout(() => {
+      try {
+        const cached = sessionStorage.getItem(KEY_CACHE_KEY);
+        if (cached) {
+          const { status, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < CACHE_TTL_MS) {
+            setApiKeyHealthStatus(status);
+            setHasApiKeys(status !== 'missing');
+            return;
+          }
+        }
+      } catch (e) {
+        // Cache read fallback
+      }
+
+      const settings = llmSettingsService.get(user?.id);
+      const hasKeys = llmSettingsService.hasValidApiKeys(settings);
+      const status = hasKeys ? 'healthy' : 'missing';
+      
+      setApiKeyHealthStatus(status);
+      setHasApiKeys(hasKeys);
+
+      try {
+        sessionStorage.setItem(
+          KEY_CACHE_KEY,
+          JSON.stringify({ status, timestamp: Date.now() })
+        );
+      } catch (e) {
+        // Ignore storage write error
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [user?.id]);
 
   useEffect(() => {
@@ -351,7 +387,7 @@ function DashboardContent() {
                       className="text-xs uppercase tracking-[0.24em] text-[#A0A0D2]"
                       style={{ fontFamily: 'JetBrains Mono, monospace' }}
                     >
-                      API keys required
+                      API keys status: {apiKeyHealthStatus}
                     </p>
                     <h3
                       className="mt-2 text-xl font-semibold text-white"

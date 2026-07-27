@@ -15,13 +15,14 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TypewriterText } from './TypewriterText';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw, AlertTriangle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../shared/topNav/TopNav';
 import api from '../../../../../services/api';
 import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../shared/ChannelIcon';
+import { getAgentLabel } from '../../../../../utils/agentPresentation';
 
 // ── Module-level constants (stable across renders) ────────────────────────────
 
@@ -63,14 +64,14 @@ const formatErrorText = (msg: string | null | undefined): string => {
 // ── Initial agent pipeline definition ─────────────────────────────────────────
 
 const INITIAL_AGENTS: Agent[] = [
-  { id: 1, key: 'manager',     name: 'Manager Agent',      status: 'running',  description: 'Coordinating multi-agent pipeline execution...' },
-  { id: 2, key: 'research',    name: 'Research Agent',     status: 'pending',  description: 'Waiting for Manager signal...' },
-  { id: 3, key: 'strategy',    name: 'Strategy Agent',     status: 'pending',  description: 'Waiting for Research output...' },
-  { id: 4, key: 'copywriter',  name: 'Copywriter Agent',   status: 'pending',  description: 'Waiting for Strategy output...' },
-  { id: 5, key: 'creative_hook_matrix', name: 'Creative Hook Matrix', status: 'pending', description: 'Waiting for Copywriter output...' },
-  { id: 6, key: 'image_prompt',name: 'Image Prompt Agent', status: 'pending',  description: 'Waiting for Creative Hook Matrix...' },
-  { id: 7, key: 'reviewer',    name: 'Reviewer Agent',     status: 'pending',  description: 'Waiting for Image Prompt output...' },
-  { id: 8, key: 'publisher',   name: 'Publisher Agent',    status: 'pending',  description: 'Awaiting human approval' },
+  { id: 1, key: 'manager',     name: getAgentLabel('manager'),     status: 'running',  description: 'Coordinating multi-agent pipeline execution...' },
+  { id: 2, key: 'research',    name: getAgentLabel('research'),    status: 'pending',  description: 'Waiting for Orchestrator signal...' },
+  { id: 3, key: 'strategy',    name: getAgentLabel('strategy'),    status: 'pending',  description: 'Waiting for Audience Research output...' },
+  { id: 4, key: 'copywriter',  name: getAgentLabel('copywriter'),  status: 'pending',  description: 'Waiting for Campaign Strategy output...' },
+  { id: 5, key: 'creative_hook_matrix', name: getAgentLabel('creative_hook_matrix'), status: 'pending', description: 'Waiting for Ad Copy output...' },
+  { id: 6, key: 'image_prompt',name: getAgentLabel('image_prompt'),status: 'pending',  description: 'Waiting for Creative Hooks output...' },
+  { id: 7, key: 'reviewer',    name: getAgentLabel('reviewer'),    status: 'pending',  description: 'Waiting for Image Prompts output...' },
+  { id: 8, key: 'publisher',   name: getAgentLabel('publisher'),   status: 'pending',  description: 'Awaiting human approval' },
 ];
 
 const getInitialAgents = (creativeHookMatrixEnabled: boolean) =>
@@ -78,7 +79,7 @@ const getInitialAgents = (creativeHookMatrixEnabled: boolean) =>
     ? INITIAL_AGENTS
     : INITIAL_AGENTS.filter((agent) => agent.key !== 'creative_hook_matrix').map((agent) =>
         agent.key === 'image_prompt'
-          ? { ...agent, description: 'Waiting for Copywriter output...' }
+          ? { ...agent, description: 'Waiting for Ad Copy output...' }
           : agent
       )
   ).map((agent, index) => ({ ...agent, id: index + 1 }));
@@ -211,6 +212,7 @@ const CampaignLivePage: React.FC = () => {
   const [socketAuthError, setSocketAuthError] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [isRetryingInLive, setIsRetryingInLive] = useState(false);
+  const [isNetworkPaused, setIsNetworkPaused] = useState(false);
 
   const handleLiveRetry = async () => {
     if (!campaignId) return;
@@ -1123,6 +1125,29 @@ const CampaignLivePage: React.FC = () => {
                   <p className="text-sm text-[#F59E0B]" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                     Real-time updates auth error: {socketAuthError} (Check your connection or refresh the page)
                   </p>
+                </div>
+              )}
+
+              {/* Resumable Network Pause Banner */}
+              {isNetworkPaused && (
+                <div className="mb-6 p-4 sm:p-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle size={20} className="text-amber-400 shrink-0" />
+                    <div>
+                      <h4 className="text-sm font-semibold text-amber-200 font-sora">Generation Paused</h4>
+                      <p className="text-xs text-amber-300/80 font-sans">Network connection hiccup. Your campaign state is safe.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsNetworkPaused(false);
+                      checkCampaignStatus();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-semibold font-sora transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <RotateCcw size={14} />
+                    Resume Status Check
+                  </button>
                 </div>
               )}
 

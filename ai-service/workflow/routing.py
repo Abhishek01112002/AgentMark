@@ -35,16 +35,9 @@ import json
 from agents.state import CampaignState
 from utils.cancellation import is_campaign_cancelled
 
-# Maximum number of automatic revisions allowed per agent.
-# Set to 1 so the pipeline only retries once for genuinely bad output.
-# The human approval step handles borderline quality — we should NOT
-# silently burn LLM credits on multiple auto-retries without user awareness.
-MAX_REVISIONS = 1
+from config.settings import MAX_AUTO_REVISIONS, MIN_AGENT_SCORE
 
-# Minimum quality threshold to trigger automatic revision.
-# Raised to 60 (was 75) — output scoring above 60 is considered acceptable
-# and goes to human approval for a decision, rather than auto-revising.
-MIN_AGENT_SCORE = 60
+MAX_REVISIONS = MAX_AUTO_REVISIONS
 
 
 def _log_routing(func_name: str, state: CampaignState, decision: str) -> str:
@@ -164,53 +157,27 @@ def should_continue_after_reviewer(state: CampaignState) -> str:
         logger.info(f"   Image:     {image_score}/100 (Revisions: {image_revisions}/{MAX_REVISIONS})")
         
         # Priority 1: Research needs revision (affects everything downstream)
-        if not research_approved or research_score < MIN_AGENT_SCORE:
-            if research_revisions < MAX_REVISIONS:
-                logger.info(f"\n🔄 Routing to RESEARCH for revision (will be attempt {research_revisions + 1}/{MAX_REVISIONS})")
-                logger.info(f"   Score: {research_score}/100")
-                logger.info(f"   Issues: {research_review.get('issues', [])}")
-                logger.info("   🧹 Agent will clear research_output and re-run")
-                return _log_routing("should_continue_after_reviewer", state, "revise_research")
-            else:
-                logger.info(f"\n⚠️  Research hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
-        
-        # Priority 2: Strategy needs revision (affects copy and image)
-        if not strategy_approved or strategy_score < MIN_AGENT_SCORE:
-            if strategy_revisions < MAX_REVISIONS:
-                logger.info(f"\n🔄 Routing to STRATEGY for revision (will be attempt {strategy_revisions + 1}/{MAX_REVISIONS})")
-                logger.info(f"   Score: {strategy_score}/100")
-                logger.info(f"   Issues: {strategy_review.get('issues', [])}")
-                logger.info("   🧹 Agent will clear strategy_output and re-run")
-                return _log_routing("should_continue_after_reviewer", state, "revise_strategy")
-            else:
-                logger.info(f"\n⚠️  Strategy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
-        
-        # Priority 3: Copy needs revision
-        if not copy_approved or copy_score < MIN_AGENT_SCORE:
-            if copy_revisions < MAX_REVISIONS:
-                logger.info(f"\n🔄 Routing to COPYWRITER for revision (will be attempt {copy_revisions + 1}/{MAX_REVISIONS})")
-                logger.info(f"   Score: {copy_score}/100")
-                logger.info(f"   Issues: {copy_review.get('issues', [])}")
-                logger.info("   🧹 Agent will clear copy_output and re-run")
-                return _log_routing("should_continue_after_reviewer", state, "revise_copy")
-            else:
-                logger.info(f"\n⚠️  Copy hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
-        
-        # Priority 4: Image needs revision
-        if not image_approved or image_score < MIN_AGENT_SCORE:
-            if image_revisions < MAX_REVISIONS:
-                logger.info(f"\n🔄 Routing to IMAGE PROMPT for revision (will be attempt {image_revisions + 1}/{MAX_REVISIONS})")
-                logger.info(f"   Score: {image_score}/100")
-                logger.info(f"   Issues: {image_review.get('issues', [])}")
-                logger.info("   🧹 Agent will clear image_output and re-run")
-                return _log_routing("should_continue_after_reviewer", state, "revise_image")
-            else:
-                logger.info(f"\n⚠️  Image hit MAX_REVISIONS ({MAX_REVISIONS}) - proceeding to human approval anyway")
-        
-        # If we get here, all agents hit max revisions but still not approved
-        logger.info("\n⚠️  All agents hit MAX_REVISIONS - proceeding to human approval with current quality")
+        agent_priority_checks = [
+            ("research", research_approved, research_score, research_revisions, research_review, "revise_research", "RESEARCH"),
+            ("strategy", strategy_approved, strategy_score, strategy_revisions, strategy_review, "revise_strategy", "STRATEGY"),
+            ("copy", copy_approved, copy_score, copy_revisions, copy_review, "revise_copy", "COPYWRITER"),
+            ("image", image_approved, image_score, image_revisions, image_review, "revise_image", "IMAGE PROMPT"),
+        ]
+
+        for agent_key, is_appr, score, rev_count, review_obj, route_target, log_label in agent_priority_checks:
+            if not is_appr or score < MIN_AGENT_SCORE:
+                if rev_count < MAX_REVISIONS:
+                    logger.info(f"\n🔄 Routing to {log_label} for revision (will be attempt {rev_count + 1}/{MAX_REVISIONS})")
+                    logger.info(f"   Score: {score}/100")
+                    logger.info(f"   Issues: {review_obj.get('issues', [])}")
+                    return _log_routing("should_continue_after_reviewer", state, route_target)
+                else:
+                    logger.info(f"\n⚠️  {log_label} hit MAX_REVISIONS ({MAX_REVISIONS}) - checking downstream agents")
+
+        # If all unapproved agents have exhausted revisions, proceed to human approval
+        logger.info("\n⚠️  All unapproved agents hit MAX_REVISIONS - proceeding to human approval")
         return _log_routing("should_continue_after_reviewer", state, "human_approval")
-    
+
     # Default: proceed to human approval
     logger.info("✅ No blocking issues - Routing to Human Approval")
     return _log_routing("should_continue_after_reviewer", state, "human_approval")

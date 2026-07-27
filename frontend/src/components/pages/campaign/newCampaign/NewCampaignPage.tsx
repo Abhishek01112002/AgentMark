@@ -32,6 +32,8 @@ const VOICE_ICONS: Record<string, any> = {
   other: PlusCircle,
 };
 
+const DRAFT_KEY = 'agentmark_draft_campaign_v1';
+
 const NewCampaignContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,19 +50,57 @@ const NewCampaignContent: React.FC = () => {
   const [projectCampaigns, setProjectCampaigns] = useState<any[]>([]);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [showApiKeysModal, setShowApiKeysModal] = useState(false);
-  const [formData, setFormData] = useState({
-    projectId: searchParams.get('projectId') || '',
-    campaignName: '',
-    brandName: '',
-    industry: '',
-    customIndustry: '',
-    goal: '',
-    customGoal: '',
-    targetAudience: '',
-    brandVoice: 'professional',
-    customBrandVoice: '',
-    additionalInfo: '',
+  const [formData, setFormData] = useState(() => {
+    const duplicateId = searchParams.get('duplicateFromId');
+    if (!duplicateId) {
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          return {
+            projectId: searchParams.get('projectId') || parsed.projectId || '',
+            campaignName: parsed.campaignName || '',
+            brandName: parsed.brandName || '',
+            industry: parsed.industry || '',
+            customIndustry: parsed.customIndustry || '',
+            goal: parsed.goal || '',
+            customGoal: parsed.customGoal || '',
+            targetAudience: parsed.targetAudience || '',
+            brandVoice: parsed.brandVoice || 'professional',
+            customBrandVoice: parsed.customBrandVoice || '',
+            additionalInfo: parsed.additionalInfo || '',
+          };
+        }
+      } catch (e) {
+        console.warn('Failed to parse campaign draft:', e);
+      }
+    }
+    return {
+      projectId: searchParams.get('projectId') || '',
+      campaignName: '',
+      brandName: '',
+      industry: '',
+      customIndustry: '',
+      goal: '',
+      customGoal: '',
+      targetAudience: '',
+      brandVoice: 'professional',
+      customBrandVoice: '',
+      additionalInfo: '',
+    };
   });
+
+  useEffect(() => {
+    if (searchParams.get('duplicateFromId')) return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+      } catch (e) {
+        console.warn('Failed to save campaign draft:', e);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [formData, searchParams]);
 
   const customIndustryRef = useRef<HTMLInputElement>(null);
   const customGoalRef = useRef<HTMLInputElement>(null);
@@ -266,6 +306,11 @@ const NewCampaignContent: React.FC = () => {
         toast.success('Relaunching duplicate campaign! Agents are running...');
       } else {
         toast.success('Campaign launched! Agents are running...');
+      }
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch (e) {
+        // Ignore storage cleanup error
       }
       navigate(`/campaign/${campaign.id}/live`, { state: { initialActiveAgent: 'manager' } });
     } catch (error: any) {

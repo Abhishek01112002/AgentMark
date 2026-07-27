@@ -21,7 +21,7 @@ def _safe_parse_json(raw: Any) -> Dict[str, Any]:
 
 
 def build_copy_summary(copy_raw: Any) -> CopySummary:
-    """Extract per-channel headlines and primary CTAs (omitting long body text)."""
+    """Extract per-channel headlines, primary CTAs, messaging framework, strategic alignment, and field presence."""
     data = _safe_parse_json(copy_raw)
     if not data:
         return CopySummary(status="EMPTY")
@@ -51,8 +51,30 @@ def build_copy_summary(copy_raw: Any) -> CopySummary:
                 primary_cta=primary_cta,
             )
 
+    inf_goal = str(data.get("inferred_goal") or "").strip()
+    msg_fw = bool(data.get("messaging_framework"))
+    strat_align = bool(data.get("strategic_alignment"))
+    copy_ready = bool(data.get("copy_readiness"))
+
+    field_presence = {
+        "inferred_goal": bool(inf_goal),
+        "email": "email" in channel_summaries,
+        "linkedin": "linkedin" in channel_summaries,
+        "social": any(c in channel_summaries for c in ["instagram", "facebook", "twitter", "tiktok", "youtube", "social"]),
+        "ads": any(c in channel_summaries for c in ["google_ads", "ads"]),
+        "messaging_framework": msg_fw,
+        "strategic_alignment": strat_align,
+        "copy_readiness": copy_ready,
+    }
+
     return CopySummary(
         status="VALIDATED",
+        inferred_goal=inf_goal,
         channels=list(channel_summaries.keys()),
         channel_copy_summaries=channel_summaries,
+        messaging_framework_present=msg_fw,
+        strategic_alignment_present=strat_align,
+        copy_readiness_present=copy_ready,
+        field_presence=field_presence,
     )
+

@@ -56,7 +56,7 @@ def _summarize_audience_segments(raw_segments: Any) -> List[str]:
 
 
 def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
-    """Extract positioning, key messaging pillars, and channel priorities."""
+    """Extract positioning, key messaging pillars, timeline, success metrics, and field presence."""
     data = _safe_parse_json(strategy_raw)
     if not data:
         return StrategySummary(status="EMPTY")
@@ -67,16 +67,59 @@ def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
         for ch, plan in channel_strategy.items():
             if isinstance(plan, dict):
                 channels_summary[ch] = {
-                    "priority": plan.get("priority", "medium"),
-                    "rationale": (plan.get("rationale") or "")[:80],
+                    "priority": str(plan.get("priority", "medium")),
+                    "rationale": str(plan.get("rationale") or "")[:120],
                 }
+
+    raw_timeline = data.get("timeline") or data.get("content_calendar") or {}
+    timeline_summary = {}
+    if isinstance(raw_timeline, dict):
+        timeline_summary = {k: str(v)[:80] for k, v in list(raw_timeline.items())[:4]}
+    elif isinstance(raw_timeline, list):
+        timeline_summary = {f"phase_{i+1}": str(v)[:80] for i, v in enumerate(raw_timeline[:4])}
+
+    raw_metrics = data.get("success_metrics") or data.get("kpis") or []
+    metrics_summary = []
+    if isinstance(raw_metrics, list):
+        metrics_summary = [str(m)[:100] for m in raw_metrics[:3]]
+    elif isinstance(raw_metrics, dict):
+        metrics_summary = [f"{k}: {str(v)[:80]}" for k, v in list(raw_metrics.items())[:3]]
+
+    comp_diff = str(data.get("competitive_differentiation") or "N/A")[:120]
+    inf_goal = str(data.get("inferred_goal") or "").strip()
+    res_found = bool(data.get("research_foundation"))
+    exec_plan = bool(data.get("execution"))
+
+    field_presence = {
+        "positioning": bool(data.get("positioning")),
+        "key_messages": bool(data.get("key_messages")),
+        "content_pillars": bool(data.get("content_pillars")),
+        "channel_strategy": bool(channel_strategy),
+        "audience_segments": bool(data.get("audience_segments")),
+        "timeline": bool(raw_timeline),
+        "success_metrics": bool(raw_metrics),
+        "competitive_differentiation": bool(data.get("competitive_differentiation")),
+        "market_opportunities": bool(data.get("market_opportunities")),
+        "strategic_approach": bool(data.get("strategic_approach")),
+        "inferred_goal": bool(inf_goal),
+        "research_foundation": res_found,
+        "execution": exec_plan,
+    }
 
     return StrategySummary(
         status="VALIDATED",
-        positioning=data.get("positioning", ""),
+        positioning=str(data.get("positioning") or ""),
         key_messages=(data.get("key_messages") or [])[:3],
         content_pillars=(data.get("content_pillars") or [])[:3],
         audience_segments=_summarize_audience_segments(data.get("audience_segments")),
         channel_priorities=channels_summary,
-        strategic_approach=(data.get("strategic_approach") or "")[:150],
+        timeline=timeline_summary,
+        success_metrics=metrics_summary,
+        competitive_differentiation=comp_diff,
+        strategic_approach=str(data.get("strategic_approach") or "")[:150],
+        inferred_goal=inf_goal,
+        research_foundation_present=res_found,
+        execution_present=exec_plan,
+        field_presence=field_presence,
     )
+

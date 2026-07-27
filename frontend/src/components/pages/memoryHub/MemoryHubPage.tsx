@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Brain, Star, ThumbsUp, Zap,
   AlertTriangle, Clock, BarChart3, CheckCircle2,
   XCircle, Loader2, Palette, Radio, Target,
-  RotateCcw, X, Save,
+  RotateCcw, X, Save, Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
@@ -49,6 +49,19 @@ const MemoryHubPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [projectName, setProjectName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredSnapshots = useMemo(() => {
+    if (!snapshots) return [];
+    if (!searchQuery.trim()) return snapshots;
+    const q = searchQuery.toLowerCase();
+    return snapshots.filter((s) => {
+      const matchCampaign = (s.campaignName || '').toLowerCase().includes(q);
+      const matchVoice = (s.brandVoice || '').toLowerCase().includes(q);
+      const matchTone = (s.approvedTone || []).some((t) => t.toLowerCase().includes(q));
+      return matchCampaign || matchVoice || matchTone;
+    });
+  }, [snapshots, searchQuery]);
 
   // Extended Memory Controls State
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -148,13 +161,13 @@ const MemoryHubPage: React.FC = () => {
     return () => controller.abort();
   }, [projectId]);
 
-  const timelineEvents = snapshots.map((s, i) => ({
+  const timelineEvents = useMemo(() => filteredSnapshots.map((s, i) => ({
     ...s,
-    position: (i / Math.max(snapshots.length - 1, 1)) * 100,
+    position: (i / Math.max(filteredSnapshots.length - 1, 1)) * 100,
     scoreColor: s.score !== null && s.score >= 80 ? '#4edea3'
       : s.score !== null && s.score >= 60 ? '#F59E0B'
       : '#F43F5E',
-  }));
+  })), [filteredSnapshots]);
 
   if (loading) {
     return (
@@ -375,10 +388,22 @@ const MemoryHubPage: React.FC = () => {
                 </div>
 
                 <div className="rounded-xl p-6" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
-                  <h2 className="text-sm font-semibold mb-8 flex items-center gap-2" style={{ color: '#F1F1F3' }}>
-                    <Clock size={16} style={{ color: '#6366F1' }} />
-                    Campaign Memory Timeline
-                  </h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#F1F1F3' }}>
+                      <Clock size={16} style={{ color: '#6366F1' }} />
+                      Campaign Memory Timeline
+                    </h2>
+                    <div className="relative w-full sm:w-72">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B8B9E]" />
+                      <input
+                        type="text"
+                        placeholder="Search memory insights..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-[#1A1A24] border border-[#2A2A38] rounded-lg pl-9 pr-3 py-1.5 text-xs text-[#F1F1F3] placeholder-[#64748B] focus:outline-none focus:border-[#6366F1] font-sans"
+                      />
+                    </div>
+                  </div>
 
                   <div className="relative">
                     {timelineEvents.length > 1 && (

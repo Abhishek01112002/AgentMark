@@ -26,6 +26,36 @@ export const ResultSidebar: React.FC = React.memo(() => {
 
   if (!campaign) return null;
 
+  React.useEffect(() => {
+    if (!showHumanReview || isMinimized) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      if (active) {
+        const tagName = active.tagName.toUpperCase();
+        if (
+          tagName === 'INPUT' ||
+          tagName === 'TEXTAREA' ||
+          tagName === 'SELECT' ||
+          (active as HTMLElement).isContentEditable
+        ) {
+          return;
+        }
+      }
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsMinimized(true);
+      } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleApprove();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showHumanReview, isMinimized, handleApprove, setIsMinimized]);
+
   return (
     <>
       {/* Persistent Floating Approval Actions Bar */}

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 import api from '../../../../../../../services/api';
 import { CopyVariant, CopyVariantsMap } from '../../../../../../../types/variants';
+import { copyAsPlainText, copyAsMarkdown } from '../../../../../../../utils/copyFormatting';
 
 interface CopywriterContentProps {
   data?: any;
@@ -597,12 +598,29 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
       });
     }
     const text = parts.join('\n');
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Copy option copied to clipboard!');
-    } catch {
-      toast.error('Failed to copy');
+    await copyAsMarkdown(text, 'Copy option copied to clipboard!');
+  };
+
+  const handleCopyVariantAsPlainText = async (variant: CopyVariant, platformLabel: string) => {
+    const parts: string[] = [];
+    parts.push(`=== ${platformLabel.toUpperCase()} COPY ===`);
+    parts.push('');
+    if (variant.headline) {
+      parts.push(`Headline: ${variant.headline}`);
+      parts.push('');
     }
+    if (variant.body_copy) {
+      parts.push(variant.body_copy);
+      parts.push('');
+    }
+    if (variant.ctas && Object.keys(variant.ctas).length > 0) {
+      parts.push('CTAs:');
+      Object.entries(variant.ctas).forEach(([key, val]) => {
+        if (val) parts.push(`  ${key.toUpperCase()}: ${val}`);
+      });
+    }
+    const text = parts.join('\n');
+    await copyAsPlainText(text, 'Copy option copied as plain text!');
   };
 
   const handleCopyField = async (value: string, label: string) => {
@@ -820,10 +838,19 @@ const CopywriterContent: React.FC<CopywriterContentProps> = ({ data, campaignId,
                 <div className="flex items-center gap-2.5">
                   <button
                     onClick={() => handleCopyVariantToClipboard(currentVariant, platformLabel)}
-                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40"
-                    title="Copy this variant"
+                    className="px-2 py-1.5 min-h-[32px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40 text-xs gap-1 font-mono"
+                    title="Copy as Markdown"
                   >
-                    <Copy size={13} />
+                    <Copy size={12} />
+                    <span>MD</span>
+                  </button>
+                  <button
+                    onClick={() => handleCopyVariantAsPlainText(currentVariant, platformLabel)}
+                    className="px-2 py-1.5 min-h-[32px] flex items-center justify-center rounded bg-transparent border border-[#2A2A38] text-[#8B8B9E] transition-all hover:bg-[#1A1A24] hover:text-white hover:border-[#6366F1]/40 text-xs gap-1 font-mono"
+                    title="Copy as Plain Text"
+                  >
+                    <Copy size={12} />
+                    <span>TXT</span>
                   </button>
                   <button
                     onClick={() => handleUpdateMeta(activeTab, currentVariant.id, 'pin')}

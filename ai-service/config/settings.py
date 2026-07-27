@@ -33,4 +33,10 @@ WS_URL = os.getenv("WS_URL", "ws://localhost:5002")
 # Feature Flags
 ENABLE_CREATIVE_HOOK_MATRIX = os.getenv("ENABLE_CREATIVE_HOOK_MATRIX", "false").lower() in ("true", "1")
 
+# Quality and Revision Threshold Constants (Single Source of Truth)
+MAX_AUTO_REVISIONS: int = 1
+MAX_HUMAN_REVISIONS: int = 3
+MIN_AGENT_SCORE: int = 60
+MIN_QUALITY_SCORE: int = 70
+
 # Keys are optional now; the frontend can supply them per request.

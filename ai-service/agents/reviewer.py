@@ -80,11 +80,14 @@ from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ReviewerOutput, AgentReview, OverallReview
 
 
-# ==================== CONSTANTS ====================
+from config.settings import (
+    MAX_AUTO_REVISIONS,
+    MAX_HUMAN_REVISIONS,
+    MIN_AGENT_SCORE,
+    MIN_QUALITY_SCORE,
+)
 
-MAX_REVISIONS = 3
-MIN_QUALITY_SCORE = 70   # Overall minimum: 70%
-MIN_AGENT_SCORE = 60     # Per-agent minimum: 60%
+MAX_REVISIONS = MAX_AUTO_REVISIONS
 
 REVISION_PRIORITY = ["research", "strategy", "copy", "image"]
 
@@ -360,7 +363,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info("✓ Strategy (Lean): Omitted content_calendar and research_foundation to save tokens")
 
     # ========== STEP 5: REVIEW WITH LLM ==========
-    logger.info("\n[STEP 5] Sending ALL 28 fields to LLM for quality analysis...")
+    logger.info("\n[STEP 5] Sending structured agent summary evidence (all 28 schema fields) to LLM for quality analysis...")
     logger.info("-" * 80)
     logger.info("🔍 AI Quality Analyst reviewing campaign outputs...")
 
@@ -560,18 +563,27 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     else:
         # ⚠️ REVISION REQUIRED
-        # Determine which agent to send back (priority: research → strategy → copy → image)
+        # Determine which agent to send back (priority: research → strategy → copy → image), skipping exhausted agents
         revision_target = _determine_revision_target(
             research_review, strategy_review, copy_review, image_review,
             research_score, strategy_score, copy_score, image_score,
-            all_approved
+            all_approved, state=state
         )
 
-        agent_key = revision_target["agent_key"]  # e.g., "research", "strategy"
-        revision_count_attr = f"{agent_key}_revision_count"
+        if not revision_target:
+            logger.info(f"\n⚠️  All unapproved agents have reached MAX_REVISIONS ({MAX_REVISIONS})")
+            logger.info("   Proceeding to human approval with current quality")
 
-        # Get current revision count
-        current_count = getattr(state, revision_count_attr, 0) or 0
+            state.status = "review_complete"
+            state.next_step = "proceed_to_publisher"
+            state.review_feedback = None
+            state.human_feedback = None
+            state.human_revision_target = None
+
+        else:
+            agent_key = revision_target["agent_key"]  # e.g., "research", "strategy"
+            revision_count_attr = f"{agent_key}_revision_count"
+            current_count = getattr(state, revision_count_attr, 0) or 0
 
         if current_count >= MAX_REVISIONS:
             # Max revisions reached — force approve and proceed
@@ -839,62 +851,57 @@ def _compute_hybrid_score(agent_data: dict, llm_score: int, agent_type: str,
 
 
 def _determine_revision_target(
-    research_review,
-    strategy_review,
-    copy_review,
-    image_review,
-    research_score: int,
-    strategy_score: int,
-    copy_score: int,
-    image_score: int,
-    all_approved: bool
+    research_review: AgentReview, strategy_review: AgentReview,
+    copy_review: AgentReview, image_review: AgentReview,
+    research_score: int, strategy_score: int,
+    copy_score: int, image_score: int,
+    all_approved: bool,
+    state: CampaignState = None
 ) -> dict:
     """
-    Determine which agent needs revision.
-    Priority order: Research → Strategy → Copy → Image
-
-    Uses the LLM's approved flag as the primary signal (LLM catches
-    content-level issues like channel drift, missing fields, etc.).
-    Falls back to the lowest scoring agent if the LLM approved everyone
-    but quality thresholds aren't met.
+    Determines which agent needs revision based on review feedback and scores.
+    Skips agents that have reached MAX_REVISIONS.
+    Returns dict or None if all unapproved agents have exhausted revisions.
     """
-
     agent_map = {
         "research": {
             "agent_name": "Research Agent",
             "status": "research_revision_required",
             "next_step": "await_research_revision",
             "review": research_review,
-            "score": research_score
+            "score": research_score,
+            "count": (getattr(state, "research_revision_count", 0) or 0) if state else 0,
         },
         "strategy": {
             "agent_name": "Strategy Agent",
             "status": "strategy_revision_required",
             "next_step": "await_strategy_revision",
             "review": strategy_review,
-            "score": strategy_score
+            "score": strategy_score,
+            "count": (getattr(state, "strategy_revision_count", 0) or 0) if state else 0,
         },
         "copy": {
             "agent_name": "Copywriter Agent",
             "status": "copy_revision_required",
             "next_step": "await_copy_revision",
             "review": copy_review,
-            "score": copy_score
+            "score": copy_score,
+            "count": (getattr(state, "copy_revision_count", 0) or 0) if state else 0,
         },
         "image": {
             "agent_name": "Image Prompt Agent",
             "status": "image_revision_required",
             "next_step": "await_image_revision",
             "review": image_review,
-            "score": image_score
+            "score": image_score,
+            "count": (getattr(state, "image_revision_count", 0) or 0) if state else 0,
         }
     }
 
-    # Check for explicit failures in priority order (primary: LLM's judgment)
     if not all_approved:
         for agent_key in REVISION_PRIORITY:
             agent_info = agent_map[agent_key]
-            if not agent_info["review"].approved:
+            if (not agent_info["review"].approved or agent_info["score"] < MIN_AGENT_SCORE) and agent_info["count"] < MAX_REVISIONS:
                 return {
                     "agent_key": agent_key,
                     "agent_name": agent_info["agent_name"],
@@ -905,27 +912,34 @@ def _determine_revision_target(
                     "action_items": agent_info["review"].action_items
                 }
 
-    # No explicit failures but thresholds not met → target lowest scorer (backup)
-    scores = [(agent_map[k]["score"], k) for k in REVISION_PRIORITY]
-    scores.sort(key=lambda x: x[0])
-    lowest_score, lowest_key = scores[0]
-    agent_info = agent_map[lowest_key]
+    # Backup: target unexhausted lowest scorer if any exist below threshold
+    eligible_scores = [
+        (agent_map[k]["score"], k)
+        for k in REVISION_PRIORITY
+        if agent_map[k]["count"] < MAX_REVISIONS and agent_map[k]["score"] < MIN_AGENT_SCORE
+    ]
+    if eligible_scores:
+        eligible_scores.sort(key=lambda x: x[0])
+        lowest_score, lowest_key = eligible_scores[0]
+        agent_info = agent_map[lowest_key]
 
-    return {
-        "agent_key": lowest_key,
-        "agent_name": agent_info["agent_name"],
-        "status": agent_info["status"],
-        "next_step": agent_info["next_step"],
-        "reason": f"Score {lowest_score}/100 below threshold ({MIN_AGENT_SCORE}). Quality improvement needed.",
-        "issues": agent_info["review"].issues if agent_info["review"].issues else [
-            f"Quality score {lowest_score}/100 needs improvement to meet minimum threshold of {MIN_AGENT_SCORE}"
-        ],
-        "action_items": agent_info["review"].action_items if agent_info["review"].action_items else [
-            "Improve content quality and completeness",
-            "Ensure all required fields are present and well-developed",
-            "Strengthen alignment with campaign strategy"
-        ]
-    }
+        return {
+            "agent_key": lowest_key,
+            "agent_name": agent_info["agent_name"],
+            "status": agent_info["status"],
+            "next_step": agent_info["next_step"],
+            "reason": f"Score {lowest_score}/100 below threshold ({MIN_AGENT_SCORE}). Quality improvement needed.",
+            "issues": agent_info["review"].issues if agent_info["review"].issues else [
+                f"Quality score {lowest_score}/100 needs improvement to meet minimum threshold of {MIN_AGENT_SCORE}"
+            ],
+            "action_items": agent_info["review"].action_items if agent_info["review"].action_items else [
+                "Improve content quality and completeness",
+                "Ensure all required fields are present and well-developed",
+                "Strengthen alignment with campaign strategy"
+            ]
+        }
+
+    return None
 
 
 # ==================== MAIN EXECUTION ====================

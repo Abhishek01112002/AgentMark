@@ -63,11 +63,12 @@ export const campaignService = {
           scores.push(reviewOutput.image_review.score);
         }
         
-        if (scores.length > 0) {
+        const overallScore = reviewOutput.overall_quality_score ?? reviewOutput.quality_score;
+        if (typeof overallScore === 'number') {
+          reviewScore = parseFloat(overallScore.toFixed(1));
+        } else if (scores.length > 0) {
           const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
           reviewScore = parseFloat(avgScore100.toFixed(1));
-        } else if (reviewOutput.overall_quality_score !== undefined && reviewOutput.overall_quality_score !== null) {
-          reviewScore = parseFloat(reviewOutput.overall_quality_score.toFixed(1));
         }
       } catch (err) {
         console.error(`[CampaignService] Failed to parse review_output for score extraction (campaign: ${campaignId}):`, err);

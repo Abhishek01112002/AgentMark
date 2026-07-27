@@ -211,8 +211,8 @@ def submit_human_approval(state: CampaignState, decision: dict) -> CampaignState
         raise ValueError(f"Invalid revision_target: {revision_target}. Valid options: {', '.join(valid_targets)}")
 
     
-    # Check if target agent has hit max revisions (3)
-    MAX_REVISIONS = 3
+    from config.settings import MAX_HUMAN_REVISIONS
+    MAX_REVISIONS = MAX_HUMAN_REVISIONS
     if action == "reject":
         revision_count_map = {
             "research": state.research_revision_count or 0,

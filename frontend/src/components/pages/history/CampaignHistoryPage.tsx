@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye } from 'lucide-react';
+import { Eye, Copy, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
@@ -63,9 +63,56 @@ const CampaignHistoryContent: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'processing' | 'completed' | 'failed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'action_required' | 'processing' | 'completed' | 'failed'>('all');
+  const userHasChangedFilter = React.useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedIds(filteredCampaigns.map((c) => c.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} campaigns?`)) return;
+
+    setIsDeletingBulk(true);
+    const toastId = toast.loading(`Deleting ${selectedIds.length} campaigns...`);
+
+    const results = await Promise.allSettled(
+      selectedIds.map((id) => api.delete(`/campaigns/${id}`))
+    );
+
+    const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
+    const deletedIdsSet = new Set(
+      selectedIds.filter((_, idx) => results[idx].status === 'fulfilled')
+    );
+
+    setCampaigns((prev) => prev.filter((c) => !deletedIdsSet.has(c.id)));
+    setSelectedIds((prev) => prev.filter((id) => !deletedIdsSet.has(id)));
+    setIsDeletingBulk(false);
+    toast.dismiss(toastId);
+
+    if (failed === 0) {
+      toast.success(`Successfully deleted ${succeeded} campaigns`);
+    } else {
+      toast.success(`Deleted ${succeeded} campaigns (${failed} failed)`);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -84,6 +131,11 @@ const CampaignHistoryContent: React.FC = () => {
 
         const allCampaigns = campaignsResponse.data.campaigns || [];
         setCampaigns(allCampaigns);
+
+        const hasAwaitingApproval = allCampaigns.some((c: Campaign) => c.status === 'awaiting_human_approval');
+        if (hasAwaitingApproval && !userHasChangedFilter.current) {
+          setStatusFilter('action_required');
+        }
       } catch (error: any) {
         if (error.name === 'AbortError' || error.code === 'ERR_CANCELED' || controller.signal.aborted) {
           return;
@@ -105,7 +157,12 @@ const CampaignHistoryContent: React.FC = () => {
 
   const filteredCampaigns = campaigns.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all'
+        ? true
+        : statusFilter === 'action_required'
+        ? c.status === 'awaiting_human_approval'
+        : c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -125,17 +182,26 @@ const CampaignHistoryContent: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, any> = {
+      awaiting_human_approval: {
+        bg: 'rgba(99,102,241,0.15)',
+        border: 'rgba(99,102,241,0.4)',
+        text: '#818CF8',
+        dot: '#6366F1',
+        label: 'Action Required',
+      },
       processing: {
         bg: 'rgba(245,158,11,0.1)',
         border: 'rgba(245,158,11,0.2)',
         text: '#F59E0B',
         dot: '#F59E0B',
+        label: 'Processing',
       },
       completed: {
         bg: 'rgba(78,222,163,0.1)',
         border: 'rgba(78,222,163,0.2)',
         text: '#4edea3',
         dot: '#4edea3',
+        label: 'Completed',
       },
       failed: {
         bg: 'rgba(244,63,94,0.1)',
@@ -296,19 +362,33 @@ const CampaignHistoryContent: React.FC = () => {
 
                   {/* Apple Segmented Control Pill Filters */}
                   <div className="flex items-center gap-1 p-1.5 bg-[#0D0D14] rounded-2xl border border-[#262636] overflow-x-auto scroll-touch shrink-0">
-                    {(['all', 'processing', 'completed', 'failed'] as const).map((st) => (
-                      <button
-                        key={st}
-                        onClick={() => { setStatusFilter(st); setCurrentPage(1); }}
-                        className={`px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-semibold font-sora transition-all duration-200 capitalize cursor-pointer border-none flex items-center justify-center ${
-                          statusFilter === st
-                            ? 'bg-[#6366F1] text-white shadow-sm'
-                            : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
-                        }`}
-                      >
-                        {st}
-                      </button>
-                    ))}
+                    {(['all', 'action_required', 'processing', 'completed', 'failed'] as const).map((st) => {
+                      const count = st === 'action_required'
+                        ? campaigns.filter((c) => c.status === 'awaiting_human_approval').length
+                        : 0;
+                      return (
+                        <button
+                          key={st}
+                          onClick={() => {
+                            userHasChangedFilter.current = true;
+                            setStatusFilter(st);
+                            setCurrentPage(1);
+                          }}
+                          className={`px-3.5 py-2 min-h-[44px] rounded-xl text-xs font-semibold font-sora transition-all duration-200 cursor-pointer border-none flex items-center justify-center gap-1.5 ${
+                            statusFilter === st
+                              ? 'bg-[#6366F1] text-white shadow-sm'
+                              : 'text-[#94A3B8] hover:text-white hover:bg-white/[0.04]'
+                          }`}
+                        >
+                          <span>{st === 'action_required' ? 'Action Required' : st.charAt(0).toUpperCase() + st.slice(1)}</span>
+                          {st === 'action_required' && count > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500 text-black font-mono font-bold">
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -334,10 +414,33 @@ const CampaignHistoryContent: React.FC = () => {
                   </div>
                 ) : (
                   <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#111118', border: '1px solid #2A2A38' }}>
+                    {selectedIds.length > 0 && (
+                      <div className="p-3 bg-[#1A1A24] border-b border-[#2A2A38] flex items-center justify-between px-6">
+                        <span className="text-xs font-mono text-[#F1F1F3]">
+                          {selectedIds.length} campaign{selectedIds.length > 1 ? 's' : ''} selected
+                        </span>
+                        <button
+                          onClick={handleBulkDelete}
+                          disabled={isDeletingBulk}
+                          className="px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={13} />
+                          <span>Delete Selected</span>
+                        </button>
+                      </div>
+                    )}
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse" style={{ minWidth: 500 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid #2A2A38', backgroundColor: '#1b1b20' }}>
+                            <th style={{ padding: '12px 16px', width: '40px' }}>
+                              <input
+                                type="checkbox"
+                                checked={filteredCampaigns.length > 0 && selectedIds.length === filteredCampaigns.length}
+                                onChange={handleSelectAll}
+                                className="rounded border-[#2A2A38] bg-[#111118] text-[#6366F1] focus:ring-0 cursor-pointer"
+                              />
+                            </th>
                             <th style={{ padding: '12px 20px', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.05em', fontWeight: 500, color: '#A0A0D2', textTransform: 'uppercase' }}>
                               CAMPAIGN
                             </th>
@@ -364,6 +467,7 @@ const CampaignHistoryContent: React.FC = () => {
                         <tbody>
                           {paginatedCampaigns.map((campaign) => {
                             const project = projects.find(p => p.id === campaign.projectId);
+                            const isSelected = selectedIds.includes(campaign.id);
                             
                             let reviewScore = campaign.reviewScore;
                             
@@ -391,9 +495,17 @@ const CampaignHistoryContent: React.FC = () => {
                             return (
                               <tr
                                 key={campaign.id}
-                                className="transition-colors stagger-enter hover:bg-[rgba(27,27,32,0.3)]"
+                                className={`transition-colors stagger-enter ${isSelected ? 'bg-[#6366F1]/10' : 'hover:bg-[rgba(27,27,32,0.3)]'}`}
                                 style={{ borderBottom: '1px solid rgba(42,42,56,0.5)' }}
                               >
+                                <td style={{ padding: '16px' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleToggleSelect(campaign.id)}
+                                    className="rounded border-[#2A2A38] bg-[#111118] text-[#6366F1] focus:ring-0 cursor-pointer"
+                                  />
+                                </td>
                                 <td style={{ padding: '16px 20px' }}>
                                   <div>
                                     <div style={{ fontFamily: 'Sora, sans-serif', fontSize: '14px', fontWeight: 500, color: '#F1F1F3' }}>
@@ -433,21 +545,31 @@ const CampaignHistoryContent: React.FC = () => {
                                   {getTimeAgo(campaign.createdAt)}
                                 </td>
                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                                  <button
-                                    onClick={() => {
-                                      const inProgress = ['processing', 'awaiting_human_approval', 'running'];
-                                      if (inProgress.includes(campaign.status.toLowerCase())) {
-                                        navigate(`/campaign/${campaign.id}/live`);
-                                      } else {
-                                        navigate(`/campaign/${campaign.id}/result?projectId=${campaign.projectId}`);
-                                      }
-                                    }}
-                                    className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]"
-                                    title="View Details"
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    <Eye size={16} />
-                                  </button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <button
+                                      onClick={() => navigate(`/campaign/new?duplicateFromId=${campaign.id}`)}
+                                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors text-[#8B8B9E] hover:text-[#6366F1] hover:bg-[#1A1A24]"
+                                      title="Clone Campaign"
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                      <Copy size={16} />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const inProgress = ['processing', 'awaiting_human_approval', 'running'];
+                                        if (inProgress.includes(campaign.status.toLowerCase())) {
+                                          navigate(`/campaign/${campaign.id}/live`);
+                                        } else {
+                                          navigate(`/campaign/${campaign.id}/result?projectId=${campaign.projectId}`);
+                                        }
+                                      }}
+                                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors text-[#8B8B9E] hover:text-[#F1F1F3] hover:bg-[#1A1A24]"
+                                      title="View Details"
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                      <Eye size={16} />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );

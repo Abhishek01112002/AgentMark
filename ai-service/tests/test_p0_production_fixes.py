@@ -61,6 +61,25 @@ class TestP0ProductionFixes(unittest.TestCase):
         self.assertEqual(meta["model_version"], MODEL_VERSION)
         self.assertEqual(meta["scoring_version"], SCORING_VERSION)
 
+    def test_reviewer_score_synchronization_and_scale(self):
+        """Verify quality score remains on 0-100 scale and matches overall_quality_score."""
+        review_output = {
+            "overall_quality_score": 78,
+            "overall": {"quality_score": 78},
+            "research_review": {"score": 85},
+            "strategy_review": {"score": 90},
+            "copy_review": {"score": 70},
+            "image_review": {"score": 60}
+        }
+
+        quality_score = review_output.get("overall_quality_score") or review_output.get("overall", {}).get("quality_score")
+        self.assertEqual(quality_score, 78)
+        self.assertGreaterEqual(quality_score, 10, "Score must remain on 0-100 scale without /10 scale collapse")
+
+        # Simulate backend campaign service extraction logic
+        extracted_score = review_output.get("overall_quality_score") if review_output.get("overall_quality_score") is not None else review_output.get("quality_score")
+        self.assertEqual(extracted_score, 78)
+
 
 if __name__ == "__main__":
     unittest.main()

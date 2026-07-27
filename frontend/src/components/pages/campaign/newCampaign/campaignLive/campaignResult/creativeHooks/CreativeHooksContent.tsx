@@ -159,20 +159,20 @@ const CreativeHooksContent: React.FC<CreativeHooksContentProps> = ({
       <div className="flex flex-col xl:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search hooks..." className="w-full h-11 rounded-xl bg-[#0A0A0F] border border-[#2A2A38] pl-9 pr-3 text-sm text-[#EDEDF5] outline-none focus:border-[#6366F1]" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search hooks..." className="w-full h-11 rounded-xl bg-[#111118] border border-[#2A2A38] pl-9 pr-3 text-sm text-[#EDEDF5] outline-none focus:border-[#6366F1]" />
         </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-11 rounded-xl bg-[#0A0A0F] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-11 rounded-xl bg-[#111118] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
           <option value="all">All categories</option>
           {categories.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className="h-11 rounded-xl bg-[#0A0A0F] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
+        <select value={stage} onChange={(e) => setStage(e.target.value)} className="h-11 rounded-xl bg-[#111118] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
           <option value="all">All stages</option>
           {stages.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-11 rounded-xl bg-[#0A0A0F] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-11 rounded-xl bg-[#111118] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
           {statusFilters.map((item) => <option key={item} value={item}>{item.replace('-', ' ')}</option>)}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="h-11 rounded-xl bg-[#0A0A0F] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="h-11 rounded-xl bg-[#111118] border border-[#2A2A38] px-3 text-sm text-[#EDEDF5]">
           <option value="quality">Quality</option>
           <option value="virality">Virality</option>
           <option value="category">Category</option>
@@ -209,7 +209,7 @@ const CreativeHooksContent: React.FC<CreativeHooksContentProps> = ({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredHooks.map((hook: any) => (
-            <div key={hook.id} className="rounded-xl border border-[#2A2A38] bg-[#0A0A0F] p-4 space-y-4">
+            <div key={hook.id} className="rounded-xl border border-[#2A2A38] bg-[#111118] p-4 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">

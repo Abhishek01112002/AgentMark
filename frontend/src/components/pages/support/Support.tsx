@@ -134,7 +134,7 @@ const SupportContent: React.FC = () => {
       steps: [
         'Open any generated campaign and navigate to the Focus Group tab.',
         'Select target personas or use the default panel.',
-        'Click "Run Simulation" to gather persona critiques, clash quotes, and rewrite suggestions.'
+        'View automatic background simulation results including persona critiques, clash quotes, and rewrite suggestions.'
       ]
     },
     {
