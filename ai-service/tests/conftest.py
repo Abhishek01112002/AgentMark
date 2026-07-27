@@ -315,6 +315,8 @@ def generate_mock_pydantic(model: Type[BaseModel], ctx: dict = None, **overrides
         data["brand_name"] = ctx.get("brand_name", "AgentMark")
     if "campaign_name" in model.model_fields and "campaign_name" not in overrides:
         data["campaign_name"] = ctx.get("campaign_name", "Q3 Launch")
+    if "issues" in model.model_fields and "issues" not in overrides:
+        data["issues"] = []
     if "approved" in model.model_fields and "approved" not in overrides:
         data["approved"] = True
     if "score" in model.model_fields and "score" not in overrides:

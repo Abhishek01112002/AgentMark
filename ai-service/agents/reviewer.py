@@ -411,8 +411,9 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
 
     # Cache-aware LLM call
+    import os
     cache_key = make_key("Reviewer", prompt=prompt, temperature=0.5, max_tokens=2000)
-    cached = cache_get(cache_key)
+    cached = cache_get(cache_key) if "PYTEST_CURRENT_TEST" not in os.environ else None
     if cached is not None:
         logger.info("📦 Cache hit — using cached Reviewer response")
         review_analysis = ReviewerOutput(**cached)
@@ -458,8 +459,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     # ========== STEP 6.5: POST-PROCESSING VALIDATION ==========
     # Add explicit validation checks for critical alignments that LLM might miss
     _add_explicit_validation_checks(
-        strategy_data, copy_data, image_data,
-        strategy_review, copy_review, image_review
+        research_data, strategy_data, copy_data, image_data,
+        research_review, strategy_review, copy_review, image_review
     )
 
     # ========== STEP 6.6: HYBRID SCORING ==========
@@ -485,6 +486,11 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_approved = strategy_score >= MIN_AGENT_SCORE and not strategy_review.issues
     copy_approved = copy_score >= MIN_AGENT_SCORE and not copy_review.issues
     image_approved = image_score >= MIN_AGENT_SCORE and not image_review.issues
+
+    research_review.approved = research_approved
+    strategy_review.approved = strategy_approved
+    copy_review.approved = copy_approved
+    image_review.approved = image_approved
 
     # ========== STEP 7: DISPLAY QUALITY SCORES ==========
     logger.info("✅ Quality analysis complete!")
@@ -584,63 +590,62 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             agent_key = revision_target["agent_key"]  # e.g., "research", "strategy"
             revision_count_attr = f"{agent_key}_revision_count"
             current_count = getattr(state, revision_count_attr, 0) or 0
+            if current_count >= MAX_REVISIONS:
+                # Max revisions reached — force approve and proceed
+                logger.info(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
+                logger.info("   Proceeding to publisher despite quality issues")
 
-        if current_count >= MAX_REVISIONS:
-            # Max revisions reached — force approve and proceed
-            logger.info(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
-            logger.info("   Proceeding to publisher despite quality issues")
+                state.status = "review_complete"
+                state.next_step = "proceed_to_publisher"
+                state.review_feedback = None
+                state.human_feedback = None
+                state.human_revision_target = None
 
-            state.status = "review_complete"
-            state.next_step = "proceed_to_publisher"
-            state.review_feedback = None
-            state.human_feedback = None
-            state.human_revision_target = None
+            else:
+                # Send back for revision
+                new_count = current_count + 1
+                setattr(state, revision_count_attr, new_count)
 
-        else:
-            # Send back for revision
-            new_count = current_count + 1
-            setattr(state, revision_count_attr, new_count)
+                logger.info(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
+                logger.info(f"   Reason: {revision_target['reason']}")
+                logger.info(f"   Issues: {len(revision_target['issues'])}")
+                logger.info(f"   Revision #{new_count}/{MAX_REVISIONS}")
 
-            logger.info(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
-            logger.info(f"   Reason: {revision_target['reason']}")
-            logger.info(f"   Issues: {len(revision_target['issues'])}")
-            logger.info(f"   Revision #{new_count}/{MAX_REVISIONS}")
+                for issue in revision_target["issues"][:5]:
+                    logger.info(f"   • {issue}")
 
-            for issue in revision_target["issues"][:5]:
-                logger.info(f"   • {issue}")
+                review_feedback = {
+                    "agent": revision_target["agent_name"],
+                    "agent_key": agent_key,
+                    "status": revision_target["status"],
+                    "reason": revision_target["reason"],
+                    "issues": revision_target["issues"],
+                    "action_items": revision_target["action_items"],
+                    "next_step": revision_target["next_step"],
+                    "revision_number": new_count,
+                    "max_revisions": MAX_REVISIONS
+                }
 
-            review_feedback = {
-                "agent": revision_target["agent_name"],
-                "agent_key": agent_key,
-                "status": revision_target["status"],
-                "reason": revision_target["reason"],
-                "issues": revision_target["issues"],
-                "action_items": revision_target["action_items"],
-                "next_step": revision_target["next_step"],
-                "revision_number": new_count,
-                "max_revisions": MAX_REVISIONS
-            }
+                state.status = revision_target["status"]
+                state.review_feedback = json.dumps(review_feedback, indent=2)
+                state.next_step = revision_target["next_step"]
 
-            state.status = revision_target["status"]
-            state.review_feedback = json.dumps(review_feedback, indent=2)
-            state.next_step = revision_target["next_step"]
-
-            # Bridge AI Reviewer -> Agent feedback gap
-            issues_str = "\n".join(f"- {issue}" for issue in revision_target.get("issues", []))
-            actions_str = "\n".join(f"- {action}" for action in revision_target.get("action_items", []))
-            state.human_feedback = (
-                f"AI Reviewer Feedback:\n"
-                f"Reason: {revision_target.get('reason', '')}\n\n"
-                f"Issues to fix:\n{issues_str}\n\n"
-                f"Recommended Actions:\n{actions_str}"
-            )
-            target_map = {
-                "research": "research",
-                "strategy": "strategy",
-                "copy": "copywriter",
-                "image": "image_prompt"
-            }
-            state.human_revision_target = target_map.get(agent_key, agent_key)
+                # Bridge AI Reviewer -> Agent feedback gap
+                issues_str = "\n".join(f"- {issue}" for issue in revision_target.get("issues", []))
+                actions_str = "\n".join(f"- {action}" for action in revision_target.get("action_items", []))
+                state.human_feedback = (
+                    f"AI Reviewer Feedback:\n"
+                    f"Reason: {revision_target.get('reason', '')}\n\n"
+                    f"Issues to fix:\n{issues_str}\n\n"
+                    f"Recommended Actions:\n{actions_str}"
+                )
+                target_map = {
+                    "research": "research",
+                    "strategy": "strategy",
+                    "copy": "copywriter",
+                    "image": "image_prompt"
+                }
+                state.human_revision_target = target_map.get(agent_key, agent_key)
 
     logger.info("\n✅ State updated:")
     logger.info(f"   status:    {state.status}")
@@ -665,9 +670,11 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 # ==================== HELPER FUNCTIONS ====================
 
 def _add_explicit_validation_checks(
+    research_data: dict,
     strategy_data: dict,
     copy_data: dict,
     image_data: dict,
+    research_review,
     strategy_review,
     copy_review,
     image_review
@@ -679,6 +686,16 @@ def _add_explicit_validation_checks(
     This catches specific validation failures that the LLM might miss,
     especially when overall content quality is high.
     """
+    # Check 0: Research missing TAM
+    market = (research_data.get("market_analysis") or {}) if isinstance(research_data, dict) else {}
+    if not market.get("total_addressable_market"):
+        issue = "Missing total_addressable_market in market_analysis"
+        if issue not in (research_review.issues or []):
+            research_review.issues = research_review.issues or []
+            research_review.issues.append(issue)
+            research_review.action_items = research_review.action_items or []
+            research_review.action_items.append("Add a concrete total_addressable_market or TAM estimate")
+            research_review.score = max(0, research_review.score - 15)
     
     # Check 1: Copy inferred_goal must match Strategy inferred_goal
     goal_map = {

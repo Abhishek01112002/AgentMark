@@ -51,6 +51,9 @@ except ImportError:
 
 from agents.state import CampaignState
 from agents.reviewer import reviewer_agent
+from utils.llm_cache import _cache
+
+_cache.clear()
 
 
 # ==================== HELPER FUNCTIONS ====================
@@ -63,12 +66,13 @@ def create_perfect_research_output():
     """
     return {
         "market_analysis": {
-            "total_addressable_market": "$50B",
+            "total_addressable_market": "$50 Billion global market for AI workflow automation",
             "growth_rate": "40% YoY",
             "market_trends": [
                 "AI adoption accelerating",
                 "Cost reduction pressure",
-                "Workflow automation demand"
+                "Workflow automation demand",
+                "Security & compliance priority"
             ]
         },
         "competitor_analysis": {
@@ -79,7 +83,8 @@ def create_perfect_research_output():
             "pain_points": [
                 "Integration complexity",
                 "High implementation costs",
-                "Long setup time"
+                "Long setup time",
+                "Maintenance overhead"
             ],
             "motivations": [
                 "Save time and money",
@@ -1130,22 +1135,28 @@ def test_revision_count_incremented():
     })
 
     # First revision
-    state = create_perfect_state()
-    state.research_output = bad_research
-    state.research_revision_count = 0  # Start at 0
-    result1 = reviewer_agent(state)
-    count1 = getattr(result1, "research_revision_count", 0)
-    assert count1 == 1, \
-        f"Revision count should be 1 after first revision, got: {count1}"
+    import agents.reviewer as reviewer_mod
+    original_max = reviewer_mod.MAX_REVISIONS
+    reviewer_mod.MAX_REVISIONS = 3
+    try:
+        state = create_perfect_state()
+        state.research_output = bad_research
+        state.research_revision_count = 0  # Start at 0
+        result1 = reviewer_agent(state)
+        count1 = getattr(result1, "research_revision_count", 0)
+        assert count1 == 1, \
+            f"Revision count should be 1 after first revision, got: {count1}"
 
-    # Second revision (carry forward revision count)
-    result1.research_output = bad_research
-    result2 = reviewer_agent(result1)
-    count2 = getattr(result2, "research_revision_count", 0)
+        # Second revision (carry forward revision count)
+        result1.research_output = bad_research
+        result2 = reviewer_agent(result1)
+        count2 = getattr(result2, "research_revision_count", 0)
 
-    # Check count increased
-    assert count2 == 2, \
-        f"Revision count should be 2 after second revision. count1={count1}, count2={count2}"
+        # Check count increased
+        assert count2 == 2, \
+            f"Revision count should be 2 after second revision. count1={count1}, count2={count2}"
+    finally:
+        reviewer_mod.MAX_REVISIONS = original_max
 
     print("✅ PASS: Revision count increments correctly")
     print(f"   After revision 1: count={count1}")
@@ -1172,10 +1183,11 @@ def test_max_revisions_forces_approval():
         "recommended_approach": "Short"
     })
 
+    import agents.reviewer as reviewer_mod
     state = create_perfect_state()
     state.research_output = bad_research
     # Simulate already at max revisions
-    state.research_revision_count = 3
+    state.research_revision_count = reviewer_mod.MAX_REVISIONS
 
     result = reviewer_agent(state)
 

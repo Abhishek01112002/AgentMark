@@ -1,5 +1,6 @@
 import prisma from '../../db';
 import { notificationService } from '../notifications/notification.service';
+import { redis } from '../../utils/redis';
 
 export const projectService = {
   async create(userId: string, data: { name: string; description?: string }) {

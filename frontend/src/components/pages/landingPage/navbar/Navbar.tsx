@@ -29,7 +29,7 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
           <a
             key={item.label}
             href={item.href}
-            className="text-xs xl:text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono"
+            className="text-xs xl:text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors "
           >
             {item.label}
           </a>
@@ -39,13 +39,13 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
       <div className="flex items-center gap-2 sm:gap-4">
         <button
           onClick={onLoginClick}
-          className="hidden sm:block text-xs md:text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono px-2"
+          className="hidden sm:block text-xs md:text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors  px-2"
         >
           Login
         </button>
         <button
           onClick={onGetStartedClick}
-          className="px-4 py-3 min-h-[44px] rounded-lg text-xs sm:text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono flex items-center justify-center"
+          className="px-4 py-3 min-h-[44px] rounded-lg text-xs sm:text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all  flex items-center justify-center"
         >
           Get Started
         </button>
@@ -95,7 +95,7 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
-                  className="text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono py-2 border-b border-[#2A2A38]/50"
+                  className="text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors  py-2 border-b border-[#2A2A38]/50"
                 >
                   {item.label}
                 </a>
@@ -105,13 +105,13 @@ export const Navbar = ({ onLoginClick, onGetStartedClick }: NavbarProps) => {
             <div className="mt-auto flex flex-col gap-3 pt-8 border-t border-[#2A2A38]/50">
               <button
                 onClick={() => { setMobileOpen(false); onLoginClick(); }}
-                className="w-full text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors font-mono py-3 min-h-[44px] flex items-center justify-center"
+                className="w-full text-sm font-medium text-[#8B8B9E] hover:text-[#F1F1F3] transition-colors  py-3 min-h-[44px] flex items-center justify-center"
               >
                 Login
               </button>
               <button
                 onClick={() => { setMobileOpen(false); onGetStartedClick(); }}
-                className="w-full py-3 min-h-[44px] rounded-lg text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all font-mono flex items-center justify-center"
+                className="w-full py-3 min-h-[44px] rounded-lg text-sm font-medium bg-[#6366F1] text-[#F1F1F3] hover:bg-[#4F46E5] transition-all  flex items-center justify-center"
               >
                 Get Started
               </button>

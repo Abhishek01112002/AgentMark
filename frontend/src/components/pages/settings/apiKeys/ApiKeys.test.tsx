@@ -35,8 +35,8 @@ describe('ApiKeys Component', () => {
 
   it('renders the API Keys heading and description', () => {
     render(<ApiKeys />);
-    expect(screen.getByRole('heading', { name: /api keys/i })).toBeInTheDocument();
-    expect(screen.getByText(/Add API keys for LLM and search providers/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /llm & search api credentials/i })).toBeInTheDocument();
+    expect(screen.getByText(/Manage API keys for Gemini, Groq, OpenAI, and Tavily/i)).toBeInTheDocument();
   });
 
   it('renders inputs for Gemini, Groq, and OpenAI', () => {
@@ -54,7 +54,7 @@ describe('ApiKeys Component', () => {
     expect(geminiInput).toHaveValue('AIzaSyTestKey123456789012345678901234567');
 
     // Click Save — triggers auto-test, which fails (mocked), then shows "Save Anyway?" dialog
-    const saveButtons = screen.getAllByRole('button', { name: /^save$/i });
+    const saveButtons = screen.getAllByRole('button', { name: /save key/i });
     fireEvent.click(saveButtons[1]);
 
     // Wait for the async test to fail and the confirmation modal to appear

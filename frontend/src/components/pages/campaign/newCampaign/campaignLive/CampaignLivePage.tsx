@@ -1155,7 +1155,7 @@ const CampaignLivePage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Left Column: Agent Pipeline */}
                 <div className="lg:col-span-4 flex flex-col gap-4">
-                  <div className="bg-[#111118] border border-[#2A2A38] rounded-lg p-6 relative">
+                  <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl p-6 relative">
                     <h2 className="text-xs uppercase tracking-wider mb-4" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>
                       Agent Pipeline
                     </h2>
@@ -1235,7 +1235,7 @@ const CampaignLivePage: React.FC = () => {
 
                 {/* Right Column: Live Reasoning */}
                 <div className="lg:col-span-8 flex flex-col h-[400px] md:h-[560px] lg:h-[700px]">
-                  <div className="bg-[#111118] border border-[#2A2A38] rounded-lg flex flex-col h-full overflow-hidden">
+                  <div className="bg-[#111118] border border-[#2A2A38] rounded-2xl flex flex-col h-full overflow-hidden">
                     {/* Header */}
                     <div className="px-6 py-4 border-b border-[#2A2A38] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#1b1b20]">
                       <div className="flex items-center gap-3">
@@ -1253,7 +1253,7 @@ const CampaignLivePage: React.FC = () => {
                     </div>
 
                     {/* Terminal content */}
-                    <div className="flex-1 p-5 overflow-y-auto space-y-3 bg-[#0A0A0F]" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
+                    <div className="flex-1 p-5 overflow-y-auto space-y-3 bg-[#111118]" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '12px', color: '#8B8B9E' }}>
                       <div style={{ color: '#4A4A5E' }}>System: Initialising multi-agent pipeline...</div>
                       <div style={{ color: '#4A4A5E' }}>System: Redis Pub/Sub channel active — {campaignId}</div>
                       <div style={{ color: '#4edea3' }}>&gt; Socket.io connected. Receiving real-time updates.</div>
