@@ -37,23 +37,35 @@ const SupportContent: React.FC = () => {
 
   const faqs: FAQItem[] = [
     {
-      question: 'What is Gated Readiness and why is a minimum Trust Score of 40% required?',
-      answer: 'Gated Readiness is an automated safety barrier. Before full persona simulation occurs, our Trust Analyzer audits your campaign copy for claim evidence, cognitive load, and brand risk. If the Trust Score falls below 40%, the simulation halts to prevent wasting evaluation time on copy with unverified or misleading claims.',
+      question: 'What is the EMOS v9 Architecture Baseline?',
+      answer: 'EMOS v9 (Enterprise Marketing Operating System) is AgentMark\'s frozen production baseline. It introduces event-sourced Brand Vault snapshots, minimal context contracts (<250 tokens), Hybrid RRF retrieval, 4-tier Layered Policy enforcement, and independent evaluator quality gates.',
     },
     {
-      question: 'How does the Devil\'s Advocate audit identify regulatory and brand policy risks?',
-      answer: 'The Devil\'s Advocate agent acts as an adversarial auditor. It intentionally probes your copy for exaggerated promises, missing disclaimers, policy violations, or aggressive sales tactics, delivering actionable fixes to resolve compliance risks before publication.',
+      question: 'How does the Campaign Review score routing policy work?',
+      answer: 'Campaign copy is audited by the Independent Evaluator against strict quality and compliance metrics:\n• ≥80: Auto Approve (Highest quality; ready for distribution)\n• 65–79: Human Review (Solid copy; requires human approval in dashboard)\n• 50–64: Auto Revision (Copywriter automatically refines copy using evaluator feedback)\n• <50: Strategy + Copy Loop (Low score; returned to Strategy & Copywriter for structural overhaul)',
     },
     {
-      question: 'How does the Performance Calibration Engine use real Meta/Google/LinkedIn ad telemetry?',
-      answer: 'AgentMark ingests real post-launch performance data (CTR, CPC, CPA) via ad platform webhooks. Once 30+ campaign data points exist for an industry, our Empirical Bayes engine statistically recalibrates future pre-flight predictions to match real-world ad performance.',
+      question: 'What is the Brand Vault and how do Context Contracts work?',
+      answer: 'The Brand Vault is an append-only event-sourced repository of verified enterprise brand facts. Materialized snapshots generate lightweight Context Contracts (<250 tokens) containing brand guidelines, target personas, primary CTAs, and forbidden terms. Downstream agents consume these strict contracts to guarantee zero brand drift.',
     },
     {
-      question: 'How does the Hybrid Model Router optimize AI speed and token costs?',
-      answer: 'AgentMark intelligently routes task types across model tiers: Tier 1 (Fast/Cheap) for initial persona reviews, Tier 2 (Balanced) for Trust Analysis, and Tier 3 (High-Quality) for Analyst Synthesis. This achieves a 60% reduction in token costs while preserving high-tier evaluation quality.',
+      question: 'How does Hybrid RRF Retrieval optimize knowledge search?',
+      answer: 'AgentMark combines PostgreSQL tsvector keyword matching (BM25) with pgvector HNSW vector similarity using Reciprocal Rank Fusion (RRF). Retrieval is weighted by Source Precedence: Manual User (1.0) > Brand Guidelines (0.9) > Website (0.7) > Competitor Data (0.3), bounded to a strict max budget of K ≤ 5 chunks.',
     },
     {
-      question: 'How does the Synthetic Focus Group simulation evaluate my campaign copy?',
+      question: 'What is the 4-Tier Layered Policy Engine?',
+      answer: 'Prior to publication, generated copy passes sequentially through 4 policy tiers:\n1. Platform Policy: Global safety, anti-defamation, and fraud prevention.\n2. Industry Policy: Sector regulations (SEC finance rules, HIPAA healthcare claims).\n3. Tenant Policy: Enterprise brand rules and forbidden keyword filters.\n4. Campaign Policy: Offer limits and maximum discount caps.',
+    },
+    {
+      question: 'Which features are Production-Ready vs. Feature-Flagged (Experimental)?',
+      answer: '• Production-Ready: LangGraph multi-agent orchestration, LiteRAG Tavily search, Focus Group persona simulation, Human-in-the-Loop review, and multi-channel publishing.\n• Feature-Flagged (EMOS_BRAND_VAULT_ENABLED): Event-sourced Brand Vault logs, Hybrid RRF search, 4-tier policy enforcement, 90-day memory decay weighting, and OpenTelemetry component tracing.',
+    },
+    {
+      question: 'Troubleshooting: What should I do if a campaign fails or shows a CTA misalignment warning?',
+      answer: '1. Rate Limits / Timeouts: Retry the campaign via the dashboard action menu. Transient errors auto-recover with exponential backoff.\n2. CTA Misalignment Warning: Ensure your primary CTA is specified in project settings so the Context Contract enforces it across all copy channels.\n3. Feature Flag Status: If Brand Vault features are hidden, confirm EMOS_BRAND_VAULT_ENABLED=true in backend environment settings.',
+    },
+    {
+      question: 'How does the Synthetic Focus Group simulation evaluate campaign copy?',
       answer: 'Our Focus Group engine runs parallel LLM persona agents representing diverse demographic and psychographic consumer segments. It analyzes your copy for sentiment score (0–100%), click-intent probability, primary objections, and actionable rewrite recommendations before you spend ad budget.',
     },
     {
@@ -63,54 +75,6 @@ const SupportContent: React.FC = () => {
     {
       question: 'How long does campaign generation take?',
       answer: 'Most multi-channel campaigns are generated within 45 to 90 seconds. Complex strategies requiring deep research may take up to 3 minutes as our agents traverse web data and internal knowledge bases.',
-    },
-    {
-      question: 'How do I generate images directly from my prompt cards?',
-      answer: 'In the Visuals tab of your campaign results, click "Generate" next to any prompt. A dropdown will appear containing popular studio bridges (DALL-E 3, Midjourney, Leonardo, Flux.1, etc.). Selecting one copies the prompt to your clipboard and opens the platform with the prompt pre-loaded in the generation box.',
-    },
-    {
-      question: 'How do I post or compose drafts from generated marketing copy?',
-      answer: 'In the Copywriter tab, each copy card has a highlighted direct-action CTA button at the bottom (e.g., "Post on X", "Share on LinkedIn", "Compose in Gmail", or "Default Mail Client"). Clicking this button copies your copy variant to the clipboard and opens the composing page of the specific platform with the content pre-filled.',
-    },
-    {
-      question: 'What is the Memory Hub and how does it optimize my campaigns over time?',
-      answer: 'The Memory Hub aggregates cross-campaign insights for your brand. It monitors which copy tones receive first-try approvals, profiles agent rejection feedback (e.g., if the compliance agent flags certain phrasing), and uses these historical learnings to automatically adjust future LLM guidance for that specific project.',
-    },
-    {
-      question: 'How does the Tavily web search integration assist the market research phase?',
-      answer: 'During campaign strategy generation, our Research Agent utilizes Tavily API to fetch real-time market trends, competitor insights, and public sentiment. It then synthesizes this live data directly into the campaign strategy outline instead of relying solely on static model training data.',
-    },
-    {
-      question: 'How do I customize the brand voice or tone parameters?',
-      answer: 'Under Campaign Settings, you can define custom brand directives, target audience profiles, and tone constraints. These rules are injected as system prompts across the entire agent cluster, ensuring all generated copy and visuals strictly align with your corporate guidelines.',
-    },
-    {
-      question: 'What happens if an agent failure occurs?',
-      answer: 'If an agent stalls or fails, it will retry with exponential backoff for transient errors (rate limits, brief outages). After persistent failure, the agent is marked as "failed" with a red status indicator and you can manually re-run the campaign from the campaign list page.',
-    },
-    {
-      question: 'Can I switch between AI models?',
-      answer: 'Yes. Under Settings > API Keys, you can add keys for multiple providers (OpenAI, Gemini, Groq). The system automatically uses your fastest available provider. Enterprise users can request custom model routing.',
-    },
-    {
-      question: 'Is my proprietary data kept private?',
-      answer: 'Absolutely. Your strategy inputs and proprietary research are never used to train models. Data is stored securely in our database and transmitted over encrypted HTTPS connections.',
-    },
-    {
-      question: 'How is the campaign review score calculated?',
-      answer: 'After all agents complete their work, the Quality Reviewer agent audits the full output and assigns a score from 0 to 100. This score factors in brand safety, policy compliance, readability, and message consistency across channels.',
-    },
-    {
-      question: 'Can I manage multiple projects, each with its own campaigns?',
-      answer: 'Yes. You can create multiple projects from the dashboard sidebar. Each project contains its own campaigns, and campaign counts are tracked per project. Switch between projects anytime to organize campaigns by brand, team, or initiative.',
-    },
-    {
-      question: 'What do the different campaign statuses mean?',
-      answer: 'Draft means the campaign is not yet launched. Processing means agents are actively working. Awaiting Human Approval means agents finished and you can review before publishing. Completed means all agents succeeded. Failed means an error occurred during generation. Deleted campaigns are hidden from view.',
-    },
-    {
-      question: 'How do API keys work in AgentMark?',
-      answer: 'Go to Settings > API Keys to add keys for Gemini, Groq, OpenAI, and Tavily. Keys are stored in your browser and sent per-request. The system automatically fails over between providers if one is unavailable. Tavily is used only by the Research agent for web search.',
     },
   ];
 
