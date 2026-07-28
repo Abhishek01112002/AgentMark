@@ -59,6 +59,7 @@ Copy `.env.example` to `.env` and set the following:
 | `REDIS_HOST` | Yes | Redis host (default: `localhost`) |
 | `REDIS_PORT` | Yes | Redis port (default: `6379`) |
 | `FRONTEND_URL` | Yes | Allowed CORS origin for Socket.IO (e.g., `http://localhost:5173`) |
+| `EMOS_BRAND_VAULT_ENABLED` | Conditional | Set to `true` to enable EMOS Phase 1–5 Brand Vault and Retrieval endpoints |
 
 > **Generate secrets:** `openssl rand -hex 32`
 

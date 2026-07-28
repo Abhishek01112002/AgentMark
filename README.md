@@ -13,19 +13,20 @@
 ## Table of Contents
 
 1. [Architecture](#architecture)
-2. [Technology Stack](#technology-stack)
-3. [Repository Structure](#repository-structure)
-4. [Prerequisites](#prerequisites)
-5. [Step-by-Step Setup](#step-by-step-setup)
+2. [EMOS v9 Baseline & Implementation Status](#emos-v9-baseline--implementation-status)
+3. [Technology Stack](#technology-stack)
+4. [Repository Structure](#repository-structure)
+5. [Prerequisites](#prerequisites)
+6. [Step-by-Step Setup](#step-by-step-setup)
    - [Step 1 — Backend](#step-1--backend-port-5003)
    - [Step 2 — AI Service](#step-2--ai-service-port-5002)
    - [Step 3 — Frontend](#step-3--frontend-port-5173)
    - [Step 4 — MCP Server](#step-4--mcp-server-optional)
-6. [Environment Variables Reference](#environment-variables-reference)
-7. [Key Features](#key-features)
-8. [Agent Pipeline](#agent-pipeline)
-9. [MCP Integration](#mcp-integration)
-10. [License](#license)
+7. [Environment Variables Reference](#environment-variables-reference)
+8. [Key Features & EMOS Subsystems](#key-features--emos-subsystems)
+9. [Agent Pipeline](#agent-pipeline)
+10. [MCP Integration](#mcp-integration)
+11. [License](#license)
 
 ---
 
@@ -65,6 +66,24 @@ AgentMark consists of four micro-services that communicate via REST, Redis Pub/S
 3. Backend Redis subscriber picks up events → emits Socket.IO events to frontend
 4. Frontend live-updates the agent progress panel in real time
 5. On completion, backend persists all agent outputs to PostgreSQL
+
+---
+
+## EMOS v9 Baseline & Implementation Status
+
+> **Engineering Status**: Implementation Complete across Phases 1–5 on branch `feature/emos-brand-vault-context-engine` behind dark feature flags (`EMOS_BRAND_VAULT_ENABLED` / `VITE_EMOS_BRAND_VAULT_ENABLED`).
+> **Production Acceptance Gates**: PAG-01 through PAG-08 remain strictly **`PENDING STAGING VALIDATION`** awaiting independent staging cluster execution and evidence verification.
+
+### Subsystem Implementation Matrix
+
+| Subsystem / Phase | Core Capability | Implementation Modules | Status |
+| :--- | :--- | :--- | :--- |
+| **Phase 1: Brand Vault & Contracts** | Append-Only Event Log, Materialized Snapshot Isolation, Minimal JSON Context Contract (<250 tokens) | `backend/src/modules/brand-vault/`, `ai-service/workflow/context.py` | Complete ✅ |
+| **Phase 2: Hybrid Retrieval** | Reciprocal Rank Fusion (RRF), Source Precedence Weighting (`MANUAL_USER: 1.0 > GUIDELINES: 0.9 > WEBSITE: 0.7 > COMPETITOR: 0.3`), Retrieval Budget ($K \le 5$) | `backend/src/utils/retrieval.ts`, `ai-service/workflow/retrieval.py` | Complete ✅ |
+| **Phase 3: Quality & Policy Gates** | Independent Evaluator with Prompt Isolation, 4-Tier Layered Policy Engine (Platform $\rightarrow$ Industry $\rightarrow$ Tenant $\rightarrow$ Campaign) | `ai-service/agents/evaluator.py`, `ai-service/workflow/policy.py` | Complete ✅ |
+| **Phase 4: Memory & Learning Engine** | 90-Day Decay Half-Life Weighting ($\lambda = \frac{\ln 2}{90}$), Source Reliability Filtering ($W_{\text{Learning}} < 0.65$ Discarded), Human Edit Diff Ingestion | `backend/src/utils/learning.ts`, `ai-service/workflow/learning.py` | Complete ✅ |
+| **Phase 5: Operations & Telemetry** | OpenTelemetry Tracing Context Propagation (`trace_id`, `span_id`, `campaign_id`, `tenant_id`, `evidence_id`), Structured Component Audit Logging, Chaos Drills | `backend/src/utils/telemetry.ts`, `ai-service/utils/telemetry/emos_tracer.py` | Complete ✅ |
+| **Frontend Integration** | Brand Vault API Client, Feature Flag Detection, Contract Type Synchronization, Evaluator Score Surface | `frontend/src/types/emos.ts`, `frontend/src/services/api.ts`, `DashboardPage.tsx` | Complete ✅ |
 
 ---
 

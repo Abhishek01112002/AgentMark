@@ -19,9 +19,10 @@ Below is the directory mapping of the key files and folders in the project:
 
 ```
 AgentMark/
-├── ai-service/                         # Python AI Service (LangGraph)
+├── ai-service/                         # Python AI Service (LangGraph + EMOS Engine)
 │   ├── agents/                         # Agent definitions and prompt execution
 │   │   ├── copywriter.py
+│   │   ├── evaluator.py                # EMOS Phase 3: Independent Evaluator Agent
 │   │   ├── human_approval.py           # Handles HITL pausing logic
 │   │   ├── image_prompt.py
 │   │   ├── manager.py                  # Coordinates routing instructions
@@ -30,6 +31,15 @@ AgentMark/
 │   │   ├── reviewer.py                 # Evaluates quality scores
 │   │   ├── state.py                    # CampaignState definition
 │   │   └── strategy.py
+│   ├── workflow/
+│   │   ├── context.py                  # EMOS Phase 1: Context Contract Builder (<250 tok)
+│   │   ├── retrieval.py                # EMOS Phase 2: Hybrid RRF Search + Precedence
+│   │   ├── policy.py                   # EMOS Phase 3: 4-Tier Layered Policy Engine
+│   │   ├── learning.py                 # EMOS Phase 4: 90-Day Decay & Reliability Filter
+│   │   └── graph.py                    # LangGraph configuration and node assembly
+│   ├── utils/
+│   │   └── telemetry/                  # EMOS Phase 5: OpenTelemetry & Component Tracer
+│   │       ├── emos_tracer.py
 │   ├── api/
 │   │   ├── dependencies.py
 │   │   └── routes/

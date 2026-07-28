@@ -39,6 +39,7 @@ Copy `.env.example` to `.env`:
 |---|---|---|
 | `VITE_API_URL` | Yes | Base URL of the Express backend (e.g., `http://localhost:5003`) |
 | `VITE_SOCKET_URL` | Yes | Socket.IO server URL — usually the same as `VITE_API_URL` |
+| `VITE_EMOS_BRAND_VAULT_ENABLED` | Conditional | Set to `true` to enable EMOS v9 Brand Vault API & Evaluator Surface |
 
 ---
 
