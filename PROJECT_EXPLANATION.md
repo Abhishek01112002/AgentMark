@@ -20,84 +20,103 @@ Below is the directory mapping of the key files and folders in the project:
 ```
 AgentMark/
 ├── ai-service/                         # Python AI Service (LangGraph + EMOS Engine)
-│   ├── agents/                         # Agent definitions and prompt execution
-│   │   ├── copywriter.py
-│   │   ├── evaluator.py                # EMOS Phase 3: Independent Evaluator Agent
-│   │   ├── human_approval.py           # Handles HITL pausing logic
-│   │   ├── image_prompt.py
-│   │   ├── manager.py                  # Coordinates routing instructions
-│   │   ├── publisher.py                # Finalizes content calendar
-│   │   ├── research.py
-│   │   ├── reviewer.py                 # Evaluates quality scores
-│   │   ├── state.py                    # CampaignState definition
-│   │   └── strategy.py
-│   ├── workflow/
-│   │   ├── context.py                  # EMOS Phase 1: Context Contract Builder (<250 tok)
-│   │   ├── retrieval.py                # EMOS Phase 2: Hybrid RRF Search + Precedence
+│   ├── agents/                         # 10 Specialized Agent Nodes
+│   │   ├── copywriter.py               # Multi-channel copy generation
+│   │   ├── evaluator.py                # EMOS Phase 3: Independent Evaluator Agent (Prompt Isolated)
+│   │   ├── focus_group.py              # Synthetic persona focus group simulation
+│   │   ├── human_approval.py           # HITL approval gate logic
+│   │   ├── image_prompt.py             # Visual prompt generation + studio bridges
+│   │   ├── manager.py                  # Workflow planning & routing coordinator
+│   │   ├── publisher.py                # Content calendar & distribution planning
+│   │   ├── research.py                 # LiteRAG real-time web search (Tavily)
+│   │   ├── reviewer.py                 # Compliance & quality scoring (0-100)
+│   │   ├── state.py                    # CampaignState shared TypedDict
+│   │   └── strategy.py                 # Market positioning & messaging pillars
+│   ├── workflow/                       # LangGraph assembly & EMOS subsystems
+│   │   ├── context.py                  # EMOS Phase 1: Minimal Context Contract Builder (<250 tok)
+│   │   ├── retrieval.py                # EMOS Phase 2: Hybrid RRF Search (BM25 + pgvector)
 │   │   ├── policy.py                   # EMOS Phase 3: 4-Tier Layered Policy Engine
-│   │   ├── learning.py                 # EMOS Phase 4: 90-Day Decay & Reliability Filter
-│   │   └── graph.py                    # LangGraph configuration and node assembly
-│   ├── utils/
-│   │   └── telemetry/                  # EMOS Phase 5: OpenTelemetry & Component Tracer
-│   │       ├── emos_tracer.py
+│   │   ├── learning.py                 # EMOS Phase 4: 90-Day Memory Decay & Reliability Filter
+│   │   └── graph.py                    # LangGraph StateGraph build & singleton compilation
+│   ├── utils/                          # Telemetry, caching & guardrails
+│   │   └── telemetry/                  # EMOS Phase 5: OpenTelemetry Component Tracer & Audit Logger
+│   │       ├── emos_tracer.py          # Trace ID context propagation (trace_id, span_id, evidence_id)
+│   │       ├── execution_analyzer.py   # Latency SLA percentiles (P50/P95/P99)
+│   │       ├── execution_report.py     # Campaign execution diagnostics
+│   │       └── pipeline_tracer.py      # Timeline event tracer
+│   ├── llm/                            # Multi-provider LLM Client & Failover Pool
+│   │   ├── provider_pool.py            # Multi-provider fallback (Gemini, Groq, OpenAI)
+│   │   ├── gemini_client.py            # Google Gemini client with schema auto-repair
+│   │   ├── groq_client.py              # Groq Llama-3.3-70b client
+│   │   └── openai_client.py            # OpenAI GPT-4o client
 │   ├── api/
-│   │   ├── dependencies.py
+│   │   ├── dependencies.py             # INTERNAL_SERVICE_SECRET header guard
 │   │   └── routes/
-│   │       └── campaigns.py            # FastAPI endpoints for triggering/resuming graph
-│   ├── llm/                            # LLM API Client implementations
-│   │   ├── base.py
-│   │   ├── factory.py                  # Client provider (Gemini, OpenAI, Groq)
-│   │   ├── gemini_client.py
-│   │   ├── groq_client.py
-│   │   └── openai_client.py
-│   ├── schemas/                        # Pydantic Schemas
-│   │   ├── agent_outputs.py            # Output structure schemas for all agents
-│   │   └── websocket.py
-│   ├── utils/
-│   │   ├── logger.py                   # Centralized file and console logger
-│   │   └── prompts/                    # Raw text prompt templates
-│   │       ├── copywriter_prompt.txt
-│   │       ├── image_prompt.txt
-│   │       ├── publisher_prompt.txt
-│   │       ├── research_prompt.txt
-│   │       └── strategy_prompt.txt
-│   ├── workflow/
-│   │   ├── graph.py                    # LangGraph configuration and node assembly
-│   │   └── routing.py                  # Score-based and HITL conditional routing logic
-│   ├── run.py                          # Starts the FastAPI server
-│   └── requirements.txt
+│   │       └── campaigns.py            # Workflow trigger, resume, variant & prompt enhancer routes
+│   └── routers/
+│       └── focus_group_router.py       # Focus group simulation & interview Q&A endpoints
 │
-├── agentmark-mcp-server/                # Model Context Protocol (MCP) Integration
-│   ├── pyproject.toml
+├── agentmark-mcp-server/               # Model Context Protocol (MCP) Integration
+│   ├── pyproject.toml                  # FastMCP server configuration
 │   └── src/agentmark_mcp/
-│       ├── server.py                   # FastMCP server definition & tool registration
-│       ├── client.py                   # HTTP Client for Express backend communication
-│       └── tools/                      # Tool modules (campaign, focus_group, project, publish, revision)
+│       ├── server.py                   # FastMCP tool registrations (Claude / Cursor IDE)
+│       ├── client.py                   # HTTP Client for Express backend API
+│       └── tools/                      # Campaign, focus group, project, publish & revision tools
 │
-├── backend/                            # Node.js Express Server
+├── backend/                            # Node.js Express Backend & Storage
 │   ├── prisma/
-│   │   └── schema.prisma               # PostgreSQL Prisma Schema & Database models
+│   │   └── schema.prisma               # PostgreSQL models (User, Project, Campaign, BrandVaultEvent, BrandVaultSnapshot, McpActivity)
 │   ├── src/
-│   │   ├── index.ts                    # Express app setup, Prisma DB & Socket.io initialization
+│   │   ├── index.ts                    # Express entry point, HTTP server & Socket.IO bridge
 │   │   ├── db.ts                       # Prisma Client singleton
+│   │   ├── middlewares/
+│   │   │   ├── auth.middleware.ts      # Dual auth: JWT Bearer + Developer API Key
+│   │   │   ├── mcp-logger.middleware.ts# Logs MCP tool calls to McpActivity table
+│   │   │   └── rate-limit.middleware.ts# Global & sensitive route rate limiters
 │   │   ├── modules/
-│   │   │   ├── campaigns/              # Campaign management, status transitions, revision reset
-│   │   │   ├── developer/              # API key verification & Claude Desktop connect flow
-│   │   │   ├── focus-group/            # Synthetic persona factory & interview Q&A
-│   │   │   └── notifications/
+│   │   │   ├── auth/                   # Signup, login, token refresh, /api/auth/me
+│   │   │   ├── brand-vault/            # EMOS Phase 1: Brand Vault events, snapshots & contract routes
+│   │   │   ├── campaigns/              # Campaign CRUD, AI runner, HITL approval & Socket.IO emitter
+│   │   │   ├── developer/              # Developer API key management & Claude Desktop config auto-write
+│   │   │   ├── focus-group/            # Focus group proxy & Q&A interview router
+│   │   │   ├── imagekit/               # ImageKit CDN auth token provider
+│   │   │   ├── notifications/          # Notification CRUD & real-time delivery
+│   │   │   └── projects/               # Project CRUD & memory analytics
 │   │   └── utils/
-│   │       ├── ai-client.ts            # REST client for Python AI service (Port 5002)
-│   │       ├── redis-subscriber.ts     # ioredis Pub/Sub listener for real-time campaign status
-│   │       └── redis.ts                # Shared ioredis connection client
+│   │       ├── ai-client.ts            # AI Service REST client (10-min execution timeout)
+│   │       ├── learning.ts             # EMOS Phase 4 backend decay utils
+│   │       ├── redis-subscriber.ts     # Redis Pub/Sub → Socket.IO event bridge
+│   │       ├── retrieval.ts            # EMOS Phase 2 backend RRF search utils
+│   │       ├── telemetry.ts            # EMOS Phase 5 backend OpenTelemetry tracer
+│   │       ├── jwt.ts                  # JWT sign/verify with user-scoped isolation
+│   │       └── password.ts             # bcrypt hash & compare helpers
 │   └── package.json
 │
-└── frontend/                           # React Client Application
+└── frontend/                           # React 18 + TypeScript SPA
     ├── src/
-    │   ├── components/
-    │   │   ├── pages/
-    │   │   │   ├── campaign/
-    │   │   │   │   └── newCampaign/
-    │   │   │   │       ├── NewCampaignPage.tsx # Brief configuration form
+    │   ├── types/
+    │   │   └── emos.ts                 # Synchronized EMOS contract interfaces
+    │   ├── services/
+    │   │   ├── api.ts                  # Axios HTTP client, user-scoped LLM headers & Brand Vault API
+    │   │   ├── llm-settings.service.ts # User-scoped LLM API key local storage manager
+    │   │   └── notifications.service.ts# Notification polling & event bridge
+    │   └── components/
+    │       ├── shared/
+    │       │   ├── sidebar/Sidebar.tsx # Collapsible sidebar navigation
+    │       │   ├── topNav/TopNav.tsx   # Top navigation & notification popover
+    │       │   └── responsive/         # Responsive stat cards & layout utilities
+    │       └── pages/
+    │           ├── landingPage/        # Public marketing landing page & ROI calculator
+    │           ├── login/ & signup/    # JWT authentication forms
+    │           ├── dashboard/          # Project overview, stats, Avg Evaluator score & MCP telemetry log
+    │           ├── projects/           # Project list, creation & rename modals
+    │           ├── campaign/           # Live workflow visualizer (Socket.IO) & 7-tab campaign results
+    │           ├── history/            # Searchable campaign history
+    │           ├── memoryHub/          # Brand memory analytics & cross-campaign learning
+    │           ├── settings/           # API keys configuration & Claude Desktop 1-click installer
+    │           ├── docs/               # In-app documentation (DocsPage.tsx)
+    │           └── support/            # Troubleshooting, FAQ & WhatsApp support lightbox (Support.tsx)
+```   │   │   │   │       ├── NewCampaignPage.tsx # Brief configuration form
     │   │   │   │       └── campaignLive/
     │   │   │   │           ├── CampaignLivePage.tsx # Live workflow visualizer
     │   │   │   │           └── campaignResult/
