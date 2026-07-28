@@ -64,7 +64,7 @@ const sections: DocSection[] = [
             <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Autonomous Team</div>
           </div>
           <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-emerald-400">45-90s</div>
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-emerald-400">60-120s</div>
             <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Average Delivery Speed</div>
           </div>
           <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
@@ -778,7 +778,7 @@ const sections: DocSection[] = [
           
           <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] shadow-sm space-y-2">
             <strong className="text-white text-xs md:text-sm block font-semibold">Q: How long does campaign generation take?</strong>
-            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">A: Typically between 45 to 90 seconds depending on live web research queries and LLM provider speed.</p>
+            <p className="text-xs md:text-sm text-slate-400 leading-relaxed">A: Typically between 60 to 120 seconds depending on live web research queries and LLM provider speed.</p>
           </div>
 
           <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] shadow-sm space-y-2">

@@ -74,7 +74,7 @@ const SupportContent: React.FC = () => {
     },
     {
       question: 'How long does campaign generation take?',
-      answer: 'Most multi-channel campaigns are generated within 45 to 90 seconds. Complex strategies requiring deep research may take up to 3 minutes as our agents traverse web data and internal knowledge bases.',
+      answer: 'Most multi-channel campaigns are generated within 60 to 120 seconds. Complex strategies requiring deep research may take up to 3 minutes as our agents traverse web data and internal knowledge bases.',
     },
   ];
 
