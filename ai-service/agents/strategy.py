@@ -528,11 +528,22 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     
     strategy_output_json = strategy_plan.model_dump_json(indent=2)
     
+    # Mutate CampaignIntelligenceObject (CIO) directly in state
+    from utils.context.cta_registry import IndustryCTARegistry
+    cio_dict = dict(state.campaign_intelligence_object or {})
+    cio_dict["positioning_moat"] = strategy_plan.positioning or ""
+    cio_dict["key_messages"] = strategy_plan.key_messages or []
+    cio_dict["recommended_channels"] = channels or []
+    stage = getattr(state, "buying_stage", None) or "consideration"
+    cio_dict["stage_appropriate_cta"] = IndustryCTARegistry.get_ctas(industry, primary_goal, stage=stage)
+    state.campaign_intelligence_object = cio_dict
+
     state.strategy_output = strategy_output_json
     state.status = "strategy_complete"
     
     logger.info("✅ State updated:")
     logger.info(f"   strategy_output: {len(strategy_output_json)} characters")
+    logger.info(f"   campaign_intelligence_object updated with positioning moat & CTAs")
     logger.info(f"   status: {state.status}")
     
     logger.info("\n" + "=" * 80)

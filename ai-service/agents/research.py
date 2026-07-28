@@ -347,11 +347,27 @@ def research_agent(state: CampaignState) -> CampaignState:
     
     research_output_json = research_data.model_dump_json(indent=2)
     
+    # Mutate CampaignIntelligenceObject (CIO) directly in state
+    cio_dict = dict(state.campaign_intelligence_object or {})
+    cio_dict["campaign_name"] = cio_dict.get("campaign_name") or campaign_name
+    cio_dict["brand_name"] = cio_dict.get("brand_name") or brand_name
+    cio_dict["industry"] = cio_dict.get("industry") or industry
+    cio_dict["primary_goal"] = cio_dict.get("primary_goal") or primary_goal
+    cio_dict["target_icp"] = cio_dict.get("target_icp") or target_audience
+    pains = (research_data.audience_insights.pain_points if research_data.audience_insights else []) or []
+    objections = (getattr(research_data.audience_insights, "buyer_objections", None) or []) if research_data.audience_insights else []
+    if not objections and pains:
+        objections = [f"Risk related to {pains[0]}"]
+    cio_dict["primary_pain_points"] = pains
+    cio_dict["buyer_objections"] = objections
+    state.campaign_intelligence_object = cio_dict
+    
     state.research_output = research_output_json
     state.status = "research_complete"
     
     logger.info("✅ State updated:")
     logger.info(f"   research_output: {len(research_output_json)} characters")
+    logger.info(f"   campaign_intelligence_object updated with {len(pains)} pain points & {len(objections)} objections")
     logger.info(f"   status: {state.status}")
     
     logger.info("\n" + "=" * 80)
