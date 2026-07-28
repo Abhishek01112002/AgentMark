@@ -558,54 +558,54 @@ const sections: DocSection[] = [
   },
   {
     id: 'preflight-engine',
-    title: '8. Enterprise Pre-Flight Simulation & Calibration Engine',
+    title: '8. EMOS v9 Architecture & Enterprise Quality Gates',
     category: 'Features',
     icon: <ShieldCheck size={16} className="text-emerald-400 filter drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />,
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200 leading-relaxed">
-          AgentMark’s <strong className="text-white font-semibold">Enterprise Pre-Flight Engine</strong> uses multi-agent orchestration, adversarial auditing, and empirical ad telemetry to predict and optimize campaign performance before launch:
+          AgentMark operates on the <strong className="text-white font-semibold">EMOS v9 Architecture Baseline</strong> (Enterprise Marketing Operating System), combining event-sourced Brand Vault snapshots, minimal context contracts, hybrid RRF retrieval, 4-tier policy enforcement, and independent quality gates:
         </p>
 
         {/* Feature Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card 1: Gated Readiness */}
+          {/* Card 1: Brand Vault & Context Contracts */}
           <div className="p-5 rounded-2xl bg-[#12121a] border border-emerald-500/30 space-y-2 shadow-md">
             <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-              <ShieldCheck size={18} /> Gated Readiness & Trust Analyzer
+              <ShieldCheck size={18} /> Brand Vault & Context Contracts
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Audits copy for claim proof, cognitive load, and brand risk. If Trust Score falls below <strong>40%</strong>, simulation halts to prevent evaluating unverified copy.
+              Append-only event-sourced brand log with materialized snapshot isolation. Generates minimal JSON Context Contracts (&lt;250 tokens) containing target personas, CTAs, and forbidden terms to eliminate brand drift.
             </p>
           </div>
 
-          {/* Card 2: Devil's Advocate */}
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-rose-500/30 space-y-2 shadow-md">
-            <div className="flex items-center gap-2 text-rose-400 font-bold text-sm">
-              <Zap size={18} /> Devil's Advocate Audit
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">
-              An adversarial AI auditor probes your copy for exaggerated promises, policy violations, missing disclaimers, and aggressive sales tactics, delivering instant fixes.
-            </p>
-          </div>
-
-          {/* Card 4: Performance Calibration */}
+          {/* Card 2: Hybrid RRF Retrieval */}
           <div className="p-5 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2 shadow-md">
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
-              <Brain size={18} /> Empirical Bayes Calibration Engine
+              <Search size={18} /> Hybrid RRF Retrieval Engine
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Ingests real Meta, Google, and LinkedIn ad telemetry. Once 30+ campaign data points exist for an industry, Empirical Bayes statistically recalibrates future pre-flight predictions.
+              Combines BM25 keyword matching with pgvector HNSW vector similarity using Reciprocal Rank Fusion. Weighted by Source Precedence (Manual User 1.0 &gt; Guidelines 0.9 &gt; Website 0.7 &gt; Competitor 0.3) bounded to K ≤ 5 chunks.
             </p>
           </div>
 
-          {/* Card 5: Hybrid Router */}
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-cyan-500/30 space-y-2 shadow-md md:col-span-2">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm">
-              <Workflow size={18} /> Hybrid Model Router (60% Token Cost Reduction)
+          {/* Card 3: 4-Tier Layered Policy Engine */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-purple-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
+              <Zap size={18} /> 4-Tier Layered Policy Engine
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Dynamically routes initial reviews to Tier 1 (Fast/Cheap), trust checks to Tier 2 (Balanced), and complex synthesis to Tier 3 (High Quality), saving 60% on LLM inference costs while preserving accuracy.
+              Sequential compliance enforcement: Platform (safety & fraud) → Industry (SEC finance & HIPAA health) → Tenant (brand rules) → Campaign (discount & offer caps).
+            </p>
+          </div>
+
+          {/* Card 4: Independent Evaluator & Score Routing */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-amber-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+              <Brain size={18} /> Independent Evaluator Score Routing
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Evaluates copy with prompt isolation. Score routing: ≥80 Auto Approve | 65–79 Human Review | 50–64 Auto Revision | &lt;50 Strategy + Copy Rewrite Loop.
             </p>
           </div>
         </div>
