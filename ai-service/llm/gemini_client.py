@@ -95,6 +95,8 @@ IMPORTANT:
 - All required fields must be present
 - Follow the exact field names and types specified"""
 
+        from .json_gateway import parse_and_validate, build_schema_correction_prompt
+
         try:
             self._wait_for_rate_limit()
             response = self.model.generate_content(
@@ -107,24 +109,32 @@ IMPORTANT:
             )
             self._record_success()
 
-            response_text = response.text.strip()
-            if response_text.startswith("```json"):
-                response_text = response_text.split("```json", 1)[1]
-            if response_text.startswith("```"):
-                response_text = response_text.split("```", 1)[1]
-            if response_text.endswith("```"):
-                response_text = response_text.rsplit("```", 1)[0]
-            response_text = response_text.strip()
+            raw_text = response.text or ""
+            model_instance, err_msg, was_repaired = parse_and_validate(raw_text, response_model, agent_name="GeminiClient")
+            if model_instance:
+                return model_instance
 
-            if not response_text:
-                raise ValueError("Gemini returned empty response")
+            # Step 2: 1-shot Schema-Aware Correction Retry on Gemini before failing over
+            logger.warning(f"Gemini initial output failed schema validation ({err_msg}). Executing 1-shot correction retry...")
+            retry_prompt = build_schema_correction_prompt(enhanced_prompt, response_model, err_msg or "Invalid JSON structure")
+            
+            self._wait_for_rate_limit()
+            retry_response = self.model.generate_content(
+                retry_prompt,
+                generation_config={
+                    "temperature": 0.2,  # Lower temperature for retry precision
+                    "max_output_tokens": max_tokens,
+                    "response_mime_type": "application/json",
+                },
+            )
+            self._record_success()
+            
+            retry_model_instance, retry_err, _ = parse_and_validate(retry_response.text or "", response_model, agent_name="GeminiClient-Retry")
+            if retry_model_instance:
+                logger.info(f"Gemini 1-shot schema correction retry SUCCEEDED for model {response_model.__name__}")
+                return retry_model_instance
 
-            try:
-                return response_model.model_validate_json(response_text)
-            except Exception as parse_exc:
-                logger.warning(f"Initial JSON validation failed ({parse_exc}), attempting json_repair...")
-                repaired = json_repair.repair_json(response_text)
-                return response_model.model_validate_json(repaired)
+            raise ValueError(f"Gemini failed schema validation after correction retry: {retry_err}")
         except Exception as exc:
             self._raise_typed_error(exc)
 

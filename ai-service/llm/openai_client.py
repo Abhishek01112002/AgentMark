@@ -167,10 +167,14 @@ class OpenAIClient(BaseLLMClient):
             }
             if seed is not None:
                 kwargs["seed"] = seed
+            from .json_gateway import parse_and_validate
             response = self.client.chat.completions.create(**kwargs)
             self._record_success()
             raw_json = response.choices[0].message.content or "{}"
-            return response_model.model_validate_json(raw_json)
+            model_inst, err_msg, _ = parse_and_validate(raw_json, response_model, agent_name="OpenAIClient")
+            if model_inst:
+                return model_inst
+            raise ValueError(f"OpenAI JSON validation failed: {err_msg}")
         except Exception as exc:
             self._raise_typed_error(exc)
 
