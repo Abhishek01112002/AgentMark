@@ -225,6 +225,7 @@ def research_node(state: CampaignState) -> dict:
             "review_output": updated_state.review_output,
             "research_revision_count": updated_state.research_revision_count,
             "human_revision_target": updated_state.human_revision_target,
+            "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
             "status": updated_state.status,
             "error": updated_state.error,
         }
@@ -306,6 +307,7 @@ def strategy_node(state: CampaignState) -> dict:
             "review_output": updated_state.review_output,
             "strategy_revision_count": updated_state.strategy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
+            "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
             "status": updated_state.status,
             "error": updated_state.error,
         }
@@ -384,6 +386,7 @@ def copywriter_node(state: CampaignState) -> dict:
             "review_output": updated_state.review_output,
             "copy_revision_count": updated_state.copy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
+            "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
             "status": updated_state.status,
             "error": updated_state.error,
         }
