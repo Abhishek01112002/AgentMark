@@ -200,7 +200,7 @@ class SmartClient(BaseLLMClient):
             seed,
         )
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
         return self._call_with_failover(
             lambda c, p, r, t, m, s: c.generate_structured(p, r, t, m, seed=s),
             prompt,

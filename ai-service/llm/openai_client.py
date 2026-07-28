@@ -90,7 +90,7 @@ class OpenAIClient(BaseLLMClient):
         prompt: str,
         response_model: Type[T],
         temperature: float = 0.7,
-        max_tokens: int = 4000,
+        max_tokens: int = 8192,
         seed: int | None = None,
     ) -> T:
         # If a previous call on this instance already confirmed that the key

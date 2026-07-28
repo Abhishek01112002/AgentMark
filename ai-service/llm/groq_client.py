@@ -58,7 +58,7 @@ class GroqClient(BaseLLMClient):
         prompt: str,
         response_model: Type[T],
         temperature: float = 0.7,
-        max_tokens: int = 4000,
+        max_tokens: int = 8192,
         seed: int | None = None,
     ) -> T:
         schema = response_model.model_json_schema()

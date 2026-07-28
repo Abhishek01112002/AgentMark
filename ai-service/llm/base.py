@@ -143,7 +143,7 @@ class ProviderPool:
                 logger.warning(f"⚠️ {name} key failed ({str(e)[:60]}), trying next...")
         raise last_error or RuntimeError("All providers/keys exhausted")
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000):
+    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 8192):
         attempts = len(self.providers)
         last_error = None
         for _ in range(attempts):

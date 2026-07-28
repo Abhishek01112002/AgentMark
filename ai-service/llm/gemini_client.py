@@ -79,7 +79,7 @@ class GeminiClient(BaseLLMClient):
         prompt: str,
         response_model: Type[T],
         temperature: float = 0.7,
-        max_tokens: int = 4000,
+        max_tokens: int = 8192,
         seed: int | None = None,
     ) -> T:
         _ensure_event_loop()

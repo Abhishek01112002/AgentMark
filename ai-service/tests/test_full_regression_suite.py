@@ -129,7 +129,7 @@ def test_3_no_graph_recursion_error():
                 brand_voice="Direct", brief="AI Platform"
             )
             config = {"configurable": {"thread_id": test_id}}
-            res = workflow.invoke(initial_state, config=config)
+            res = workflow.invoke(initial_state.model_dump(), config=config)
             assert res.get("status") in ["review_complete", "awaiting_human_approval"]
 
 
@@ -158,15 +158,18 @@ def test_4_human_approve_publisher_end():
         )
         config = {"configurable": {"thread_id": test_id}}
         
-        res1 = workflow.invoke(initial_state, config=config)
-        state_values1 = workflow.get_state(config).values
+        res1 = workflow.invoke(initial_state.model_dump(), config=config)
+        state_values1 = workflow.get_state(config).values if hasattr(workflow, "get_state") else res1
         state_after_run = CampaignState(**state_values1)
         
         approved_state = submit_human_approval(state_after_run, {"action": "approve", "feedback": "LGTM"})
-        workflow.update_state(config, approved_state.model_dump())
-        res2 = workflow.invoke(None, config=config)
+        if hasattr(workflow, "update_state"):
+            workflow.update_state(config, approved_state.model_dump())
+            res2 = workflow.invoke(None, config=config)
+        else:
+            res2 = workflow.invoke(approved_state.model_dump(), config=config)
         
-        state_values2 = workflow.get_state(config).values
+        state_values2 = workflow.get_state(config).values if hasattr(workflow, "get_state") else res2
         assert res2.get("workflow_finished") is True or state_values2.get("status") == "completed"
 
 
@@ -195,17 +198,21 @@ def _test_human_rejection_target(target_name: str, expected_rev_count_attr: str)
         )
         config = {"configurable": {"thread_id": test_id}}
         
-        res1 = workflow.invoke(initial_state, config=config)
-        state1 = CampaignState(**workflow.get_state(config).values)
+        res1 = workflow.invoke(initial_state.model_dump(), config=config)
+        state_values1 = workflow.get_state(config).values if hasattr(workflow, "get_state") else res1
+        state1 = CampaignState(**state_values1)
         
         rejected_state = submit_human_approval(
             state1,
             {"action": "reject", "feedback": f"Revise {target_name}", "revision_target": target_name}
         )
-        workflow.update_state(config, rejected_state.model_dump())
-        res2 = workflow.invoke(None, config=config)
+        if hasattr(workflow, "update_state"):
+            workflow.update_state(config, rejected_state.model_dump())
+            res2 = workflow.invoke(None, config=config)
+        else:
+            res2 = workflow.invoke(rejected_state.model_dump(), config=config)
         
-        state2_values = workflow.get_state(config).values
+        state2_values = workflow.get_state(config).values if hasattr(workflow, "get_state") else res2
         val = state2_values.get(expected_rev_count_attr)
         if isinstance(val, int):
             assert val >= 1

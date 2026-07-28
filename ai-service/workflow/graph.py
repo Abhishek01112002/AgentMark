@@ -35,7 +35,11 @@ import logging
 import time
 logger = logging.getLogger(__name__)
 
-from langgraph.graph import StateGraph, START, END
+try:
+    from langgraph.graph import StateGraph, START, END
+except ImportError:
+    from langgraph.graph import StateGraph, END
+    START = "__start__"
 from langgraph.checkpoint.memory import MemorySaver
 
 # LangGraph state checkpointer for HITL interrupts and resumption
@@ -190,6 +194,7 @@ def research_node(state: CampaignState) -> dict:
             logger.info("   🧹 Clearing all downstream outputs...")
             state.strategy_output = None
             state.copy_output = None
+            state.creative_hook_matrix_output = None
             state.image_output = None
             state.review_output = None
         
@@ -203,12 +208,19 @@ def research_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (research revision complete)")
             updated_state.human_revision_target = None
+            # Invalidate downstream outputs to force regeneration
+            updated_state.strategy_output = None
+            updated_state.copy_output = None
+            updated_state.creative_hook_matrix_output = None
+            updated_state.image_output = None
+            updated_state.review_output = None
         
         publish_agent_event(state.campaign_id, "research", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"research_output": _try_parse_json(updated_state.research_output)}})
         return {
             "research_output": updated_state.research_output,
             "strategy_output": updated_state.strategy_output,
             "copy_output": updated_state.copy_output,
+            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
             "image_output": updated_state.image_output,
             "review_output": updated_state.review_output,
             "research_revision_count": updated_state.research_revision_count,
@@ -261,12 +273,12 @@ def strategy_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "strategy", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # If targeted for revision, clear all downstream outputs first
-        if is_targeted_for_revision:
-            logger.info("   🧹 Clearing downstream outputs (copy, image, review)...")
-            state.copy_output = None
-            state.image_output = None
-            state.review_output = None
+        # If targeted for revision or running new strategy, clear all downstream outputs
+        logger.info("   🧹 Invalidation: Clearing downstream outputs (copy, hook_matrix, image, review)...")
+        state.copy_output = None
+        state.creative_hook_matrix_output = None
+        state.image_output = None
+        state.review_output = None
         
         updated_state = strategy_agent(state)
         
@@ -278,14 +290,18 @@ def strategy_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (strategy revision complete)")
             updated_state.human_revision_target = None
-        else:
-            # Don't increment for downstream re-runs
-            logger.info(f"\nStrategy revision count: {updated_state.strategy_revision_count or 0}/3 (no increment - downstream re-run)")
+
+        # Ensure downstream outputs are cleared in state return dict
+        updated_state.copy_output = None
+        updated_state.creative_hook_matrix_output = None
+        updated_state.image_output = None
+        updated_state.review_output = None
         
         publish_agent_event(state.campaign_id, "strategy", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"strategy_output": _try_parse_json(updated_state.strategy_output)}})
         return {
             "strategy_output": updated_state.strategy_output,
             "copy_output": updated_state.copy_output,
+            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
             "image_output": updated_state.image_output,
             "review_output": updated_state.review_output,
             "strategy_revision_count": updated_state.strategy_revision_count,
@@ -339,11 +355,11 @@ def copywriter_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "copywriter", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # If targeted for revision, clear all downstream outputs first
-        if is_targeted_for_revision:
-            logger.info("   🧹 Clearing downstream outputs (image, review)...")
-            state.image_output = None
-            state.review_output = None
+        # Clear downstream outputs to force regeneration
+        logger.info("   🧹 Invalidation: Clearing downstream outputs (hook_matrix, image, review)...")
+        state.creative_hook_matrix_output = None
+        state.image_output = None
+        state.review_output = None
         
         updated_state = copywriter_agent(state)
         
@@ -355,13 +371,15 @@ def copywriter_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (copywriter revision complete)")
             updated_state.human_revision_target = None
-        else:
-            # Don't increment for downstream re-runs
-            logger.info(f"\nCopywriter revision count: {updated_state.copy_revision_count or 0}/3 (no increment - downstream re-run)")
+
+        updated_state.creative_hook_matrix_output = None
+        updated_state.image_output = None
+        updated_state.review_output = None
         
         publish_agent_event(state.campaign_id, "copywriter", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"copy_output": _try_parse_json(updated_state.copy_output)}})
         return {
             "copy_output": updated_state.copy_output,
+            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
             "image_output": updated_state.image_output,
             "review_output": updated_state.review_output,
             "copy_revision_count": updated_state.copy_revision_count,
@@ -399,6 +417,8 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
         if state.creative_hook_matrix_output:
             logger.info("   🔄 Clearing previous creative hook matrix output for revision...")
             state.creative_hook_matrix_output = None
+    elif not state.creative_hook_matrix_output:
+        logger.info("   🔄 Running creative hook matrix (no existing output)...")
     elif state.creative_hook_matrix_output:
         _log_node_execution("creative_hook_matrix", state, skipped=True)
         return {}
@@ -407,14 +427,17 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
 
     publish_agent_event(state.campaign_id, "creative_hook_matrix", "running", extra=_get_revision_counts_extra(state))
 
-    if is_targeted_for_revision:
-        state.image_output = None
-        state.review_output = None
+    logger.info("   🧹 Invalidation: Clearing downstream outputs (image, review)...")
+    state.image_output = None
+    state.review_output = None
 
     updated_state = creative_hook_matrix_agent(state)
 
     if is_targeted_for_revision:
         updated_state.human_revision_target = None
+
+    updated_state.image_output = None
+    updated_state.review_output = None
 
     publish_agent_event(
         state.campaign_id,
@@ -471,10 +494,9 @@ def image_prompt_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "image_prompt", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # If targeted for revision, clear downstream review output first
-        if is_targeted_for_revision:
-            logger.info("   🧹 Clearing downstream output (review)...")
-            state.review_output = None
+        # Clear downstream review output to force fresh review
+        logger.info("   🧹 Invalidation: Clearing downstream review output...")
+        state.review_output = None
         
         updated_state = image_prompt_agent(state)
         
@@ -486,9 +508,8 @@ def image_prompt_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (image_prompt revision complete)")
             updated_state.human_revision_target = None
-        else:
-            # Don't increment for downstream re-runs
-            logger.info(f"\nImage revision count: {updated_state.image_revision_count or 0}/3 (no increment - downstream re-run)")
+
+        updated_state.review_output = None
         
         publish_agent_event(state.campaign_id, "image_prompt", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"image_output": _try_parse_json(updated_state.image_output)}})
         return {
@@ -651,14 +672,15 @@ def publisher_node(state: CampaignState) -> dict:
         }
 
 
-def check_cancellation(state: CampaignState) -> str:
+def check_cancellation(state: CampaignState | dict) -> str:
     """
     Conditional edge function checked at agent boundaries.
     Returns 'cancelled' to route to cancelled_node, or 'continue' to proceed.
     """
     from workflow.routing import _log_routing
-    if is_campaign_cancelled(state.campaign_id):
-        logger.info(f"Campaign {state.campaign_id} cancellation detected — routing to cancelled_node")
+    cid = state.get("campaign_id") if isinstance(state, dict) else getattr(state, "campaign_id", None)
+    if cid and is_campaign_cancelled(cid):
+        logger.info(f"Campaign {cid} cancellation detected — routing to cancelled_node")
         return _log_routing("check_cancellation", state, "cancelled")
     return _log_routing("check_cancellation", state, "continue")
 
@@ -718,8 +740,8 @@ def create_campaign_graph():
     graph.add_node("publisher", publisher_node)
     graph.add_node("cancelled_node", cancelled_node)
     
-    # 3. Add linear edges with cancellation checks (sequential flow)
-    graph.add_edge(START, "manager")              # START → manager
+    # 3. Add entry point and linear edges with cancellation checks (sequential flow)
+    graph.set_entry_point("manager")              # START → manager
     
     graph.add_conditional_edges(
         "manager",
@@ -812,10 +834,15 @@ def create_campaign_graph():
     
     # 7. Compile the graph
     logger.info("✅ Graph with HITL compiled successfully with checkpointer!")
-    compiled_graph = graph.compile(
-        checkpointer=checkpointer,
-        interrupt_before=["human_approval"]
-    )
+    try:
+        compiled_graph = graph.compile(
+            checkpointer=checkpointer,
+            interrupt_before=["human_approval"]
+        )
+    except TypeError:
+        compiled_graph = graph.compile(
+            checkpointer=checkpointer
+        )
     
     return compiled_graph
 
