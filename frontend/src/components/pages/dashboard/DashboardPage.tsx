@@ -17,7 +17,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import api from '../../../services/api';
+import api, { isEmosBrandVaultEnabled } from '../../../services/api';
 import { llmSettingsService } from '../../../services/llm-settings.service';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
 import TopNav from '../../shared/topNav/TopNav';
@@ -444,9 +444,9 @@ function DashboardContent() {
               />
               <ResponsiveStatCard
                 icon={Star}
-                label="Avg Review Score"
+                label={isEmosBrandVaultEnabled() ? "Avg Evaluator Score [EMOS v9]" : "Avg Review Score"}
                 value={metrics.avgReviewScore && metrics.avgReviewScore > 0 ? `${metrics.avgReviewScore}/100` : '—'}
-                trendLabel={metrics.totalReviewedCampaigns ? `out of ${metrics.totalReviewedCampaigns} campaigns` : 'No reviews yet'}
+                trendLabel={metrics.totalReviewedCampaigns ? `out of ${metrics.totalReviewedCampaigns} evaluated campaigns` : 'No evaluations yet'}
                 iconBg="rgba(245,158,11,0.12)"
                 iconColor="#F59E0B"
               />

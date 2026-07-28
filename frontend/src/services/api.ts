@@ -55,3 +55,34 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const isEmosBrandVaultEnabled = (): boolean => {
+  return import.meta.env.VITE_EMOS_BRAND_VAULT_ENABLED === 'true';
+};
+
+export const brandVaultApi = {
+  appendEvent: async (projectId: string, eventType: string, attributeKey: string, newVal: string, previousVal?: string) => {
+    if (!isEmosBrandVaultEnabled()) return null;
+    const response = await api.post(`/brand-vault/events`, {
+      projectId,
+      eventType,
+      attributeKey,
+      newVal,
+      previousVal,
+    });
+    return response.data;
+  },
+
+  createSnapshot: async (projectId: string) => {
+    if (!isEmosBrandVaultEnabled()) return null;
+    const response = await api.post(`/brand-vault/snapshots`, { projectId });
+    return response.data;
+  },
+
+  getContextContract: async (params: Record<string, string>) => {
+    if (!isEmosBrandVaultEnabled()) return null;
+    const response = await api.get(`/brand-vault/context-contract`, { params });
+    return response.data;
+  },
+};
+
