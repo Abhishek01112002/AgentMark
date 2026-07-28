@@ -42,7 +42,7 @@ const SupportContent: React.FC = () => {
     },
     {
       question: 'How does the Campaign Review score routing policy work?',
-      answer: 'Campaign copy is audited by the Independent Evaluator against strict quality and compliance metrics:\n• ≥80: Auto Approve (Highest quality; ready for distribution)\n• 65–79: Human Review (Solid copy; requires human approval in dashboard)\n• 50–64: Auto Revision (Copywriter automatically refines copy using evaluator feedback)\n• <50: Strategy + Copy Loop (Low score; returned to Strategy & Copywriter for structural overhaul)',
+      answer: 'Campaign copy and quality are audited by the Independent Evaluator against a threshold score of MIN_AGENT_SCORE = 75:\n• Score ≥ 75 & Policy Pass: AI approves copy and routes it directly to the Human Approval Gate (HITL).\n• Score < 75 or Policy Failure: Routes back to the specific failing agent for auto-revision (up to MAX_REVISIONS = 3 per agent).\n• Exhausted Revisions: If an agent reaches 3 revisions without passing, the workflow automatically escalates to Human Approval for manual review.\n• Mandatory HITL: 100% of campaigns require human approval prior to publishing; no automatic publishing occurs.',
     },
     {
       question: 'What is the Brand Vault and how do Context Contracts work?',

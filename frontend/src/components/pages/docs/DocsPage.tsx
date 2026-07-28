@@ -605,7 +605,7 @@ const sections: DocSection[] = [
               <Brain size={18} /> Independent Evaluator Score Routing
             </div>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Evaluates copy with prompt isolation. Score routing: ≥80 Auto Approve | 65–79 Human Review | 50–64 Auto Revision | &lt;50 Strategy + Copy Rewrite Loop.
+              Audits outputs with prompt isolation. Score ≥ 75 &amp; policy pass routes to Human Approval (HITL). Failing agents (score &lt; 75) auto-revise up to MAX_REVISIONS = 3 per agent. If revisions are exhausted, workflow escalates to Human Approval. 100% of campaigns require human approval before publishing.
             </p>
           </div>
         </div>
