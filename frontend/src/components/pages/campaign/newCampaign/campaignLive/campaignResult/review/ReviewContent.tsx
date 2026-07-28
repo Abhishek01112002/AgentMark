@@ -21,10 +21,10 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
   const fallbackScore = agentScores.length > 0
     ? Math.round((agentScores.reduce((sum, value) => sum + value, 0) / agentScores.length) * 10) / 10
     : 0;
-  const score = overall?.quality_score ?? data?.overall_quality_score ?? reviewScore ?? data?.score ?? fallbackScore;
-  const displayScore = Number(score) > 10 ? Number(score).toFixed(1) : Number(score).toFixed(1);
-  const displayScale = Number(score) > 10 ? '/100' : '/10';
-  const confidenceScore = Number(score) > 10 ? Number(score) / 10 : Number(score);
+  const normVal = Number(score) > 10 ? Number(score) : Number(score) * 10;
+  const displayScore = normVal.toFixed(1);
+  const displayScale = '/100';
+  const confidenceScore = normVal;
   const strengths = overall?.strengths || data?.strengths || [];
   const improvements = overall?.critical_improvements || data?.improvements || [];
   const compliance = data?.compliance || [];
