@@ -21,6 +21,7 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
   const fallbackScore = agentScores.length > 0
     ? Math.round((agentScores.reduce((sum, value) => sum + value, 0) / agentScores.length) * 10) / 10
     : 0;
+  const score = overall?.quality_score ?? data?.overall_quality_score ?? reviewScore ?? data?.score ?? fallbackScore;
   const normVal = Number(score) > 10 ? Number(score) : Number(score) * 10;
   const displayScore = normVal.toFixed(1);
   const displayScale = '/100';

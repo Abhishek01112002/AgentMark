@@ -24,7 +24,9 @@ export const ResultSidebar: React.FC = React.memo(() => {
     handleRequestRevision,
   } = useCampaignResultContext();
 
-  if (!campaign) return null;
+  const normQualityScore = (qualityScore !== null && qualityScore !== undefined)
+    ? (qualityScore > 10 ? qualityScore : qualityScore * 10)
+    : null;
 
   React.useEffect(() => {
     if (!showHumanReview || isMinimized) return;
@@ -154,9 +156,9 @@ export const ResultSidebar: React.FC = React.memo(() => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {qualityScore !== null && (
+            {normQualityScore !== null && (
               <span className="px-2.5 py-1 rounded-full text-xs font-bold mr-1" style={{ fontFamily: 'JetBrains Mono, monospace', background: 'rgba(78,222,163,0.12)', color: '#4edea3', border: '1px solid rgba(78,222,163,0.25)' }}>
-                {(qualityScore > 10 ? qualityScore : qualityScore * 10).toFixed(1)}/100
+                {normQualityScore.toFixed(1)}/100
               </span>
             )}
             {/* Minimize/Collapse Button */}
@@ -181,9 +183,7 @@ export const ResultSidebar: React.FC = React.memo(() => {
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2A2A38 transparent' }}>
 
           {/* TAB 1 — Review Scores */}
-          {drawerTab === 'scores' && (() => {
-            const normScore = qualityScore !== null ? (qualityScore > 10 ? qualityScore : qualityScore * 10) : null;
-            return (
+          {drawerTab === 'scores' && (
             <div className="p-6 space-y-5">
               {/* Overall Score Ring */}
               <div className="flex items-center gap-6 p-5 rounded-xl" style={{ background: '#111118', border: '1px solid #1e1e2b' }}>
@@ -192,17 +192,17 @@ export const ResultSidebar: React.FC = React.memo(() => {
                     <circle cx="44" cy="44" r="36" fill="none" stroke="#1e1e2b" strokeWidth="8" />
                     <circle
                       cx="44" cy="44" r="36" fill="none"
-                      stroke={normScore !== null && normScore >= 85 ? '#4edea3' : normScore !== null && normScore >= 70 ? '#FFA500' : '#F43F5E'}
+                      stroke={normQualityScore !== null && normQualityScore >= 85 ? '#4edea3' : normQualityScore !== null && normQualityScore >= 70 ? '#FFA500' : '#F43F5E'}
                       strokeWidth="8" strokeLinecap="round"
                       strokeDasharray={`${2 * Math.PI * 36}`}
-                      strokeDashoffset={`${2 * Math.PI * 36 * (1 - Math.min((normScore ?? 0), 100) / 100)}`}
+                      strokeDashoffset={`${2 * Math.PI * 36 * (1 - Math.min((normQualityScore ?? 0), 100) / 100)}`}
                       transform="rotate(-90 44 44)"
                       className="score-ring"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-xl font-bold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>
-                      {normScore !== null ? normScore.toFixed(1) : '—'}
+                      {normQualityScore !== null ? normQualityScore.toFixed(1) : '—'}
                     </span>
                     <span className="text-[9px]" style={{ color: '#4A4A5E' }}>/100</span>
                   </div>
@@ -210,11 +210,11 @@ export const ResultSidebar: React.FC = React.memo(() => {
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] uppercase tracking-wider mb-1" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>Overall Quality</p>
                   <p className="text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                    {normScore !== null && normScore >= 85
+                    {normQualityScore !== null && normQualityScore >= 85
                       ? 'Excellent — content meets all quality benchmarks.'
-                      : normScore !== null && normScore >= 70
+                      : normQualityScore !== null && normQualityScore >= 70
                       ? 'Good — minor improvements suggested below.'
-                      : normScore !== null
+                      : normQualityScore !== null
                       ? 'Needs revision — review issues before publishing.'
                       : 'Score calculating...'}
                   </p>
@@ -233,8 +233,9 @@ export const ResultSidebar: React.FC = React.memo(() => {
                     { key: 'copywriter', label: 'Copywriter', icon: 'edit_note' },
                     { key: 'image_prompt', label: 'Image Prompt', icon: 'image' },
                   ] as const).map(({ key, label, icon }) => {
-                    const rawScore = agentScores[key as keyof typeof agentScores];
-                    const score = rawScore !== null ? (rawScore > 10 ? rawScore : rawScore * 10) : null;
+                    const safeAgentScores = agentScores || { research: null, strategy: null, copywriter: null, image_prompt: null };
+                    const rawScore = safeAgentScores[key as keyof typeof safeAgentScores];
+                    const score = (rawScore !== null && rawScore !== undefined) ? (rawScore > 10 ? rawScore : rawScore * 10) : null;
                     const pct = score !== null ? score : 0;
                     const color = score === null ? '#4A4A5E' : score >= 85 ? '#4edea3' : score >= 70 ? '#FFA500' : '#F43F5E';
                     return (
