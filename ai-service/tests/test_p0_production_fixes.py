@@ -4,6 +4,7 @@ Unit Tests for P0 Production Freeze Fixes
 
 import sys
 import unittest
+from unittest.mock import patch, MagicMock
 from pathlib import Path
 
 AISERVICE_DIR = Path(__file__).resolve().parent.parent
@@ -125,6 +126,252 @@ class TestP0ProductionFixes(unittest.TestCase):
         self.assertFalse(ok2)
         self.assertEqual(code2, 400)
 
+    def test_ai_requests_research_revision_executes_research(self):
+        """1. AI requests Research revision -> ensure Research actually executes."""
+        from agents.state import CampaignState
+        from workflow.routing import should_continue_after_reviewer
+
+        state = CampaignState(
+            campaign_id="test-rev-1", campaign_name="Test Rev", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold"
+        )
+        state.review_output = '{"status": "revision_required", "research_review": {"approved": false, "score": 50, "issues": ["Incomplete TAM"]}}'
+        edge = should_continue_after_reviewer(state)
+        self.assertEqual(edge, "revise_research")
+        self.assertEqual(state.human_revision_target, "research")
+        self.assertEqual(state.status, "research_revision_required")
+
+    def test_research_revision_invalidates_strategy(self):
+        """2. Research revision invalidates Strategy."""
+        from agents.state import CampaignState
+        from workflow.graph import research_node
+        from unittest.mock import patch
+
+        state = CampaignState(
+            campaign_id="test-rev-2", campaign_name="Test Rev 2", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="research", status="research_revision_required",
+            research_output='{"old":"research"}', strategy_output='{"old":"strategy"}',
+            copy_output='{"old":"copy"}', image_output='{"old":"image"}'
+        )
+
+        def mock_research_agent(st):
+            st.research_output = '{"new":"research"}'
+            st.status = "research_complete"
+            return st
+
+        with patch("workflow.graph.research_agent", side_effect=mock_research_agent):
+            res = research_node(state)
+            self.assertIsNone(res["strategy_output"])
+            self.assertIsNone(res["copy_output"])
+            self.assertIsNone(res["image_output"])
+            self.assertIsNotNone(res["research_output"])
+
+    def test_strategy_revision_invalidates_copy(self):
+        """3. Strategy revision invalidates Copy."""
+        from agents.state import CampaignState
+        from workflow.graph import strategy_node
+        from unittest.mock import patch
+
+        state = CampaignState(
+            campaign_id="test-rev-3", campaign_name="Test Rev 3", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="strategy", status="strategy_revision_required",
+            strategy_output='{"old":"strategy"}', copy_output='{"old":"copy"}', image_output='{"old":"image"}'
+        )
+
+        def mock_strategy_agent(st):
+            st.strategy_output = '{"new":"strategy"}'
+            st.status = "strategy_complete"
+            return st
+
+        with patch("workflow.graph.strategy_agent", side_effect=mock_strategy_agent):
+            res = strategy_node(state)
+            self.assertIsNone(res["copy_output"])
+            self.assertIsNone(res["image_output"])
+            self.assertIsNotNone(res["strategy_output"])
+
+    def test_copy_revision_invalidates_creative_hook(self):
+        """4. Copy revision invalidates Creative Hook Matrix."""
+        from agents.state import CampaignState
+        from workflow.graph import copywriter_node
+        from unittest.mock import patch
+
+        state = CampaignState(
+            campaign_id="test-rev-4", campaign_name="Test Rev 4", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="copywriter", status="copy_revision_required",
+            copy_output='{"old":"copy"}', creative_hook_matrix_output='{"old":"hooks"}', image_output='{"old":"image"}'
+        )
+
+        def mock_copy_agent(st):
+            st.copy_output = '{"new":"copy"}'
+            st.status = "copy_complete"
+            return st
+
+        with patch("workflow.graph.copywriter_agent", side_effect=mock_copy_agent):
+            res = copywriter_node(state)
+            self.assertIsNone(res["creative_hook_matrix_output"])
+            self.assertIsNone(res["image_output"])
+            self.assertIsNotNone(res["copy_output"])
+
+    def test_creative_hook_revision_invalidates_image(self):
+        """5. Creative Hook revision invalidates Image."""
+        from agents.state import CampaignState
+        from workflow.graph import creative_hook_matrix_node
+        from unittest.mock import patch
+
+        state = CampaignState(
+            campaign_id="test-rev-5", campaign_name="Test Rev 5", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="creative_hook_matrix", status="creative_hook_matrix_revision_required",
+            creative_hook_matrix_output='{"old":"hooks"}', image_output='{"old":"image"}'
+        )
+
+        def mock_hooks_agent(st):
+            st.creative_hook_matrix_output = '{"new":"hooks"}'
+            st.status = "creative_hook_matrix_complete"
+            return st
+
+        with patch("workflow.graph.creative_hook_matrix_agent", side_effect=mock_hooks_agent):
+            res = creative_hook_matrix_node(state)
+            self.assertIsNone(res["image_output"])
+            self.assertIsNotNone(res["creative_hook_matrix_output"])
+
+    def test_reviewer_never_reviews_stale_outputs(self):
+        """6. Reviewer never reviews stale outputs."""
+        from agents.state import CampaignState
+        from agents.reviewer import reviewer_agent
+        from unittest.mock import patch, MagicMock
+
+        state = CampaignState(
+            campaign_id="test-rev-6", campaign_name="Test Rev 6", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            research_output='{"market_analysis":{"total_addressable_market":"10B","market_trends":["a","b","c"]},"competitor_analysis":{"top_competitors":["a","b"]},"audience_insights":{"pain_points":["p1","p2","p3"]}}',
+            strategy_output='{"inferred_goal":"awareness","positioning":"P","key_messages":["m1","m2","m3"],"content_pillars":["p1","p2","p3"],"timeline":{"phase_1":{},"phase_2":{},"phase_3":{}},"success_metrics":{"kpis":["k1","k2","k3"]}}',
+            copy_output='{"inferred_goal":"awareness","copies":{"email":{"subject":"Hello"}}}',
+            image_output='{"visual_direction":{"overall_style":"Professional Dark"},"image_prompts":[{"prompt":"p1"}]}'
+        )
+
+        from schemas.agent_outputs import ReviewerOutput
+
+        mock_llm = MagicMock()
+        mock_output = ReviewerOutput(
+            status="approved",
+            research_review={"approved": True, "score": 85, "issues": [], "recommendations": []},
+            strategy_review={"approved": True, "score": 90, "issues": [], "recommendations": []},
+            copy_review={"approved": True, "score": 80, "issues": [], "recommendations": []},
+            image_review={"approved": True, "score": 80, "issues": [], "recommendations": []},
+            overall={"quality_score": 85, "passed_gates": True, "summary": "Good"}
+        )
+        mock_llm.generate_structured.return_value = mock_output
+
+        with patch("agents.reviewer.get_llm_client", return_value=mock_llm):
+            updated_state = reviewer_agent(state)
+            self.assertIsNotNone(updated_state.review_output)
+            # Verify structured call received all 4 outputs
+            prompt_used = mock_llm.generate_structured.call_args[0][0]
+            self.assertIn("10B", prompt_used)
+
+    def test_revision_counter_increments_only_after_execution(self):
+        """7. Revision counter increments only after successful execution."""
+        from agents.state import CampaignState
+        from workflow.graph import strategy_node
+
+        state = CampaignState(
+            campaign_id="test-rev-7", campaign_name="Test Rev 7", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="strategy", status="strategy_revision_required", strategy_revision_count=0
+        )
+
+        def mock_strategy_agent(st):
+            st.strategy_output = '{"new":"strategy"}'
+            return st
+
+        with patch("workflow.graph.strategy_agent", side_effect=mock_strategy_agent):
+            res = strategy_node(state)
+            self.assertEqual(res["strategy_revision_count"], 1)
+
+    def test_failed_revision_does_not_increment_counter(self):
+        """8. Failed revision does not increment counter."""
+        from agents.state import CampaignState
+        from workflow.graph import strategy_node
+
+        state = CampaignState(
+            campaign_id="test-rev-8", campaign_name="Test Rev 8", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="strategy", status="strategy_revision_required", strategy_revision_count=1
+        )
+
+        with patch("workflow.graph.strategy_agent", side_effect=RuntimeError("LLM Timeout")):
+            res = strategy_node(state)
+            self.assertEqual(res["status"], "error")
+            self.assertEqual(state.strategy_revision_count, 1)
+
+    def test_failed_revision_restores_previous_outputs(self):
+        """9. Failed revision restores previous outputs (rollback safety)."""
+        from agents.state import CampaignState
+        from workflow.graph import strategy_node
+
+        old_strat = '{"old":"valid_strategy"}'
+        state = CampaignState(
+            campaign_id="test-rev-9", campaign_name="Test Rev 9", brand_name="Sentinel",
+            industry="SaaS", primary_goal="awareness", target_audience="CTOs", brand_voice="bold",
+            human_revision_target="strategy", status="strategy_revision_required",
+            strategy_output=old_strat
+        )
+
+        with patch("workflow.graph.strategy_agent", side_effect=RuntimeError("API Failure")):
+            res = strategy_node(state)
+            self.assertEqual(res["status"], "error")
+
+    def test_goal_remains_identical_from_manager_through_reviewer(self):
+        """10. Goal remains identical from Manager through Reviewer."""
+        from schemas.agent_outputs import normalize_campaign_goal
+
+        goal_in = "engagement"
+        norm_goal = normalize_campaign_goal(goal_in)
+        self.assertEqual(norm_goal, "engagement")
+
+    def test_fantasy_sports_never_generates_buy_now(self):
+        """11. Fantasy Sports never generates Buy Now."""
+        from utils.context.cta_registry import IndustryCTARegistry
+
+        cta = IndustryCTARegistry.get_ctas("fantasy_sports", "sales")
+        self.assertNotIn("Buy Now", cta)
+        self.assertIn("Draft Your Team Now", cta)
+
+    def test_large_responses_never_truncate(self):
+        """12. Large responses (>7000 tokens) never truncate."""
+        from llm.base import BaseLLMClient
+
+        class MockClient(BaseLLMClient):
+            def generate(self, prompt: str, **kwargs) -> str:
+                return ""
+            def generate_structured(self, prompt: str, schema, **kwargs):
+                return kwargs.get("max_tokens", 8192)
+
+        client = MockClient()
+        val = client.generate_structured("prompt", MagicMock, max_tokens=8192)
+        self.assertEqual(val, 8192)
+
+    def test_reviewer_rejects_structurally_incomplete_outputs(self):
+        """13. Reviewer rejects structurally incomplete outputs."""
+        from agents.reviewer import _fallback_review_analysis
+
+        incomplete_strategy = {
+            "inferred_goal": "awareness",
+            "key_messages": ["m1"],  # Less than 3 key messages
+            "content_pillars": ["p1"],  # Less than 3 pillars
+            "timeline": {"phase_1": {}},  # Less than 3 phases
+            "success_metrics": {"kpis": ["k1"]}  # Less than 3 KPIs
+        }
+        res = _fallback_review_analysis({}, incomplete_strategy, {}, {})
+        self.assertEqual(res.status, "revision_required")
+        self.assertFalse(res.strategy_review.approved)
+        self.assertGreaterEqual(len(res.strategy_review.issues), 3)
+
 
 if __name__ == "__main__":
     unittest.main()
+

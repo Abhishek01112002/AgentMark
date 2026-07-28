@@ -180,7 +180,10 @@ def normalize_campaign_goal(raw) -> str:
         "retention": "retention",
         "retain": "retention",
         "loyalty": "retention",
-        "engagement": "awareness",
+        "engagement": "engagement",
+        "engage": "engagement",
+        "interaction": "engagement",
+        "community": "engagement",
     }
     if normalized in exact_aliases:
         return exact_aliases[normalized]
@@ -191,6 +194,8 @@ def normalize_campaign_goal(raw) -> str:
         return "sales"
     if "retain" in normalized or "retention" in normalized or "loyalty" in normalized:
         return "retention"
+    if "engage" in normalized or "interact" in normalized or "community" in normalized:
+        return "engagement"
     if "aware" in normalized or "visibility" in normalized or "reach" in normalized:
         return "awareness"
 

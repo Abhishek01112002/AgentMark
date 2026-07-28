@@ -135,14 +135,22 @@ def _fallback_review_analysis(
 
     strategy_issues = []
     strategy_actions = []
-    valid_goals = {"awareness", "lead_gen", "sales", "retention"}
+    valid_goals = {"awareness", "lead_gen", "sales", "retention", "engagement"}
     if strategy_data.get("inferred_goal") not in valid_goals:
         strategy_issues.append(f"Strategy inferred_goal '{strategy_data.get('inferred_goal')}' is invalid")
-        strategy_actions.append("Set inferred_goal to awareness, lead_gen, sales, or retention")
+        strategy_actions.append("Set inferred_goal to awareness, lead_gen, sales, retention, or engagement")
     if len(strategy_data.get("key_messages", []) or []) < 3:
         strategy_issues.append("Strategy should include at least 3 key_messages")
     if len(strategy_data.get("content_pillars", []) or []) < 3:
         strategy_issues.append("Strategy should include at least 3 content_pillars")
+    timeline_dict = strategy_data.get("timeline", {}) or {}
+    if not isinstance(timeline_dict, dict) or len([k for k in timeline_dict.keys() if "phase" in str(k).lower()]) < 3:
+        strategy_issues.append("Strategy timeline must contain at least 3 distinct phases")
+        strategy_actions.append("Include phase_1, phase_2, and phase_3 in strategy timeline")
+    metrics_dict = strategy_data.get("success_metrics", {}) or {}
+    if not isinstance(metrics_dict, dict) or len(metrics_dict.get("kpis", []) or []) < 3:
+        strategy_issues.append("Strategy success_metrics must include at least 3 measurable KPIs")
+        strategy_actions.append("Add at least 3 specific KPIs to success_metrics")
 
     copy_issues = []
     copy_actions = []

@@ -3,6 +3,7 @@ Context Enricher — Derives strategic metadata, rankings, and inferred summarie
 """
 
 from typing import Any, Dict, List
+from pydantic import BaseModel, Field
 from utils.context.models import NormalizedCampaignContext
 
 
@@ -14,9 +15,6 @@ class EnrichedContext(BaseModel, frozen=True):
     voice_keywords: str = "authentic, natural"
     channel_summary_list: List[str] = Field(default_factory=tuple)
     summary_bullet_points: List[str] = Field(default_factory=tuple)
-
-
-from pydantic import BaseModel, Field
 
 
 class ContextEnricher:
@@ -31,13 +29,8 @@ class ContextEnricher:
         primary_pain = research.pain_points[0] if research.pain_points else "key challenges"
         primary_msg = strategy.key_messages[0] if strategy.key_messages else strategy.positioning
 
-        goal_map = {
-            "awareness": "Learn More, Discover, Explore, See How",
-            "lead_gen": "Get Free Access, Start Free Trial, Download, Sign Up, Get Started",
-            "sales": "Schedule Demo, Buy Now, Get Pricing, Request Quote, Book a Call",
-            "retention": "Upgrade Now, Explore Benefits, Renew, Access Exclusive Features"
-        }
-        goal_kw = goal_map.get(brand.primary_goal, "Get Started, Learn More")
+        from utils.context.cta_registry import IndustryCTARegistry
+        goal_kw = IndustryCTARegistry.get_ctas(brand.industry, brand.primary_goal)
 
         voice_map = {
             "professional": "industry, data, proven, expertise, results",

@@ -388,29 +388,8 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     # Initialize LLM client
     llm = get_llm_client()
 
-    ind_clean = (industry or "").lower().strip()
-    if ind_clean in ("gaming", "fantasy_sports", "sports", "entertainment", "gaming_entertainment"):
-        goal_keywords_map = {
-            "awareness": "Discover League, Explore Matches, See Leaderboards, Watch Live",
-            "lead_gen": "Create Free Account, Join League, Play Free Today, Draft Team",
-            "sales": "Draft Your Team Now, Enter Tournament, Play Now, Join Contest, Claim Bonus",
-            "retention": "Set Roster, Enter Weekly Contest, Challenge Friends, View Ranks"
-        }
-    elif ind_clean in ("e_commerce", "ecommerce", "retail", "d2c", "fashion"):
-        goal_keywords_map = {
-            "awareness": "Discover Collection, Explore Trends, View Lookbook",
-            "lead_gen": "Get 15% Off, Claim Discount Code, Join VIP Club",
-            "sales": "Shop Now, Claim Offer, Buy Now, Get Yours Today",
-            "retention": "Shop New Arrivals, Unlock Rewards, Redeem Points"
-        }
-    else:
-        goal_keywords_map = {
-            "awareness": "Learn More, Discover, Explore, See How",
-            "lead_gen": "Get Free Access, Start Free Trial, Download, Sign Up, Get Started",
-            "sales": "Schedule Demo, Get Pricing, Request Quote, Book a Call, Get Started",
-            "retention": "Upgrade Now, Explore Benefits, Renew, Access Exclusive Features"
-        }
-    goal_keywords = goal_keywords_map.get(inferred_goal, "Get Started, Learn More")
+    from utils.context.cta_registry import IndustryCTARegistry
+    goal_keywords = IndustryCTARegistry.get_ctas(industry, inferred_goal)
 
     # Brand voice keywords for the prompt
     voice_keywords_map = {
