@@ -369,6 +369,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     research_foundation.get("competitor_analysis", {})
 
     pain_points = audience_insights.get("pain_points", [])
+    buyer_objections = audience_insights.get("buyer_objections", []) or audience_insights.get("objections", [])
     motivations = audience_insights.get("motivations", [])
     market_trends = market_analysis.get("market_trends", [])
     growth_rate = market_analysis.get("growth_rate", "")
@@ -457,6 +458,52 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     industry = getattr(state, "industry", None) or "other"
     primary_goal = getattr(state, "primary_goal", None) or "awareness"
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
+
+    # ========== STEP 3.5: POPULATE CAMPAIGN INTELLIGENCE OBJECT (CIO) ==========
+    primary_objection = buyer_objections[0] if (isinstance(buyer_objections, list) and buyer_objections) else (
+        pain_points[0] if pain_points else "Risk of integration disruption"
+    )
+    positioning_moat = positioning or competitive_advantage or f"Unmatched ROI for {brand_name}"
+    stage = getattr(state, "buying_stage", None) or "consideration"
+
+    if not state.campaign_intelligence_object:
+        from schemas.agent_outputs import CampaignIntelligenceObject
+        cio_model = CampaignIntelligenceObject(
+            campaign_name=campaign_name,
+            brand_name=brand_name,
+            industry=industry,
+            buying_stage=stage,
+            primary_goal=primary_goal,
+            target_icp=target_audience,
+            primary_pain_points=pain_points if isinstance(pain_points, list) else [],
+            buyer_objections=[primary_objection],
+            positioning_moat=positioning_moat,
+            key_messages=key_messages if isinstance(key_messages, list) else [],
+            recommended_channels=channels if isinstance(channels, list) else [],
+            stage_appropriate_cta=goal_keywords,
+        )
+        state.campaign_intelligence_object = cio_model.model_dump()
+
+    # Append Mandatory Copywriting Constraints
+    mandatory_marketing_constraints = (
+        "\n\n" + "="*80 + "\n"
+        "🚨 MANDATORY COPYWRITING CONSTRAINTS (STRICT COMPLIANCE REQUIRED):\n"
+        f"1. CORE BUYER OBJECTION TO NEUTRALIZE: You MUST explicitly address: \"{primary_objection}\".\n"
+        f"2. COMPETITIVE POSITIONING MOAT: Highlight this unique moat: \"{positioning_moat}\".\n"
+        "3. STRICTLY FORBIDDEN CLICHÉ PHRASES: Do NOT use:\n"
+        "   - \"In today's fast-paced world\"\n"
+        "   - \"Game-changer\" or \"Revolutionary\"\n"
+        "   - \"Unlock your potential\" or \"Seamlessly\"\n"
+        "   - \"Transform your business\"\n"
+        "4. PLATFORM-NATIVE HOOK CONSTRAINTS:\n"
+        "   - LINKEDIN: Line 1 MUST be a bold pattern-interrupt hook. Use short executive paragraphs.\n"
+        "   - INSTAGRAM: Emphasize visual narrative, emotion, and community triggers.\n"
+        "   - GOOGLE ADS: Include punchy search-intent headlines (<30 chars) with high-conversion CTAs.\n"
+        "   - EMAIL: Subject line MUST be curiosity/pain driven and under 50 characters.\n"
+        f"5. STAGE-APPROPRIATE CTA: Use this specific CTA direction: \"{goal_keywords}\".\n"
+        + "="*80
+    )
+    human_feedback_section = human_feedback_section + mandatory_marketing_constraints
 
     # Load copywriter prompt and format with all campaign data
     prompt = load_prompt(

@@ -372,6 +372,105 @@ class TestP0ProductionFixes(unittest.TestCase):
         self.assertGreaterEqual(len(res.strategy_review.issues), 3)
 
 
+    def test_reviewer_v2_hard_rejection_on_forbidden_phrases(self):
+        """14. Reviewer V2 hard rejection triggers if copy contains forbidden AI tropes."""
+        from agents.reviewer import _fallback_review_analysis
+
+        bad_copy = {
+            "inferred_goal": "awareness",
+            "copies": {
+                "email": {"subject": "In today's fast-paced world, unlock your potential with our revolutionary product."}
+            }
+        }
+        res = _fallback_review_analysis({}, {}, bad_copy, {})
+        self.assertEqual(res.status, "revision_required")
+        self.assertFalse(res.copy_review.approved)
+        self.assertTrue(any("forbidden AI clichés" in issue for issue in res.copy_review.issues))
+
+    def test_reviewer_v2_hard_rejection_on_saas_buy_now_cta(self):
+        """15. Reviewer V2 hard rejection triggers if B2B SaaS uses Buy Now CTA."""
+        from agents.reviewer import _fallback_review_analysis
+
+        saas_copy = {
+            "industry": "saas",
+            "inferred_goal": "sales",
+            "copies": {
+                "linkedin": {"headline": "Buy Now to get enterprise cloud software."}
+            }
+        }
+        res = _fallback_review_analysis({}, {}, saas_copy, {})
+        self.assertEqual(res.status, "revision_required")
+        self.assertTrue(any("Buy Now" in issue for issue in res.copy_review.issues))
+
+    def test_contextual_cta_matches_buying_stage(self):
+        """16. Contextual CTA registry matches CTAs to buying stage (TOFU vs BOFU)."""
+        from utils.context.cta_registry import IndustryCTARegistry
+
+        tofu_cta = IndustryCTARegistry.get_ctas("saas", "awareness", stage="awareness")
+        bofu_cta = IndustryCTARegistry.get_ctas("saas", "sales", stage="decision")
+
+        self.assertIn("Benchmark Report", tofu_cta)
+        self.assertIn("Architecture Review", bofu_cta)
+
+    def test_cio_initialization_preserves_objections_and_moat(self):
+        """17. CampaignIntelligenceObject preserves primary buyer objection and positioning moat."""
+        from schemas.agent_outputs import CampaignIntelligenceObject
+
+        cio = CampaignIntelligenceObject(
+            campaign_name="FinOps Audit",
+            brand_name="CloudSentinel",
+            industry="saas",
+            buying_stage="consideration",
+            target_icp="Fortune 500 CTO",
+            buyer_objections=["Fear of production downtime"],
+            positioning_moat="Zero-downtime read-only optimization"
+        )
+        self.assertEqual(cio.buyer_objections[0], "Fear of production downtime")
+        self.assertEqual(cio.positioning_moat, "Zero-downtime read-only optimization")
+
+    def test_copywriter_receives_mandatory_objection_constraint(self):
+        """18. Copywriter agent injects mandatory objection constraint into LLM prompt."""
+        from agents.state import CampaignState
+        from agents.copywriter import copywriter_agent
+
+        state = CampaignState(
+            campaign_id="test-cio-18", campaign_name="Objection Test", brand_name="CloudSentinel",
+            industry="saas", primary_goal="sales", target_audience="CTOs", brand_voice="professional",
+            research_output='{"audience_insights":{"buyer_objections":["Cloud migration disruption"]}}',
+            strategy_output='{"positioning":"Zero Downtime FinOps","research_foundation":{"audience_insights":{"buyer_objections":["Cloud migration disruption"]}}}'
+        )
+
+        mock_llm = MagicMock()
+        mock_output = MagicMock()
+        mock_output.model_dump.return_value = {"status": "copy_complete"}
+        mock_llm.generate_structured.return_value = mock_output
+
+        with patch("agents.copywriter.get_llm_client", return_value=mock_llm):
+            updated_state = copywriter_agent(state)
+            self.assertIsNotNone(updated_state.campaign_intelligence_object)
+            prompt_used = mock_llm.generate_structured.call_args[0][0]
+            self.assertIn("Cloud migration disruption", prompt_used)
+            self.assertIn("Zero Downtime FinOps", prompt_used)
+
+    def test_enterprise_cloud_finops_scenario_rejection(self):
+        """19. Enterprise Cloud FinOps scenario rejects generic fluff."""
+        from agents.reviewer import _fallback_review_analysis
+
+        fluff_copy = {
+            "industry": "saas",
+            "copies": {"linkedin": {"headline": "Transform your business with revolutionary AI cloud tools."}}
+        }
+        res = _fallback_review_analysis({}, {}, fluff_copy, {})
+        self.assertEqual(res.status, "revision_required")
+
+    def test_fantasy_sports_retention_scenario(self):
+        """20. Fantasy Sports retention receives stage-aware reactivation CTAs."""
+        from utils.context.cta_registry import IndustryCTARegistry
+
+        retention_cta = IndustryCTARegistry.get_ctas("fantasy_sports", "retention", stage="retention")
+        self.assertIn("Set Weekly Roster", retention_cta)
+
+
 if __name__ == "__main__":
     unittest.main()
 

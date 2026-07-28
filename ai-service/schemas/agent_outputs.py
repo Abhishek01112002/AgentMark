@@ -4,6 +4,63 @@ from pydantic import BaseModel, Field, field_validator
 from typing import List, Dict, Optional, Literal, Any
 
 
+# ==================== CAMPAIGN INTELLIGENCE OBJECT (CIO) ====================
+
+class CampaignIntelligenceObject(BaseModel):
+    """
+    Campaign Intelligence Object (CIO)
+    Central memory layer preserving business context, ICP, personas,
+    objections, and messaging rules across all LangGraph agent nodes.
+    """
+    campaign_name: str = ""
+    brand_name: str = ""
+    industry: str = ""
+    acv_tier: str = "mid_market"  # self_serve ($), mid_market ($$), enterprise ($$$)
+    buying_stage: str = "consideration"  # awareness (TOFU), consideration (MOFU), decision (BOFU), retention
+    primary_goal: str = "awareness"  # awareness, lead_gen, sales, retention, engagement
+    
+    target_icp: str = ""
+    target_persona_role: str = ""
+    primary_pain_points: List[str] = Field(default_factory=list)
+    buyer_objections: List[str] = Field(default_factory=list)
+    
+    positioning_moat: str = ""
+    value_proposition: str = ""
+    key_messages: List[str] = Field(default_factory=list)
+    forbidden_words: List[str] = Field(default_factory=lambda: [
+        "in today's fast-paced world", "game-changer", "revolutionary", 
+        "unlock your potential", "synergy", "seamlessly", "transform your business"
+    ])
+    
+    recommended_channels: List[str] = Field(default_factory=list)
+    stage_appropriate_cta: str = ""
+    visual_theme_direction: str = ""
+
+
+# ==================== REVIEWER V2 SCHEMAS ====================
+
+class MarketingQualityScores(BaseModel):
+    strategic_alignment: int = Field(default=8, ge=0, le=10)
+    icp_relevance: int = Field(default=8, ge=0, le=10)
+    pain_objection_coverage: int = Field(default=8, ge=0, le=10)
+    competitive_differentiation: int = Field(default=8, ge=0, le=10)
+    buyer_psychology_hook: int = Field(default=8, ge=0, le=10)
+    cta_friction_match: int = Field(default=8, ge=0, le=10)
+    brand_voice_compliance: int = Field(default=8, ge=0, le=10)
+    platform_native_quality: int = Field(default=8, ge=0, le=10)
+    conversion_probability: int = Field(default=8, ge=0, le=10)
+    proof_credibility: int = Field(default=8, ge=0, le=10)
+
+
+class ReviewerV2Output(BaseModel):
+    status: str = "approved"  # approved, revision_required
+    overall_marketing_score: int = Field(default=80, ge=0, le=100)
+    scores: MarketingQualityScores = Field(default_factory=MarketingQualityScores)
+    hard_rejections_triggered: List[str] = Field(default_factory=list)
+    critical_marketing_flaws: List[str] = Field(default_factory=list)
+    actionable_recommendations: List[str] = Field(default_factory=list)
+
+
 # ==================== CHANNEL ENUM ====================
 
 class Channel(str, Enum):

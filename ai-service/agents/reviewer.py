@@ -154,6 +154,25 @@ def _fallback_review_analysis(
 
     copy_issues = []
     copy_actions = []
+    copy_text_full = json.dumps(copy_data).lower()
+    
+    # HARD REJECTION CHECK 1: Forbidden Cliché AI Phrases
+    forbidden_tropes = [
+        "in today's fast-paced world", "game-changer", "revolutionary", 
+        "unlock your potential", "synergy", "transform your business"
+    ]
+    found_tropes = [f for f in forbidden_tropes if f in copy_text_full]
+    if found_tropes:
+        copy_issues.append(f"Hard Rejection Triggered: Copy contains forbidden AI clichés: {found_tropes}")
+        copy_actions.append("Remove all overused AI buzzwords and rewrite with authentic, concrete buyer messaging")
+
+    # HARD REJECTION CHECK 2: High Friction CTA for B2B SaaS
+    industry_clean = str(copy_data.get("industry") or strategy_data.get("industry") or "").lower()
+    if "saas" in industry_clean or "software" in industry_clean:
+        if "buy now" in copy_text_full:
+            copy_issues.append("Hard Rejection Triggered: Enterprise SaaS copy uses high-friction 'Buy Now' CTA")
+            copy_actions.append("Replace 'Buy Now' with stage-appropriate CTA like 'Book Architecture Review' or 'Start Trial'")
+
     if strategy_data.get("inferred_goal") and copy_data.get("inferred_goal") and strategy_data.get("inferred_goal") != copy_data.get("inferred_goal"):
         copy_issues.append(
             f"Copy inferred_goal '{copy_data.get('inferred_goal')}' doesn't match strategy inferred_goal '{strategy_data.get('inferred_goal')}'"

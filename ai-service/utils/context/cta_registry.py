@@ -1,14 +1,45 @@
 """
-Industry CTA Registry
-Provides extensible, domain-tailored Call-To-Action (CTA) recommendations across industries and goals.
-Prevents generic B2B fallbacks ("Buy Now", "Schedule Demo") in B2C or specialized sectors.
+Contextual & Stage-Aware CTA Registry
+Provides domain-tailored and buying-stage-aware Call-To-Action (CTA) recommendations.
+Prevents high-friction B2B fallbacks ("Buy Now", "Schedule Demo") on cold top-of-funnel ads.
 """
 
-from typing import Dict
+from typing import Dict, Optional
 
 
 class IndustryCTARegistry:
-    """Registry mapping industry sectors and goals to domain-specific CTA recommendations."""
+    """Registry mapping industry sectors, buying stages, and channels to contextual CTAs."""
+
+    _STAGE_MAP: Dict[str, Dict[str, str]] = {
+        "awareness": {
+            "saas": "Download Benchmark Report, Read Industry Guide, Explore Interactive Architecture",
+            "fantasy_sports": "See Live Leaderboards, Watch Match Preview, Explore Contests",
+            "gaming": "Watch Gameplay Trailer, Read Lore Guide, Explore Universe",
+            "healthcare": "Read Health Guide, Check Symptoms, Explore Care Options",
+            "e_commerce": "View Lookbook, Discover Trends, Explore Collection",
+        },
+        "consideration": {
+            "saas": "Claim Read-Only Audit, Try 14-Day Sandbox, Watch 5-Min Product Tour",
+            "fantasy_sports": "Create Free Account, Join League, Play Free Contest",
+            "gaming": "Join Closed Beta, Pre-Register Now, Claim Free Starter Item",
+            "healthcare": "Schedule Consultation, Check Eligibility, Talk to Specialist",
+            "e_commerce": "Claim 15% Welcome Discount, Join Loyalty Club, Save Selection",
+        },
+        "decision": {
+            "saas": "Book Architecture Review, Request Custom Proposal, Start Enterprise Trial",
+            "fantasy_sports": "Draft Your Team Now, Enter Weekly Tournament, Claim Deposit Match",
+            "gaming": "Play Free Now, Download Game, Unlock Early Access",
+            "healthcare": "Book Appointment, Consult Specialist Now, Start Care Plan",
+            "e_commerce": "Shop Now, Claim Offer, Get Express Delivery Today",
+        },
+        "retention": {
+            "saas": "Explore Beta Features, Unlock Advanced Analytics, Invite Team Members",
+            "fantasy_sports": "Set Weekly Roster, Challenge Friends, Enter Playoff Contest",
+            "gaming": "Join Battle Pass Season, Battle Guild Rivals, Claim Event Chest",
+            "healthcare": "Manage Appointments, Access Patient Portal, Renew Prescription",
+            "e_commerce": "Shop VIP Early Access, Redeem Rewards Points, View New Arrivals",
+        },
+    }
 
     _REGISTRY: Dict[str, Dict[str, str]] = {
         "fantasy_sports": {
@@ -40,11 +71,11 @@ class IndustryCTARegistry:
             "engagement": "Watch Now, Listen Now, Stream Live, Share Playlist",
         },
         "saas": {
-            "awareness": "Learn More, Explore Platform, See Features",
-            "lead_gen": "Start Free Trial, Download Whitepaper, Register for Webinar",
-            "sales": "Book Demo, Schedule Demo, Request Quote, Get Pricing",
+            "awareness": "Download Cloud Cost Benchmark, Explore Architecture Guide, Learn More",
+            "lead_gen": "Claim Read-Only Cloud Audit, Start Free Trial, Download Case Study",
+            "sales": "Book Architecture Review, Schedule Demo, Request Quote, Get Pricing",
             "retention": "Upgrade Plan, Access Beta Features, View Analytics",
-            "engagement": "Book Demo, Start Trial, Try Interactive Tour",
+            "engagement": "Try Interactive Tour, Book Architecture Review, Start Free Sandbox",
         },
         "healthcare": {
             "awareness": "Learn About Care, Explore Symptoms, Read Health Guide",
@@ -83,13 +114,18 @@ class IndustryCTARegistry:
     }
 
     @classmethod
-    def get_ctas(cls, industry: str, goal: str) -> str:
+    def get_ctas(cls, industry: str, goal: str, stage: Optional[str] = None) -> str:
         """
-        Get domain-tailored CTAs for a given industry and campaign goal.
-        Falls back gracefully to clean defaults if industry is unlisted.
+        Get domain-tailored and stage-aware CTAs.
         """
         ind_clean = (industry or "").lower().strip().replace(" ", "_").replace("-", "_")
         canonical_ind = cls._ALIAS_MAP.get(ind_clean, ind_clean)
+
+        stage_clean = (stage or "").lower().strip()
+        if stage_clean and stage_clean in cls._STAGE_MAP:
+            stage_entry = cls._STAGE_MAP[stage_clean].get(canonical_ind)
+            if stage_entry:
+                return stage_entry
 
         industry_entry = cls._REGISTRY.get(canonical_ind)
         if not industry_entry:
