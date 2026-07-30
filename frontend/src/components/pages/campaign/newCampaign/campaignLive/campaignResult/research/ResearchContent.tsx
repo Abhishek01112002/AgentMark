@@ -93,8 +93,10 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
       let qtype = src.query_type;
       const text = `${src.title} ${src.snippet} ${src.url}`.toLowerCase();
       
-      if (!qtype || qtype === 'market' || qtype === 'competitor') {
-        if (brandDnaData?.source_url && (src.url === brandDnaData.source_url || (cleanBrandDomain && src.domain.includes(cleanBrandDomain)))) {
+      if (qtype === 'official_website' || (brandDnaData?.source_url && (src.url === brandDnaData.source_url || (cleanBrandDomain && src.domain.includes(cleanBrandDomain))))) {
+        qtype = 'official_website';
+      } else if (!qtype || qtype === 'market' || qtype === 'competitor') {
+        if (cleanBrandDomain && (text.includes(cleanBrandDomain) || text.includes('official site') || text.includes('official website') || text.includes('homepage'))) {
           qtype = 'official_website';
         } else if (text.includes('reddit') || text.includes('complaint') || text.includes('review') || text.includes('pain') || text.includes('customer') || text.includes('g2') || text.includes('problem')) {
           qtype = 'customer_voice';
@@ -436,7 +438,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Audience Insights (Full Width) */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(245,158,11,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(24,20,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.15)' }}>
+        <div id="research-audience" className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(24,20,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.15)' }}>
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-[#F97316]/2 pointer-events-none" />
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
           <div className="flex items-center gap-2.5 mb-5">
@@ -502,7 +504,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Customer Voice & Reddit Pain Points */}
-        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1114] to-[#111118] border border-[#F43F5E]/20 overflow-hidden shadow-[0_0_30px_rgba(244,63,94,0.05)]">
+        <div id="research-customer-voice" className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1114] to-[#111118] border border-[#F43F5E]/20 overflow-hidden shadow-[0_0_30px_rgba(244,63,94,0.05)]">
           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#F43F5E]/20 via-[#F43F5E]/80 to-[#F43F5E]/20" />
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F43F5E]/4 via-transparent to-transparent pointer-events-none" />
           <div className="relative">
@@ -521,19 +523,27 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {displayCustomerVoice.map((quote: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-4 bg-[#000000]/40 border border-[#2A2A38]">
-                  <p className="text-sm text-[#E4E1E9] leading-relaxed">
-                    {quote.startsWith('"') ? quote : `"${quote}"`}
-                  </p>
-                </div>
-              ))}
+              {displayCustomerVoice.map((quote: string, idx: number) => {
+                const text = quote.startsWith('"') ? quote : `"${quote}"`;
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => copyToClipboard(text, 'Quote')}
+                    className="group rounded-lg p-4 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#F43F5E]/30 hover:bg-[#000000]/60 transition-all"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm text-[#E4E1E9] leading-relaxed">{text}</p>
+                      <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
         {/* Competitor Vulnerability & Counter-Angles */}
-        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1711] to-[#111118] border border-[#F59E0B]/20 overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.05)]">
+        <div id="research-vulnerabilities" className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1711] to-[#111118] border border-[#F59E0B]/20 overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.05)]">
           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#F59E0B]/20 via-[#F59E0B]/80 to-[#F59E0B]/20" />
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-transparent pointer-events-none" />
           <div className="relative">
@@ -553,8 +563,15 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             </div>
             <div className="space-y-2">
               {displayCompetitorVulns.map((vuln: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38]">
-                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{vuln}</p>
+                <div
+                  key={idx}
+                  onClick={() => copyToClipboard(vuln, 'Vulnerability')}
+                  className="group rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#F59E0B]/30 hover:bg-[#000000]/60 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm text-[#E4E1E9] leading-relaxed">{vuln}</p>
+                    <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -562,7 +579,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Proven Ad Hooks & Visual Angles */}
-        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1120] to-[#111118] border border-[#A855F7]/20 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.05)]">
+        <div id="research-ad-hooks" className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-gradient-to-br from-[#1A1120] to-[#111118] border border-[#A855F7]/20 overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.05)]">
           <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#A855F7]/20 via-[#A855F7]/80 to-[#A855F7]/20" />
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#A855F7]/4 via-transparent to-transparent pointer-events-none" />
           <div className="relative">
@@ -582,8 +599,15 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {displayAdHooks.map((hook: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38]">
-                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{hook}</p>
+                <div
+                  key={idx}
+                  onClick={() => copyToClipboard(hook, 'Hook')}
+                  className="group rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#A855F7]/30 hover:bg-[#000000]/60 transition-all"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm text-[#E4E1E9] leading-relaxed">{hook}</p>
+                    <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -638,7 +662,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
         {/* Web Sources & Grounding Intelligence */}
         {classifiedSources.length > 0 && (
-          <div className="lg:col-span-2" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: 'none', position: 'relative' }}>
+          <div id="research-sources" className="lg:col-span-2" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: 'none', position: 'relative' }}>
             <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.15), rgba(129,140,248,0.25), rgba(99,102,241,0.15), transparent)' }} />
 
             {/* Section Header */}
