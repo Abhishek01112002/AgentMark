@@ -28,7 +28,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
   const marketOpportunities = data?.market_opportunities || [];
   const recommendedApproach = data?.recommended_approach || '';
 
-  const literasSources: SourceMeta[] = data?.literas_sources ?? data?.tavily_sources ?? [];
+  const rawSources: SourceMeta[] = data?.literas_sources ?? data?.tavily_sources ?? [];
   const searchStatus = data?.search_status;
 
   const [activeFilter, setActiveFilter] = useState<"all"|"market"|"competitor"|"official_website"|"customer_voice"|"ad_hooks">("all");
@@ -72,8 +72,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
   const languageStyle = audienceInsights?.language_style || audienceInsights?.languageStyle || 'Professional, data-driven, concise, focusing on outcomes and efficiency.';
 
-  // Grounded Brand DNA Data Extractor with Fallback to Inferred Brand Website
-  const officialWebsiteSource = literasSources.find(s => s.query_type === 'official_website');
+  // Grounded Brand DNA Data Extractor
+  const officialWebsiteSource = rawSources.find(s => s.query_type === 'official_website');
   const brandName = campaign?.brandName || data?.brand_name || campaign?.name || 'Official Brand';
   const cleanBrandDomain = brandName.toLowerCase().replace(/[^a-z0-9]/g, '');
   const inferredUrl = cleanBrandDomain ? `https://${cleanBrandDomain}.com` : 'https://official-brand.com';
@@ -86,7 +86,26 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
     extracted_hero_text: `Grounded Brand Intelligence for ${brandName}. Autonomous SSRF-Guarded Website Ingestion Engine extracted core brand positioning, product value propositions, and market differentiation.`
   });
 
-  // Always populating high-value strategic cards (Customer Voice, Competitor Vulnerabilities, Proven Ad Hooks)
+  // Intelligent Source Type Classifier for Multi-Vertical Sources
+  const classifiedSources = React.useMemo(() => {
+    return rawSources.map((src) => {
+      let qtype = src.query_type;
+      const text = `${src.title} ${src.snippet} ${src.url}`.toLowerCase();
+      
+      if (!qtype || qtype === 'market' || qtype === 'competitor') {
+        if (brandDnaData?.source_url && (src.url === brandDnaData.source_url || (cleanBrandDomain && src.domain.includes(cleanBrandDomain)))) {
+          qtype = 'official_website';
+        } else if (text.includes('reddit') || text.includes('complaint') || text.includes('review') || text.includes('pain') || text.includes('customer') || text.includes('g2') || text.includes('problem')) {
+          qtype = 'customer_voice';
+        } else if (text.includes('hook') || text.includes('ad ') || text.includes('creative') || text.includes('ctr') || text.includes('headline') || text.includes('convert')) {
+          qtype = 'ad_hooks';
+        }
+      }
+      return { ...src, query_type: qtype || 'market' };
+    });
+  }, [rawSources, brandDnaData, cleanBrandDomain]);
+
+  // High-Value Strategic Card Fallbacks
   const displayCustomerVoice = (Array.isArray(customerVoice) && customerVoice.length > 0)
     ? customerVoice
     : (Array.isArray(painPoints) && painPoints.length > 0
@@ -124,8 +143,16 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         `Eliminate shadow IT risks with enterprise-sanctioned, security-hardened middleware.`
       ];
 
-  const marketSources = literasSources.filter(s => s.query_type === 'market');
-  const competitorSources = literasSources.filter(s => s.query_type === 'competitor');
+  const categoryCounts = React.useMemo(() => {
+    return {
+      all: classifiedSources.length,
+      official_website: classifiedSources.filter(s => s.query_type === 'official_website').length,
+      customer_voice: classifiedSources.filter(s => s.query_type === 'customer_voice').length,
+      competitor: classifiedSources.filter(s => s.query_type === 'competitor').length,
+      ad_hooks: classifiedSources.filter(s => s.query_type === 'ad_hooks').length,
+      market: classifiedSources.filter(s => s.query_type === 'market').length,
+    };
+  }, [classifiedSources]);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -562,15 +589,15 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
           </div>
         )}
 
-        {/* Web Sources & Grounding Sources */}
-        {literasSources.length > 0 && (
+        {/* Web Sources & Grounding Intelligence */}
+        {classifiedSources.length > 0 && (
           <div className="lg:col-span-2" style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: 'none', position: 'relative' }}>
             <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.15), rgba(129,140,248,0.25), rgba(99,102,241,0.15), transparent)' }} />
 
             {/* Section Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justify: 'center', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </div>
                 <div>
@@ -584,38 +611,42 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               </div>
             </div>
 
-            {/* Filter bar */}
+            {/* Filter bar with Count Badges */}
             <div style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '14px 18px', marginBottom: 16, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px 24px', boxShadow: '0 1px 20px rgba(0,0,0,0.15)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                  <span style={{ fontSize: 12, color: '#8B8B9E', fontFamily: "'Inter', sans-serif" }}><strong style={{ color: '#F1F1F3', fontWeight: 600 }}>{literasSources.length}</strong> Total Sources</span>
+                  <span style={{ fontSize: 12, color: '#8B8B9E', fontFamily: "'Inter', sans-serif" }}><strong style={{ color: '#F1F1F3', fontWeight: 600 }}>{classifiedSources.length}</strong> Total Sources</span>
                 </div>
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', flexWrap: 'wrap', gap: 4, padding: 3, background: 'rgba(0,0,0,0.2)', borderRadius: 9, border: '1px solid rgba(255,255,255,0.03)' }}>
-                {(["all", "official_website", "customer_voice", "competitor", "ad_hooks", "market"] as const).map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    style={{
-                      padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: activeFilter === f ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(129,140,248,0.1))' : 'transparent',
-                      color: activeFilter === f ? '#E0E7FF' : '#6B6B80',
-                      fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500,
-                      transition: 'all 0.25s ease',
-                      whiteSpace: 'nowrap',
-                      boxShadow: activeFilter === f ? '0 1px 4px rgba(99,102,241,0.15)' : 'none',
-                    }}
-                  >
-                    {f === "all" ? "All" : f === "official_website" ? "Official Website" : f === "customer_voice" ? "Customer Voice" : f === "competitor" ? "Competitor" : f === "ad_hooks" ? "Ad Hooks" : "Market"}
-                  </button>
-                ))}
+                {(["all", "official_website", "customer_voice", "competitor", "ad_hooks", "market"] as const).map(f => {
+                  const count = categoryCounts[f];
+                  const label = f === "all" ? "All" : f === "official_website" ? "Official Website" : f === "customer_voice" ? "Customer Voice" : f === "competitor" ? "Competitor" : f === "ad_hooks" ? "Ad Hooks" : "Market";
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setActiveFilter(f)}
+                      style={{
+                        padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                        background: activeFilter === f ? 'linear-gradient(135deg, rgba(99,102,241,0.25), rgba(129,140,248,0.1))' : 'transparent',
+                        color: activeFilter === f ? '#E0E7FF' : '#6B6B80',
+                        fontFamily: "'Inter', sans-serif", fontSize: 11, fontWeight: 500,
+                        transition: 'all 0.25s ease',
+                        whiteSpace: 'nowrap',
+                        boxShadow: activeFilter === f ? '0 1px 4px rgba(99,102,241,0.15)' : 'none',
+                      }}
+                    >
+                      {label} {count > 0 && <span style={{ opacity: 0.7, fontSize: 10, marginLeft: 4 }}>({count})</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Source Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {literasSources
+              {classifiedSources
                 .filter(s => activeFilter === "all" || s.query_type === activeFilter)
                 .map((src, i) => {
                   const isOfficial = src.query_type === "official_website";
@@ -647,7 +678,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
                       <div className="relative">
                         {/* Header: favicon + domain + type badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, mb: 10, flexWrap: 'wrap' }}>
                           <div style={{ position: 'relative', width: 26, height: 26, flexShrink: 0 }}>
                             <img
                               src={`https://www.google.com/s2/favicons?domain=${src.domain}&sz=32`}
