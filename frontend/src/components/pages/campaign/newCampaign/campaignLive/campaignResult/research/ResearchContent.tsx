@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette, Globe } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette, Globe, Copy } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
@@ -154,6 +155,25 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
     };
   }, [classifiedSources]);
 
+  const copyToClipboard = useCallback(async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error('Failed to copy');
+    }
+  }, []);
+
+  const sectionNav = [
+    { id: 'market-trends', label: 'Market Trends', count: marketTrends.length },
+    { id: 'competitors', label: 'Competitors', count: competitors.length },
+    { id: 'audience', label: 'Audience' },
+    { id: 'customer-voice', label: 'Customer Voice', count: displayCustomerVoice.length },
+    { id: 'vulnerabilities', label: 'Vulnerabilities', count: displayCompetitorVulns.length },
+    { id: 'ad-hooks', label: 'Ad Hooks', count: displayAdHooks.length },
+    { id: 'sources', label: 'Sources', count: classifiedSources.length },
+  ];
+
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Page Header (Apple Pro Luxury Header) */}
@@ -288,7 +308,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                     {trend.title || trend.name || trend}
                   </h4>
                   {trend.desc && (
-                    <p className="text-sm leading-relaxed text-[#8B8B9E]" style={{ fontFamily: 'Inter, sans-serif' }}>
+                    <p className="text-sm leading-relaxed text-[#7A7A8E]" style={{ fontFamily: 'Inter, sans-serif' }}>
                       {trend.desc || trend.description}
                     </p>
                   )}

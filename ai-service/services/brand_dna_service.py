@@ -98,7 +98,7 @@ def validate_url_ip_resolution(url: str) -> Optional[str]:
 def clean_html_content_safe(raw_html: str) -> str:
     """
     Extract clean, high-signal text from raw HTML using BeautifulSoup (ReDoS Safe).
-    Strips noise elements (script, style, nav, footer, header, cookie banners).
+    Strips noise elements (script, style, nav, footer, header, cookie banners, modals, buttons).
     """
     if not raw_html:
         return ""
@@ -106,9 +106,18 @@ def clean_html_content_safe(raw_html: str) -> str:
     try:
         soup = BeautifulSoup(raw_html, "html.parser")
 
-        # Strip unneeded noise elements
-        for element in soup(["script", "style", "svg", "nav", "footer", "header", "form", "iframe", "noscript"]):
+        # Strip unneeded noise HTML tags
+        for element in soup(["script", "style", "svg", "nav", "footer", "header", "form", "iframe", "noscript", "button"]):
             element.decompose()
+
+        # Strip cookie banners, privacy notices, modals, popups, and GDPR elements by class/id
+        for element in soup.find_all(True):
+            if element.name and element.parent:
+                element_id = str(element.get("id", "")).lower()
+                element_cls = " ".join(element.get("class", [])) if isinstance(element.get("class"), list) else str(element.get("class", ""))
+                element_cls = element_cls.lower()
+                if any(noise in element_id or noise in element_cls for noise in ("cookie", "privacy", "banner", "modal", "popup", "consent", "gdpr", "cookie-notice", "accept-cookies")):
+                    element.decompose()
 
         # Extract text with newline spacing
         text = soup.get_text(separator="\n", strip=True)
