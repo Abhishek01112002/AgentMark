@@ -252,40 +252,45 @@ def research_agent(state: CampaignState) -> CampaignState:
     total_snippets = len(result_1.snippets) + len(result_2.snippets) + len(result_3.snippets) + len(result_4.snippets)
     logger.info(f"   ⚡ LiteRAG & Brand DNA parallel execution completed in {elapsed_s:.2f}s ({total_snippets} total snippets retrieved)")
 
-    # Build context — ONLY inject if snippets actually exist
+    # Build context — ONLY inject if snippets actually exist, wrapped in semantic XML tags
     context_parts = []
 
     if result_1.success and result_1.snippets:
         context_parts.append(
-            "REAL-TIME MARKET CONTEXT:\n" +
-            "\n".join(f"- {s}" for s in result_1.snippets)
+            "<real_time_market_context>\n" +
+            "\n".join(f"- {s}" for s in result_1.snippets) +
+            "\n</real_time_market_context>"
         )
 
     if result_2.success and result_2.snippets:
         context_parts.append(
-            "REAL-TIME COMPETITOR & VULNERABILITY CONTEXT:\n" +
-            "\n".join(f"- {s}" for s in result_2.snippets)
+            "<competitor_vulnerabilities_context>\n" +
+            "\n".join(f"- {s}" for s in result_2.snippets) +
+            "\n</competitor_vulnerabilities_context>"
         )
 
     if result_3.success and result_3.snippets:
         context_parts.append(
-            "REAL CUSTOMER VOICE & REDDIT PAIN POINTS CONTEXT:\n" +
-            "\n".join(f"- {s}" for s in result_3.snippets)
+            "<customer_voice_reddit_pain_points>\n" +
+            "\n".join(f"- {s}" for s in result_3.snippets) +
+            "\n</customer_voice_reddit_pain_points>"
         )
 
     if result_4.success and result_4.snippets:
         context_parts.append(
-            "HIGH-CONVERTING AD HOOKS & VISUAL ANGLES CONTEXT:\n" +
-            "\n".join(f"- {s}" for s in result_4.snippets)
+            "<high_converting_ad_hooks_context>\n" +
+            "\n".join(f"- {s}" for s in result_4.snippets) +
+            "\n</high_converting_ad_hooks_context>"
         )
 
     # Autonomous Brand DNA Ingestion Integration
     if dna_data and dna_data.get("extracted_hero_text"):
         state.brand_dna = dna_data
         context_parts.append(
-            "OFFICIAL BRAND DNA & WEBSITE CONTEXT:\n" +
-            f"- Source URL: {dna_data.get('source_url')}\n" +
-            f"- Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}"
+            "<official_brand_dna_context>\n" +
+            f"Source URL: {dna_data.get('source_url')}\n" +
+            f"Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}\n" +
+            "</official_brand_dna_context>"
         )
         logger.info("   ✅ Integrated Brand DNA into Research Agent context")
 
