@@ -43,10 +43,10 @@ export const useCampaignResult = (campaignId: string | undefined) => {
           setLoading(false);
           if (cachedData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
             setShowHumanReview(true);
-            if (!humanReviewShownRef.current) {
-              humanReviewShownRef.current = true;
-              setIsMinimized(false);
-            }
+            setIsMinimized(true);
+          } else {
+            setShowHumanReview(false);
+            setIsMinimized(true);
           }
         }
       }
@@ -71,10 +71,10 @@ export const useCampaignResult = (campaignId: string | undefined) => {
 
           if (campaignData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
             setShowHumanReview(true);
-            if (!humanReviewShownRef.current) {
-              humanReviewShownRef.current = true;
-              setIsMinimized(false);
-            }
+            setIsMinimized(true);
+          } else {
+            setShowHumanReview(false);
+            setIsMinimized(true);
           }
         }
       } catch (error: any) {

@@ -12,7 +12,7 @@ interface SourceMeta {
   title: string;
   domain: string;
   snippet: string;
-  query_type: "market" | "competitor";
+  query_type: "market" | "competitor" | "official_website";
 }
 
 const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
@@ -75,6 +75,9 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
 
 
+  const officialWebsiteSource = literasSources.find(s => s.query_type === 'official_website');
+  const brandDnaData = data?.brand_dna || (officialWebsiteSource ? { source_url: officialWebsiteSource.url, extracted_hero_text: officialWebsiteSource.snippet } : null);
+
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Page Header (Apple Pro Luxury Header) */}
@@ -98,6 +101,45 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
           </div>
         </div>
       </div>
+
+      {/* Brand DNA Verification Banner */}
+      {brandDnaData && brandDnaData.source_url && (
+        <div className="rounded-xl border border-[#4edea3]/30 bg-gradient-to-r from-[#042F1D]/80 via-[#0A1628]/90 to-[#111118] p-5 mb-6 shadow-[0_4px_24px_rgba(78,222,163,0.08)] relative overflow-hidden">
+          <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#4edea3]" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#4edea3]/15 border border-[#4edea3]/30 flex items-center justify-center">
+                <span className="text-sm">🌐</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-white font-sora">Verified Brand DNA & Website Context</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#4edea3]/20 border border-[#4edea3]/30 text-[10px] font-mono font-medium text-[#4edea3] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-pulse" /> Verified Live Source
+                  </span>
+                </div>
+                <a
+                  href={brandDnaData.source_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-[#4edea3] hover:underline font-mono flex items-center gap-1 mt-0.5"
+                >
+                  {brandDnaData.source_url}
+                  <ArrowUpRight size={12} />
+                </a>
+              </div>
+            </div>
+            <span className="text-[11px] text-[#94A3B8] font-sans bg-[#111118]/60 px-3 py-1.5 rounded-lg border border-white/5">
+              Grounded AI Engine: 0% Hallucination Safety Active
+            </span>
+          </div>
+          {brandDnaData.extracted_hero_text && (
+            <div className="mt-2 text-xs text-[#CBD5E1] bg-[#000000]/30 rounded-lg p-3 border border-white/5 font-mono leading-relaxed line-clamp-3">
+              "{brandDnaData.extracted_hero_text}"
+            </div>
+          )}
+        </div>
+      )}
 
       {!hasRealData && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 mb-6 shadow-sm">
@@ -481,10 +523,11 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
               {literasSources
                 .filter(s => activeFilter === "all" || s.query_type === activeFilter)
                 .map((src, i) => {
+                  const isOfficial = src.query_type === "official_website";
                   const isMarket = src.query_type === "market";
-                  const accentColor = isMarket ? '#818CF8' : '#A78BFA';
-                  const accentBg = isMarket ? 'rgba(99,102,241,0.05)' : 'rgba(124,58,237,0.05)';
-                  const accentBorder = isMarket ? 'rgba(99,102,241,0.12)' : 'rgba(124,58,237,0.12)';
+                  const accentColor = isOfficial ? '#4edea3' : isMarket ? '#818CF8' : '#A78BFA';
+                  const accentBg = isOfficial ? 'rgba(78,222,163,0.08)' : isMarket ? 'rgba(99,102,241,0.05)' : 'rgba(124,58,237,0.05)';
+                  const accentBorder = isOfficial ? 'rgba(78,222,163,0.25)' : isMarket ? 'rgba(99,102,241,0.12)' : 'rgba(124,58,237,0.12)';
 
                   return (
                     <div

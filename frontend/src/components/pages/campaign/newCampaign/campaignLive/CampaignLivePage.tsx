@@ -1428,7 +1428,7 @@ const CampaignLivePage: React.FC = () => {
 
         {/* ── Human Review Inspector Drawer ─────────────────────────────────── */}
         {/* Partial left-side dim overlay — does NOT block interaction with main content */}
-        {showHumanReview && !isMinimized && (
+        {showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' && (
           <div
             onClick={() => setIsMinimized(true)}
             className="fixed inset-0 z-[90] cursor-pointer"
@@ -1437,29 +1437,23 @@ const CampaignLivePage: React.FC = () => {
         )}
 
         {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-        {showHumanReview && (
+        {showHumanReview && isMinimized && campaign?.status === 'awaiting_human_approval' && (
           <div
             onClick={() => {
               if (isMinimized) {
                 setIsMinimized(false);
               }
             }}
-            className={`fixed bottom-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full shadow-2xl backdrop-blur-xl select-none transition-all duration-300 ${
-              isMinimized 
-                ? 'right-6 cursor-pointer hover:scale-105' 
-                : 'left-1/2 -translate-x-1/2 cursor-default'
-            }`}
+            className="fixed bottom-6 right-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full shadow-2xl backdrop-blur-xl select-none transition-all duration-300 cursor-pointer hover:scale-105"
             style={{ 
-              background: isMinimized ? 'rgba(17,17,24,0.92)' : 'rgba(17,17,24,0.88)',
-              border: isMinimized ? '1px solid rgba(110,231,183,0.3)' : '1px solid rgba(165,182,252,0.25)',
-              boxShadow: isMinimized ? '0 0 30px rgba(110,231,183,0.12), 0 8px 32px rgba(0,0,0,0.4)' : '0 0 40px rgba(165,182,252,0.08), 0 8px 32px rgba(0,0,0,0.3)',
+              background: 'rgba(17,17,24,0.92)',
+              border: '1px solid rgba(110,231,183,0.3)',
+              boxShadow: '0 0 30px rgba(110,231,183,0.12), 0 8px 32px rgba(0,0,0,0.4)',
             }}
           >
-            <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#6EE7B7] animate-ping' : 'bg-[#A5B6FC] animate-pulse'}`} />
-            <span className="text-xs font-medium" style={{ fontFamily: 'Sora, sans-serif', color: isMinimized ? '#6EE7B7' : '#A5B6FC' }}>
-              {isMinimized 
-                ? 'Review Pending — Click to Expand' 
-                : 'Human Review Required — Click outside to minimize & inspect page'}
+            <span className="w-2 h-2 rounded-full bg-[#6EE7B7] animate-ping" />
+            <span className="text-xs font-medium" style={{ fontFamily: 'Sora, sans-serif', color: '#6EE7B7' }}>
+              Review Pending — Click to Expand
             </span>
           </div>
         )}
@@ -1467,7 +1461,7 @@ const CampaignLivePage: React.FC = () => {
         {/* Right-side Inspector Drawer */}
         <div
           className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col transition-all duration-400 ease-out ${
-            showHumanReview && !isMinimized ? 'open translate-x-0' : 'translate-x-full'
+            showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' ? 'open translate-x-0' : 'translate-x-full'
           }`}
           style={{ width: '100%', maxWidth: '480px', background: '#0c0c14', borderLeft: '1px solid rgba(192,193,255,0.08)', boxShadow: '-24px 0 80px rgba(0,0,0,0.7), inset 1px 0 0 rgba(255,255,255,0.02)' }}
         >

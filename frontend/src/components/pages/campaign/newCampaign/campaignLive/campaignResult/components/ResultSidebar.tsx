@@ -103,7 +103,7 @@ export const ResultSidebar: React.FC = React.memo(() => {
       )}
 
       {/* Partial left-side dim overlay — does NOT block interaction with main content */}
-      {showHumanReview && !isMinimized && (
+      {showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' && (
         <div
           onClick={() => setIsMinimized(true)}
           className="fixed inset-0 z-[90] cursor-pointer"
@@ -112,27 +112,21 @@ export const ResultSidebar: React.FC = React.memo(() => {
       )}
 
       {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-      {showHumanReview && (!isMinimized || campaign?.status !== 'awaiting_human_approval') && (
+      {showHumanReview && isMinimized && campaign?.status === 'awaiting_human_approval' && (
         <div
           onClick={() => {
             if (isMinimized) {
               setIsMinimized(false);
             }
           }}
-          className={`fixed bottom-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full border shadow-2xl backdrop-blur-md select-none transition-all duration-300 ${
-            isMinimized 
-              ? 'right-6 border-[#4edea3]/40 bg-[#111118]/95 cursor-pointer hover:border-[#4edea3]/70 hover:scale-105' 
-              : 'left-1/2 -translate-x-1/2 border-[#c0c1ff]/40 bg-[#111118]/95 cursor-default'
-          }`}
+          className="fixed bottom-6 right-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full border border-[#4edea3]/40 bg-[#111118]/95 shadow-2xl backdrop-blur-md select-none transition-all duration-300 cursor-pointer hover:border-[#4edea3]/70 hover:scale-105"
           style={{ 
-            boxShadow: isMinimized ? '0 0 30px rgba(78,222,163,0.15)' : '0 0 40px rgba(192,193,255,0.15)',
+            boxShadow: '0 0 30px rgba(78,222,163,0.15)',
           }}
         >
-          <span className={`w-2 h-2 rounded-full ${isMinimized ? 'bg-[#4edea3] animate-ping' : 'bg-[#c0c1ff] animate-pulse'}`} />
-          <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: isMinimized ? '#4edea3' : '#c0c1ff' }}>
-            {isMinimized 
-              ? 'Review Pending (Click to Expand Panel) ↗' 
-              : 'Human Review Required — Click outside to minimize & inspect page'}
+          <span className="w-2 h-2 rounded-full bg-[#4edea3] animate-ping" />
+          <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
+            Review Pending (Click to Expand Panel) ↗
           </span>
         </div>
       )}
@@ -140,7 +134,7 @@ export const ResultSidebar: React.FC = React.memo(() => {
       {/* Right-side Inspector Drawer */}
       <div
         className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col ${
-          showHumanReview && !isMinimized ? 'open' : ''
+          showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' ? 'open' : ''
         }`}
         style={{ width: '100%', maxWidth: '480px', background: '#0d0d14', borderLeft: '1px solid rgba(192,193,255,0.15)', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
       >

@@ -258,6 +258,24 @@ def research_agent(state: CampaignState) -> CampaignState:
 
     # Collect all sources for UI
     all_sources = []
+
+    # Include Official Brand DNA Website Source at the top of the sources list
+    if getattr(state, "brand_dna", None) and isinstance(state.brand_dna, dict) and state.brand_dna.get("source_url"):
+        src_url = state.brand_dna.get("source_url")
+        try:
+            from urllib.parse import urlparse
+            dom = urlparse(src_url).netloc or brand_name
+        except Exception:
+            dom = brand_name
+        all_sources.append({
+            "url": src_url,
+            "title": f"Official Brand Website ({brand_name})",
+            "domain": dom,
+            "snippet": state.brand_dna.get("extracted_hero_text", "")[:240],
+            "query_type": "official_website"
+        })
+        logger.info("   🌐 Added official website source to UI sources list: %s", src_url)
+
     for result, qtype in [(result_1, "market"), (result_2, "competitor")]:
         if result.success:
             for src in result.sources:
