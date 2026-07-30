@@ -95,7 +95,7 @@ const CampaignResultPageContent: React.FC = () => {
       case 'overview':
         return <OverviewContent data={getOutputField('manager_output') || getOutputField('managerOutput')} campaign={campaign} />;
       case 'research':
-        return <ResearchContent data={getOutputField('research_output') || getOutputField('researchOutput')} />;
+        return <ResearchContent data={getOutputField('research_output') || getOutputField('researchOutput')} campaign={campaign} />;
       case 'strategy':
         return <StrategyContent data={memoizedStrategyData} campaign={campaign} />;
       case 'copy':
