@@ -241,6 +241,21 @@ def research_agent(state: CampaignState) -> CampaignState:
             "\n".join(f"- {s}" for s in result_2.snippets)
         )
 
+    # Autonomous Brand DNA Ingestion (Non-blocking failover)
+    try:
+        from services.brand_dna_service import fetch_brand_website_dna
+        dna_data = fetch_brand_website_dna(brand_name=brand_name, timeout_seconds=5.0)
+        if dna_data and dna_data.get("extracted_hero_text"):
+            state.brand_dna = dna_data
+            context_parts.append(
+                "OFFICIAL BRAND DNA & WEBSITE CONTEXT:\n" +
+                f"- Source URL: {dna_data.get('source_url')}\n" +
+                f"- Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}"
+            )
+            logger.info("   ✅ Integrated Brand DNA into Research Agent context")
+    except Exception as _dna_err:
+        logger.warning("   ⚠️ Brand DNA extraction non-blocking error: %s", _dna_err)
+
     # Collect all sources for UI
     all_sources = []
     for result, qtype in [(result_1, "market"), (result_2, "competitor")]:

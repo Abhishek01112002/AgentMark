@@ -59,6 +59,12 @@ class CampaignState(BaseModel):
         description="Past client campaign history context"
     )
 
+    # ==================== BRAND DNA INTELLIGENCE ====================
+    brand_dna: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Grounded website messaging, value proposition, and brand intelligence extracted from official brand website"
+    )
+
     # ==================== CAMPAIGN INTELLIGENCE OBJECT (CIO) ====================
     campaign_intelligence_object: Optional[Dict[str, Any]] = Field(
         default=None,

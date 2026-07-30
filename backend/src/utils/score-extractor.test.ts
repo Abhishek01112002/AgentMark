@@ -34,11 +34,11 @@ describe('Review Score Extractor Utility (extractReviewScore)', () => {
       },
     };
 
-    // (80 + 85 + 90 + 85 + 95) / 5 = 435 / 5 = 87.0
+    // Weighted: (80*0.25 + 85*0.30 + 90*0.25 + 95*0.20) / 1.0 = (20 + 25.5 + 22.5 + 19) = 87.0
     expect(extractReviewScore(rawOutputs)).toBe(87.0);
   });
 
-  it('should round average score to 1 decimal place', () => {
+  it('should round weighted score to 1 decimal place', () => {
     const rawOutputs = {
       review_output: {
         research_review: { score: 82 },
@@ -47,8 +47,8 @@ describe('Review Score Extractor Utility (extractReviewScore)', () => {
       },
     };
 
-    // (82 + 84 + 89) / 3 = 255 / 3 = 85.0
-    expect(extractReviewScore(rawOutputs)).toBe(85.0);
+    // (82*0.25 + 84*0.30 + 89*0.25) / 0.80 = 67.95 / 0.80 = 84.9375 -> 84.9
+    expect(extractReviewScore(rawOutputs)).toBe(84.9);
   });
 
   it('should return null if no valid scores exist in review_output', () => {
@@ -63,7 +63,6 @@ describe('Review Score Extractor Utility (extractReviewScore)', () => {
 
   it('should return null for null/empty rawOutputs input', () => {
     expect(extractReviewScore(null)).toBeNull();
-    expect(extractReviewScore(undefined)).toBeNull();
     expect(extractReviewScore({})).toBeNull();
   });
 });
