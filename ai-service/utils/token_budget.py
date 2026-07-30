@@ -36,6 +36,10 @@ PRUNABLE_KEYS: Set[str] = {
     "objections", "timeline", "search_status", "literas_sources", "tavily_sources"
 }
 
+PROTECTED_INTELLIGENCE_KEYS: Set[str] = {
+    "customer_voice_insights", "competitor_vulnerabilities", "proven_ad_hooks", "brand_dna"
+}
+
 
 class TokenBudgetManager:
     """Manages BPE token counting, adaptive text slicing, and priority-aware JSON payload trimming."""
@@ -178,7 +182,17 @@ class TokenBudgetManager:
                         if TokenBudgetManager.count_tokens(res) <= effective_max_budget:
                             return res
 
-                # Phase 2: Trim remaining nested array fields
+                # Phase 2: Trim non-protected nested array fields first
+                for k, v in data.items():
+                    if k.lower() in PROTECTED_INTELLIGENCE_KEYS:
+                        continue
+                    if isinstance(v, list) and len(v) > 2:
+                        data[k] = v[: max(1, len(v) // 2)]
+                        res = json.dumps(data, separators=(',', ':'), ensure_ascii=False)
+                        if TokenBudgetManager.count_tokens(res) <= effective_max_budget:
+                            return res
+
+                # Phase 3: Trim protected keys only if still exceeding budget
                 for k, v in data.items():
                     if isinstance(v, list) and len(v) > 2:
                         data[k] = v[: max(1, len(v) // 2)]

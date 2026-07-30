@@ -675,6 +675,9 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         channel_strategy=json.dumps(channel_strategy, separators=(',', ':')),
         audience_segments=json.dumps(audience_segments, separators=(',', ':')),
         key_messages=json.dumps(key_messages, separators=(',', ':')),
+        customer_voice_insights=json.dumps(strategy_data.get("research_foundation", {}).get("customer_voice_insights", []), separators=(',', ':')),
+        proven_ad_hooks=json.dumps(strategy_data.get("research_foundation", {}).get("proven_ad_hooks", []), separators=(',', ':')),
+        brand_dna=json.dumps(strategy_data.get("research_foundation", {}).get("brand_dna", {}), separators=(',', ':')) if strategy_data.get("research_foundation", {}).get("brand_dna") else "{}",
         # Copy data
         copy_summary=json.dumps(copy_summary, separators=(',', ':')),
         # Image data

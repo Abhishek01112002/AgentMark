@@ -137,7 +137,11 @@ def _extract_research_context(strategy_data: dict) -> dict:
         "motivations": [],
         "market_trends": [],
         "differentiation_opportunity": "",
-        "growth_rate": ""
+        "growth_rate": "",
+        "customer_voice_insights": [],
+        "competitor_vulnerabilities": [],
+        "proven_ad_hooks": [],
+        "brand_dna": None
     }
 
     if not strategy_data:
@@ -159,6 +163,12 @@ def _extract_research_context(strategy_data: dict) -> dict:
         market = research_foundation.get("market_analysis", {})
         context["market_trends"] = market.get("market_trends", [])[:3]
         context["growth_rate"] = str(market.get("growth_rate", ""))[:30]
+
+        # Grounded 100x Research Intelligence fields
+        context["customer_voice_insights"] = research_foundation.get("customer_voice_insights", [])[:3]
+        context["competitor_vulnerabilities"] = research_foundation.get("competitor_vulnerabilities", [])[:3]
+        context["proven_ad_hooks"] = research_foundation.get("proven_ad_hooks", [])[:3]
+        context["brand_dna"] = research_foundation.get("brand_dna", None)
     except Exception as e:
         logger.warning(f"⚠️ Failed to extract research_context in image_prompt: {e}")
 

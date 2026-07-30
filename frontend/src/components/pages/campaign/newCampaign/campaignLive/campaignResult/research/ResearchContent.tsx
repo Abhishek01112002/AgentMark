@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle } from 'lucide-react';
+import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
