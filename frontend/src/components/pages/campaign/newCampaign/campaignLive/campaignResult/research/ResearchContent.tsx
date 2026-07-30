@@ -12,17 +12,19 @@ interface SourceMeta {
   title: string;
   domain: string;
   snippet: string;
-  query_type: "market" | "competitor" | "official_website";
+  query_type: "market" | "competitor" | "official_website" | "customer_voice" | "ad_hooks";
 }
 
 const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   const hasRealData = data && Object.keys(data).length > 0;
-  
 
   // Extract data from AI output
   const marketAnalysis = data?.market_analysis || {};
   const competitorAnalysis = data?.competitor_analysis || {};
   const audienceInsights = data?.audience_insights || {};
+  const customerVoice = data?.customer_voice_insights || [];
+  const competitorVulnerabilities = data?.competitor_vulnerabilities || [];
+  const provenAdHooks = data?.proven_ad_hooks || [];
   const marketOpportunities = data?.market_opportunities || [];
   const recommendedApproach = data?.recommended_approach || '';
 
@@ -31,7 +33,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
   const marketSources = literasSources.filter(s => s.query_type === 'market');
   const competitorSources = literasSources.filter(s => s.query_type === 'competitor');
 
-  const [activeFilter, setActiveFilter] = useState<"all"|"market"|"competitor">("all");
+  const [activeFilter, setActiveFilter] = useState<"all"|"market"|"competitor"|"customer_voice"|"ad_hooks">("all");
 
   const marketTrends = (Array.isArray(marketAnalysis?.market_trends) && marketAnalysis.market_trends.length > 0)
     ? marketAnalysis.market_trends
@@ -102,8 +104,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
         </div>
       </div>
 
-      {/* Brand DNA Verification Banner */}
-      {brandDnaData && brandDnaData.source_url && (
+      {/* Brand DNA / Search Intelligence Verification Banner */}
+      {brandDnaData && brandDnaData.source_url ? (
         <div className="rounded-xl border border-[#4edea3]/30 bg-gradient-to-r from-[#042F1D]/80 via-[#0A1628]/90 to-[#111118] p-5 mb-6 shadow-[0_4px_24px_rgba(78,222,163,0.08)] relative overflow-hidden">
           <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#4edea3]" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
@@ -139,7 +141,27 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
             </div>
           )}
         </div>
-      )}
+      ) : hasRealData ? (
+        <div className="rounded-xl border border-[#06B6D4]/20 bg-gradient-to-r from-[#063747]/40 via-[#0A1628]/90 to-[#111118] p-4 mb-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 bottom-0 w-1 bg-[#06B6D4]" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#06B6D4]/15 border border-[#06B6D4]/30 flex items-center justify-center">
+                <Compass size={16} className="text-[#22D3EE]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white font-sora">Real-Time Market Search Grounding Active</h3>
+                <p className="text-xs text-[#94A3B8] font-sans">
+                  Market & competitor intelligence retrieved via LiteRAG Tavily search.
+                </p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full bg-[#06B6D4]/10 border border-[#06B6D4]/20 text-[10px] font-mono text-[#22D3EE]">
+              Live Search Grounded
+            </span>
+          </div>
+        </div>
+      ) : null}
 
       {!hasRealData && (
         <div className="bg-[#111118] border border-[#2A2A38] rounded-xl p-4 mb-6 shadow-sm">
@@ -388,6 +410,97 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data }) => {
 
           </div>
         </div>
+
+        {/* 💬 100x Real Customer Voice & Reddit Complaints */}
+        {customerVoice && customerVoice.length > 0 && (
+          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(244,63,94,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(26,17,20,0.95) 100%)', border: '1px solid rgba(244,63,94,0.2)' }}>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F43F5E]/4 via-transparent to-[#E11D48]/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F43F5E] via-[#FB7185] to-transparent" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#F43F5E]/15 border border-[#F43F5E]/30 flex items-center justify-center shrink-0">
+                  <span className="text-sm">💬</span>
+                </div>
+                <div>
+                  <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Real Customer Voice & Reddit Pain Points</h3>
+                  <p className="text-xs text-[#94A3B8] font-sans m-0">Direct buyer quotes & dissatisfaction triggers scraped from community discussions</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[10px] font-mono text-[#FB7185]">
+                100x Conversion Gold
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {customerVoice.map((quote: string, idx: number) => (
+                <div key={idx} className="rounded-xl p-4 bg-[#111118]/80 border border-[#F43F5E]/15 relative">
+                  <div className="text-xs text-[#FDA4AF] font-mono leading-relaxed italic">
+                    "{quote}"
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 🥊 Competitor Vulnerabilities & Counter-Angles */}
+        {competitorVulnerabilities && competitorVulnerabilities.length > 0 && (
+          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(245,158,11,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(26,22,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.2)' }}>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-[#D97706]/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/30 flex items-center justify-center shrink-0">
+                  <span className="text-sm">🥊</span>
+                </div>
+                <div>
+                  <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Competitor Vulnerability & Counter-Angles</h3>
+                  <p className="text-xs text-[#94A3B8] font-sans m-0">Exploitable gaps, pricing friction, and feature weaknesses in market rivals</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[10px] font-mono text-[#FBBF24]">
+                Counter-Positioning
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {competitorVulnerabilities.map((vuln: string, idx: number) => (
+                <div key={idx} className="rounded-lg p-3.5 bg-[#111118]/80 border border-[#F59E0B]/15 flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0 mt-2" />
+                  <p className="text-xs text-[#FEF3C7] font-sans leading-relaxed m-0">{vuln}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 🎨 Proven Visual Hooks & Ad Angles */}
+        {provenAdHooks && provenAdHooks.length > 0 && (
+          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(168,85,247,0.06)]" style={{ background: 'gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(22,17,26,0.95) 100%)', border: '1px solid rgba(168,85,247,0.2)' }}>
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#A855F7]/4 via-transparent to-[#9333EA]/2 pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#A855F7] via-[#C084FC] to-transparent" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#A855F7]/15 border border-[#A855F7]/30 flex items-center justify-center shrink-0">
+                  <span className="text-sm">🎨</span>
+                </div>
+                <div>
+                  <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Proven Ad Hooks & Visual Angles (2026)</h3>
+                  <p className="text-xs text-[#94A3B8] font-sans m-0">High-converting visual themes and ad creative concepts for max CTR</p>
+                </div>
+              </div>
+              <span className="px-2.5 py-1 rounded-full bg-[#A855F7]/10 border border-[#A855F7]/20 text-[10px] font-mono text-[#C084FC]">
+                High CTR Creative
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {provenAdHooks.map((hook: string, idx: number) => (
+                <div key={idx} className="rounded-lg p-3.5 bg-[#111118]/80 border border-[#A855F7]/15 flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] shrink-0 mt-2" />
+                  <p className="text-xs text-[#E9D5FF] font-sans leading-relaxed m-0">{hook}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Market Opportunities */}
         {marketOpportunities.length > 0 && (

@@ -207,24 +207,50 @@ def research_agent(state: CampaignState) -> CampaignState:
         logger.info(f"   ℹ️ Generic search target ('{product_name}') — running industry market trends query for '{industry}'")
         query_1 = f"{industry} market trends growth statistics {current_year}".strip()
         query_2 = f"{industry} top competitors market landscape analysis".strip()
+        query_3 = f"{industry} customer pain points complaints reddit reviews".strip()
+        query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
     else:
         ind_term = f"{industry} " if (industry and industry.lower() != 'other') else ""
         query_1 = f"{ind_term}market trends statistics {current_year}".strip()
         query_2 = f"{product_name} {ind_term}top competitors market analysis".strip()
+        query_3 = f"{product_name} {ind_term}customer pain points complaints reddit".strip()
+        query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
 
     logger.info(f"   🔎 Tavily Market Query: '{query_1}'")
     logger.info(f"   🔎 Tavily Competitor Query: '{query_2}'")
+    logger.info(f"   🔎 Tavily Customer Pain Query: '{query_3}'")
+    logger.info(f"   🔎 Tavily Ad Hooks Query: '{query_4}'")
 
-    # Increase max_results to 5 per query to return both market & competitor sources (up to 10 total)
-    result_1 = search_web(query_1, redis_client=None, max_results=5, api_key=tavily_api_key)
-    result_2 = search_web(query_2, redis_client=None, max_results=5, api_key=tavily_api_key)
+    import concurrent.futures
 
-    total_snippets = len(result_1.snippets) + len(result_2.snippets)
-    logger.info(f"   LiteRAG retrieved {total_snippets} total snippets for campaign")
-    if not result_1.success:
-        logger.warning(f"   Market search failed: {result_1.error_message}")
-    if not result_2.success:
-        logger.warning(f"   Competitor search failed: {result_2.error_message}")
+    # Execute all 4 multi-vertical Tavily searches + Brand DNA scraper concurrently in parallel
+    logger.info("   🚀 Executing 4 multi-vertical Tavily searches + Brand DNA scraper concurrently in parallel...")
+    parallel_start = datetime.datetime.now()
+
+    def _safe_fetch_dna():
+        try:
+            from services.brand_dna_service import fetch_brand_website_dna
+            return fetch_brand_website_dna(brand_name=brand_name, timeout_seconds=5.0)
+        except Exception as _dna_err:
+            logger.warning("   ⚠️ Brand DNA extraction non-blocking error: %s", _dna_err)
+            return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        f1 = executor.submit(search_web, query_1, redis_client=None, max_results=4, api_key=tavily_api_key)
+        f2 = executor.submit(search_web, query_2, redis_client=None, max_results=4, api_key=tavily_api_key)
+        f3 = executor.submit(search_web, query_3, redis_client=None, max_results=3, api_key=tavily_api_key)
+        f4 = executor.submit(search_web, query_4, redis_client=None, max_results=3, api_key=tavily_api_key)
+        f_dna = executor.submit(_safe_fetch_dna)
+
+        result_1 = f1.result()
+        result_2 = f2.result()
+        result_3 = f3.result()
+        result_4 = f4.result()
+        dna_data = f_dna.result()
+
+    elapsed_s = (datetime.datetime.now() - parallel_start).total_seconds()
+    total_snippets = len(result_1.snippets) + len(result_2.snippets) + len(result_3.snippets) + len(result_4.snippets)
+    logger.info(f"   ⚡ LiteRAG & Brand DNA parallel execution completed in {elapsed_s:.2f}s ({total_snippets} total snippets retrieved)")
 
     # Build context — ONLY inject if snippets actually exist
     context_parts = []
@@ -237,24 +263,31 @@ def research_agent(state: CampaignState) -> CampaignState:
 
     if result_2.success and result_2.snippets:
         context_parts.append(
-            "REAL-TIME COMPETITOR CONTEXT:\n" +
+            "REAL-TIME COMPETITOR & VULNERABILITY CONTEXT:\n" +
             "\n".join(f"- {s}" for s in result_2.snippets)
         )
 
-    # Autonomous Brand DNA Ingestion (Non-blocking failover)
-    try:
-        from services.brand_dna_service import fetch_brand_website_dna
-        dna_data = fetch_brand_website_dna(brand_name=brand_name, timeout_seconds=5.0)
-        if dna_data and dna_data.get("extracted_hero_text"):
-            state.brand_dna = dna_data
-            context_parts.append(
-                "OFFICIAL BRAND DNA & WEBSITE CONTEXT:\n" +
-                f"- Source URL: {dna_data.get('source_url')}\n" +
-                f"- Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}"
-            )
-            logger.info("   ✅ Integrated Brand DNA into Research Agent context")
-    except Exception as _dna_err:
-        logger.warning("   ⚠️ Brand DNA extraction non-blocking error: %s", _dna_err)
+    if result_3.success and result_3.snippets:
+        context_parts.append(
+            "REAL CUSTOMER VOICE & REDDIT PAIN POINTS CONTEXT:\n" +
+            "\n".join(f"- {s}" for s in result_3.snippets)
+        )
+
+    if result_4.success and result_4.snippets:
+        context_parts.append(
+            "HIGH-CONVERTING AD HOOKS & VISUAL ANGLES CONTEXT:\n" +
+            "\n".join(f"- {s}" for s in result_4.snippets)
+        )
+
+    # Autonomous Brand DNA Ingestion Integration
+    if dna_data and dna_data.get("extracted_hero_text"):
+        state.brand_dna = dna_data
+        context_parts.append(
+            "OFFICIAL BRAND DNA & WEBSITE CONTEXT:\n" +
+            f"- Source URL: {dna_data.get('source_url')}\n" +
+            f"- Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}"
+        )
+        logger.info("   ✅ Integrated Brand DNA into Research Agent context")
 
     # Collect all sources for UI
     all_sources = []
@@ -276,7 +309,7 @@ def research_agent(state: CampaignState) -> CampaignState:
         })
         logger.info("   🌐 Added official website source to UI sources list: %s", src_url)
 
-    for result, qtype in [(result_1, "market"), (result_2, "competitor")]:
+    for result, qtype in [(result_1, "market"), (result_2, "competitor"), (result_3, "customer_voice"), (result_4, "ad_hooks")]:
         if result.success:
             for src in result.sources:
                 all_sources.append({
@@ -329,7 +362,8 @@ def research_agent(state: CampaignState) -> CampaignState:
     if research_data is None:
         return state  # Error already logged in state
 
-    # Attach LiteRAG sources to the output
+    # Attach Brand DNA and LiteRAG sources to the output
+    research_data.brand_dna = getattr(state, "brand_dna", None)
     research_data.literas_sources = all_sources
     research_data.tavily_sources = all_sources
     research_data.search_status = {
