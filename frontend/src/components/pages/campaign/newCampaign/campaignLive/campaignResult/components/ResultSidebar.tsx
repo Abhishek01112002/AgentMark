@@ -111,26 +111,6 @@ export const ResultSidebar: React.FC = React.memo(() => {
         />
       )}
 
-      {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-      {showHumanReview && isMinimized && campaign?.status === 'awaiting_human_approval' && (
-        <div
-          onClick={() => {
-            if (isMinimized) {
-              setIsMinimized(false);
-            }
-          }}
-          className="fixed bottom-6 right-6 z-[95] flex items-center gap-3 px-5 py-3 rounded-full border border-[#4edea3]/40 bg-[#111118]/95 shadow-2xl backdrop-blur-md select-none transition-all duration-300 cursor-pointer hover:border-[#4edea3]/70 hover:scale-105"
-          style={{ 
-            boxShadow: '0 0 30px rgba(78,222,163,0.15)',
-          }}
-        >
-          <span className="w-2 h-2 rounded-full bg-[#4edea3] animate-ping" />
-          <span className="text-xs font-semibold" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>
-            Review Pending (Click to Expand Panel) ↗
-          </span>
-        </div>
-      )}
-
       {/* Right-side Inspector Drawer */}
       <div
         className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col ${
