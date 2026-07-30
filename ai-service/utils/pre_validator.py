@@ -35,6 +35,7 @@ class PreValidator:
     def validate_channel_coverage(copy_dict: Dict[str, Any], required_channels: List[str]) -> ValidationResult:
         """
         Validates that all required campaign channels have non-empty copy populated.
+        Inspects top-level keys AND nested channel_copy / deliverables / channels / copies lists.
         """
         if not required_channels:
             return ValidationResult(is_valid=True, metadata={"missing_channels": [], "coverage_pct": 100.0})
@@ -46,12 +47,30 @@ class PreValidator:
                 metadata={"missing_channels": list(required_channels), "coverage_pct": 0.0}
             )
 
-        # Normalize key names to lowercase/snake_case for comparison
+        # 1. Collect present channels from top-level keys
         present_keys = {
             str(k).lower().replace(" ", "_").replace("-", "_")
             for k, v in copy_dict.items()
             if not PreValidator._is_empty(v)
         }
+
+        # 2. ALSO collect present channels from nested lists (channel_copy, channels, deliverables, copies, copy, items)
+        for list_key in ("channel_copy", "channels", "deliverables", "copies", "copy", "items"):
+            nested_list = copy_dict.get(list_key)
+            if isinstance(nested_list, list):
+                for item in nested_list:
+                    if isinstance(item, dict):
+                        ch_name = item.get("channel") or item.get("platform") or item.get("channel_name") or item.get("name")
+                        if ch_name and not PreValidator._is_empty(ch_name):
+                            norm_ch = str(ch_name).lower().replace(" ", "_").replace("-", "_")
+                            present_keys.add(norm_ch)
+                            # Add common aliases (e.g. google_ads <-> google)
+                            if norm_ch == "google_ads":
+                                present_keys.add("google")
+                            elif norm_ch == "google":
+                                present_keys.add("google_ads")
+                            elif norm_ch == "youtube_shorts":
+                                present_keys.add("youtube")
 
         missing = []
         for req in required_channels:
