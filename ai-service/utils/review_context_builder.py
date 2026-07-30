@@ -49,6 +49,10 @@ def build_research_summary(research_raw: Any) -> Dict[str, Any]:
         "top_competitors": top_competitors,
         "pain_points": (audience.get("pain_points") or [])[:3],
         "motivations": (audience.get("motivations") or [])[:3],
+        "customer_voice_insights": (data.get("customer_voice_insights") or [])[:3],
+        "competitor_vulnerabilities": (data.get("competitor_vulnerabilities") or [])[:3],
+        "proven_ad_hooks": (data.get("proven_ad_hooks") or [])[:3],
+        "brand_dna": data.get("brand_dna"),
     }
 
 
@@ -68,6 +72,8 @@ def build_strategy_summary(strategy_raw: Any) -> Dict[str, Any]:
                     "rationale": (plan.get("rationale") or "")[:80],
                 }
 
+    res_foundation = data.get("research_foundation", {}) if isinstance(data, dict) else {}
+
     return {
         "status": "VALIDATED",
         "positioning": data.get("positioning", ""),
@@ -76,6 +82,10 @@ def build_strategy_summary(strategy_raw: Any) -> Dict[str, Any]:
         "audience_segments": (data.get("audience_segments") or [])[:3],
         "channel_priorities": channels_summary,
         "strategic_approach": (data.get("strategic_approach") or "")[:150],
+        "customer_voice_insights": (res_foundation.get("customer_voice_insights") or [])[:3],
+        "competitor_vulnerabilities": (res_foundation.get("competitor_vulnerabilities") or [])[:3],
+        "proven_ad_hooks": (res_foundation.get("proven_ad_hooks") or [])[:3],
+        "brand_dna": res_foundation.get("brand_dna"),
     }
 
 

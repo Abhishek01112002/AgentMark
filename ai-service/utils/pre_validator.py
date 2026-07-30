@@ -188,3 +188,25 @@ class PreValidator:
                 "presence_pct": round((len(present) / len(required_keys)) * 100, 1) if required_keys else 100.0
             }
         )
+
+    @staticmethod
+    def validate_grounded_research_intelligence(research_dict: Dict[str, Any]) -> ValidationResult:
+        """
+        Deterministic Python validation (0ms, 0 tokens) for Grounded 100x Research Intelligence.
+        Verifies presence of customer_voice_insights, competitor_vulnerabilities, proven_ad_hooks, and brand_dna.
+        """
+        if not isinstance(research_dict, dict):
+            return ValidationResult(is_valid=False, issues=["Research output is not a dictionary"])
+
+        target_keys = ["customer_voice_insights", "competitor_vulnerabilities", "proven_ad_hooks", "brand_dna"]
+        missing = [k for k in target_keys if PreValidator._is_empty(research_dict.get(k))]
+
+        return ValidationResult(
+            is_valid=len(missing) == 0,
+            issues=[f"Missing research intelligence field(s): {', '.join(missing)}"] if missing else [],
+            metadata={
+                "missing_fields": missing,
+                "present_count": len(target_keys) - len(missing),
+                "is_grounded_100x": len(missing) == 0
+            }
+        )

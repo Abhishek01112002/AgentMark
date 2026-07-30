@@ -133,3 +133,40 @@ def test_copywriter_fallback_degrades_gracefully_when_research_empty():
 
     assert copy_out.inferred_goal == "awareness"
     assert "linkedin" in copy_out.copies or len(copy_out.copies) > 0
+
+
+def test_review_context_builder_preserves_research_intelligence():
+    """Verify ReviewContextBuilder includes research intelligence fields in summaries."""
+    from utils.review_context_builder import build_research_summary, build_strategy_summary
+    raw_res = {
+        "market_analysis": {"market_trends": ["AI"]},
+        "competitor_analysis": {"top_competitors": ["CompA"]},
+        "audience_insights": {"pain_points": ["PainA"]},
+        "customer_voice_insights": ["'Quote A'"],
+        "competitor_vulnerabilities": ["Vuln A"],
+        "proven_ad_hooks": ["Hook A"],
+        "brand_dna": {"hero": "DNA A"}
+    }
+    summary = build_research_summary(raw_res)
+    assert summary["customer_voice_insights"] == ["'Quote A'"]
+    assert summary["competitor_vulnerabilities"] == ["Vuln A"]
+    assert summary["proven_ad_hooks"] == ["Hook A"]
+
+
+def test_pre_validator_validates_grounded_research_intelligence():
+    """Verify PreValidator zero-token validation engine correctly checks research fields."""
+    from utils.pre_validator import PreValidator
+    valid_res = {
+        "customer_voice_insights": ["Quote"],
+        "competitor_vulnerabilities": ["Vuln"],
+        "proven_ad_hooks": ["Hook"],
+        "brand_dna": {"source": "URL"}
+    }
+    res_valid = PreValidator.validate_grounded_research_intelligence(valid_res)
+    assert res_valid.is_valid is True
+    assert res_valid.metadata["is_grounded_100x"] is True
+
+    invalid_res = {"customer_voice_insights": ["Quote"]}
+    res_invalid = PreValidator.validate_grounded_research_intelligence(invalid_res)
+    assert res_invalid.is_valid is False
+    assert "competitor_vulnerabilities" in res_invalid.metadata["missing_fields"]
