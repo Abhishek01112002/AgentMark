@@ -34,6 +34,18 @@ COMPETITOR ANALYSIS:
 AUDIENCE INSIGHTS:
 {audience_insights}
 
+CUSTOMER VOICE & REDDIT PAIN POINTS:
+{customer_voice_insights}
+
+COMPETITOR VULNERABILITIES & COUNTER-ANGLES:
+{competitor_vulnerabilities}
+
+PROVEN AD HOOKS & VISUAL ANGLES:
+{proven_ad_hooks}
+
+OFFICIAL BRAND DNA CONTEXT:
+{brand_dna}
+
 MARKET OPPORTUNITIES:
 {market_opportunities}
 
@@ -198,6 +210,10 @@ Return valid JSON matching the StrategyOutput schema exactly.
     "market_analysis": {market_analysis},
     "competitor_analysis": {competitor_analysis},
     "audience_insights": {audience_insights},
+    "customer_voice_insights": {customer_voice_insights},
+    "competitor_vulnerabilities": {competitor_vulnerabilities},
+    "proven_ad_hooks": {proven_ad_hooks},
+    "brand_dna": {brand_dna},
     "market_opportunities": {market_opportunities},
     "recommended_approach": "{recommended_approach}"
   }},

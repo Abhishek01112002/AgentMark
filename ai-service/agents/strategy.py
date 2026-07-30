@@ -188,6 +188,10 @@ def _write_fallback_strategy(
             "market_analysis": market_analysis,
             "competitor_analysis": competitor_analysis,
             "audience_insights": audience_insights,
+            "customer_voice_insights": audience_insights.get("customer_voice_insights", []),
+            "competitor_vulnerabilities": competitor_analysis.get("competitor_vulnerabilities", []),
+            "proven_ad_hooks": audience_insights.get("proven_ad_hooks", []),
+            "brand_dna": getattr(state, "brand_dna", None),
             "market_opportunities": market_opportunities,
             "recommended_approach": recommended_approach,
         },
@@ -248,6 +252,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     market_analysis = research.get("market_analysis", {})
     competitor_analysis = research.get("competitor_analysis", {})
     audience_insights = research.get("audience_insights", {})
+    customer_voice_insights = research.get("customer_voice_insights", [])
+    competitor_vulnerabilities = research.get("competitor_vulnerabilities", [])
+    proven_ad_hooks = research.get("proven_ad_hooks", [])
+    brand_dna = research.get("brand_dna", None) or getattr(state, "brand_dna", None)
     market_opportunities = research.get("market_opportunities", [])
     recommended_approach = research.get("recommended_approach", "")
     
@@ -256,6 +264,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Competitors: {competitor_analysis.get('top_competitors')}")
     logger.info(f"✓ Differentiation: {competitor_analysis.get('differentiation_opportunity', '')[:50]}...")
     logger.info(f"✓ Audience Pain Points: {audience_insights.get('pain_points', [])[:2]}...")
+    logger.info(f"✓ Customer Voice Quotes: {len(customer_voice_insights)} found")
+    logger.info(f"✓ Competitor Vulnerabilities: {len(competitor_vulnerabilities)} found")
+    logger.info(f"✓ Proven Ad Hooks: {len(proven_ad_hooks)} found")
+    logger.info(f"✓ Brand DNA Attached: {bool(brand_dna)}")
     logger.info(f"✓ Recommended Approach: {recommended_approach[:60]}...")
     
     # ========== STEP 2: READ MANAGER OUTPUT ==========
@@ -341,6 +353,10 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         market_analysis=json.dumps(market_analysis, indent=2),
         competitor_analysis=json.dumps(competitor_analysis, indent=2),
         audience_insights=json.dumps(audience_insights, indent=2),
+        customer_voice_insights=json.dumps(customer_voice_insights, indent=2),
+        competitor_vulnerabilities=json.dumps(competitor_vulnerabilities, indent=2),
+        proven_ad_hooks=json.dumps(proven_ad_hooks, indent=2),
+        brand_dna=json.dumps(brand_dna, indent=2) if brand_dna else "{}",
         market_opportunities=json.dumps(market_opportunities, indent=2),
         recommended_approach=recommended_approach,
         human_feedback_section=human_feedback_section
@@ -370,6 +386,12 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         )
         if strategy_plan is not None:
             cache_set(cache_key, strategy_plan.model_dump())
+
+    if strategy_plan and strategy_plan.research_foundation:
+        strategy_plan.research_foundation.customer_voice_insights = customer_voice_insights
+        strategy_plan.research_foundation.competitor_vulnerabilities = competitor_vulnerabilities
+        strategy_plan.research_foundation.proven_ad_hooks = proven_ad_hooks
+        strategy_plan.research_foundation.brand_dna = brand_dna
 
     if is_human_revision and state.strategy_output and strategy_plan is not None:
         logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge for Strategy...")

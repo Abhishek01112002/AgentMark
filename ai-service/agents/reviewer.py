@@ -175,6 +175,15 @@ def _fallback_review_analysis(
             copy_issues.append("Hard Rejection Triggered: Enterprise SaaS copy uses high-friction 'Buy Now' CTA")
             copy_actions.append("Replace 'Buy Now' with stage-appropriate CTA like 'Book Architecture Review' or 'Start Trial'")
 
+    # HARD REJECTION CHECK 3: Anti-Fabrication Customer Quote Validation
+    res_foundation = strategy_data.get("research_foundation", {}) if isinstance(strategy_data, dict) else {}
+    voice_quotes = res_foundation.get("customer_voice_insights", []) or research_data.get("customer_voice_insights", [])
+    if not voice_quotes or len(voice_quotes) == 0:
+        fake_quote_triggers = ["users said:", "customers said:", "a buyer quoted:", "on reddit someone wrote:"]
+        if any(trig in copy_text_full for trig in fake_quote_triggers):
+            copy_issues.append("Hard Rejection Triggered: Copy contains synthetic customer quote attribution despite missing customer_voice_insights research")
+            copy_actions.append("Remove fabricated customer quote attributions and use general pain-point messaging")
+
     if strategy_data.get("inferred_goal") and copy_data.get("inferred_goal") and strategy_data.get("inferred_goal") != copy_data.get("inferred_goal"):
         copy_issues.append(
             f"Copy inferred_goal '{copy_data.get('inferred_goal')}' doesn't match strategy inferred_goal '{strategy_data.get('inferred_goal')}'"

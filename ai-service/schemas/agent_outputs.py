@@ -401,6 +401,10 @@ class ResearchFoundation(BaseModel):
     market_analysis: MarketAnalysis = Field(default_factory=MarketAnalysis)
     competitor_analysis: CompetitorAnalysis = Field(default_factory=CompetitorAnalysis)
     audience_insights: AudienceInsights = Field(default_factory=AudienceInsights)
+    customer_voice_insights: List[str] = Field(default_factory=list, description="Real customer quotes and buyer complaints")
+    competitor_vulnerabilities: List[str] = Field(default_factory=list, description="Competitor weaknesses and counter-positioning angles")
+    proven_ad_hooks: List[str] = Field(default_factory=list, description="High-converting visual angles and ad creative hooks")
+    brand_dna: Optional[dict] = Field(default=None, description="Grounded website messaging and brand intelligence")
     market_opportunities: List[str] = Field(default_factory=list)
     recommended_approach: str = Field(default="")
 

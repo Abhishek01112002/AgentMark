@@ -303,6 +303,11 @@ def _extract_surgical_copy_context(strategy: dict, state: CampaignState) -> dict
     buyer_objections = aud_insights.get("buyer_objections", []) or aud_insights.get("objections", [])
     market_trends = market_analysis.get("market_trends", [])[:4]
 
+    customer_voice_insights = research.get("customer_voice_insights", [])[:4]
+    competitor_vulnerabilities = research.get("competitor_vulnerabilities", [])[:4]
+    proven_ad_hooks = research.get("proven_ad_hooks", [])[:4]
+    brand_dna = research.get("brand_dna", None) or getattr(state, "brand_dna", None)
+
     return {
         "positioning": positioning,
         "key_messages": key_messages,
@@ -316,6 +321,10 @@ def _extract_surgical_copy_context(strategy: dict, state: CampaignState) -> dict
         "buyer_objections": buyer_objections,
         "market_trends": market_trends,
         "growth_rate": market_analysis.get("growth_rate", ""),
+        "customer_voice_insights": customer_voice_insights,
+        "competitor_vulnerabilities": competitor_vulnerabilities,
+        "proven_ad_hooks": proven_ad_hooks,
+        "brand_dna": brand_dna,
     }
 
 
@@ -531,24 +540,54 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         )
         state.campaign_intelligence_object = cio_model.model_dump()
 
+    customer_voice_insights = surgical_ctx.get("customer_voice_insights", [])
+    competitor_vulnerabilities = surgical_ctx.get("competitor_vulnerabilities", [])
+    proven_ad_hooks = surgical_ctx.get("proven_ad_hooks", [])
+    brand_dna = surgical_ctx.get("brand_dna", None)
+
+    canonical_intel_parts = []
+    if brand_dna and isinstance(brand_dna, dict) and brand_dna.get("extracted_hero_text"):
+        canonical_intel_parts.append(
+            f"<official_brand_dna>\nSource: {brand_dna.get('source_url', brand_name)}\nValue Prop: {brand_dna.get('extracted_hero_text')}\n</official_brand_dna>"
+        )
+    if customer_voice_insights and isinstance(customer_voice_insights, list):
+        canonical_intel_parts.append(
+            f"<customer_voice_evidence verbatim=\"true\">\n" + "\n".join(f"- {q}" for q in customer_voice_insights[:4]) + "\n</customer_voice_evidence>"
+        )
+    if competitor_vulnerabilities and isinstance(competitor_vulnerabilities, list):
+        canonical_intel_parts.append(
+            f"<competitor_vulnerabilities>\n" + "\n".join(f"- {v}" for v in competitor_vulnerabilities[:4]) + "\n</competitor_vulnerabilities>"
+        )
+    if proven_ad_hooks and isinstance(proven_ad_hooks, list):
+        canonical_intel_parts.append(
+            f"<proven_ad_hooks_patterns>\n" + "\n".join(f"- {h}" for h in proven_ad_hooks[:4]) + "\n</proven_ad_hooks_patterns>"
+        )
+
+    canonical_intel_str = "\n\n".join(canonical_intel_parts) if canonical_intel_parts else "No specific customer voice or ad hook evidence available. Do not fabricate quotes or unverified claims."
+
     # Append Mandatory Copywriting Constraints
     mandatory_marketing_constraints = (
         "\n\n" + "="*80 + "\n"
-        "🚨 MANDATORY COPYWRITING CONSTRAINTS (STRICT COMPLIANCE REQUIRED):\n"
+        "🚨 MANDATORY COPYWRITING & EVIDENCE CONSTRAINTS (STRICT COMPLIANCE REQUIRED):\n"
         f"1. CORE BUYER OBJECTION TO NEUTRALIZE: You MUST explicitly address: \"{primary_objection}\".\n"
         f"2. COMPETITIVE POSITIONING MOAT: Highlight this unique moat: \"{positioning_moat}\".\n"
-        "3. STRICTLY FORBIDDEN CLICHÉ PHRASES: Do NOT use:\n"
+        "3. EVIDENTIARY & CLAIM BOUNDARIES (STRICT ANTI-FABRICATION):\n"
+        "   - Direct Customer Quotes: Use verbatim quotes ONLY if present in <customer_voice_evidence>. If empty, use general pain points without quotation marks or false attributions like 'Your users said'.\n"
+        "   - Competitor Counter-Positioning: Frame competitor weaknesses as strategic counter-positioning angles, NOT unverified slander.\n"
+        "   - Proven Ad Hooks: Treat ad hooks as high-converting creative patterns, not absolute performance guarantees.\n"
+        "4. STRICTLY FORBIDDEN CLICHÉ PHRASES: Do NOT use:\n"
         "   - \"In today's fast-paced world\"\n"
         "   - \"Game-changer\" or \"Revolutionary\"\n"
         "   - \"Unlock your potential\" or \"Seamlessly\"\n"
         "   - \"Transform your business\"\n"
-        "4. PLATFORM-NATIVE HOOK CONSTRAINTS:\n"
-        "   - LINKEDIN: Line 1 MUST be a bold pattern-interrupt hook. Use short executive paragraphs.\n"
-        "   - INSTAGRAM: Emphasize visual narrative, emotion, and community triggers.\n"
+        "5. PLATFORM-NATIVE HOOK CONSTRAINTS:\n"
+        "   - LINKEDIN: Use a bold pattern-interrupt hook or customer quote if available. Use short executive paragraphs.\n"
+        "   - INSTAGRAM / META: Emphasize visual narrative, emotional hook, and brand authenticity.\n"
         "   - GOOGLE ADS: Include punchy search-intent headlines (<30 chars) with high-conversion CTAs.\n"
         "   - EMAIL: Subject line MUST be curiosity/pain driven and under 50 characters.\n"
-        f"5. STAGE-APPROPRIATE CTA: Use this specific CTA direction: \"{goal_keywords}\".\n"
-        + "="*80
+        f"6. STAGE-APPROPRIATE CTA: Use this specific CTA direction: \"{goal_keywords}\".\n"
+        + "="*80 + "\n\n"
+        + canonical_intel_str
     )
     human_feedback_section = human_feedback_section + mandatory_marketing_constraints
 
