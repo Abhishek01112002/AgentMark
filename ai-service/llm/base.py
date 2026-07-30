@@ -26,6 +26,8 @@ def is_payload_too_large_error(error: Exception) -> bool:
         "413" in error_str
         or "payload too large" in error_str
         or "request too large" in error_str
+        or "request is too large" in error_str
+        or "too large for model" in error_str
         or "context_length_exceeded" in error_str
         or "maximum context length" in error_str
     )

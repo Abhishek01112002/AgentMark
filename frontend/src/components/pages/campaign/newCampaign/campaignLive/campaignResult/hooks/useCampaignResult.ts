@@ -14,6 +14,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
 
   // Transient UI-only State
   const decisionMadeRef = useRef(false);
+  const humanReviewShownRef = useRef(false);
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');
@@ -42,7 +43,10 @@ export const useCampaignResult = (campaignId: string | undefined) => {
           setLoading(false);
           if (cachedData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
             setShowHumanReview(true);
-            setIsMinimized(false);
+            if (!humanReviewShownRef.current) {
+              humanReviewShownRef.current = true;
+              setIsMinimized(false);
+            }
           }
         }
       }
@@ -67,7 +71,10 @@ export const useCampaignResult = (campaignId: string | undefined) => {
 
           if (campaignData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
             setShowHumanReview(true);
-            setIsMinimized(false);
+            if (!humanReviewShownRef.current) {
+              humanReviewShownRef.current = true;
+              setIsMinimized(false);
+            }
           }
         }
       } catch (error: any) {

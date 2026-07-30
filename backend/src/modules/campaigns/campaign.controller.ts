@@ -503,9 +503,25 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
     const { id } = req.params;
     const { action, feedback, revisionTarget } = approveCampaignSchema.parse(req.body);
 
-    const campaign = await prisma.campaign.findUnique({
+    const campaign = await (prisma.campaign as any).findUnique({
       where: { id },
-      include: { project: { select: { userId: true, name: true } } },
+      select: {
+        id: true,
+        projectId: true,
+        name: true,
+        brandName: true,
+        industry: true,
+        primaryGoal: true,
+        targetAudience: true,
+        brandVoice: true,
+        status: true,
+        aiOutputs: true,
+        researchRevisionCount: true,
+        strategyRevisionCount: true,
+        copyRevisionCount: true,
+        imageRevisionCount: true,
+        project: { select: { userId: true, name: true } },
+      },
     });
 
     if (!campaign) {

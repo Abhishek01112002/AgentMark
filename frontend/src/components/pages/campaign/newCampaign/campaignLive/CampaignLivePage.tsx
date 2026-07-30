@@ -399,9 +399,11 @@ const CampaignLivePage: React.FC = () => {
             })
           );
         } else if (campaign.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
-          humanReviewShownRef.current = true;
           setShowHumanReview(true);
-          setIsMinimized(false);
+          if (!humanReviewShownRef.current) {
+            humanReviewShownRef.current = true;
+            setIsMinimized(false);
+          }
           setRevisionCounts({
             research: campaign.researchRevisionCount || 0,
             strategy: campaign.strategyRevisionCount || 0,
@@ -800,7 +802,10 @@ const CampaignLivePage: React.FC = () => {
       if (controller.signal.aborted) return;
 
       setShowHumanReview(true);
-      setIsMinimized(false);
+      if (!humanReviewShownRef.current) {
+        humanReviewShownRef.current = true;
+        setIsMinimized(false);
+      }
 
       setAgents((prev) =>
         prev.map((a) => {
