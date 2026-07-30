@@ -44,14 +44,28 @@ CRITICAL DIRECTIVES:
 Return a list of DevilsAdvocateIssue objects matching the schema container.
 """
 
-async def run_devils_advocate_audit(copy_text: str, brand_name: str, client=None) -> List[DevilsAdvocateIssue]:
+async def run_devils_advocate_audit(copy_text: str, brand_name: str, client=None, campaign_context: dict | None = None) -> List[DevilsAdvocateIssue]:
     """
     Executes independent Devil's Advocate adversarial audit.
     """
     if client is None:
         client = get_llm_client()
 
-    prompt = f"{SYSTEM_PROMPT}\n\nBrand: {brand_name}\nAd Copy to Audit:\n<campaign_copy>\n{copy_text}\n</campaign_copy>"
+    res_ctx_parts = []
+    if campaign_context and isinstance(campaign_context, dict):
+        cvi = campaign_context.get("customer_voice_insights") or []
+        cvul = campaign_context.get("competitor_vulnerabilities") or []
+        dna = campaign_context.get("brand_dna")
+        if cvi:
+            res_ctx_parts.append("VERBATIM CUSTOMER PAIN QUOTES:\n" + "\n".join(f"- {q}" for q in cvi[:3]))
+        if cvul:
+            res_ctx_parts.append("COMPETITOR WEAKNESSES TO BEAT:\n" + "\n".join(f"- {v}" for v in cvul[:3]))
+        if dna and isinstance(dna, dict) and dna.get("extracted_hero_text"):
+            res_ctx_parts.append(f"OFFICIAL BRAND DNA VALUE PROP: {dna.get('extracted_hero_text')}")
+
+    res_ctx_str = ("\n\nRESEARCH INTELLIGENCE EVIDENCE:\n" + "\n".join(res_ctx_parts)) if res_ctx_parts else ""
+
+    prompt = f"{SYSTEM_PROMPT}{res_ctx_str}\n\nBrand: {brand_name}\nAd Copy to Audit:\n<campaign_copy>\n{copy_text}\n</campaign_copy>"
 
     try:
         loop = asyncio.get_running_loop()

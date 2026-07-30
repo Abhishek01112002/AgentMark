@@ -584,6 +584,7 @@ async def simulate_focus_group(
             personas=personas,
             campaign_provider=campaign_provider,
             negativity_bias=request.negativity_bias,  # Fix #11: pass configurable bias
+            campaign_context=request.campaign_context,
         )
     except (RuntimeError, asyncio.TimeoutError, AllProvidersRateLimitedError) as exc:
         elapsed = time.monotonic() - t_start

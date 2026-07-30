@@ -73,7 +73,8 @@ async def run_focus_group_simulation(
     copy_output: str,
     personas: List[PersonaProfile],
     campaign_provider: str,
-    negativity_bias: float = 0.3
+    negativity_bias: float = 0.3,
+    campaign_context: dict | None = None
 ) -> FocusGroupReport:
     from utils.prompt_sanitizer import sanitize_user_input
     from utils.idempotency import generate_request_hash, get_cached_simulation, store_cached_simulation
@@ -104,7 +105,7 @@ async def run_focus_group_simulation(
     # ── Step 1: Run Isolated Persona Audits + Trust Analyzer + Devil's Advocate in Parallel ──
     async def run_isolated_persona(persona: PersonaProfile):
         return await asyncio.wait_for(
-            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, sanitized_copy)),
+            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, sanitized_copy, campaign_context=campaign_context)),
             timeout=35.0
         )
 
@@ -113,7 +114,7 @@ async def run_focus_group_simulation(
 
     persona_tasks = [run_isolated_persona(p) for p in personas]
     trust_task = _run_with_retry(lambda: analyze_trust_signals(copy_output, client))
-    devils_task = _run_with_retry(lambda: run_devils_advocate_audit(copy_output, brand_name, client))
+    devils_task = _run_with_retry(lambda: run_devils_advocate_audit(copy_output, brand_name, client, campaign_context=campaign_context))
 
     # Execute all 3 agent groups concurrently
     results = await asyncio.gather(*persona_tasks, trust_task, devils_task, return_exceptions=True)
@@ -209,11 +210,26 @@ async def _run_single_persona_critique(
     client,
     persona: PersonaProfile,
     brand_name: str,
-    copy_output: str
+    copy_output: str,
+    campaign_context: dict | None = None
 ) -> PersonaCritique:
     """
     Roleplays as an individual consumer persona and critiques the ad copy.
     """
+    res_ctx_parts = []
+    if campaign_context and isinstance(campaign_context, dict):
+        cvi = campaign_context.get("customer_voice_insights") or []
+        cvul = campaign_context.get("competitor_vulnerabilities") or []
+        dna = campaign_context.get("brand_dna")
+        if cvi:
+            res_ctx_parts.append("VERBATIM CUSTOMER PAIN QUOTES:\n" + "\n".join(f"- {q}" for q in cvi[:3]))
+        if cvul:
+            res_ctx_parts.append("COMPETITOR WEAKNESSES TO BEAT:\n" + "\n".join(f"- {v}" for v in cvul[:3]))
+        if dna and isinstance(dna, dict) and dna.get("extracted_hero_text"):
+            res_ctx_parts.append(f"OFFICIAL BRAND DNA VALUE PROP: {dna.get('extracted_hero_text')}")
+
+    res_ctx_str = ("\n\nRESEARCH INTELLIGENCE EVIDENCE:\n" + "\n".join(res_ctx_parts)) if res_ctx_parts else ""
+
     system_prompt = (
         f"You are roleplaying strictly as {persona.name}, aged {persona.age}, working as {persona.occupation}.\n"
         f"Income Bracket: {persona.income_bracket}\n"
@@ -227,6 +243,7 @@ async def _run_single_persona_critique(
         "3. Evaluate the copy against your specific buying barriers. If a barrier is unaddressed, penalize the Trust score severely (1 or 2).\n"
         "4. In the 'clash_quote' field, quote the EXACT sentence from the copy that triggered your doubt.\n"
         "5. Rate each of the 4 rubric dimensions (Clarity, Trust, Value, Urgency) strictly between 1 (Worst) and 5 (Best)."
+        f"{res_ctx_str}"
     )
     
     prompt = f"{system_prompt}\n\nAd Copy to Review:\n{copy_output}"

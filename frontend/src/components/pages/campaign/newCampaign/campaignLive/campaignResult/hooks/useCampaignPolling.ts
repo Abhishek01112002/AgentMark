@@ -39,6 +39,10 @@ export const useCampaignPolling = ({
           goal: campaign.primaryGoal,
           target_audience: campaign.targetAudience,
           audience: campaign.targetAudience,
+          customer_voice_insights: campaign.research?.customer_voice_insights || [],
+          competitor_vulnerabilities: campaign.research?.competitor_vulnerabilities || [],
+          proven_ad_hooks: campaign.research?.proven_ad_hooks || [],
+          brand_dna: campaign.research?.brand_dna || null,
         },
       }, {
         timeout: 60000,
