@@ -111,7 +111,16 @@ function DashboardContent() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
+    const getSocketUrl = () => {
+      if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+      if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+      if (typeof window !== 'undefined' && window.location) {
+        return `${window.location.protocol}//${window.location.hostname}:5003`;
+      }
+      return 'http://localhost:5003';
+    };
+
+    const SOCKET_URL = getSocketUrl();
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {
@@ -122,8 +131,20 @@ function DashboardContent() {
       auth: { token },
     });
 
+    socket.on('reconnect_attempt', () => {
+      const freshToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+      socket.auth = { token: freshToken };
+    });
+
     socket.on('connect', () => {
       setSocketConnected(true);
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('[DashboardPage] Socket connect error:', err.message);
+      setSocketConnected(false);
+      const freshToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+      if (freshToken) socket.auth = { token: freshToken };
     });
 
     socket.on('disconnect', () => {

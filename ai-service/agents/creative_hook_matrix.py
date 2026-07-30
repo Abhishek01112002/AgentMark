@@ -192,7 +192,7 @@ def creative_hook_matrix_agent(state: CampaignState) -> CampaignState:
             prompt=prompt,
             industry=state.industry or "",
             temperature=0.6,
-            max_tokens=5000,
+            max_tokens=8192,
         )
         cached = cache_get(cache_key)
         if cached is not None:
@@ -204,7 +204,7 @@ def creative_hook_matrix_agent(state: CampaignState) -> CampaignState:
             hook_output, state = safe_llm_call(
                 state,
                 "CreativeHookMatrix",
-                lambda: llm.generate_structured(prompt, CreativeHookMatrixOutput, temperature=0.6, max_tokens=5000),
+                lambda: llm.generate_structured(prompt, CreativeHookMatrixOutput, temperature=0.6, max_tokens=8192),
             )
             llm_latency_ms = (time.perf_counter() - llm_start) * 1000
             if hook_output is not None:

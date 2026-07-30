@@ -1,3 +1,10 @@
+from .enum_registry import (
+    CONTENT_TYPE_CODES,
+    GOAL_CODES,
+    CHANNEL_CODES,
+    expand_code_to_enum,
+)
+
 from .agent_outputs import (
     # Manager
     ManagerOutput,
@@ -64,6 +71,10 @@ from .agent_outputs import (
 )
 
 __all__ = [
+    "CONTENT_TYPE_CODES",
+    "GOAL_CODES",
+    "CHANNEL_CODES",
+    "expand_code_to_enum",
     "ManagerOutput",
     "ResearchOutput",
     "MarketAnalysis",

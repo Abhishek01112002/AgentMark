@@ -55,7 +55,7 @@ from agents.manager import manager_agent
 from agents.research import research_agent
 from agents.strategy import strategy_agent
 from agents.copywriter import copywriter_agent
-from agents.creative_hook_matrix import creative_hook_matrix_agent
+from agents.creative_hook_matrix import creative_hook_matrix_agent, _fallback_hook_matrix
 from agents.image_prompt import image_prompt_agent
 
 from agents.reviewer import reviewer_agent
@@ -79,25 +79,35 @@ def _try_parse_json(val):
         return val
 
 
-# ==================== NODE WRAPPER FUNCTIONS ====================
-# These wrap your existing agent functions to work with LangGraph
+import threading
+from contextvars import ContextVar
 
-_step_counter = 0
+_CAMPAIGN_STEP_COUNTER: ContextVar[int] = ContextVar("_campaign_step_counter", default=0)
+_GLOBAL_STEP_LOCK = threading.Lock()
+_global_step_counter = 0
 
 def _log_node_execution(node_name: str, state: CampaignState, skipped: bool = False):
-    global _step_counter
-    _step_counter += 1
+    global _global_step_counter
+    campaign_step = _CAMPAIGN_STEP_COUNTER.get(0) + 1
+    _CAMPAIGN_STEP_COUNTER.set(campaign_step)
+
+    with _GLOBAL_STEP_LOCK:
+        _global_step_counter += 1
+        global_step = _global_step_counter
+
     has_hooks = bool(getattr(state, "creative_hook_matrix_output", None))
     is_cancelled = is_campaign_cancelled(state.campaign_id) if (hasattr(state, "campaign_id") and state.campaign_id) else False
     rev_counts = (
         f"research={getattr(state, 'research_revision_count', 0) or 0}, "
         f"strategy={getattr(state, 'strategy_revision_count', 0) or 0}, "
         f"copy={getattr(state, 'copy_revision_count', 0) or 0}, "
+        f"hook_matrix={getattr(state, 'creative_hook_matrix_revision_count', 0) or 0}, "
         f"image={getattr(state, 'image_revision_count', 0) or 0}"
     )
     log_msg = (
-        f"\nStep {_step_counter}\n"
+        f"\nStep {campaign_step} (Global #{global_step})\n"
         f"[{node_name}]\n"
+        f"  - campaign_id: {getattr(state, 'campaign_id', 'unknown')}\n"
         f"  - skipped: {skipped}\n"
         f"  - status: {getattr(state, 'status', None)}\n"
         f"  - human_status: {getattr(state, 'human_approval_status', None)}\n"
@@ -105,8 +115,6 @@ def _log_node_execution(node_name: str, state: CampaignState, skipped: bool = Fa
         f"  - cancellation: {is_cancelled}\n"
         f"  - creative_hook_matrix_output exists: {has_hooks}\n"
         f"  - revision_counts: {rev_counts}\n"
-        f"v"
-
     )
     logger.info(log_msg)
     print(log_msg, flush=True)
@@ -118,6 +126,7 @@ def _get_revision_counts_extra(state: CampaignState) -> dict:
         "research_revision_count": state.research_revision_count or 0,
         "strategy_revision_count": state.strategy_revision_count or 0,
         "copy_revision_count": state.copy_revision_count or 0,
+        "creative_hook_matrix_revision_count": state.creative_hook_matrix_revision_count or 0,
         "image_revision_count": state.image_revision_count or 0,
     }
 
@@ -135,6 +144,16 @@ def manager_node(state: CampaignState) -> dict:
     # Skip if manager already completed (in any revision/approval mode)
     if state.manager_output:
         logger.info("Skipping Manager (already completed)")
+        publish_agent_event(
+            state.campaign_id,
+            "manager",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"manager_output": _try_parse_json(state.manager_output)}
+            }
+        )
         return {}
     
     publish_agent_event(state.campaign_id, "manager", "running", extra=_get_revision_counts_extra(state))
@@ -184,6 +203,16 @@ def research_node(state: CampaignState) -> dict:
     elif state.research_output:
         # Already has output and not targeted - skip
         logger.info("⏭️  Skipping Research (already completed)")
+        publish_agent_event(
+            state.campaign_id,
+            "research",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"research_output": _try_parse_json(state.research_output)}
+            }
+        )
         return {}
     
     publish_agent_event(state.campaign_id, "research", "running", extra=_get_revision_counts_extra(state))
@@ -269,6 +298,16 @@ def strategy_node(state: CampaignState) -> dict:
     elif state.strategy_output:
         # Already has output and not in revision mode - skip
         logger.info("⏭️  Skipping Strategy (already completed)")
+        publish_agent_event(
+            state.campaign_id,
+            "strategy",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"strategy_output": _try_parse_json(state.strategy_output)}
+            }
+        )
         return {}
     
     publish_agent_event(state.campaign_id, "strategy", "running", extra=_get_revision_counts_extra(state))
@@ -350,6 +389,16 @@ def copywriter_node(state: CampaignState) -> dict:
     elif state.copy_output:
         # Already has output and not in revision mode - skip
         _log_node_execution("copywriter", state, skipped=True)
+        publish_agent_event(
+            state.campaign_id,
+            "copywriter",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"copy_output": _try_parse_json(state.copy_output)}
+            }
+        )
         return {}
 
     _log_node_execution("copywriter", state, skipped=False)
@@ -378,12 +427,25 @@ def copywriter_node(state: CampaignState) -> dict:
         updated_state.image_output = None
         updated_state.review_output = None
         
-        publish_agent_event(state.campaign_id, "copywriter", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"copy_output": _try_parse_json(updated_state.copy_output)}})
+        publish_agent_event(
+            state.campaign_id,
+            "copywriter",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(updated_state),
+                "outputs": {
+                    "copy_output": _try_parse_json(updated_state.copy_output),
+                    "creative_hook_matrix_output": None,
+                    "image_output": None,
+                    "review_output": None,
+                }
+            }
+        )
         return {
             "copy_output": updated_state.copy_output,
-            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
-            "image_output": updated_state.image_output,
-            "review_output": updated_state.review_output,
+            "creative_hook_matrix_output": None,
+            "image_output": None,
+            "review_output": None,
             "copy_revision_count": updated_state.copy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
             "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
@@ -424,6 +486,16 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
         logger.info("   🔄 Running creative hook matrix (no existing output)...")
     elif state.creative_hook_matrix_output:
         _log_node_execution("creative_hook_matrix", state, skipped=True)
+        publish_agent_event(
+            state.campaign_id,
+            "creative_hook_matrix",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"creative_hook_matrix_output": _try_parse_json(state.creative_hook_matrix_output)}
+            }
+        )
         return {}
 
     _log_node_execution("creative_hook_matrix", state, skipped=False)
@@ -434,31 +506,54 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
     state.image_output = None
     state.review_output = None
 
-    updated_state = creative_hook_matrix_agent(state)
+    try:
+        updated_state = creative_hook_matrix_agent(state)
 
-    if is_targeted_for_revision:
-        updated_state.human_revision_target = None
+        if is_targeted_for_revision:
+            current_count = updated_state.creative_hook_matrix_revision_count or 0
+            updated_state.creative_hook_matrix_revision_count = current_count + 1
+            logger.info(f"\nCreative Hook Matrix revision count: {updated_state.creative_hook_matrix_revision_count}/3")
+            updated_state.human_revision_target = None
 
-    updated_state.image_output = None
-    updated_state.review_output = None
+        updated_state.image_output = None
+        updated_state.review_output = None
 
-    publish_agent_event(
-        state.campaign_id,
-        "creative_hook_matrix",
-        "completed",
-        extra={
-            **_get_revision_counts_extra(updated_state),
-            "outputs": {"creative_hook_matrix_output": _try_parse_json(updated_state.creative_hook_matrix_output)}
-        },
-    )
-    return {
-        "creative_hook_matrix_output": updated_state.creative_hook_matrix_output,
-        "image_output": updated_state.image_output,
-        "review_output": updated_state.review_output,
-        "human_revision_target": updated_state.human_revision_target,
-        "status": updated_state.status,
-        "error": updated_state.error,
-    }
+        publish_agent_event(
+            state.campaign_id,
+            "creative_hook_matrix",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(updated_state),
+                "outputs": {"creative_hook_matrix_output": _try_parse_json(updated_state.creative_hook_matrix_output)}
+            },
+        )
+        return {
+            "creative_hook_matrix_output": updated_state.creative_hook_matrix_output,
+            "image_output": updated_state.image_output,
+            "review_output": updated_state.review_output,
+            "creative_hook_matrix_revision_count": updated_state.creative_hook_matrix_revision_count,
+            "human_revision_target": updated_state.human_revision_target,
+            "status": updated_state.status,
+            "error": updated_state.error,
+        }
+    except Exception as e:
+        err_msg = str(e).strip() or f"Creative Hook Matrix agent error ({type(e).__name__})"
+        logger.error("💥 Creative Hook Matrix Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        publish_agent_event(state.campaign_id, "creative_hook_matrix", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
+
+        # creative_hook_matrix is non-blocking: generate diagnostic fallback hook matrix
+        # so downstream agents (image_prompt, reviewer) can continue seamlessly without crashing the workflow.
+        fallback_output = _fallback_hook_matrix(state, reason=err_msg)
+        fallback_json = fallback_output.model_dump_json(indent=2)
+
+        return {
+            "creative_hook_matrix_output": fallback_json,
+            "image_output": None,
+            "review_output": None,
+            "human_revision_target": None,
+            "status": "creative_hook_matrix_complete",
+            "error": None,
+        }
 
 
 def image_prompt_node(state: CampaignState) -> dict:
@@ -490,6 +585,16 @@ def image_prompt_node(state: CampaignState) -> dict:
     elif state.image_output:
         # Already has output and not in revision mode - skip
         _log_node_execution("image_prompt", state, skipped=True)
+        publish_agent_event(
+            state.campaign_id,
+            "image_prompt",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"image_output": _try_parse_json(state.image_output)}
+            }
+        )
         return {}
 
     _log_node_execution("image_prompt", state, skipped=False)
@@ -552,6 +657,16 @@ def reviewer_node(state: CampaignState) -> dict:
     # After human approval, workflow should go directly to publisher, not back through reviewer
     if state.human_approval_status == "approved":
         _log_node_execution("reviewer", state, skipped=True)
+        publish_agent_event(
+            state.campaign_id,
+            "reviewer",
+            "completed",
+            extra={
+                **_get_revision_counts_extra(state),
+                "skipped": True,
+                "outputs": {"review_output": _try_parse_json(state.review_output)}
+            }
+        )
         return {}
 
     _log_node_execution("reviewer", state, skipped=False)
@@ -611,6 +726,7 @@ def human_approval_wrapper(state: CampaignState) -> dict:
 
     try:
         updated_state = human_approval_node(state)
+        publish_agent_event(state.campaign_id, "human_approval", "awaiting_human_approval", extra=_get_revision_counts_extra(updated_state))
         return {
             "human_approval_status": updated_state.human_approval_status,
             "human_feedback": updated_state.human_feedback,

@@ -126,7 +126,7 @@ class ProviderPool:
             self._idx = (self._idx + 1) % len(self.providers)
             return p
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
         attempts = len(self.providers)
         last_error = None
         for _ in range(attempts):
@@ -134,7 +134,7 @@ class ProviderPool:
             if client.circuit_breaker.is_open():
                 continue
             try:
-                result = client.generate(prompt, temperature, max_tokens)
+                result = client.generate(prompt, system_prompt=system_prompt, temperature=temperature, max_tokens=max_tokens, seed=seed)
                 client.circuit_breaker.record_success()
                 return result
             except Exception as e:
@@ -143,7 +143,7 @@ class ProviderPool:
                 logger.warning(f"⚠️ {name} key failed ({str(e)[:60]}), trying next...")
         raise last_error or RuntimeError("All providers/keys exhausted")
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 8192):
+    def generate_structured(self, prompt: str, response_model, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
         attempts = len(self.providers)
         last_error = None
         for _ in range(attempts):
@@ -151,7 +151,7 @@ class ProviderPool:
             if client.circuit_breaker.is_open():
                 continue
             try:
-                result = client.generate_structured(prompt, response_model, temperature, max_tokens)
+                result = client.generate_structured(prompt, response_model, system_prompt=system_prompt, temperature=temperature, max_tokens=max_tokens, seed=seed)
                 client.circuit_breaker.record_success()
                 return result
             except Exception as e:
@@ -164,7 +164,6 @@ class ProviderPool:
 # Global shared rate limiter — aggregate safety net across all providers
 # Capped burst capacity set to 8 to allow parallel focus-group persona calls without queuing
 GLOBAL_RATE_LIMITER = TokenBucket(capacity=8, refill_rate=0.5)
-
 
 
 class BaseLLMClient(ABC):
@@ -208,11 +207,11 @@ class BaseLLMClient(ABC):
         self.circuit_breaker.record_success()
 
     @abstractmethod
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
         pass
 
     @abstractmethod
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
+    def generate_structured(self, prompt: str, response_model, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
         pass
 
 
@@ -221,8 +220,8 @@ class PoolClient(BaseLLMClient):
     def __init__(self, pool: ProviderPool):
         self._pool = pool
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
-        return self._pool.generate(prompt, temperature, max_tokens, seed=seed)
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
+        return self._pool.generate(prompt, system_prompt=system_prompt, temperature=temperature, max_tokens=max_tokens, seed=seed)
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 4000, seed: int | None = None):
-        return self._pool.generate_structured(prompt, response_model, temperature, max_tokens, seed=seed)
+    def generate_structured(self, prompt: str, response_model, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
+        return self._pool.generate_structured(prompt, response_model, system_prompt=system_prompt, temperature=temperature, max_tokens=max_tokens, seed=seed)

@@ -334,7 +334,7 @@ export const synthesizeBrandMemory = async (req: AuthRequest, res: Response, nex
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    const highScoringCampaigns = project.campaigns.filter(c => (c.reviewScore ?? 0) >= 7.0 || c.status === 'completed');
+    const highScoringCampaigns = project.campaigns.filter(c => (c.reviewScore ?? 0) >= 70.0 || c.status === 'completed');
     const insightsCount = highScoringCampaigns.length;
 
     let targetCampaign = project.campaigns[0];

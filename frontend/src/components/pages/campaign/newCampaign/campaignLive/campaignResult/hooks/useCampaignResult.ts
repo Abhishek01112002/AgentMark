@@ -10,7 +10,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
   const [notFound, setNotFound] = useState(false);
   const [memoryInsights, setMemoryInsights] = useState<any[]>([]);
   const [memoryCount, setMemoryCount] = useState<number>(0);
-  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(false);
+  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(true);
 
   // Transient UI-only State
   const decisionMadeRef = useRef(false);
@@ -31,6 +31,23 @@ export const useCampaignResult = (campaignId: string | undefined) => {
     const controller = new AbortController();
     const signal = controller.signal;
 
+    // ⚡ FAANG-Grade SWR Cache Hydration: Hydrate instantly from sessionStorage if available
+    const cacheKey = `agentmark_campaign_cache_${campaignId}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        if (cachedData) {
+          dispatch({ type: 'CAMPAIGN_LOADED', payload: cachedData });
+          setLoading(false);
+          if (cachedData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
+            setShowHumanReview(true);
+            setIsMinimized(false);
+          }
+        }
+      }
+    } catch {}
+
     const fetchCampaign = async () => {
       try {
         setNotFound(false);
@@ -42,6 +59,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
         if (!campaignData) {
           setNotFound(true);
         } else {
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(campaignData)); } catch {}
           dispatch({
             type: 'CAMPAIGN_LOADED',
             payload: campaignData,
@@ -49,6 +67,7 @@ export const useCampaignResult = (campaignId: string | undefined) => {
 
           if (campaignData.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
             setShowHumanReview(true);
+            setIsMinimized(false);
           }
         }
       } catch (error: any) {
@@ -87,9 +106,12 @@ export const useCampaignResult = (campaignId: string | undefined) => {
       }
     };
 
-    fetchCampaign();
-    fetchMemoryInsights();
-    fetchFeatureFlags();
+    // Parallel execution
+    Promise.allSettled([
+      fetchCampaign(),
+      fetchMemoryInsights(),
+      fetchFeatureFlags(),
+    ]);
 
     return () => controller.abort();
   }, [campaignId]);

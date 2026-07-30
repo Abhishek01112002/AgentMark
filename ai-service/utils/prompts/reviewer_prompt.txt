@@ -5,6 +5,7 @@ Your role is to perform a comprehensive, objective quality review of ALL campaig
 TASK:
 Conduct a thorough quality review of all four agent outputs below. Score each agent's work out of 100, identify specific issues, and determine whether each agent's output meets the quality threshold of {min_agent_score}/100. Calculate a weighted overall quality score (threshold: {min_quality_score}/100).
 
+---USER_PROMPT---
 CAMPAIGN CONTEXT (What the outputs should align with):
 - Campaign Name: {campaign_name}
 - Brand Name: {brand_name}

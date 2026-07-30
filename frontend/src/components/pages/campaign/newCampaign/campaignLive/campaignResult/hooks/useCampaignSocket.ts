@@ -10,6 +10,15 @@ interface UseCampaignSocketProps {
   setShowHumanReview: (show: boolean) => void;
 }
 
+const getSocketUrl = () => {
+  if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.protocol}//${window.location.hostname}:5003`;
+  }
+  return 'http://localhost:5003';
+};
+
 export const useCampaignSocket = ({
   campaignId,
   dispatch,
@@ -21,7 +30,7 @@ export const useCampaignSocket = ({
     if (!campaignId) return;
 
     const controller = new AbortController();
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
+    const SOCKET_URL = getSocketUrl();
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     let mounted = true;
@@ -34,14 +43,27 @@ export const useCampaignSocket = ({
         const socket = io(SOCKET_URL, {
           transports: ['websocket', 'polling'],
           reconnection: true,
-          reconnectionDelay: 2000,
-          reconnectionAttempts: 5,
+          reconnectionDelay: 500,
+          reconnectionDelayMax: 3000,
+          reconnectionAttempts: 20,
+          multiplex: true,
           auth: { token },
         });
         socketRef.current = socket;
 
+        socket.on('reconnect_attempt', () => {
+          const freshToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+          socket.auth = { token: freshToken };
+        });
+
         socket.on('connect', () => {
           socket.emit('join_campaign', campaignId);
+        });
+
+        socket.on('connect_error', (err: Error) => {
+          console.warn('[useCampaignSocket] Connect error:', err.message);
+          const freshToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+          if (freshToken) socket.auth = { token: freshToken };
         });
 
         socket.on('agent_update', (data: any) => {
@@ -59,61 +81,52 @@ export const useCampaignSocket = ({
               type: 'FOCUS_GROUP_COMPLETE',
               payload: {
                 report: data.report,
-                hashKey: data.hashKey,
-                score: data.score ?? data.report?.overall_score,
+                participants: data.participants,
               },
             });
-
-            const score = data.score ?? data.report?.overall_score;
-            toast.success(
-              score != null
-                ? `Focus Group updated — Score: ${score}/100`
-                : 'Focus Group results updated',
-              { duration: 4000 }
-            );
-          }
-        });
-
-        socket.on('campaign_data_updated', async (data: any) => {
-          if (data?.campaignId === campaignId && data?.updatedField !== 'focus_group') {
-            try {
-              const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
-              if (response.data?.campaign) {
-                dispatch({
-                  type: 'CAMPAIGN_LOADED',
-                  payload: response.data.campaign,
-                });
-              }
-            } catch (err: any) {
-              if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
-              console.error('Failed to refresh campaign after MCP update:', err);
-            }
+            toast.success('Focus Group Simulation Completed!');
           }
         });
 
         socket.on('human_approval_required', async () => {
+          setShowHumanReview(true);
+          toast('Campaign Requires Human Review', { icon: '🔍' });
           try {
-            const response = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
-            const campaignData = response.data?.campaign;
-            if (campaignData) {
+            const res = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
+            if (res.data?.data && mounted) {
               dispatch({
-                type: 'CAMPAIGN_LOADED',
-                payload: campaignData,
+                type: 'CAMPAIGN_LOAD_SUCCESS',
+                payload: res.data.data,
               });
-              setShowHumanReview(true);
-              toast.success('Copy revision complete — ready for review', { duration: 4000 });
             }
           } catch (err: any) {
-            if (err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
-            console.error('Failed to refresh campaign after revision:', err);
+            if (err?.name === 'AbortError' || err?.name === 'CanceledError') return;
+            console.error('Failed to refetch campaign on human_approval_required:', err);
+          }
+        });
+
+        socket.on('campaign_complete', async () => {
+          setShowHumanReview(false);
+          toast.success('Campaign Generation Complete!');
+          try {
+            const res = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
+            if (res.data?.data && mounted) {
+              dispatch({
+                type: 'CAMPAIGN_LOAD_SUCCESS',
+                payload: res.data.data,
+              });
+            }
+          } catch (err: any) {
+            if (err?.name === 'AbortError' || err?.name === 'CanceledError') return;
+            console.error('Failed to refetch campaign on campaign_complete:', err);
           }
         });
       } catch (err) {
-        console.error('Failed to initialize socket connection:', err);
+        console.error('Failed to load socket.io-client:', err);
       }
     };
 
-    connectSocket();
+    void connectSocket();
 
     return () => {
       mounted = false;
@@ -121,10 +134,7 @@ export const useCampaignSocket = ({
       if (socketRef.current) {
         socketRef.current.emit('leave_campaign', campaignId);
         socketRef.current.disconnect();
-        socketRef.current = null;
       }
     };
   }, [campaignId, dispatch, setShowHumanReview]);
-
-  return { socketRef };
 };

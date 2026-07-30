@@ -1,5 +1,5 @@
 """
-Copy Summary Builder — Normalizes and extracts channel copy headlines/CTAs for Reviewer.
+Copy Summary Builder — Normalizes and extracts channel copy evidence for Reviewer DTO.
 """
 
 import json
@@ -21,7 +21,7 @@ def _safe_parse_json(raw: Any) -> Dict[str, Any]:
 
 
 def build_copy_summary(copy_raw: Any) -> CopySummary:
-    """Extract per-channel headlines, primary CTAs, messaging framework, strategic alignment, and field presence."""
+    """Extract per-channel headlines, primary CTAs, body snippets, word counts, and field presence."""
     data = _safe_parse_json(copy_raw)
     if not data:
         return CopySummary(status="EMPTY")
@@ -39,16 +39,23 @@ def build_copy_summary(copy_raw: Any) -> CopySummary:
     for ch in known_channels:
         ch_data = copies_dict.get(ch)
         if isinstance(ch_data, dict):
-            headline = ch_data.get("headline") or ch_data.get("subject") or ""
+            headline = str(ch_data.get("headline") or ch_data.get("subject") or "")[:80]
             ctas = ch_data.get("ctas") or {}
-            primary_cta = (
+            primary_cta = str(
                 ctas.get("hero_cta") or
                 ctas.get("primary_cta") or
                 (next(iter(ctas.values()), "") if isinstance(ctas, dict) and ctas else "")
-            )
+            )[:60]
+            
+            body_raw = str(ch_data.get("body") or ch_data.get("content") or "").strip()
+            word_count = len(body_raw.split()) if body_raw else 0
+            body_snippet = body_raw[:100]
+
             channel_summaries[ch] = ChannelCopyMeta(
                 headline=headline,
                 primary_cta=primary_cta,
+                body_snippet=body_snippet,
+                word_count=word_count,
             )
 
     inf_goal = str(data.get("inferred_goal") or "").strip()
@@ -77,4 +84,3 @@ def build_copy_summary(copy_raw: Any) -> CopySummary:
         copy_readiness_present=copy_ready,
         field_presence=field_presence,
     )
-

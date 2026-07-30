@@ -1,22 +1,37 @@
 """
 Campaign Schemas
 
-Request/response models and enums for campaign creation.
+Pydantic models for API request/response validation.
+Matches the structure expected by the FastAPI routes and LangGraph state.
 """
 
 import json
 from typing import Optional, Dict, Any, Union
 from pydantic import BaseModel, Field
 
-# ── Request Model ─────────────────────────────────────────────────────────────
+
+def try_parse_json(val: Any) -> Optional[dict]:
+    """Parse stringified JSON or pass dict through."""
+    if not val:
+        return None
+    if isinstance(val, dict):
+        return val
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except Exception:
+            return {"raw": val}
+    return None
+
+
+# ── Request Models ────────────────────────────────────────────────────────────
 
 class CampaignCreateRequest(BaseModel):
-    """Input payload for creating a new campaign."""
-
+    """Payload sent from Express.js to FastAPI /campaigns/create."""
     campaign_name: str = Field(
         min_length=1,
         max_length=255,
-        description="Name of the marketing campaign",
+        description="Name of the campaign",
         examples=["Black Friday Mega Sale 2024"],
     )
     brand_name: str = Field(
@@ -78,6 +93,7 @@ class CampaignCreateRequest(BaseModel):
     research_revision_count: Optional[int] = Field(default=0)
     strategy_revision_count: Optional[int] = Field(default=0)
     copy_revision_count: Optional[int] = Field(default=0)
+    creative_hook_matrix_revision_count: Optional[int] = Field(default=0)
     image_revision_count: Optional[int] = Field(default=0)
     client_memory_context: Optional[str] = Field(default=None)
 
@@ -109,31 +125,19 @@ class CampaignCreateResponse(BaseModel):
         description="True if workflow is paused at the Human-in-the-Loop gate"
     )
     workflow_finished: bool = Field(
-        description="True if Publisher executed and workflow is complete"
+        description="True if Publisher completed and campaign is done"
     )
-    outputs: AgentOutputs = Field(description="All agent outputs as parsed JSON objects")
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def try_parse_json(raw: Optional[str]) -> Optional[dict]:
-    """Parse a JSON string to dict; wrap unparsable strings in {raw: ...}."""
-    if not raw:
-        return None
-    try:
-        return json.loads(raw)
-    except (json.JSONDecodeError, TypeError):
-        return {"raw": raw}
+    outputs: AgentOutputs = Field(description="Parsed JSON outputs for all agents")
 
 
 class CopyVariantRequest(BaseModel):
     campaign_id: str
     channel: str
-    steering_note: str = ""
-    existing_copy: Optional[str] = None
+    target_audience: str
+    brand_voice: str
+    brief: Optional[str] = None
+    steering_note: Optional[str] = None
     strategy_data: Optional[str] = None
-    brief: str = ""
-    brand_voice: str = "professional"
-    target_audience: str = ""
-    llm_config: Optional[dict] = None
-    focus_group_context: Optional[str] = None  # Stringified focus group recommendations to inject into variant prompt
+    existing_copy: Optional[str] = None
+    focus_group_context: Optional[str] = None
+    llm_config: Optional[Dict[str, Any]] = None

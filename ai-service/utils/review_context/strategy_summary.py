@@ -1,5 +1,5 @@
 """
-Strategy Summary Builder — Normalizes and extracts strategy positioning for Reviewer.
+Strategy Summary Builder — Normalizes and extracts strategy evidence for Reviewer DTO.
 """
 
 import json
@@ -30,62 +30,41 @@ def _summarize_audience_segments(raw_segments: Any) -> List[str]:
         if isinstance(segment, str):
             text = segment.strip()
         elif isinstance(segment, dict):
-            name = segment.get("segment_name") or segment.get("name") or "Audience segment"
+            name = segment.get("segment_name") or segment.get("name") or "Segment"
             pain_point = segment.get("pain_point") or segment.get("pain_points") or ""
-            motivation = segment.get("motivation") or segment.get("motivations") or ""
             messaging = segment.get("messaging") or segment.get("key_message") or ""
-            parts = [str(name).strip()]
-            for label, value in (
-                ("pain", pain_point),
-                ("motivation", motivation),
-                ("message", messaging),
-            ):
-                if isinstance(value, list):
-                    value = ", ".join(str(item).strip() for item in value if str(item).strip())
-                value_text = str(value).strip()
-                if value_text:
-                    parts.append(f"{label}: {value_text}")
-            text = " | ".join(parts)
+            if isinstance(pain_point, list):
+                pain_point = ", ".join(str(item) for item in pain_point[:2])
+            text = f"{name}: {pain_point} -> {messaging}".strip(" ->")
         else:
             text = str(segment).strip()
 
         if text:
-            summaries.append(text[:240])
+            summaries.append(text[:120])
 
     return summaries
 
 
 def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
-    """Extract positioning, key messaging pillars, timeline, success metrics, and field presence."""
+    """Extract positioning, key messaging pillars, timeline summary, and field presence."""
     data = _safe_parse_json(strategy_raw)
     if not data:
         return StrategySummary(status="EMPTY")
 
     channel_strategy = data.get("channel_strategy", {})
-    channels_summary = {}
-    if isinstance(channel_strategy, dict):
-        for ch, plan in channel_strategy.items():
-            if isinstance(plan, dict):
-                channels_summary[ch] = {
-                    "priority": str(plan.get("priority", "medium")),
-                    "rationale": str(plan.get("rationale") or "")[:120],
-                }
-
     raw_timeline = data.get("timeline") or data.get("content_calendar") or {}
-    timeline_summary = {}
+    
     if isinstance(raw_timeline, dict):
-        timeline_summary = {k: str(v)[:80] for k, v in list(raw_timeline.items())[:4]}
+        phase_count = len(raw_timeline)
+        duration = raw_timeline.get("duration") or raw_timeline.get("phase_1", {}).get("duration", "4 weeks")
+        timeline_summary = f"{phase_count} phases ({duration})"
     elif isinstance(raw_timeline, list):
-        timeline_summary = {f"phase_{i+1}": str(v)[:80] for i, v in enumerate(raw_timeline[:4])}
+        timeline_summary = f"{len(raw_timeline)} phases"
+    else:
+        timeline_summary = str(raw_timeline)[:40] or "4 phases"
 
     raw_metrics = data.get("success_metrics") or data.get("kpis") or []
-    metrics_summary = []
-    if isinstance(raw_metrics, list):
-        metrics_summary = [str(m)[:100] for m in raw_metrics[:3]]
-    elif isinstance(raw_metrics, dict):
-        metrics_summary = [f"{k}: {str(v)[:80]}" for k, v in list(raw_metrics.items())[:3]]
-
-    comp_diff = str(data.get("competitive_differentiation") or "N/A")[:120]
+    comp_diff = str(data.get("competitive_differentiation") or "N/A")[:100]
     inf_goal = str(data.get("inferred_goal") or "").strip()
     res_found = bool(data.get("research_foundation"))
     exec_plan = bool(data.get("execution"))
@@ -108,18 +87,14 @@ def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
 
     return StrategySummary(
         status="VALIDATED",
-        positioning=str(data.get("positioning") or ""),
-        key_messages=(data.get("key_messages") or [])[:3],
-        content_pillars=(data.get("content_pillars") or [])[:3],
+        positioning=str(data.get("positioning") or "")[:150],
+        key_messages=[str(m)[:80] for m in (data.get("key_messages") or [])[:3]],
+        content_pillars=[str(p)[:60] for p in (data.get("content_pillars") or [])[:4]],
         audience_segments=_summarize_audience_segments(data.get("audience_segments")),
-        channel_priorities=channels_summary,
-        timeline=timeline_summary,
-        success_metrics=metrics_summary,
+        timeline_summary=timeline_summary,
         competitive_differentiation=comp_diff,
-        strategic_approach=str(data.get("strategic_approach") or "")[:150],
         inferred_goal=inf_goal,
         research_foundation_present=res_found,
         execution_present=exec_plan,
         field_presence=field_presence,
     )
-

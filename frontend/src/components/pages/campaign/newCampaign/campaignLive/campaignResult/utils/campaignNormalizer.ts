@@ -44,19 +44,32 @@ export const normalizeCampaign = (
   // 6. Review Output
   const rawReview = outputs.review_output || outputs.reviewOutput || raw.reviewOutput;
   const parsedReview = safeParseJson(rawReview);
+
+  const getScore = (rev: any, fallbackKey: string) => {
+    if (!parsedReview) return null;
+    const s = rev?.score ?? parsedReview.agent_scores?.[fallbackKey] ?? null;
+    if (typeof s === 'number') return s;
+    if (typeof s === 'string' && !isNaN(Number(s))) return Number(s);
+    return null;
+  };
+
   const review: NormalizedReviewOutput | null = parsedReview
     ? {
-        overall_score: parsedReview.overall_score ?? raw.reviewScore ?? null,
-        agent_scores: parsedReview.agent_scores || {
-          research: null,
-          strategy: null,
-          copywriter: null,
-          image_prompt: null,
+        overall_score: parsedReview.overall?.quality_score ?? parsedReview.overall_score ?? raw.reviewScore ?? null,
+        agent_scores: {
+          research: getScore(parsedReview.research_review, 'research'),
+          strategy: getScore(parsedReview.strategy_review, 'strategy'),
+          copywriter: getScore(parsedReview.copy_review, 'copywriter') ?? getScore(parsedReview.copy_review, 'copy'),
+          creative_hook_matrix: getScore(parsedReview.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(parsedReview.hook_review, 'creative_hook_matrix'),
+          image_prompt: getScore(parsedReview.image_review, 'image_prompt') ?? getScore(parsedReview.image_review, 'image'),
         },
-        executive_summary: parsedReview.executive_summary || '',
-        critical_gaps: parsedReview.critical_gaps || [],
-        recommendations: parsedReview.recommendations || [],
-        feedback: parsedReview.feedback || '',
+        executive_summary: parsedReview.overall?.summary || parsedReview.executive_summary || parsedReview.feedback || parsedReview.copy_review?.feedback || '',
+        critical_gaps: parsedReview.critical_gaps || parsedReview.overall?.critical_improvements || [
+          ...(parsedReview.copy_review?.action_items || []),
+          ...(parsedReview.image_review?.action_items || []),
+        ],
+        recommendations: parsedReview.recommendations || parsedReview.overall?.strengths || [],
+        feedback: parsedReview.feedback || parsedReview.overall?.summary || parsedReview.copy_review?.feedback || '',
       }
     : null;
     

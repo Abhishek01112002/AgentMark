@@ -152,10 +152,10 @@ const CampaignLivePage: React.FC = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams<{ campaignId: string }>();
   const location = useLocation();
-  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(false);
+  const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(true);
 
   const [agents, setAgents] = useState<Agent[]>(() => {
-    return buildInitialAgentState(location.state?.initialActiveAgent, false);
+    return buildInitialAgentState(location.state?.initialActiveAgent, true);
   });
 
   const [isInitialLoading, setIsInitialLoading] = useState(() => {
@@ -299,7 +299,10 @@ const CampaignLivePage: React.FC = () => {
   const parsedPreviewOutputs = React.useMemo(() => {
     if (!campaignPreviewData) return null;
     const getOutputField = (field: string) => {
-      const outputs = campaignPreviewData.aiOutputs || {};
+      let outputs = campaignPreviewData.aiOutputs || {};
+      if (typeof outputs === 'string') {
+        try { outputs = JSON.parse(outputs); } catch { outputs = {}; }
+      }
       const val = outputs[field];
       if (val) {
         if (typeof val === 'string') {
@@ -398,31 +401,76 @@ const CampaignLivePage: React.FC = () => {
         } else if (campaign.status === 'awaiting_human_approval' && !decisionMadeRef.current) {
           humanReviewShownRef.current = true;
           setShowHumanReview(true);
+          setIsMinimized(false);
           setRevisionCounts({
             research: campaign.researchRevisionCount || 0,
             strategy: campaign.strategyRevisionCount || 0,
             copywriter: campaign.copyRevisionCount || 0,
             image_prompt: campaign.imageRevisionCount || 0,
           });
-          if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
-          
-          if (campaign.reviewOutput) {
+          if (campaign.reviewOutput || campaign.reviewScore) {
             try {
-              const reviewData = JSON.parse(campaign.reviewOutput);
-              setAgentScores({
-                research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
-                strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
-                copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
-                image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
+              let reviewData = campaign.reviewOutput || {};
+              if (typeof reviewData === 'string') {
+                try { reviewData = JSON.parse(reviewData); } catch {}
+              }
+              const getScore = (rev: any, fallbackKey: string) => {
+                const s = rev?.score ?? reviewData.agent_scores?.[fallbackKey] ?? null;
+                if (typeof s === 'number') {
+                  return s > 10 ? s / 10 : s;
+                }
+                if (typeof s === 'string' && !isNaN(Number(s))) {
+                  const num = Number(s);
+                  return num > 10 ? num / 10 : num;
+                }
+                return null;
+              };
+
+              const newScores = {
+                research: getScore(reviewData.research_review, 'research'),
+                strategy: getScore(reviewData.strategy_review, 'strategy'),
+                copywriter: getScore(reviewData.copy_review, 'copywriter') ?? getScore(reviewData.copy_review, 'copy'),
+                creative_hook_matrix: getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix'),
+                image_prompt: getScore(reviewData.image_review, 'image_prompt') ?? getScore(reviewData.image_review, 'image'),
+              };
+
+              setAgentScores((prev) => {
+                if (JSON.stringify(prev) !== JSON.stringify(newScores)) {
+                  return newScores;
+                }
+                return prev;
               });
+
+              // Set overall quality score (normalized out of 10)
+              let calculatedOverall: number | null = null;
+              if (reviewData.overall_quality_score) {
+                const os = Number(reviewData.overall_quality_score);
+                calculatedOverall = os > 10 ? os / 10 : os;
+              } else if (reviewData.overall?.quality_score) {
+                const os = Number(reviewData.overall.quality_score);
+                calculatedOverall = os > 10 ? os / 10 : os;
+              } else if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
+                calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
+              } else {
+                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
+                  (v): v is number => typeof v === 'number' && v > 0
+                );
+                if (validVals.length > 0) {
+                  const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                  calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
+                }
+              }
+              if (calculatedOverall !== null) {
+                setQualityScore(calculatedOverall);
+              }
 
               let lowestAgent = 'copywriter';
               let lowestScore = 999;
               const rawScores = {
-                research: reviewData.research_review?.score ?? null,
-                strategy: reviewData.strategy_review?.score ?? null,
-                copywriter: reviewData.copy_review?.score ?? null,
-                image_prompt: reviewData.image_review?.score ?? null,
+                research: newScores.research,
+                strategy: newScores.strategy,
+                copywriter: newScores.copywriter,
+                image_prompt: newScores.image_prompt,
               };
               Object.entries(rawScores).forEach(([agent, val]) => {
                 if (val !== null && val < lowestScore) {
@@ -492,10 +540,15 @@ const CampaignLivePage: React.FC = () => {
                 }
               }
 
-              if (completedAgents.includes(a.key)) {
+              const hasOutput = Boolean(
+                (outputs && (outputs[`${a.key}_output`] || outputs[a.key])) ||
+                (campaign && (campaign[`${a.key}Output`] || campaign[`${a.key}_output`]))
+              );
+
+              if (completedAgents.includes(a.key) || hasOutput) {
                 return {
                   ...a,
-                  status: 'completed',
+                  status: 'completed' as AgentStatus,
                   description: DONE_DESCRIPTIONS[a.key] ?? 'Completed',
                 };
               }
@@ -548,14 +601,25 @@ const CampaignLivePage: React.FC = () => {
     if (!campaignId) return;
 
     const controller = new AbortController();
-    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5003';
+    const getSocketUrl = () => {
+      if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
+      if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+      if (typeof window !== 'undefined' && window.location) {
+        return `${window.location.protocol}//${window.location.hostname}:5003`;
+      }
+      return 'http://localhost:5003';
+    };
+
+    const SOCKET_URL = getSocketUrl();
     const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 10,
+      reconnectionDelay: 500,
+      reconnectionDelayMax: 3000,
+      reconnectionAttempts: 20,
+      multiplex: true,
       auth: { token },
     });
     socketRef.current = socket;
@@ -572,6 +636,16 @@ const CampaignLivePage: React.FC = () => {
       void checkCampaignStatus();
     });
 
+    socket.on('connect_error', (err: Error) => {
+      console.warn('[Socket.io] Connect error:', err.message);
+      setIsConnected(false);
+      setSocketAuthError(err.message || 'WebSocket connection error');
+      const refreshedToken = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
+      if (refreshedToken) {
+        socket.auth = { token: refreshedToken };
+      }
+    });
+
     socket.on('disconnect', () => {
       setIsConnected(false);
     });
@@ -584,6 +658,13 @@ const CampaignLivePage: React.FC = () => {
     socket.on('error', (err: any) => {
       console.warn('[Socket.io] Socket error:', err?.message || err);
     });
+
+    // FAANG-Grade Real-Time Hybrid Backup: 2s status poll while campaign is actively processing
+    const pollInterval = setInterval(() => {
+      if (campaignPreviewData?.status === 'processing' || !campaignPreviewData?.status) {
+        void checkCampaignStatus();
+      }
+    }, 2000);
 
     socket.on('agent_update', (data: AgentUpdatePayload) => {
       const { agent: agentKey, status } = data;
@@ -660,7 +741,8 @@ const CampaignLivePage: React.FC = () => {
                   };
                 }
                 if (currentIdx > targetIdx) {
-                  // Subsequent agents MUST be pending
+                  // Subsequent agents MUST be pending UNLESS already completed
+                  if (a.status === 'completed') return a;
                   const initialAgent = getInitialAgents(creativeHookMatrixEnabled).find((i) => i.key === a.key);
                   return {
                     ...a,
@@ -696,8 +778,9 @@ const CampaignLivePage: React.FC = () => {
                 status: 'running',
                 description: RUNNING_DESCRIPTIONS[updated[nextPendingIdx].key] ?? 'Processing...',
               };
-              // Reset any agents after nextPendingIdx to pending
+              // Reset any agents after nextPendingIdx to pending ONLY if not already completed
               for (let i = nextPendingIdx + 1; i < updated.length; i++) {
+                if (updated[i].status === 'completed') continue;
                 const initialAgent = getInitialAgents(creativeHookMatrixEnabled).find((item) => item.key === updated[i].key);
                 updated[i] = {
                   ...updated[i],
@@ -717,6 +800,7 @@ const CampaignLivePage: React.FC = () => {
       if (controller.signal.aborted) return;
 
       setShowHumanReview(true);
+      setIsMinimized(false);
 
       setAgents((prev) =>
         prev.map((a) => {
@@ -736,25 +820,58 @@ const CampaignLivePage: React.FC = () => {
             copywriter: campaign.copyRevisionCount || 0,
             image_prompt: campaign.imageRevisionCount || 0,
           });
-          if (campaign.reviewScore) setQualityScore(campaign.reviewScore);
-
-          if (campaign.reviewOutput) {
+          if (campaign.reviewOutput || campaign.reviewScore) {
             try {
-              const reviewData = JSON.parse(campaign.reviewOutput);
-              setAgentScores({
-                research: reviewData.research_review?.score ? reviewData.research_review.score / 10 : null,
-                strategy: reviewData.strategy_review?.score ? reviewData.strategy_review.score / 10 : null,
-                copywriter: reviewData.copy_review?.score ? reviewData.copy_review.score / 10 : null,
-                image_prompt: reviewData.image_review?.score ? reviewData.image_review.score / 10 : null,
-              });
+              let reviewData = campaign.reviewOutput || {};
+              if (typeof reviewData === 'string') {
+                try { reviewData = JSON.parse(reviewData); } catch {}
+              }
+              const getScore = (rev: any, fallbackKey: string) => {
+                const s = rev?.score ?? reviewData.agent_scores?.[fallbackKey] ?? null;
+                if (typeof s === 'number') {
+                  return s > 10 ? s / 10 : s;
+                }
+                if (typeof s === 'string' && !isNaN(Number(s))) {
+                  const num = Number(s);
+                  return num > 10 ? num / 10 : num;
+                }
+                return null;
+              };
+
+              const newScores = {
+                research: getScore(reviewData.research_review, 'research'),
+                strategy: getScore(reviewData.strategy_review, 'strategy'),
+                copywriter: getScore(reviewData.copy_review, 'copywriter') ?? getScore(reviewData.copy_review, 'copy'),
+                image_prompt: getScore(reviewData.image_review, 'image_prompt') ?? getScore(reviewData.image_review, 'image'),
+              };
+
+              setAgentScores(newScores);
+
+              let calculatedOverall: number | null = null;
+              if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
+                calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
+              } else if (reviewData.overall?.quality_score) {
+                const os = Number(reviewData.overall.quality_score);
+                calculatedOverall = os > 10 ? os / 10 : os;
+              } else {
+                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
+                  (v): v is number => typeof v === 'number' && v > 0
+                );
+                if (validVals.length > 0) {
+                  calculatedOverall = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                }
+              }
+              if (calculatedOverall !== null) {
+                setQualityScore(calculatedOverall);
+              }
 
               let lowestAgent = 'copywriter';
               let lowestScore = 999;
               const rawScores = {
-                research: reviewData.research_review?.score ?? null,
-                strategy: reviewData.strategy_review?.score ?? null,
-                copywriter: reviewData.copy_review?.score ?? null,
-                image_prompt: reviewData.image_review?.score ?? null,
+                research: newScores.research,
+                strategy: newScores.strategy,
+                copywriter: newScores.copywriter,
+                image_prompt: newScores.image_prompt,
               };
               Object.entries(rawScores).forEach(([agent, val]) => {
                 if (val !== null && val < lowestScore) {
@@ -811,6 +928,7 @@ const CampaignLivePage: React.FC = () => {
     });
 
     return () => {
+      clearInterval(pollInterval);
       if (completeTimeoutRef.current) {
         clearTimeout(completeTimeoutRef.current);
         completeTimeoutRef.current = null;
@@ -872,6 +990,8 @@ const CampaignLivePage: React.FC = () => {
         agentsToReRun.push('image_prompt', 'reviewer');
       } else if (selectedAgent === 'copywriter') {
         if (creativeHookMatrixEnabled) agentsToReRun.push('creative_hook_matrix');
+        agentsToReRun.push('image_prompt', 'reviewer');
+      } else if (selectedAgent === 'creative_hook_matrix') {
         agentsToReRun.push('image_prompt', 'reviewer');
       } else if (selectedAgent === 'image_prompt') {
         agentsToReRun.push('reviewer');

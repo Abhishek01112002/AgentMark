@@ -7,6 +7,7 @@ from utils.telemetry.token_diagnostics import TokenDiagnostics, PromptTokenRepor
 from utils.telemetry.execution_report import CampaignExecutionReport
 from utils.telemetry.execution_analyzer import ExecutionAnalyzer
 from utils.telemetry.emos_tracer import TelemetryContext, log_component_audit
+from utils.telemetry.llm_tracker import get_telemetry_tracker, LLMTelemetryTracker, TelemetryMetrics
 
 __all__ = [
     "PipelineTracer",
@@ -19,4 +20,7 @@ __all__ = [
     "ExecutionAnalyzer",
     "TelemetryContext",
     "log_component_audit",
+    "get_telemetry_tracker",
+    "LLMTelemetryTracker",
+    "TelemetryMetrics",
 ]

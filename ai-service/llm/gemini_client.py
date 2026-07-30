@@ -58,17 +58,34 @@ class GeminiClient(BaseLLMClient):
         self.model._client = client_manager.get_default_client("generative")
         self.model._async_client = client_manager.get_default_client("generative_async")
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
         _ensure_event_loop()
         try:
             self._wait_for_rate_limit()
-            response = self.model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                },
-            )
+            gen_config = {
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+            }
+            target_model = genai.GenerativeModel(self.model_name, system_instruction=system_prompt) if system_prompt else self.model
+            if system_prompt:
+                target_model._client = self.model._client
+                target_model._async_client = self.model._async_client
+            try:
+                response = target_model.generate_content(
+                    prompt,
+                    generation_config=gen_config,
+                )
+            except Exception as e:
+                if "max_output_tokens" in str(e).lower() or "token" in str(e).lower() or "invalid argument" in str(e).lower():
+                    logger.warning("Gemini max_output_tokens=%d rejected by model %s, falling back to 4096...", max_tokens, self.model_name)
+                    gen_config["max_output_tokens"] = min(max_tokens, 4096)
+                    response = target_model.generate_content(
+                        prompt,
+                        generation_config=gen_config,
+                    )
+                else:
+                    raise e
+
             self._record_success()
             return response.text
         except Exception as exc:
@@ -78,12 +95,20 @@ class GeminiClient(BaseLLMClient):
         self,
         prompt: str,
         response_model: Type[T],
+        system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 8192,
         seed: int | None = None,
     ) -> T:
         _ensure_event_loop()
-        schema = response_model.model_json_schema()
+        from .json_gateway import (
+            parse_and_validate,
+            build_schema_correction_prompt,
+            flatten_json_schema,
+            instantiate_fallback_instance,
+        )
+
+        schema = flatten_json_schema(response_model.model_json_schema())
         compact_schema = json.dumps(schema, separators=(",", ":"))
         enhanced_prompt = f"""{prompt}
 
@@ -95,19 +120,50 @@ IMPORTANT:
 - All required fields must be present
 - Follow the exact field names and types specified"""
 
-        from .json_gateway import parse_and_validate, build_schema_correction_prompt
+        from utils.token_budget import TokenBudgetManager
+        MAX_INPUT_BUDGET = 14000
+        sys_tok = TokenBudgetManager.count_tokens(system_prompt or "")
+        if sys_tok + TokenBudgetManager.count_tokens(enhanced_prompt) > MAX_INPUT_BUDGET:
+            user_budget = max(500, MAX_INPUT_BUDGET - sys_tok)
+            enhanced_prompt = TokenBudgetManager.slice_context_to_budget(enhanced_prompt, user_budget)
 
         try:
             self._wait_for_rate_limit()
-            response = self.model.generate_content(
-                enhanced_prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": max_tokens,
-                    "response_mime_type": "application/json",
-                },
-            )
+            gen_config = {
+                "temperature": temperature,
+                "max_output_tokens": max_tokens,
+                "response_mime_type": "application/json",
+            }
+            target_model = genai.GenerativeModel(self.model_name, system_instruction=system_prompt) if system_prompt else self.model
+            if system_prompt:
+                target_model._client = self.model._client
+                target_model._async_client = self.model._async_client
+            try:
+                response = target_model.generate_content(
+                    enhanced_prompt,
+                    generation_config=gen_config,
+                )
+            except Exception as e:
+                if "max_output_tokens" in str(e).lower() or "token" in str(e).lower():
+                    logger.warning("Gemini max_output_tokens=%d rejected in structured mode, retrying with 4096...", max_tokens)
+                    gen_config["max_output_tokens"] = min(max_tokens, 4096)
+                    response = self.model.generate_content(
+                        enhanced_prompt,
+                        generation_config=gen_config,
+                    )
+                else:
+                    raise e
+
             self._record_success()
+            if hasattr(response, "usage_metadata") and response.usage_metadata:
+                try:
+                    prompt_tok = getattr(response.usage_metadata, "prompt_token_count", 0) or 0
+                    comp_tok = getattr(response.usage_metadata, "candidates_token_count", 0) or 0
+                    cached_tok = getattr(response.usage_metadata, "cached_content_token_count", 0) or 0
+                    from utils.telemetry.llm_tracker import get_telemetry_tracker
+                    get_telemetry_tracker().record_usage("gemini", prompt_tok, comp_tok, cached_tok)
+                except Exception as _tel_err:
+                    logger.warning(f"Telemetry logging non-blocking error: {_tel_err}")
 
             raw_text = response.text or ""
             model_instance, err_msg, was_repaired = parse_and_validate(raw_text, response_model, agent_name="GeminiClient")
@@ -117,24 +173,25 @@ IMPORTANT:
             # Step 2: 1-shot Schema-Aware Correction Retry on Gemini before failing over
             logger.warning(f"Gemini initial output failed schema validation ({err_msg}). Executing 1-shot correction retry...")
             retry_prompt = build_schema_correction_prompt(enhanced_prompt, response_model, err_msg or "Invalid JSON structure")
-            
+
             self._wait_for_rate_limit()
             retry_response = self.model.generate_content(
                 retry_prompt,
                 generation_config={
-                    "temperature": 0.2,  # Lower temperature for retry precision
+                    "temperature": 0.2,
                     "max_output_tokens": max_tokens,
                     "response_mime_type": "application/json",
                 },
             )
             self._record_success()
-            
+
             retry_model_instance, retry_err, _ = parse_and_validate(retry_response.text or "", response_model, agent_name="GeminiClient-Retry")
             if retry_model_instance:
                 logger.info(f"Gemini 1-shot schema correction retry SUCCEEDED for model {response_model.__name__}")
                 return retry_model_instance
 
-            raise ValueError(f"Gemini failed schema validation after correction retry: {retry_err}")
+            logger.warning("Gemini failed schema validation after correction retry (%s), returning safe fallback instance", retry_err)
+            return instantiate_fallback_instance(response_model)
         except Exception as exc:
             self._raise_typed_error(exc)
 

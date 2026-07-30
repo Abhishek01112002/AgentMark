@@ -10,6 +10,7 @@ import { aiServiceClient } from '../../utils/ai-client';
 import type { AIServiceCampaignRequest } from '../../utils/ai-client';
 import prisma from '../../db';
 import { redis } from '../../utils/redis';
+import { enqueueDbWrite } from '../../utils/redis-subscriber';
 
 // ── Socket.io singleton ────────────────────────────────────────────────────
 // Set once from index.ts after the Socket.io Server is created.
@@ -33,7 +34,7 @@ const createCampaignSchema = z.object({
 const approveCampaignSchema = z.object({
   action: z.enum(['approve', 'reject']),
   feedback: z.string().optional(),
-  revisionTarget: z.enum(['research', 'strategy', 'copywriter', 'image_prompt']).optional(),
+  revisionTarget: z.enum(['research', 'strategy', 'copywriter', 'creative_hook_matrix', 'image_prompt']).optional(),
 }).refine((data) => {
   if (data.action === 'reject' && !data.revisionTarget) {
     return false;
@@ -76,13 +77,21 @@ const formatFriendlyError = (message: string) => {
 
 const RETRYABLE_ERROR_PATTERNS = [
   'timeout', 'timed out', 'econnrefused', 'econnreset', 'enotfound',
-  'eai_again', 'etimedout', 'network', '5', 'ai service',
+  'eai_again', 'etimedout', 'network', 'ai service',
   'unavailable', 'service unavailable', 'too many requests',
-  'rate limit', '429', '503', '502', '504',
+  'rate limit', 'rate_limit', 'quota', 'resource_exhausted', 'resource exhausted',
+  'throttled', '429', '500', '502', '503', '504',
 ];
 
-function isRetryableError(error: Error): boolean {
-  const msg = error.message.toLowerCase();
+function isRetryableError(error: any): boolean {
+  if (!error) return false;
+
+  const status = error.response?.status || error.status || error.statusCode;
+  if (status === 429 || (status >= 500 && status < 600)) {
+    return true;
+  }
+
+  const msg = String(error.message || error).toLowerCase();
   return RETRYABLE_ERROR_PATTERNS.some((pattern) => msg.includes(pattern));
 }
 
@@ -243,10 +252,10 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
     const { projectId, ...campaignData } = data;
     const brandName = campaignData.brandName || project.name;
     const briefParts: string[] = [];
-    if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(campaignData.industry.trim().toLowerCase())) {
+    if (!['saas', 'ecommerce', 'finance', 'edtech', 'real_estate', 'other'].includes(campaignData.industry.trim().toLowerCase())) {
       briefParts.push(`Custom industry: ${campaignData.industry}`);
     }
-    if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(campaignData.primaryGoal.trim().toLowerCase())) {
+    if (!['awareness', 'lead_gen', 'sales', 'engagement', 'retention'].includes(campaignData.primaryGoal.trim().toLowerCase())) {
       briefParts.push(`Custom goal: ${campaignData.primaryGoal}`);
     }
     if (campaignData.additionalInfo?.trim()) {
@@ -367,7 +376,8 @@ export const getAllCampaigns = async (req: AuthRequest, res: Response, next: Nex
   try {
     const campaigns = await prisma.campaign.findMany({
       where: {
-        project: { userId: req.userId! }
+        project: { userId: req.userId! },
+        status: { not: 'deleted' },
       },
       select: {
         id: true,
@@ -392,9 +402,14 @@ export const getAllCampaigns = async (req: AuthRequest, res: Response, next: Nex
 export const getCampaign = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { projectId } = req.query;
+    const campaignId = req.params.id;
 
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: req.params.id },
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id: campaignId,
+        project: { userId: req.userId! },
+        status: { not: 'deleted' },
+      },
       include: { project: { select: { userId: true } } },
     });
 
@@ -419,8 +434,14 @@ export const getCampaign = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getCampaignStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const campaign = await prisma.campaign.findUnique({
-      where: { id: req.params.id },
+    const campaignId = req.params.id;
+
+    const campaign = await prisma.campaign.findFirst({
+      where: {
+        id: campaignId,
+        project: { userId: req.userId! },
+        status: { not: 'deleted' },
+      },
       select: {
         id: true,
         status: true,
@@ -495,6 +516,14 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Only allow approval/rejection if campaign is currently in awaiting_human_approval state
+    if (campaign.status !== 'awaiting_human_approval') {
+      return res.status(409).json({
+        error: `Campaign is currently in '${campaign.status}' state and cannot be approved or rejected. Action is only permitted when status is 'awaiting_human_approval'.`,
+        status: campaign.status,
+      });
+    }
+
     // Validate rejection requirements and revision counts
     if (action === 'reject') {
       // Check if target agent has reached max revisions
@@ -503,6 +532,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
         research: campaign.researchRevisionCount || 0,
         strategy: campaign.strategyRevisionCount || 0,
         copywriter: campaign.copyRevisionCount || 0,
+        creative_hook_matrix: (campaign as any).creativeHookMatrixRevisionCount || 0,
         image_prompt: campaign.imageRevisionCount || 0,
       };
 
@@ -542,6 +572,21 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
           return idx !== -1 && idx < targetIdx;
         });
       }
+
+      const downstreamOutputMap: Record<string, string[]> = {
+        manager: ['research_output', 'strategy_output', 'copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+        research: ['strategy_output', 'copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+        strategy: ['copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+        copywriter: ['creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+        creative_hook_matrix: ['image_output', 'review_output', 'publisher_output'],
+        image_prompt: ['review_output', 'publisher_output'],
+        reviewer: ['publisher_output'],
+      };
+      const toClear = downstreamOutputMap[revisionTarget] || [];
+      toClear.forEach((key) => {
+        delete currentOutputs[key];
+      });
+
       currentOutputs.active_agent = revisionTarget;
     } else if (action === 'approve') {
       currentOutputs.active_agent = 'publisher';
@@ -551,18 +596,36 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
       await recordHumanRejection(id, campaign.projectId, revisionTarget, feedback);
     }
 
-    // Update campaign status and HITL fields in database
-    const updatedCampaign = await prisma.campaign.update({
-      where: { id },
-      data: {
-        status: 'processing',
-        humanApprovalStatus: action === 'approve' ? 'approved' : 'rejected',
-        ...(action === 'reject' ? {
-          humanFeedback: feedback || null,
-          humanRevisionTarget: revisionTarget || null,
-        } : {}),
-        aiOutputs: currentOutputs as any,
-      },
+    // Update campaign status and HITL fields in database via queue to prevent read-modify-write races
+    const updatedCampaign = await enqueueDbWrite(async () => {
+      const latest = await prisma.campaign.findUnique({
+        where: { id },
+        select: { status: true, aiOutputs: true }
+      });
+
+      if (latest?.status !== 'awaiting_human_approval') {
+        throw new Error(`Campaign status changed to '${latest?.status}' — approval cancelled`);
+      }
+
+      const latestOutputs = latest?.aiOutputs
+        ? (typeof latest.aiOutputs === 'string' ? JSON.parse(latest.aiOutputs) : latest.aiOutputs) as Record<string, any>
+        : currentOutputs;
+
+      return prisma.campaign.update({
+        where: { id },
+        data: {
+          status: 'processing',
+          humanApprovalStatus: action === 'approve' ? 'approved' : 'rejected',
+          ...(action === 'reject' ? {
+            humanFeedback: feedback || null,
+            humanRevisionTarget: revisionTarget || null,
+          } : {}),
+          aiOutputs: {
+            ...latestOutputs,
+            ...currentOutputs,
+          } as any,
+        },
+      });
     });
 
     // Send 200 response immediately — do NOT do DB or AI work after this point
@@ -583,6 +646,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
       researchRevisionCount: campaign.researchRevisionCount ?? 0,
       strategyRevisionCount: campaign.strategyRevisionCount ?? 0,
       copyRevisionCount: campaign.copyRevisionCount ?? 0,
+      creativeHookMatrixRevisionCount: (campaign as any).creativeHookMatrixRevisionCount ?? 0,
       imageRevisionCount: campaign.imageRevisionCount ?? 0,
       currentOutputs,
       llmConfig,
@@ -611,6 +675,7 @@ async function runApprovalBackground(
     researchRevisionCount: number;
     strategyRevisionCount: number;
     copyRevisionCount: number;
+    creativeHookMatrixRevisionCount: number;
     imageRevisionCount: number;
     currentOutputs: Record<string, any>;
     llmConfig: any;
@@ -660,6 +725,7 @@ async function runApprovalBackground(
       research_revision_count: context.researchRevisionCount,
       strategy_revision_count: context.strategyRevisionCount,
       copy_revision_count: context.copyRevisionCount,
+      creative_hook_matrix_revision_count: context.creativeHookMatrixRevisionCount,
       image_revision_count: context.imageRevisionCount,
     }, io);
   } catch (err: any) {
@@ -1464,10 +1530,10 @@ export const forkCampaign = async (req: AuthRequest, res: Response, next: NextFu
 
         const brandName = clonedCampaign.brandName || '';
         const briefParts: string[] = [];
-        if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(clonedCampaign.industry.trim().toLowerCase())) {
+        if (!['saas', 'ecommerce', 'finance', 'edtech', 'real_estate', 'other'].includes(clonedCampaign.industry.trim().toLowerCase())) {
           briefParts.push(`Custom industry: ${clonedCampaign.industry}`);
         }
-        if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(clonedCampaign.primaryGoal.trim().toLowerCase())) {
+        if (!['awareness', 'lead_gen', 'sales', 'engagement', 'retention'].includes(clonedCampaign.primaryGoal.trim().toLowerCase())) {
           briefParts.push(`Custom goal: ${clonedCampaign.primaryGoal}`);
         }
         if (clonedCampaign.additionalInfo?.trim()) {
@@ -1666,10 +1732,10 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
 
       const brandName = campaign.brandName || campaign.project.name;
       const briefParts: string[] = [];
-      if (!['saas', 'ecommerce', 'finance', 'healthcare', 'other'].includes(campaign.industry.trim().toLowerCase())) {
+      if (!['saas', 'ecommerce', 'finance', 'edtech', 'real_estate', 'other'].includes(campaign.industry.trim().toLowerCase())) {
         briefParts.push(`Custom industry: ${campaign.industry}`);
       }
-      if (!['awareness', 'lead_gen', 'sales', 'retention'].includes(campaign.primaryGoal.trim().toLowerCase())) {
+      if (!['awareness', 'lead_gen', 'sales', 'engagement', 'retention'].includes(campaign.primaryGoal.trim().toLowerCase())) {
         briefParts.push(`Custom goal: ${campaign.primaryGoal}`);
       }
       if (campaign.additionalInfo?.trim()) {
@@ -1743,8 +1809,8 @@ export const compareCampaigns = async (req: AuthRequest, res: Response, next: Ne
       });
     }
 
-    const targetScore = target.reviewScore ?? 7.5;
-    const baselineScore = baseline?.reviewScore ?? 8.5;
+    const targetScore = target.reviewScore ?? 75.0;
+    const baselineScore = baseline?.reviewScore ?? 85.0;
 
     res.json({
       success: true,

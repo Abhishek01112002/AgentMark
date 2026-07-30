@@ -100,8 +100,8 @@ app.include_router(focus_group_router, dependencies=[Depends(verify_internal_sec
 if __name__ == "__main__":
     import uvicorn
     
-    port = int(os.getenv("SERVICE_PORT", 5002))
-    host = os.getenv("SERVICE_HOST", "127.0.0.1")
+    port = int(os.getenv("SERVICE_PORT", os.getenv("PORT", 5002)))
+    host = os.getenv("SERVICE_HOST", os.getenv("HOST", "127.0.0.1"))
     
     uvicorn.run(
         "main:app",

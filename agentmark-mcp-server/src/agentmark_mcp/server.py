@@ -183,7 +183,7 @@ async def generate_campaign(
         "re-engagement": "retention",
     }
     goal_cleaned = goal_mapping.get(goal_cleaned, goal_cleaned)
-    allowed_goals = {"awareness", "lead_gen", "sales", "retention"}
+    allowed_goals = {"awareness", "lead_gen", "sales", "engagement", "retention"}
     if goal_cleaned not in allowed_goals:
         raise ValueError(
             "Invalid primary_goal '%s'. Must be one of: %s (or synonyms like 'engagement', 'conversion', 'lead_generation')"

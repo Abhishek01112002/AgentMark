@@ -1,9 +1,13 @@
 /**
- * AI Service Client
- * 
- * Simple HTTP client for communicating with FastAPI AI Service.
- * Handles campaign creation and health check.
+ * AI Service Client — Express.js
+ *
+ * Interfaces with the FastAPI ai-service running on http://127.0.0.1:8000.
  */
+
+import axios from 'axios';
+import type { Server } from 'socket.io';
+
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
 export interface AIServiceCampaignRequest {
   campaign_name: string;
@@ -12,11 +16,11 @@ export interface AIServiceCampaignRequest {
   primary_goal: string;
   target_audience: string;
   brand_voice: string;
-  brief?: string;
+  brief?: string | null;
   llm_config?: {
+    openai_api_key?: string | null;
     gemini_api_key?: string | null;
     groq_api_key?: string | null;
-    openai_api_key?: string | null;
     tavily_api_key?: string | null;
     provider_order?: string[];
   };
@@ -35,6 +39,7 @@ export interface AIServiceCampaignRequest {
   research_revision_count?: number;
   strategy_revision_count?: number;
   copy_revision_count?: number;
+  creative_hook_matrix_revision_count?: number;
   image_revision_count?: number;
   client_memory_context?: string | null;
 }
@@ -59,277 +64,149 @@ interface AIServiceCampaignResponse {
   };
 }
 
-const formatAiServiceError = (detail: unknown, fallback: string) => {
-  if (typeof detail === 'string') return detail;
-
-  if (Array.isArray(detail)) {
-    const messages = detail
+const formatAiServiceError = (detail: unknown, status: number, fallback: string) => {
+  let innerMsg = fallback;
+  if (typeof detail === 'string') {
+    innerMsg = detail;
+  } else if (Array.isArray(detail)) {
+    innerMsg = detail
       .map((item) => {
         if (typeof item === 'string') return item;
-        if (item && typeof item === 'object') {
-          const err = item as Record<string, unknown>;
-          const field = Array.isArray(err.loc) ? err.loc.join('.') : undefined;
-          const message = typeof err.msg === 'string' ? err.msg : 'Invalid value';
-          return field ? `${field}: ${message}` : message;
+        if (item && typeof item === 'object' && 'msg' in item) {
+          const locStr = Array.isArray((item as any).loc) ? (item as any).loc.join('.') : '';
+          return `${locStr ? locStr + ': ' : ''}${(item as any).msg}`;
         }
-        return null;
+        return JSON.stringify(item);
       })
-      .filter(Boolean) as string[];
-
-    if (messages.length > 0) {
-      return `AI Service rejected the request: ${messages.join(', ')}`;
-    }
+      .join(' | ');
+  } else if (detail && typeof detail === 'object') {
+    innerMsg = JSON.stringify(detail);
   }
-
-  if (detail && typeof detail === 'object') {
-    const err = detail as Record<string, unknown>;
-    if (typeof err.message === 'string') return err.message;
-    if (typeof err.detail === 'string') return err.detail;
-  }
-
-  return fallback;
+  return `HTTP ${status}: ${innerMsg}`;
 };
 
-const aiServiceHeaders = () => {
-  const internalSecret = process.env.INTERNAL_SERVICE_SECRET;
-  if (!internalSecret) {
-    throw new Error('INTERNAL_SERVICE_SECRET environment variable must be set');
-  }
+const getHeaders = (requestId?: string) => ({
+  'Content-Type': 'application/json',
+  ...(process.env.INTERNAL_SERVICE_SECRET ? { 'X-Internal-Secret': process.env.INTERNAL_SERVICE_SECRET } : {}),
+  ...(requestId ? { 'X-Request-Id': requestId } : {}),
+});
 
-  return {
-    'Content-Type': 'application/json',
-    'X-Internal-Secret': internalSecret,
-  };
-};
-
-class AIServiceClient {
-  private baseUrl: string;
-  private timeout: number;
-
-  constructor() {
-    this.baseUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
-    this.timeout = 600000; // 10 minutes timeout for campaign generation
-  }
-
-  /**
-   * Create a new campaign using AI agents
-   * This is a BLOCKING call that waits for all 7 agents to complete
-   */
-  async createCampaign(data: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
+export const aiServiceClient = {
+  async runCampaign(payload: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
     try {
-      console.log(`🤖 [${requestId || 'no-req-id'}] Calling AI Service: ${this.baseUrl}/campaigns/create`);
-      console.log(`📊 Campaign: ${data.campaign_name} | Brand: ${data.brand_name}`);
-
-      const headers: Record<string, string> = aiServiceHeaders();
-      if (requestId) {
-        headers['X-Request-ID'] = requestId;
-      }
-
-      const response = await fetch(`${this.baseUrl}/campaigns/create`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const rawText = await response.text().catch(() => '');
-        let detail: unknown = rawText;
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
-          } catch {
-            detail = rawText.slice(0, 500);
-          }
+      const response = await axios.post<AIServiceCampaignResponse>(
+        `${AI_SERVICE_URL}/campaigns/create`,
+        payload,
+        {
+          headers: getHeaders(requestId),
+          timeout: 600000,
         }
-        const fallback = response.statusText ? `AI Service error (${response.status}: ${response.statusText})` : `AI Service HTTP ${response.status}`;
-        throw new Error(formatAiServiceError(detail, fallback));
-      }
-
-      const result = await response.json() as AIServiceCampaignResponse;
-      console.log(`✅ AI Service completed: ${result.status}`);
-      
-      return result;
+      );
+      return response.data;
     } catch (error: any) {
-      clearTimeout(timeoutId);
-      
-      if (error.name === 'AbortError') {
-        throw new Error('AI Service request timeout (exceeded 10 minutes)');
+      if (error.response) {
+        const status = error.response.status || 500;
+        const detail = error.response.data?.detail;
+        const msg = formatAiServiceError(detail, status, `AI service HTTP ${status}`);
+        console.error(`AI service error: ${msg}`);
+        const err = new Error(msg);
+        (err as any).status = status;
+        (err as any).response = error.response;
+        throw err;
       }
-      
-      throw new Error(error.message || 'AI Service request failed');
+      throw error;
     }
-  }
+  },
 
-  /**
-   * Health check for AI Service
-   */
-  async healthCheck(): Promise<{ status: string; service: string }> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 seconds timeout
+  async createCampaign(payload: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
+    return this.runCampaign(payload, requestId);
+  },
 
+  async enhancePrompt(prompt: string, userInput?: string, llmConfig?: Record<string, any>): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
-        method: 'GET',
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error('AI Service health check failed');
-      }
-
-      return await response.json() as { status: string; service: string };
+      const response = await axios.post<{ enhanced_prompt: string }>(
+        `${AI_SERVICE_URL}/campaigns/enhance-prompt`,
+        { prompt, user_input: userInput, llm_config: llmConfig },
+        { headers: getHeaders(), timeout: 30000 }
+      );
+      return response.data.enhanced_prompt;
     } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('AI Service health check timed out');
-      }
-      throw new Error('AI Service is unavailable');
+      console.error('Enhance prompt API error:', error.message);
+      return prompt;
     }
-  }
+  },
 
-  /**
-   * Test an API key by making a minimal LLM call
-   */
-  async testKey(provider: string, apiKey: string): Promise<{ success: boolean; message: string }> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-    try {
-      const response = await fetch(`${this.baseUrl}/campaigns/test-key`, {
-        method: 'POST',
-        headers: aiServiceHeaders(),
-        body: JSON.stringify({ provider, api_key: apiKey }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const rawText = await response.text().catch(() => '');
-        let detail: unknown = rawText;
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
-          } catch {
-            detail = rawText.slice(0, 500);
-          }
-        }
-        const fallback = response.statusText ? `Key test failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
-        return { success: false, message: formatAiServiceError(detail, fallback) };
-      }
-
-      return await response.json() as { success: boolean; message: string };
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        return { success: false, message: 'Request timed out' };
-      }
-      return { success: false, message: error.message || 'Connection failed' };
-    }
-  }
-
-  /**
-   * Enhance a prompt using the AI Service
-   */
-  async enhancePrompt(prompt: string, userInput?: string, llmConfig?: any): Promise<string> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
-
-    try {
-      const response = await fetch(`${this.baseUrl}/campaigns/enhance-prompt`, {
-        method: 'POST',
-        headers: aiServiceHeaders(),
-        body: JSON.stringify({
-          prompt,
-          user_input: userInput || null,
-          llm_config: llmConfig || null,
-        }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const rawText = await response.text().catch(() => '');
-        let detail: unknown = rawText;
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
-          } catch {
-            detail = rawText.slice(0, 500);
-          }
-        }
-        const fallback = response.statusText ? `Prompt enhancement failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
-        throw new Error(formatAiServiceError(detail, fallback));
-      }
-
-      const result = await response.json() as { enhanced_prompt: string };
-      return result.enhanced_prompt;
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        throw new Error('AI Service prompt enhancement timed out');
-      }
-      throw new Error(error.message || 'AI Service prompt enhancement failed');
-    }
-  }
-
-  /**
-   * Generate copy variant from AI Service
-   */
-  async generateCopyVariant(data: {
+  async generateCopyVariant(payload: {
     campaign_id: string;
     channel: string;
-    steering_note: string;
-    existing_copy: string | null;
-    strategy_data: string | null;
-    brief: string;
-    brand_voice: string;
     target_audience: string;
-    llm_config?: any;
+    brand_voice: string;
+    brief?: string | null;
+    steering_note?: string | null;
+    strategy_data?: string | null;
+    existing_copy?: string | null;
     focus_group_context?: string | null;
-  }): Promise<{ channel: string; copy_data: any }> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-    try {
-      const response = await fetch(`${this.baseUrl}/campaigns/generate-copy-variant`, {
-        method: 'POST',
-        headers: aiServiceHeaders(),
-        body: JSON.stringify(data),
-        signal: controller.signal,
+    llm_config?: Record<string, any>;
+  }): Promise<{ copy_output: Record<string, any>; copy_versions: any[]; copy_data?: any }> {
+    const response = await axios.post(
+      `${AI_SERVICE_URL}/campaigns/generate-copy-variant`,
+      payload,
+      { headers: getHeaders(), timeout: 60000 }
+    );
+    return response.data;
+  },
+
+  async testKey(provider: string, apiKey: string): Promise<{ valid: boolean; message: string }> {
+    const response = await axios.post(
+      `${AI_SERVICE_URL}/campaigns/test-key`,
+      { provider, api_key: apiKey },
+      { headers: getHeaders(), timeout: 15000 }
+    );
+    return response.data;
+  },
+};
+
+import prisma from '../db';
+
+export async function runAIWorkflowBackground(
+  campaignId: string,
+  payload: AIServiceCampaignRequest,
+  io: Server
+): Promise<void> {
+  try {
+    const response = await aiServiceClient.runCampaign(payload);
+    console.log(`[AI Client Background] Workflow complete for campaign ${campaignId} with status: ${response.status}`);
+
+    if (response.status === 'awaiting_human_approval' || response.status === 'completed') {
+      const existing = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { aiOutputs: true } });
+      const currentOutputs = existing?.aiOutputs
+        ? (typeof existing.aiOutputs === 'string' ? JSON.parse(existing.aiOutputs) : existing.aiOutputs)
+        : {};
+
+      const mergedOutputs = {
+        ...currentOutputs,
+        ...(response.outputs || {}),
+      };
+
+      await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          status: response.status,
+          aiOutputs: mergedOutputs as any,
+        },
       });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        const rawText = await response.text().catch(() => '');
-        let detail: unknown = rawText;
-        if (rawText) {
-          try {
-            const parsed = JSON.parse(rawText);
-            detail = parsed.detail ?? parsed.error ?? parsed.message ?? parsed;
-          } catch {
-            detail = rawText.slice(0, 500);
-          }
-        }
-        const fallback = response.statusText ? `Copy variant failed (${response.status}: ${response.statusText})` : `HTTP ${response.status}`;
-        throw new Error(formatAiServiceError(detail, fallback));
-      }
-      return await response.json() as { channel: string; copy_data: any };
-    } catch (error: any) {
-      clearTimeout(timeoutId);
-      throw new Error(error.message || 'AI Service copy variant generation failed');
+
+      const eventName = response.status === 'awaiting_human_approval' ? 'human_approval_required' : 'campaign_complete';
+      io.to(`campaign:${campaignId}`).emit(eventName, { campaign_id: campaignId, status: response.status, outputs: mergedOutputs });
+      io.to(`campaign:${campaignId}`).emit('awaiting_human_approval', { campaign_id: campaignId, status: response.status, outputs: mergedOutputs });
     }
+  } catch (err: any) {
+    const errMessage = err.message || 'AI service unavailable';
+    console.error(`[AI Client Background] Error running workflow for ${campaignId}: ${errMessage}`);
+    io.to(`campaign:${campaignId}`).emit('campaign_failed', {
+      campaign_id: campaignId,
+      status: 'failed',
+      error: errMessage,
+    });
   }
 }
-
-export const aiServiceClient = new AIServiceClient();

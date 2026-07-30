@@ -57,7 +57,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from agents.state import CampaignState
 from llm import get_llm_client
 from llm.factory import get_current_llm_config
-from utils.prompt_loader import load_prompt
+from utils.prompt_loader import load_prompt, load_split_prompt
 from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ResearchOutput
@@ -163,7 +163,7 @@ def research_agent(state: CampaignState) -> CampaignState:
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
 
     # Load research prompt and format with campaign data
-    prompt = load_prompt(
+    system_prompt, prompt = load_split_prompt(
         "research",
         campaign_name=campaign_name,
         brand_name=brand_name,
@@ -203,23 +203,21 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Clean audience keywords (take first 3 words to avoid query over-constraining)
     clean_audience = " ".join(target_audience.strip().split()[:3]) if target_audience else ""
 
-    if is_placeholder_brand:
-        logger.info(f"   ℹ️ Placeholder/New brand detected ('{product_name}') — running generic industry search queries for '{industry}'")
-        query_1 = f"{industry} market trends {clean_audience} {current_year}".strip()
-        query_2 = f"{industry} top competitors market analysis".strip()
+    if is_placeholder_brand or not product_name:
+        logger.info(f"   ℹ️ Generic search target ('{product_name}') — running industry market trends query for '{industry}'")
+        query_1 = f"{industry} market trends growth statistics {current_year}".strip()
+        query_2 = f"{industry} top competitors market landscape analysis".strip()
     else:
-        query_brand = product_name
-        if industry and industry.lower() != 'other':
-            query_brand = f"{product_name} {industry}"
-        query_1 = f"{query_brand} market trends {clean_audience} {current_year}".strip()
-        query_2 = f"{query_brand} top competitors market analysis".strip()
+        ind_term = f"{industry} " if (industry and industry.lower() != 'other') else ""
+        query_1 = f"{ind_term}market trends statistics {current_year}".strip()
+        query_2 = f"{product_name} {ind_term}top competitors market analysis".strip()
 
     logger.info(f"   🔎 Tavily Market Query: '{query_1}'")
     logger.info(f"   🔎 Tavily Competitor Query: '{query_2}'")
 
-    # Pass None as redis_client to let search_web automatically use the shared pool
-    result_1 = search_web(query_1, redis_client=None, max_results=3, api_key=tavily_api_key)
-    result_2 = search_web(query_2, redis_client=None, max_results=3, api_key=tavily_api_key)
+    # Increase max_results to 5 per query to return both market & competitor sources (up to 10 total)
+    result_1 = search_web(query_1, redis_client=None, max_results=5, api_key=tavily_api_key)
+    result_2 = search_web(query_2, redis_client=None, max_results=5, api_key=tavily_api_key)
 
     total_snippets = len(result_1.snippets) + len(result_2.snippets)
     logger.info(f"   LiteRAG retrieved {total_snippets} total snippets for campaign")
@@ -264,7 +262,7 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Revision runs: lower temperature avoids regenerating unchanged fields;
     # higher token budget compensates for the extra existing-output context
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 4000 if is_human_revision else 3000
+    revision_max_tokens = 8192
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -279,10 +277,21 @@ def research_agent(state: CampaignState) -> CampaignState:
         research_data, state = safe_llm_call(
             state,
             "Research",
-            lambda: llm.generate_structured(prompt, ResearchOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+            lambda: llm.generate_structured(prompt, ResearchOutput, system_prompt=system_prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
         )
         if research_data is not None:
             cache_set(cache_key, research_data.model_dump())
+
+    if is_human_revision and state.research_output and research_data is not None:
+        logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge for Research...")
+        try:
+            from utils.delta_merger import deep_merge_dicts
+            previous_dict = json.loads(state.research_output)
+            merged_dict = deep_merge_dicts(previous_dict, research_data.model_dump(exclude_none=True))
+            research_data = ResearchOutput(**merged_dict)
+            logger.info("   ✅ Semantic Delta Patch merged cleanly over previous research_output")
+        except Exception as exc:
+            logger.warning(f"   ⚠️ Research delta merge warning: {exc} — preserving current research output")
     
     if research_data is None:
         return state  # Error already logged in state

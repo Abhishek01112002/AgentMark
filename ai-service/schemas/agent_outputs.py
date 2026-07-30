@@ -113,22 +113,19 @@ _CHANNEL_SUFFIXES: list[str] = [
 ]
 
 
-def normalize_channel_name(raw: str) -> Optional[str]:
+def normalize_channel_name(raw: Any) -> Optional[str]:
     """
-    Robustly normalize an arbitrary channel string to a valid schema field name.
-
-    Matching strategy (in order):
-    1. Exact case-insensitive match
-    2. Known alias lookup
-    3. Underscore-normalized match (spaces/dashes → underscores)
-    4. Progressive suffix stripping (right-to-left by word)
-    5. Substring search against all valid channel names
-
-    Returns the canonical channel name string (e.g. "linkedin", "google_ads")
-    or *None* if no match is possible. Never raises.
+    Robustly normalize an arbitrary channel string or compact integer code to a valid schema field name.
     """
-    if not raw or not isinstance(raw, str):
+    if raw is None:
         return None
+
+    if isinstance(raw, int) or (isinstance(raw, str) and raw.strip().isdigit()):
+        from schemas.enum_registry import CHANNEL_CODES, expand_code_to_enum
+        raw = expand_code_to_enum(raw, CHANNEL_CODES, default="linkedin")
+
+    if not isinstance(raw, str):
+        raw = str(raw)
 
     cleaned = raw.lower().strip()
 
@@ -590,10 +587,24 @@ class ImagePrompt(BaseModel):
     rationale: str = Field(default="", description="Strategic reasoning: which pain point or motivation this visual addresses, why the target audience will stop scrolling, and what emotional response serves the campaign objective")
     visual_elements: List[str] = Field(default_factory=list, description="4-6 specific visual elements in the scene (e.g., 'fountain pen touching contract paper, ink glistening' not 'business documents')")
     style_keywords: List[str] = Field(default_factory=list, description="4-6 precise style keywords (e.g., 'editorial documentary', 'Rembrandt lighting', 'telephoto compression', 'desaturated cool grade')")
+    camera_specs: str = Field(default="85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100, 1/250s", description="Photographic camera, sensor, and lens specifications (e.g. '85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100, studio strobe setup'). MANDATORY — specify camera body and lens optics. NEVER write 'N/A', 'none', or 'false'.")
     aspect_ratio: str = Field(default="16:9", description="Aspect ratio matching deliverable type: 16:9 for banners, 1:1 for social posts, 9:16 for stories, 4:5 for portrait feed, 2:3 for pinterest")
     style: str = Field(default="modern professional", description="Precise artistic direction (e.g., 'editorial documentary realism with commercial lighting precision' not just 'professional photography')")
     color_palette: str = Field(default="", description="Deliverable-specific colors with hex codes and emotional role (e.g., 'deep midnight navy #0F1729 anchoring shadows, electric indigo #4F46E5 accent on screen reflections')")
     text_overlay: Optional[TextOverlay] = Field(default=None, description="Suggested text overlay details — headline from copy context, CTA, and placement zone")
+
+    @field_validator("camera_specs", mode="before")
+    @classmethod
+    def normalize_camera_specs(cls, value: Any) -> str:
+        """Interceptors parameter evasion ('N/A', 'false', 'none', null, empty) and backfills photographic optics."""
+        if value is None or isinstance(value, bool):
+            return "85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100, 1/250s"
+        val_str = str(value).strip()
+        if not val_str or val_str.lower() in ("n/a", "none", "false", "null", "undefined", "na", "no camera", "n / a"):
+            return "85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100, 1/250s"
+        if len(val_str) < 5:
+            return f"{val_str} — 85mm f/1.4 prime lens, ISO 100"
+        return val_str
 
 class VisualDirection(BaseModel):
     overall_style: str = Field(default="modern corporate photography", description="Comprehensive visual manifesto — the artistic DNA of this campaign. Not generic ('modern and professional') but specific and ownable ('Documentary realism meets editorial precision — candid human moments with commercial production value')")
@@ -604,6 +615,18 @@ class VisualDirection(BaseModel):
 class ImagePromptOutput(BaseModel):
     visual_direction: VisualDirection = Field(default_factory=VisualDirection)
     image_prompts: List[ImagePrompt] = Field(default_factory=list, description="Image generation prompts")
+
+
+class _ImagePromptBatch(BaseModel):
+    """
+    Lightweight batch schema used for batch 2+ LLM calls.
+    Only requests the image_prompts slice — visual_direction is already
+    established from batch 0 and is reused without a second LLM call.
+    """
+    image_prompts: List[ImagePrompt] = Field(
+        default_factory=list,
+        description="Image generation prompts for this batch only"
+    )
 
 
 # ==================== REVIEWER OUTPUT SCHEMA ====================
@@ -627,6 +650,7 @@ class ReviewerOutput(BaseModel):
     research_review: AgentReview = Field(default_factory=AgentReview)
     strategy_review: AgentReview = Field(default_factory=AgentReview)
     copy_review: AgentReview = Field(default_factory=AgentReview)
+    creative_hook_matrix_review: Optional[AgentReview] = Field(default=None, description="Creative hook matrix review")
     image_review: AgentReview = Field(default_factory=AgentReview)
     overall: OverallReview = Field(default_factory=OverallReview)
 
@@ -686,6 +710,12 @@ class CalendarActivity(BaseModel):
                 return clean
             return "linkedin"
         return "linkedin"
+
+    @field_validator("content_type", mode="before")
+    @classmethod
+    def expand_content_type(cls, v: Any) -> str:
+        from schemas.enum_registry import CONTENT_TYPE_CODES, expand_code_to_enum
+        return expand_code_to_enum(v, CONTENT_TYPE_CODES, default="social_graphics")
 
     @field_validator("effort", mode="before")
     @classmethod

@@ -1,11 +1,19 @@
 import axios from 'axios';
 import { llmSettingsService } from './llm-settings.service';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+const getBackendApiUrl = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (typeof window !== 'undefined' && window.location) {
+    return `${window.location.protocol}//${window.location.hostname}:5003`;
+  }
+  return 'http://localhost:5003';
+};
+
+const API_URL = getBackendApiUrl();
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,
-  timeout: 10000,
+  timeout: 120000, // 120s timeout to support long-running LLM generation tasks
   headers: {
     'Content-Type': 'application/json',
   },
@@ -42,6 +50,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      error.message = 'The AI request timed out. The operation may still be completing in the background.';
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');

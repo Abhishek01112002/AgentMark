@@ -8,6 +8,7 @@ CORE BELIEF: The difference between a $500 stock photo and a $50,000 campaign he
 CAMPAIGN INTELLIGENCE BRIEF
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+---USER_PROMPT---
 BRAND IDENTITY:
 - Campaign: {campaign_name}
 - Brand: {brand_name}
@@ -435,6 +436,7 @@ Respond ONLY with valid JSON matching this structure. No markdown, no explanatio
         "specific-style-3 (e.g., 'telephoto compression')",
         "specific-style-4 (e.g., 'desaturated cool grade')"
       ],
+      "camera_specs": "Photographic camera body, lens, and lighting setup (e.g. '85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100, 1/250s, studio key light with softbox'). MANDATORY — specify exact camera and optical lens specs. NEVER write 'N/A', 'none', or 'false'.",
       "style": "Precise artistic direction (not 'modern professional photography' but 'editorial documentary realism with commercial lighting precision — think Annie Leibovitz portraits meets Bloomberg Businessweek feature photography')",
       "color_palette": "Deliverable-specific colors with hex: deep midnight navy #0F1729 anchoring shadows, electric indigo #4F46E5 accent on screen reflections, glacier white #F8FAFC in shirt collar and paper highlights",
       "text_overlay": {{

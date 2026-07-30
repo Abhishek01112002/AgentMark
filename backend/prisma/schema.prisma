@@ -67,13 +67,14 @@ model Campaign {
   aiError         String?  @db.Text // Error message if AI workflow fails
   
   // HITL (Human-In-The-Loop) Fields
-  researchRevisionCount  Int?     @default(0)
-  strategyRevisionCount  Int?     @default(0)
-  copyRevisionCount      Int?     @default(0)
-  imageRevisionCount     Int?     @default(0)
-  humanApprovalStatus    String?  // 'pending', 'approved', 'rejected'
-  humanFeedback          String?  @db.Text
-  humanRevisionTarget    String?  // 'research', 'strategy', 'copywriter', 'image_prompt'
+  researchRevisionCount           Int?     @default(0)
+  strategyRevisionCount           Int?     @default(0)
+  copyRevisionCount               Int?     @default(0)
+  creativeHookMatrixRevisionCount Int?     @default(0)
+  imageRevisionCount              Int?     @default(0)
+  humanApprovalStatus             String?  // 'pending', 'approved', 'rejected'
+  humanFeedback                   String?  @db.Text
+  humanRevisionTarget             String?  // 'research', 'strategy', 'copywriter', 'creative_hook_matrix', 'image_prompt'
   
   additionalInfo  String?  @db.Text
   

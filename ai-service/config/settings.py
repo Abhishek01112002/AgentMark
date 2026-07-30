@@ -20,8 +20,8 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
 
 # Service Configuration
-SERVICE_PORT = int(os.getenv("SERVICE_PORT", 5002))
-SERVICE_HOST = os.getenv("SERVICE_HOST", "0.0.0.0")
+SERVICE_PORT = int(os.getenv("SERVICE_PORT", os.getenv("PORT", 5002)))
+SERVICE_HOST = os.getenv("SERVICE_HOST", os.getenv("HOST", "0.0.0.0"))
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 # Backend Service URL

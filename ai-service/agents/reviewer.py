@@ -58,6 +58,7 @@ Reviewer = LLM-Powered Quality Analyst
 """
 
 import logging
+from typing import Optional, Dict, List, Any
 logger = logging.getLogger(__name__)
 
 import sys
@@ -89,7 +90,7 @@ from config.settings import (
 
 MAX_REVISIONS = MAX_AUTO_REVISIONS
 
-REVISION_PRIORITY = ["research", "strategy", "copy", "image"]
+REVISION_PRIORITY = ["research", "strategy", "copy", "creative_hook_matrix", "image"]
 
 
 def _issues_to_review(agent_name: str, score: int, issues: list[str], action_items: list[str]) -> AgentReview:
@@ -117,6 +118,7 @@ def _fallback_review_analysis(
     strategy_data: dict,
     copy_data: dict,
     image_data: dict,
+    hook_data: Optional[dict] = None,
 ) -> ReviewerOutput:
     research_issues = []
     research_actions = []
@@ -183,6 +185,14 @@ def _fallback_review_analysis(
         copy_issues.append("Email subject too long; subject should be under 60 characters")
         copy_actions.append("Shorten email subject to under 60 characters")
 
+    hook_issues = []
+    hook_actions = []
+    if hook_data:
+        hooks = hook_data.get("hooks", []) or hook_data.get("matrix", []) or hook_data.get("hook_matrix", [])
+        if not hooks:
+            hook_issues.append("creative_hook_matrix_output has no generated hooks")
+            hook_actions.append("Generate psychological hook archetypes with hook_text and primary_angle")
+
     image_issues = []
     image_actions = []
     visual_direction = image_data.get("visual_direction") or {}
@@ -196,17 +206,29 @@ def _fallback_review_analysis(
     research_review = _issues_to_review("Research", _compute_objective_score(research_data, "research"), research_issues, research_actions)
     strategy_review = _issues_to_review("Strategy", _compute_objective_score(strategy_data, "strategy"), strategy_issues, strategy_actions)
     copy_review = _issues_to_review("Copy", _compute_objective_score(copy_data, "copy"), copy_issues, copy_actions)
+    hook_review = _issues_to_review("Creative Hook Matrix", _compute_objective_score(hook_data, "creative_hook_matrix"), hook_issues, hook_actions) if hook_data else None
     image_review = _issues_to_review("Image", _compute_objective_score(image_data, "image"), image_issues, image_actions)
-    overall_score = round(
-        research_review.score * 0.25
-        + strategy_review.score * 0.30
-        + copy_review.score * 0.25
-        + image_review.score * 0.20
-    )
+    
+    if hook_review:
+        overall_score = round(
+            research_review.score * 0.20
+            + strategy_review.score * 0.25
+            + copy_review.score * 0.25
+            + hook_review.score * 0.15
+            + image_review.score * 0.15
+        )
+    else:
+        overall_score = round(
+            research_review.score * 0.25
+            + strategy_review.score * 0.30
+            + copy_review.score * 0.25
+            + image_review.score * 0.20
+        )
     can_publish = (
         research_review.approved
         and strategy_review.approved
         and copy_review.approved
+        and (hook_review is None or hook_review.approved)
         and image_review.approved
         and overall_score >= MIN_QUALITY_SCORE
     )
@@ -216,12 +238,13 @@ def _fallback_review_analysis(
         research_review=research_review,
         strategy_review=strategy_review,
         copy_review=copy_review,
+        creative_hook_matrix_review=hook_review,
         image_review=image_review,
         overall=OverallReview(
             quality_score=overall_score,
             summary="Objective fallback review completed because LLM review was unavailable.",
             strengths=["Structured outputs were parsed successfully"],
-            critical_improvements=research_issues + strategy_issues + copy_issues + image_issues,
+            critical_improvements=research_issues + strategy_issues + copy_issues + hook_issues + image_issues,
         ),
     )
 
@@ -365,30 +388,6 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Image — Prompts: {len(image_prompts)} | "
           f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
 
-    # Create a lean version of strategy_data to save tokens
-    strategy_lean = dict(strategy_data)
-    if "research_foundation" in strategy_lean:
-        foundation_lean = {}
-        for k, v in strategy_data["research_foundation"].items():
-            if isinstance(v, dict):
-                foundation_lean[k] = {
-                    "status": "VALIDATED_AND_PRESENT",
-                    "note": f"Omitted verbose details to conserve tokens. Field exists: {list(v.keys())}"
-                }
-            elif isinstance(v, list):
-                foundation_lean[k] = [f"VALIDATED_AND_PRESENT ({len(v)} items)"]
-            else:
-                foundation_lean[k] = "VALIDATED_AND_PRESENT"
-        strategy_lean["research_foundation"] = foundation_lean
-
-    if "content_calendar" in strategy_lean:
-        strategy_lean["content_calendar"] = {
-            "status": "VALIDATED_AND_PRESENT",
-            "weeks_count": len(strategy_data.get("content_calendar", [])),
-            "note": "Full content calendar details omitted to conserve tokens."
-        }
-    logger.info("✓ Strategy (Lean): Omitted content_calendar and research_foundation to save tokens")
-
     # ========== STEP 5: REVIEW WITH LLM ==========
     logger.info("\n[STEP 5] Sending structured agent summary evidence (all 28 schema fields) to LLM for quality analysis...")
     logger.info("-" * 80)
@@ -401,11 +400,29 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
 
     from utils.review_context import build_review_context, CompactPromptSerializer
+    from utils.prompt_loader import load_split_prompt
+    from utils.pre_validator import PreValidator
+    
     review_context = build_review_context(state)
     review_dict = CompactPromptSerializer.serialize(review_context)
 
+    # Pre-screen copywriter channel coverage deterministically
+    try:
+        copy_dict = {}
+        if state.copy_output:
+            try:
+                copy_raw = json.loads(state.copy_output)
+                if isinstance(copy_raw, dict):
+                    copy_dict = copy_raw.get("copies") if isinstance(copy_raw.get("copies"), dict) else copy_raw
+            except Exception:
+                pass
+        pre_val_copy = PreValidator.validate_channel_coverage(copy_dict, channels)
+        logger.info(f"   [PRE-VALIDATION] Reviewer pre-screened copy channels: coverage={pre_val_copy.metadata.get('coverage_pct')}%")
+    except Exception as exc:
+        logger.warning(f"   ⚠️ Reviewer pre-validation non-blocking error: {exc}")
+
     # Load reviewer prompt and format with normalized agent output summaries
-    prompt = load_prompt(
+    system_prompt, prompt = load_split_prompt(
         "reviewer",
         # Campaign metadata
         campaign_name=campaign_name,
@@ -439,7 +456,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     # Cache-aware LLM call
     import os
-    cache_key = make_key("Reviewer", prompt=prompt, temperature=0.5, max_tokens=2000)
+    cache_key = make_key("Reviewer", prompt=prompt, temperature=0.5, max_tokens=8192)
     cached = cache_get(cache_key) if "PYTEST_CURRENT_TEST" not in os.environ else None
     if cached is not None:
         logger.info("📦 Cache hit — using cached Reviewer response")
@@ -448,7 +465,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         review_analysis, state = safe_llm_call(
             state,
             "Reviewer",
-            lambda: llm.generate_structured(prompt, ReviewerOutput, temperature=0.5, max_tokens=2000)
+            lambda: llm.generate_structured(prompt, ReviewerOutput, system_prompt=system_prompt, temperature=0.5, max_tokens=8192)
         )
         if review_analysis is not None:
             cache_set(cache_key, review_analysis.model_dump())
@@ -900,13 +917,18 @@ def _determine_revision_target(
     research_score: int, strategy_score: int,
     copy_score: int, image_score: int,
     all_approved: bool,
-    state: CampaignState = None
+    state: CampaignState = None,
+    creative_hook_matrix_review: AgentReview = None,
+    creative_hook_matrix_score: int = None,
 ) -> dict:
     """
     Determines which agent needs revision based on review feedback and scores.
     Skips agents that have reached MAX_REVISIONS.
     Returns dict or None if all unapproved agents have exhausted revisions.
     """
+    hook_review = creative_hook_matrix_review or AgentReview(score=100, approved=True, feedback="", issues=[], action_items=[])
+    hook_score = creative_hook_matrix_score if creative_hook_matrix_score is not None else 100
+
     agent_map = {
         "research": {
             "agent_name": "Research Agent",
@@ -931,6 +953,14 @@ def _determine_revision_target(
             "review": copy_review,
             "score": copy_score,
             "count": (getattr(state, "copy_revision_count", 0) or 0) if state else 0,
+        },
+        "creative_hook_matrix": {
+            "agent_name": "Creative Hook Matrix Agent",
+            "status": "creative_hook_matrix_revision_required",
+            "next_step": "await_creative_hook_matrix_revision",
+            "review": hook_review,
+            "score": hook_score,
+            "count": (getattr(state, "creative_hook_matrix_revision_count", 0) or 0) if state else 0,
         },
         "image": {
             "agent_name": "Image Prompt Agent",
@@ -960,7 +990,7 @@ def _determine_revision_target(
     eligible_scores = [
         (agent_map[k]["score"], k)
         for k in REVISION_PRIORITY
-        if agent_map[k]["count"] < MAX_REVISIONS and agent_map[k]["score"] < MIN_AGENT_SCORE
+        if k in agent_map and agent_map[k]["count"] < MAX_REVISIONS and agent_map[k]["score"] < MIN_AGENT_SCORE
     ]
     if eligible_scores:
         eligible_scores.sort(key=lambda x: x[0])

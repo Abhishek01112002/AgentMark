@@ -38,6 +38,72 @@ export interface AuthRequest extends Request {
   authMethod?: 'jwt' | 'api_key';
 }
 
+export interface AuthenticatedUser {
+  userId: string;
+  userEmail?: string;
+  authMethod: 'jwt' | 'api_key';
+}
+
+/**
+ * Authenticates either a JWT token or Developer API key string.
+ * Returns the authenticated user metadata or null if invalid.
+ */
+export async function authenticateToken(token: string): Promise<AuthenticatedUser | null> {
+  if (!token) return null;
+  const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token.trim();
+  if (!cleanToken) return null;
+
+  // ── Path 1: JWT Verification (Fast, in-memory) ─────────────────────────
+  try {
+    const decoded = verifyToken(cleanToken);
+    if (decoded?.userId) {
+      return {
+        userId: decoded.userId,
+        userEmail: decoded.email,
+        authMethod: 'jwt',
+      };
+    }
+  } catch {
+    // JWT verification failed — try Developer API key
+  }
+
+  // ── Path 2: Developer API Key Lookup (DB query) ─────────────────────────
+  try {
+    const keyHash = crypto.createHash('sha256').update(cleanToken, 'utf8').digest('hex');
+
+    const apiKey = await prisma.apiKey.findUnique({
+      where: { keyHash },
+      select: {
+        id: true,
+        userId: true,
+        isActive: true,
+      },
+    });
+
+    if (apiKey && apiKey.isActive) {
+      userLastMcpActivity.set(apiKey.userId, Date.now());
+
+      prisma.apiKey
+        .update({
+          where: { id: apiKey.id },
+          data: { lastUsedAt: new Date() },
+        })
+        .catch((err: Error) => {
+          console.error('[auth] Failed to update API key lastUsedAt | err=%s', err.message);
+        });
+
+      return {
+        userId: apiKey.userId,
+        authMethod: 'api_key',
+      };
+    }
+  } catch (error: any) {
+    console.error('[auth] API key lookup failed | err=%s', error?.message);
+  }
+
+  return null;
+}
+
 export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
@@ -50,62 +116,14 @@ export const authMiddleware = async (
     return;
   }
 
-  const token = authHeader.substring(7); // Strip "Bearer " prefix
-
-  // ── Path 1: JWT Verification ─────────────────────────────────────────────
-  // Fast path. No DB hit. Handles all web app traffic.
-  try {
-    const decoded = verifyToken(token);
-    req.userId = decoded.userId;
-    req.userEmail = decoded.email;
-    req.authMethod = 'jwt';
-    next();
+  const authUser = await authenticateToken(authHeader);
+  if (!authUser) {
+    res.status(401).json({ error: 'Invalid or revoked token / API key' });
     return;
-  } catch {
-    // JWT verification failed. Token is not a valid JWT — check if it is
-    // a developer API key before rejecting the request.
   }
 
-  // ── Path 2: Developer API Key Lookup ─────────────────────────────────────
-  // Slower path (one DB query). Handles MCP server and programmatic access.
-  try {
-    const keyHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
-
-    const apiKey = await prisma.apiKey.findUnique({
-      where: { keyHash },
-      select: {
-        id: true,
-        userId: true,
-        isActive: true,
-      },
-    });
-
-    if (!apiKey || !apiKey.isActive) {
-      res.status(401).json({ error: 'Invalid or revoked API key' });
-      return;
-    }
-
-    req.userId = apiKey.userId;
-    req.authMethod = 'api_key';
-
-    // Track real-time live activity for integration status
-    userLastMcpActivity.set(apiKey.userId, Date.now());
-
-    // Fire-and-forget: update lastUsedAt without blocking the request.
-    // If this write fails (e.g., transient DB error), it is non-fatal —
-    // the request still succeeds. Audit accuracy is best-effort.
-    prisma.apiKey
-      .update({
-        where: { id: apiKey.id },
-        data: { lastUsedAt: new Date() },
-      })
-      .catch((err: Error) => {
-        console.error('[auth] Failed to update API key lastUsedAt | err=%s', err.message);
-      });
-
-    next();
-  } catch (error: any) {
-    console.error('[auth] API key lookup failed | err=%s', error?.message);
-    res.status(401).json({ error: 'Authentication failed' });
-  }
+  req.userId = authUser.userId;
+  req.userEmail = authUser.userEmail;
+  req.authMethod = authUser.authMethod;
+  next();
 };

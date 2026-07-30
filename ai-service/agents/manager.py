@@ -124,7 +124,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
     
     # Cache-aware LLM call
-    cache_key = make_key("Manager", prompt=prompt, temperature=0.7, max_tokens=500)
+    cache_key = make_key("Manager", prompt=prompt, temperature=0.7, max_tokens=8192)
     cached = cache_get(cache_key)
     if cached is not None:
         logger.info("📦 Cache hit — using cached Manager response")
@@ -133,7 +133,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
         plan, state = safe_llm_call(
             state,
             "Manager",
-            lambda: llm.generate_structured(prompt, ManagerOutput, temperature=0.7, max_tokens=500)
+            lambda: llm.generate_structured(prompt, ManagerOutput, temperature=0.7, max_tokens=8192)
         )
         if plan is not None:
             cache_set(cache_key, plan.model_dump())

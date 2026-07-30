@@ -8,6 +8,7 @@ Your copy does three things simultaneously:
 TASK:
 Transform the strategic plan and research insights below into complete, high-converting, channel-specific marketing copy ready for immediate deployment.
 
+---USER_PROMPT---
 CAMPAIGN METADATA:
 - Campaign Name: {campaign_name}
 - Brand Name: {brand_name}

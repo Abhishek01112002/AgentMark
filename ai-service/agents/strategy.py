@@ -325,7 +325,8 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
 
     # Load strategy prompt and format with data
-    prompt = load_prompt(
+    from utils.prompt_loader import load_split_prompt
+    system_prompt, prompt = load_split_prompt(
         "strategy",
         campaign_name=campaign_name,
         brand_name=brand_name,
@@ -348,9 +349,9 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature prevents unnecessary field changes;
-    # extra token budget handles the existing-strategy context
+    # higher token budget compensates for the extra existing-output context
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 10000 if is_human_revision else 8000
+    revision_max_tokens = 8192
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -369,6 +370,17 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         )
         if strategy_plan is not None:
             cache_set(cache_key, strategy_plan.model_dump())
+
+    if is_human_revision and state.strategy_output and strategy_plan is not None:
+        logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge for Strategy...")
+        try:
+            from utils.delta_merger import deep_merge_dicts
+            previous_dict = json.loads(state.strategy_output)
+            merged_dict = deep_merge_dicts(previous_dict, strategy_plan.model_dump(exclude_none=True))
+            strategy_plan = StrategyOutput(**merged_dict)
+            logger.info("   ✅ Semantic Delta Patch merged cleanly over previous strategy_output")
+        except Exception as exc:
+            logger.warning(f"   ⚠️ Strategy delta merge warning: {exc} — preserving current strategy output")
     
     if strategy_plan is None:
         logger.info("   ⚠️ Strategy LLM unavailable — using research-grounded fallback strategy")

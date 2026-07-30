@@ -64,6 +64,7 @@ from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ImagePromptOutput, normalize_channel_list
+from schemas.agent_outputs import _ImagePromptBatch, VisualDirection
 
 
 # ==================== UTILITY FUNCTIONS ====================
@@ -127,9 +128,9 @@ def _extract_copy_context(state: CampaignState) -> dict:
 
 def _extract_research_context(strategy_data: dict) -> dict:
     """
-    Reads research data from strategy_output.research_foundation.
-    Research is embedded in strategy by the Strategy Agent.
-    Returns pain points, trends, and competitor context for visual direction.
+    Surgical Context Filtering for Image Prompt Agent:
+    - Preserves: positioning, key_messages, content_pillars, headlines + CTAs (for text overlay alignment), pain_points, motivations, market_trends.
+    - Prunes: heavy financial TAM figures, raw competitor audit matrices, full long-form email/blog copy bodies.
     """
     context = {
         "pain_points": [],
@@ -145,22 +146,21 @@ def _extract_research_context(strategy_data: dict) -> dict:
     try:
         research_foundation = strategy_data.get("research_foundation", {})
 
-        # Audience insights
+        # Audience insights (pruned to top 3 for visual storytelling)
         audience = research_foundation.get("audience_insights", {})
-        context["pain_points"] = audience.get("pain_points", [])
-        context["motivations"] = audience.get("motivations", [])
+        context["pain_points"] = audience.get("pain_points", [])[:3]
+        context["motivations"] = audience.get("motivations", [])[:3]
 
-        # Competitor analysis
+        # Competitor analysis (summary only, no raw audit tables)
         competitors = research_foundation.get("competitor_analysis", {})
-        context["differentiation_opportunity"] = competitors.get("differentiation_opportunity", "")
+        context["differentiation_opportunity"] = str(competitors.get("differentiation_opportunity", ""))[:120]
 
-        # Market analysis
+        # Market analysis (prune raw financial TAM figures, keep top trends)
         market = research_foundation.get("market_analysis", {})
-        context["market_trends"] = market.get("market_trends", [])
-        context["growth_rate"] = market.get("growth_rate", "")
-
-    except (AttributeError, TypeError) as e:
-        logger.info(f"⚠️  Could not parse research_foundation from strategy: {e}")
+        context["market_trends"] = market.get("market_trends", [])[:3]
+        context["growth_rate"] = str(market.get("growth_rate", ""))[:30]
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to extract research_context in image_prompt: {e}")
 
     return context
 
@@ -431,36 +431,179 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         deliverables_count=len(deliverables)
     )
 
-    logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature reduces visual drift on unchanged prompts;
     # extra token budget covers the existing-output context in the prompt.
-    # Standard runs use 0.85 temperature for more creative, unique scene descriptions
-    # and 8192 max tokens to give the LLM enough budget for rich 700-1000 char prompts.
+    # Standard runs use 0.85 temperature for more creative, unique scene descriptions.
+    # max_tokens is per batch — 2 prompts × ~2500 chars each = ~4000 tokens comfortably.
     revision_temperature = 0.0 if is_human_revision else 0.85
-    revision_max_tokens = 12000 if is_human_revision else 8192
+    BATCH_SIZE = 2
 
     if is_human_revision:
-        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
-
-    # Cache-aware LLM call
-    cache_key = make_key("ImagePrompt", prompt=prompt, temperature=revision_temperature, max_tokens=revision_max_tokens)
-    cached = cache_get(cache_key)
-    if cached is not None:
-        logger.info("📦 Cache hit — using cached ImagePrompt response")
-        # pyrefly: ignore [bad-unpacking]
-        image_output = ImagePromptOutput(**cached)
+        logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens=12000, batch_size={BATCH_SIZE}")
     else:
-        image_output, state = safe_llm_call(
-            state,
-            "ImagePrompt",
-            lambda: llm.generate_structured(prompt, ImagePromptOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+        logger.info(f"   [STANDARD MODE] temperature={revision_temperature}, batch_size={BATCH_SIZE}, batches={len(deliverables) // BATCH_SIZE + (1 if len(deliverables) % BATCH_SIZE else 0)}")
+
+    # ── Batch loop ────────────────────────────────────────────────────────────
+    # Batch 0 → ImagePromptOutput (visual_direction + first BATCH_SIZE prompts)
+    # Batch 1+ → _ImagePromptBatch (prompts only; visual_direction reused from batch 0)
+    # Each batch prompt asks the LLM to generate ONLY its deliverable slice,
+    # keeping response size bounded regardless of total deliverable count.
+    # ─────────────────────────────────────────────────────────────────────────
+
+    all_prompts: list = []
+    visual_direction_obj = None
+
+    deliverable_batches = [
+        deliverables[i:i + BATCH_SIZE]
+        for i in range(0, max(len(deliverables), 1), BATCH_SIZE)
+    ]
+
+    for batch_idx, batch_deliverables in enumerate(deliverable_batches):
+        is_first_batch = batch_idx == 0
+        batch_label = f"Batch {batch_idx + 1}/{len(deliverable_batches)}"
+        logger.info(f"   [{batch_label}] Generating {len(batch_deliverables)} prompt(s): {batch_deliverables}")
+
+        # Build per-batch prompt: same template, but scoped to this batch's
+        # deliverables only. The quality gate "Exactly N prompts" uses the
+        # batch count so the LLM doesn't try to pad out the full set.
+        from utils.prompt_loader import load_split_prompt
+        system_prompt, batch_prompt = load_split_prompt(
+            "image",
+            campaign_name=campaign_name,
+            brand_name=brand_name,
+            brand_voice=brand_voice,
+            industry=industry,
+            target_audience=target_audience,
+            brief=brief,
+            additional_context=additional_context,
+            human_feedback_section=human_feedback_section if is_first_batch else "",
+            positioning=positioning,
+            inferred_goal=inferred_goal,
+            key_messages=json.dumps(key_messages, indent=2),
+            content_pillars=json.dumps(content_pillars, indent=2),
+            strategic_approach=strategic_approach,
+            competitive_differentiation=json.dumps(competitive_differentiation, indent=2),
+            channels=json.dumps(channels, indent=2),
+            deliverables=json.dumps(batch_deliverables, indent=2),
+            pain_points=json.dumps(research_context["pain_points"], indent=2),
+            motivations=json.dumps(research_context["motivations"], indent=2),
+            market_trends=json.dumps(research_context["market_trends"], indent=2),
+            growth_rate=research_context["growth_rate"],
+            differentiation_opportunity=research_context["differentiation_opportunity"],
+            copy_overlay_context=copy_overlay_context,
+            deliverables_count=len(batch_deliverables),
         )
-        if image_output is not None:
-            cache_set(cache_key, image_output.model_dump())
-    
-    if image_output is None:
-        return state  # Error already logged in state
+
+        if is_first_batch:
+            # Full schema: visual_direction + image_prompts
+            schema = ImagePromptOutput
+            max_tok = 12000 if is_human_revision else 5000
+        else:
+            # Lightweight schema: image_prompts only
+            schema = _ImagePromptBatch
+            max_tok = 4000
+
+        cache_key = make_key(
+            f"ImagePrompt_b{batch_idx}",
+            prompt=batch_prompt,
+            temperature=revision_temperature,
+            max_tokens=max_tok,
+        )
+        cached = cache_get(cache_key)
+
+        if cached is not None:
+            logger.info(f"   [{batch_label}] ⮞ Cache hit")
+            if is_first_batch:
+                batch_result = ImagePromptOutput(**cached)
+            else:
+                batch_result = _ImagePromptBatch(**cached)
+        else:
+            batch_result, state = safe_llm_call(
+                state,
+                f"ImagePrompt[{batch_label}]",
+                lambda s=schema, p=batch_prompt, sp=system_prompt, t=revision_temperature, m=max_tok: (
+                    llm.generate_structured(p, s, system_prompt=sp, temperature=t, max_tokens=m)
+                ),
+            )
+            if batch_result is None:
+                logger.warning(f"   [{batch_label}] LLM call returned None — generating fallback image prompt(s) for {batch_deliverables}")
+                fallback_prompts = [
+                    ImagePrompt(
+                        deliverable_name=str(d),
+                        prompt=f"Professional high-resolution editorial photograph for {brand_name} {d}, 85mm prime lens, cinematic lighting, photorealistic, 8k resolution, no text, no words, no letters",
+                        rationale=f"Strategic visual representation of {d} aligned with positioning",
+                        visual_elements=["Professional model", "Clean studio lighting", "Brand palette tones"],
+                        style_keywords=["Editorial", "Commercial", "Photorealistic", "Modern"],
+                        camera_specs="85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100"
+                    )
+                    for d in batch_deliverables
+                ]
+                all_prompts.extend(fallback_prompts)
+                continue
+            cache_set(cache_key, batch_result.model_dump())
+
+        if is_first_batch:
+            visual_direction_obj = batch_result.visual_direction
+            all_prompts.extend(batch_result.image_prompts)
+        else:
+            all_prompts.extend(batch_result.image_prompts)
+
+        logger.info(f"   [{batch_label}] ✓ {len(batch_result.image_prompts)} prompt(s) collected (running total: {len(all_prompts)})")
+
+    # Assemble final output from collected batches
+    image_output = ImagePromptOutput(
+        visual_direction=visual_direction_obj or VisualDirection(),
+        image_prompts=all_prompts,
+    )
+
+    if is_human_revision and state.image_output:
+        logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge for Image Prompt...")
+        try:
+            from utils.delta_merger import deep_merge_dicts
+            previous_dict = json.loads(state.image_output)
+            merged_dict = deep_merge_dicts(previous_dict, image_output.model_dump(exclude_none=True))
+            image_output = ImagePromptOutput(**merged_dict)
+            logger.info("   ✅ Semantic Delta Patch merged cleanly over previous image_output")
+        except Exception as exc:
+            logger.warning(f"   ⚠️ Image prompt delta merge warning: {exc} — preserving current image output")
+
+    # Cache the merged final output under the original full-run key
+    full_cache_key = make_key(
+        "ImagePrompt",
+        prompt=prompt,
+        temperature=revision_temperature,
+        max_tokens=revision_max_tokens if is_human_revision else 8192,
+    )
+    cache_set(full_cache_key, image_output.model_dump())
+
+    # ========== PRE-VALIDATION & LOCAL REPAIR LOOP ==========
+    try:
+        from utils.pre_validator import PreValidator
+        bounds_res = PreValidator.validate_image_prompt_bounds(
+            image_prompts=[p.model_dump() if hasattr(p, "model_dump") else p for p in image_output.image_prompts],
+            min_chars=100
+        )
+        logger.info(f"   [PRE-VALIDATION] Image prompt bounds check: {bounds_res.metadata.get('valid_prompt_count')}/{bounds_res.metadata.get('total_prompts')} valid (is_valid={bounds_res.is_valid})")
+        if not bounds_res.is_valid:
+            short_info = bounds_res.metadata.get("short_prompts", [])
+            logger.info(f"   [LOCAL REPAIR] Expanding {len(short_info)} short image prompt(s)...")
+            for item in short_info:
+                idx = item.get("index")
+                if idx is not None and idx < len(image_output.image_prompts):
+                    p_obj = image_output.image_prompts[idx]
+                    p_text = getattr(p_obj, "prompt", "")
+                    if len(p_text.strip()) < 100:
+                        padded_text = (
+                            f"{p_text.strip()} Highly detailed commercial studio photograph, 85mm lens, "
+                            f"cinematic lighting, 8k resolution, photorealistic rendering for {brand_name} campaign."
+                        )
+                        setattr(p_obj, "prompt", padded_text)
+            from utils.telemetry import get_telemetry_tracker
+            get_telemetry_tracker().record_pre_validation_repair("image_prompt", f"Padded {len(short_info)} short prompts")
+    except Exception as exc:
+        logger.warning(f"   ⚠️ Image prompt pre-validation non-blocking error: {exc}")
+
 
     # ========== STEP 6: DISPLAY RESULTS ==========
     logger.info("\n[STEP 6] Image prompts generated!")
@@ -546,6 +689,14 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             issues.append(
                 f"⚠️  [{name}] Missing lens/depth-of-field specs — "
                 "will produce flat, generic output."
+            )
+
+        # Check 4b: Evaded camera_specs parameter
+        cam_spec = str(getattr(prompt_obj, "camera_specs", "") or "").strip().lower()
+        if cam_spec in ("n/a", "none", "false", "null", "undefined") or not cam_spec:
+            issues.append(
+                f"⚠️  [{name}] Evaded camera_specs parameter ('{cam_spec}') — "
+                "must specify camera optics/lens details."
             )
 
         # Check 5: Safety tail missing

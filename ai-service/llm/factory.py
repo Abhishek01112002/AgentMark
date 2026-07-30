@@ -96,7 +96,7 @@ class SmartClient(BaseLLMClient):
                     self._last_call_time = time.time()
                     return result
                 except Exception as exc:
-                    if isinstance(exc, NonRetryableLLMError) or is_payload_too_large_error(exc):
+                    if is_payload_too_large_error(exc):
                         # Payload too large is DETERMINISTIC — retrying the same provider
                         # with the same payload will ALWAYS fail. Permanently exclude this
                         # key for the current request (no timed cooldown).
@@ -106,7 +106,6 @@ class SmartClient(BaseLLMClient):
                         )
                         request_blacklist.add(key_id)
                         last_error = exc
-                        # Check if ALL keys are now blacklisted
                         if len(request_blacklist) >= max_attempts:
                             raise last_error
                         continue
@@ -130,15 +129,15 @@ class SmartClient(BaseLLMClient):
                         last_error = exc
                         continue
 
-                    if "unauthorized" in error_str or "denied" in error_str or "api key" in error_str:
+                    if "unauthorized" in error_str or "denied" in error_str or "api key" in error_str or "bad credentials" in error_str or isinstance(exc, NonRetryableLLMError):
                         # Guard: "models permission" 401s mean the key lacks models.read
-                        # but is still valid for inference. The OpenAIClient already
-                        # converts these to NonRetryableLLMError (no cooldown) before
-                        # reaching here, but check again for defence-in-depth.
+                        # but is still valid for inference.
                         is_models_permission = (
                             "models` permission" in error_str
                             or "models permission" in error_str
-                            or ("models" in error_str and "required to access this endpoint" in error_str)
+                            or ("`models`" in error_str and "permission" in error_str)
+                            or "permission to list models" in error_str
+                            or "models.read" in error_str
                         )
                         if is_models_permission:
                             # Do NOT put on cooldown — this key works for inference.
@@ -154,9 +153,12 @@ class SmartClient(BaseLLMClient):
                                 raise last_error
                             continue
 
-                        logger.warning("%s[%s] unauthorized/permission denied, trying next provider...", provider, key_id)
+                        logger.warning("%s[%s] unauthorized/permission denied (%s), trying next provider...", provider, key_id, str(exc)[:80])
                         self._pool.mark_failed(key_id)
+                        request_blacklist.add(key_id)
                         last_error = exc
+                        if len(request_blacklist) >= max_attempts:
+                            raise last_error
                         continue
 
                     # Generic transient errors — short cooldown (15s instead of 30s)
@@ -191,20 +193,22 @@ class SmartClient(BaseLLMClient):
                     "All LLM providers are currently rate-limited. Try again later or add more API keys."
                 )
 
-    def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 2000, seed: int | None = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
         return self._call_with_failover(
-            lambda c, p, t, m, s: c.generate(p, t, m, seed=s),
+            lambda c, p, sp, t, m, s: c.generate(p, system_prompt=sp, temperature=t, max_tokens=m, seed=s),
             prompt,
+            system_prompt,
             temperature,
             max_tokens,
             seed,
         )
 
-    def generate_structured(self, prompt: str, response_model, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
+    def generate_structured(self, prompt: str, response_model, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None):
         return self._call_with_failover(
-            lambda c, p, r, t, m, s: c.generate_structured(p, r, t, m, seed=s),
+            lambda c, p, r, sp, t, m, s: c.generate_structured(p, r, system_prompt=sp, temperature=t, max_tokens=m, seed=s),
             prompt,
             response_model,
+            system_prompt,
             temperature,
             max_tokens,
             seed,

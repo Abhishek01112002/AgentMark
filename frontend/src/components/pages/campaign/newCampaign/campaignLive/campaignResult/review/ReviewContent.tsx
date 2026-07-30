@@ -13,10 +13,11 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
   const researchReview = data?.research_review || {};
   const strategyReview = data?.strategy_review || {};
   const copyReview = data?.copy_review || {};
+  const hookReview = data?.creative_hook_matrix_review || data?.hook_review || {};
   const imageReview = data?.image_review || {};
   const overall = data?.overall || {};
 
-  const agentScores = [researchReview.score, strategyReview.score, copyReview.score, imageReview.score]
+  const agentScores = [researchReview.score, strategyReview.score, copyReview.score, hookReview.score, imageReview.score]
     .filter((value): value is number => typeof value === 'number' && value > 0);
   const fallbackScore = agentScores.length > 0
     ? Math.round((agentScores.reduce((sum, value) => sum + value, 0) / agentScores.length) * 10) / 10
@@ -146,6 +147,19 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
                 {copyReview.score}
               </div>
               <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{copyReview.feedback}</p>
+            </div>
+          )}
+          {hookReview.score && (
+            <div className="card-elevate bg-[#0A0A1C] border border-[#2A2A38] rounded-xl p-5 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#EC4899] to-transparent" />
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#F1F1F3' }}>Hook Matrix Agent</h4>
+                <span className={`w-2 h-2 rounded-full ${hookReview.approved ? 'bg-[#4edea3]' : 'bg-[#F59E0B]'}`} />
+              </div>
+              <div className="text-3xl font-bold mb-2" style={{ fontFamily: 'Inter, sans-serif', color: '#EC4899' }}>
+                {hookReview.score}
+              </div>
+              <p className="text-xs mb-3" style={{ fontFamily: 'Inter, sans-serif', color: '#8B8B9E' }}>{hookReview.feedback}</p>
             </div>
           )}
           {imageReview.score && (

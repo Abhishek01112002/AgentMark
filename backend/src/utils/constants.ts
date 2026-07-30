@@ -3,14 +3,16 @@ const constants = {
     { value: 'saas', label: 'SaaS & Technology' },
     { value: 'ecommerce', label: 'E-Commerce' },
     { value: 'finance', label: 'Finance & Fintech' },
-    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'edtech', label: 'EdTech & Education' },
+    { value: 'real_estate', label: 'Real Estate & Property' },
     { value: 'other', label: 'Other (Specify)' },
   ],
   
   primaryGoals: [
     { value: 'awareness', label: 'Brand Awareness' },
     { value: 'lead_gen', label: 'Lead Generation' },
-    { value: 'sales', label: 'Direct Sales' },
+    { value: 'sales', label: 'Sales' },
+    { value: 'engagement', label: 'User Engagement' },
     { value: 'retention', label: 'Customer Retention' },
     { value: 'other', label: 'Other (Specify)' },
   ],
@@ -30,6 +32,5 @@ const constants = {
     creativeHookMatrix: process.env.ENABLE_CREATIVE_HOOK_MATRIX !== 'false' && process.env.ENABLE_CREATIVE_HOOK_MATRIX !== '0',
   },
 };
-
 
 export const getConstants = () => constants;

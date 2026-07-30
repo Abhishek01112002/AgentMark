@@ -61,7 +61,7 @@ export const ResultSidebar: React.FC = React.memo(() => {
   return (
     <>
       {/* Persistent Floating Approval Actions Bar */}
-      {campaign.status === 'awaiting_human_approval' && (
+      {campaign?.status === 'awaiting_human_approval' && (
         <div className="fixed bottom-0 left-0 right-0 z-40 bg-[#0F0F15]/90 backdrop-blur-md border-t border-[#2A2A38] p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] md:pl-[272px] pr-8">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] animate-pulse flex-shrink-0" />
@@ -112,7 +112,7 @@ export const ResultSidebar: React.FC = React.memo(() => {
       )}
 
       {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-      {showHumanReview && (!isMinimized || campaign.status !== 'awaiting_human_approval') && (
+      {showHumanReview && (!isMinimized || campaign?.status !== 'awaiting_human_approval') && (
         <div
           onClick={() => {
             if (isMinimized) {

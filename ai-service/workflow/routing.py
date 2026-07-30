@@ -35,7 +35,7 @@ import json
 from agents.state import CampaignState
 from utils.cancellation import is_campaign_cancelled
 
-from config.settings import MAX_AUTO_REVISIONS, MIN_AGENT_SCORE
+from config.settings import MAX_AUTO_REVISIONS, MIN_AGENT_SCORE, ENABLE_CREATIVE_HOOK_MATRIX
 
 MAX_REVISIONS = MAX_AUTO_REVISIONS
 
@@ -134,29 +134,35 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
         research_review = review_data.get("research_review", {})
         strategy_review = review_data.get("strategy_review", {})
         copy_review = review_data.get("copy_review", {})
+        hook_review = review_data.get("creative_hook_matrix_review", {}) or review_data.get("hook_review", {})
         image_review = review_data.get("image_review", {})
         
         # Get scores and approval status
         research_score = research_review.get("score", 100)
         strategy_score = strategy_review.get("score", 100)
         copy_score = copy_review.get("score", 100)
+        hook_score = hook_review.get("score", 100) if hook_review else 100
         image_score = image_review.get("score", 100)
         
         research_approved = research_review.get("approved", True)
         strategy_approved = strategy_review.get("approved", True)
         copy_approved = copy_review.get("approved", True)
+        hook_approved = hook_review.get("approved", True) if hook_review else True
         image_approved = image_review.get("approved", True)
         
         # Get current revision counts
         research_revisions = _get_attr(state, "research_revision_count", 0) or 0
         strategy_revisions = _get_attr(state, "strategy_revision_count", 0) or 0
         copy_revisions = _get_attr(state, "copy_revision_count", 0) or 0
+        hook_revisions = _get_attr(state, "creative_hook_matrix_revision_count", 0) or 0
         image_revisions = _get_attr(state, "image_revision_count", 0) or 0
         
         logger.info("\n📈 Agent Scores:")
         logger.info(f"   Research:  {research_score}/100 (Revisions: {research_revisions}/{MAX_REVISIONS})")
         logger.info(f"   Strategy:  {strategy_score}/100 (Revisions: {strategy_revisions}/{MAX_REVISIONS})")
         logger.info(f"   Copy:      {copy_score}/100 (Revisions: {copy_revisions}/{MAX_REVISIONS})")
+        if ENABLE_CREATIVE_HOOK_MATRIX and hook_review:
+            logger.info(f"   Hooks:     {hook_score}/100 (Revisions: {hook_revisions}/{MAX_REVISIONS})")
         logger.info(f"   Image:     {image_score}/100 (Revisions: {image_revisions}/{MAX_REVISIONS})")
         
         # Priority 1: Research needs revision (affects everything downstream)
@@ -164,8 +170,16 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
             ("research", research_approved, research_score, research_revisions, research_review, "revise_research", "RESEARCH"),
             ("strategy", strategy_approved, strategy_score, strategy_revisions, strategy_review, "revise_strategy", "STRATEGY"),
             ("copy", copy_approved, copy_score, copy_revisions, copy_review, "revise_copy", "COPYWRITER"),
-            ("image", image_approved, image_score, image_revisions, image_review, "revise_image", "IMAGE PROMPT"),
         ]
+
+        if ENABLE_CREATIVE_HOOK_MATRIX and hook_review:
+            agent_priority_checks.append(
+                ("creative_hook_matrix", hook_approved, hook_score, hook_revisions, hook_review, "revise_hooks", "CREATIVE HOOK MATRIX")
+            )
+
+        agent_priority_checks.append(
+            ("image", image_approved, image_score, image_revisions, image_review, "revise_image", "IMAGE PROMPT")
+        )
 
         for agent_key, is_appr, score, rev_count, review_obj, route_target, log_label in agent_priority_checks:
             if not is_appr or score < MIN_AGENT_SCORE:

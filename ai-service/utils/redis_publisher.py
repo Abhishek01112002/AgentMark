@@ -47,7 +47,47 @@ def _get_pool() -> redis.ConnectionPool:
     return _pool
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
+def _truncate_payload_outputs(outputs: dict, target_max_bytes: int = 400_000) -> dict:
+    """
+    Intelligently truncates large string values inside an outputs dictionary
+    without dropping output keys or structure.
+    """
+    if not isinstance(outputs, dict):
+        return outputs
+
+    truncated = dict(outputs)
+    
+    # Pass 1: Trim strings > 20,000 chars
+    for k, v in truncated.items():
+        if isinstance(v, str) and len(v) > 20_000:
+            truncated[k] = v[:20_000] + "\n...[truncated for payload limit]"
+        elif isinstance(v, dict):
+            nested = {}
+            for nk, nv in v.items():
+                if isinstance(nv, str) and len(nv) > 10_000:
+                    nested[nk] = nv[:10_000] + "\n...[truncated]"
+                else:
+                    nested[nk] = nv
+            truncated[k] = nested
+
+    if len(json.dumps(truncated)) <= target_max_bytes:
+        return truncated
+
+    # Pass 2: Aggressive trim for strings > 5,000 chars
+    for k, v in truncated.items():
+        if isinstance(v, str) and len(v) > 5_000:
+            truncated[k] = v[:5_000] + "\n...[truncated]"
+        elif isinstance(v, dict):
+            nested = {}
+            for nk, nv in v.items():
+                if isinstance(nv, str) and len(nv) > 3_000:
+                    nested[nk] = nv[:3_000] + "\n...[truncated]"
+                else:
+                    nested[nk] = nv
+            truncated[k] = nested
+
+    return truncated
+
 
 def publish_agent_event(
     campaign_id: Optional[str],
@@ -101,9 +141,10 @@ def publish_agent_event(
 
     message = json.dumps(payload)
     if len(message) > 500_000:  # 500KB hard cap
-        logger.warning("Redis payload too large (%d bytes) — truncating outputs", len(message))
-        payload.pop("outputs", None)
-        message = json.dumps(payload)
+        logger.warning("Redis payload too large (%d bytes) — performing intelligent field-level truncation", len(message))
+        if "outputs" in payload and isinstance(payload["outputs"], dict):
+            payload["outputs"] = _truncate_payload_outputs(payload["outputs"], target_max_bytes=400_000)
+            message = json.dumps(payload)
 
     try:
         global _client

@@ -82,7 +82,7 @@ def extract_context_from_prompt(prompt: str) -> dict:
             pass
 
     # Match deliverables list
-    deliv_m = re.search(r'deliverables:\s*(\[[^\]]+\])', prompt, re.IGNORECASE)
+    deliv_m = re.search(r'deliverables[^\:]*:\s*(\[[^\]]+\])', prompt, re.IGNORECASE)
     if deliv_m:
         try:
             parsed = json.loads(deliv_m.group(1).replace("'", '"'))

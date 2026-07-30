@@ -218,6 +218,7 @@ def submit_human_approval(state: CampaignState, decision: dict) -> CampaignState
             "research": state.research_revision_count or 0,
             "strategy": state.strategy_revision_count or 0,
             "copywriter": state.copy_revision_count or 0,
+            "creative_hook_matrix": state.creative_hook_matrix_revision_count or 0,
             "image_prompt": state.image_revision_count or 0
         }
         
@@ -231,9 +232,10 @@ def submit_human_approval(state: CampaignState, decision: dict) -> CampaignState
         
         # Check if any DOWNSTREAM agents would exceed max revisions
         downstream_agents = {
-            "research": ["strategy", "copywriter", "image_prompt"],
-            "strategy": ["copywriter", "image_prompt"],
-            "copywriter": ["image_prompt"],
+            "research": ["strategy", "copywriter", "creative_hook_matrix", "image_prompt"],
+            "strategy": ["copywriter", "creative_hook_matrix", "image_prompt"],
+            "copywriter": ["creative_hook_matrix", "image_prompt"],
+            "creative_hook_matrix": ["image_prompt"],
             "image_prompt": []
         }
         

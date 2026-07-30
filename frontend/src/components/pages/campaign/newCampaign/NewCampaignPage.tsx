@@ -169,8 +169,8 @@ const NewCampaignContent: React.FC = () => {
       const rawGoal = initial.primaryGoal || initial.goal || '';
       const rawVoice = initial.brandVoice || 'professional';
 
-      const stdIndustries = ['saas', 'ecommerce', 'finance', 'healthcare'];
-      const stdGoals = ['awareness', 'lead_gen', 'sales', 'retention'];
+      const stdIndustries = ['saas', 'ecommerce', 'finance', 'edtech', 'real_estate'];
+      const stdGoals = ['awareness', 'lead_gen', 'sales', 'engagement', 'retention'];
       const stdVoices = ['professional', 'friendly', 'bold', 'luxury', 'casual', 'inspirational', 'empathetic', 'trustworthy'];
 
       const isCustomInd = rawInd && !stdIndustries.includes(rawInd.toLowerCase());

@@ -11,10 +11,35 @@
  */
 
 import Redis from 'ioredis';
+import crypto from 'crypto';
 import type { Server } from 'socket.io';
 import { campaignService } from '../modules/campaigns/campaign.service';
 import prisma from '../db';
 import { notificationService } from '../modules/notifications/notification.service';
+import { redis } from './redis';
+import { extractReviewScore } from './score-extractor';
+
+// Defensive Prisma update wrapper for self-healing schema drift
+async function safePrismaUpdate(campaignId: string, updateData: any) {
+  try {
+    return await prisma.campaign.update({
+      where: { id: campaignId },
+      data: updateData,
+    });
+  } catch (err: any) {
+    if (err && err.message && (err.message.includes('Unknown argument') || err.message.includes('creativeHookMatrixRevisionCount'))) {
+      const match = err.message.match(/Unknown argument `([^`]+)`/);
+      const unknownField = match ? match[1] : 'creativeHookMatrixRevisionCount';
+      console.warn(`[Redis Subscriber] Intercepted un-generated Prisma column '${unknownField}'. Stripping field and executing self-healing DB update...`);
+      delete updateData[unknownField];
+      return await prisma.campaign.update({
+        where: { id: campaignId },
+        data: updateData,
+      });
+    }
+    throw err;
+  }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,36 +52,57 @@ interface AgentUpdatePayload {
   outputs?: Record<string, any>;
   workflow_finished?: boolean;
 }
+
 // ── Promise Queue for Sequential DB Updates ───────────────────────────────────
 
 class PromiseQueue {
   private queue: Promise<any> = Promise.resolve();
 
-  add(fn: () => Promise<any>): void {
+  add<T>(fn: () => Promise<T>): Promise<T> {
+    let taskResolve: (val: T | PromiseLike<T>) => void;
+    let taskReject: (reason?: any) => void;
+    const taskPromise = new Promise<T>((res, rej) => {
+      taskResolve = res;
+      taskReject = rej;
+    });
+
     this.queue = this.queue
       .then(async () => {
         let attempts = 0;
         const maxAttempts = 3;
+        let lastError: any = null;
+
         while (attempts < maxAttempts) {
           try {
             attempts++;
-            await fn();
-            break;
+            const res = await fn();
+            taskResolve(res);
+            return;
           } catch (err: any) {
+            lastError = err;
             console.error(`[PromiseQueue] Task error (attempt ${attempts}/${maxAttempts}):`, err.message || err);
             if (attempts < maxAttempts) {
-              await new Promise((res) => setTimeout(res, 500 * attempts));
+              const backoffMs = Math.pow(2, attempts) * 300 + Math.floor(Math.random() * 200);
+              await new Promise((r) => setTimeout(r, backoffMs));
             }
           }
         }
+        // All retries failed — reject the task promise so caller/DLQ receives failure
+        taskReject(lastError);
       })
       .catch((err) => {
-        console.error('[PromiseQueue] Queue chain error:', err);
+        taskReject(err);
       });
+
+    return taskPromise;
   }
 }
 
 const dbWriteQueue = new PromiseQueue();
+
+export const enqueueDbWrite = <T>(fn: () => Promise<T>): Promise<T> => {
+  return dbWriteQueue.add(fn);
+};
 
 // ── Sliding Window Event Deduplication Cache ──────────────────────────────────
 
@@ -168,14 +214,23 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         return;
       }
 
+      // Multi-instance deduplication: set an NX lock in Redis per event payload for 10 seconds.
+      // Only the primary backend replica that acquires the lock runs the DB write task.
+      // Secondary replicas skip duplicate DB updates while maintaining local socket broadcasts.
+      const eventHash = crypto.createHash('md5').update(`${_channel}:${message}`).digest('hex');
+      const dbLockKey = `evt_db_lock:${eventHash}`;
+      let isPrimaryReplica = true;
+      try {
+        const lockRes = await redis.set(dbLockKey, '1', 'EX', 10, 'NX');
+        isPrimaryReplica = lockRes === 'OK';
+      } catch (redisErr) {
+        isPrimaryReplica = true;
+      }
+
       // Only forward genuine agent progress events to the UI (not system terminal events).
-      // Terminal events (campaign_complete, awaiting_human_approval, failed) have
-      // agent="system" and are emitted separately below with their own event name,
-      // preventing a noisy agent_update with agent="system" from reaching the live panel.
       if (data.agent !== 'system') {
-        // Queue intermediate progress state persistence in database to prevent read-modify-write race conditions
-        dbWriteQueue.add(async () => {
-          try {
+        if (isPrimaryReplica) {
+          dbWriteQueue.add(async () => {
             // Re-fetch latest campaign record inside queue task to guarantee we merge against the freshest DB state
             const latestCampaign = await prisma.campaign.findUnique({
               where: { id: campaign_id },
@@ -191,6 +246,16 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
             }
 
             const pipelineKeys = ['manager', 'research', 'strategy', 'copywriter', 'creative_hook_matrix', 'image_prompt', 'reviewer', 'publisher'];
+            const downstreamMap: Record<string, string[]> = {
+              manager: ['research_output', 'strategy_output', 'copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+              research: ['strategy_output', 'copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+              strategy: ['copy_output', 'creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+              copywriter: ['creative_hook_matrix_output', 'image_output', 'review_output', 'publisher_output'],
+              creative_hook_matrix: ['image_output', 'review_output', 'publisher_output'],
+              image_prompt: ['review_output', 'publisher_output'],
+              reviewer: ['publisher_output'],
+            };
+
             if (status === 'running') {
               const runningIdx = pipelineKeys.indexOf(data.agent);
               if (runningIdx !== -1) {
@@ -198,6 +263,12 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 currentOutputs.completed_agents = currentOutputs.completed_agents.filter((agent: string) => {
                   const idx = pipelineKeys.indexOf(agent);
                   return idx !== -1 && idx < runningIdx;
+                });
+
+                // Purge downstream outputs from database JSON state
+                const toClear = downstreamMap[data.agent] || [];
+                toClear.forEach((key) => {
+                  delete currentOutputs[key];
                 });
               }
             }
@@ -225,39 +296,47 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
             if (typeof (data as any).copy_revision_count === 'number') {
               updateData.copyRevisionCount = (data as any).copy_revision_count;
             }
+            if (typeof (data as any).creative_hook_matrix_revision_count === 'number') {
+              updateData.creativeHookMatrixRevisionCount = (data as any).creative_hook_matrix_revision_count;
+            }
             if (typeof (data as any).image_revision_count === 'number') {
               updateData.imageRevisionCount = (data as any).image_revision_count;
             }
 
-            await prisma.campaign.update({
-              where: { id: campaign_id },
-              data: updateData,
-            });
+            await safePrismaUpdate(campaign_id, updateData);
 
             // Emit agent_update to socket room with full payload after DB persistence completes
             io.to(`campaign:${campaign_id}`).emit('agent_update', {
               ...data,
               outputs: currentOutputs,
             });
-          } catch (dbErr: any) {
-            console.error(`[Redis Subscriber] Failed to persist intermediate progress | campaign=${campaign_id} | error=${dbErr.message}`);
-            // Fallback emission if DB write throws
-            io.to(`campaign:${campaign_id}`).emit('agent_update', data);
-          }
-        });
+          }).catch(async (err: any) => {
+            console.error(`[Redis Subscriber DB Queue] CRITICAL: Intermediate DB write failed after retries | campaign=${campaign_id} | error=${err.message}`);
+            try {
+              const dlqKey = `dlq:campaign_db_write:${campaign_id}:${Date.now()}`;
+              await redis.set(dlqKey, JSON.stringify({ campaign_id, agent: data.agent, status: data.status, timestamp: data.timestamp, error: err.message, payload: data }), 'EX', 86400 * 7);
+              console.log(`[Redis Subscriber] Saved failed DB write to Redis DLQ: ${dlqKey}`);
+            } catch (dlqErr) {
+              console.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
+            }
+            io.to(`campaign:${campaign_id}`).emit('agent_update', { ...data, db_persisted: false });
+          });
+        } else {
+        // Secondary replicas emit socket update without duplicating DB writes
+        io.to(`campaign:${campaign_id}`).emit('agent_update', data);
       }
+    }
 
       // Handle terminal events — update the PostgreSQL record via Prisma.
       // We queue terminal DB updates AND their subsequent socket emissions so that
       // the frontend navigates only after the DB updates are fully complete.
       if (['campaign_complete', 'awaiting_human_approval', 'failed'].includes(status)) {
-        dbWriteQueue.add(async () => {
-          try {
+        if (isPrimaryReplica) {
+          dbWriteQueue.add(async () => {
             if (status === 'campaign_complete') {
-              // Use campaignService so the notification ("Campaign completed") is sent.
               await campaignService.updateWithAIOutputs(
                 campaign_id,
-                campaign_id,        // aiCampaignId == DB campaign_id in the Redis flow
+                campaign_id,
                 (outputs ?? {}) as any,
                 'completed'
               );
@@ -278,14 +357,11 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 ...(outputs ?? {}),
               };
 
-              // Update campaign with HITL state including revision counts
               const updateData: any = {
                 status: 'awaiting_human_approval',
                 aiOutputs: mergedOutputs as any,
               };
               
-              // Extract and save revision counts:
-              // For initial campaign run (no human feedback or revision target yet), human revision counts start at 0.
               if (outputs) {
                 const isHumanRevision = !!(campaign as any)?.humanFeedback || !!(campaign as any)?.humanRevisionTarget || !!(outputs as any)?.human_feedback;
                 if (isHumanRevision) {
@@ -298,6 +374,9 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                   if (typeof outputs.copy_revision_count === 'number') {
                     updateData.copyRevisionCount = outputs.copy_revision_count;
                   }
+                  if (typeof outputs.creative_hook_matrix_revision_count === 'number') {
+                    updateData.creativeHookMatrixRevisionCount = outputs.creative_hook_matrix_revision_count;
+                  }
                   if (typeof outputs.image_revision_count === 'number') {
                     updateData.imageRevisionCount = outputs.image_revision_count;
                   }
@@ -305,35 +384,24 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                   updateData.researchRevisionCount = 0;
                   updateData.strategyRevisionCount = 0;
                   updateData.copyRevisionCount = 0;
+                  updateData.creativeHookMatrixRevisionCount = 0;
                   updateData.imageRevisionCount = 0;
                 }
                 
-                // Extract review score from review_output
                 if (outputs.review_output) {
                   const reviewOutput = typeof outputs.review_output === 'string' 
                     ? JSON.parse(outputs.review_output) 
                     : outputs.review_output;
                   
-                  // Save full review output for agent scores
                   updateData.reviewOutput = JSON.stringify(reviewOutput);
-                  
-                  // Try both possible field names (overall_quality_score or quality_score)
-                  const qualityScore = reviewOutput.overall_quality_score ?? reviewOutput.quality_score;
-                  
+                  const qualityScore = extractReviewScore(reviewOutput);
                   if (typeof qualityScore === 'number') {
-                    // Store qualityScore consistently on 0-100 scale
                     updateData.reviewScore = qualityScore;
-                    console.log(`[Redis Subscriber] Extracted review score: ${qualityScore}/100 (stored as ${qualityScore}/100)`);
-                  } else {
-                    console.log(`[Redis Subscriber] No quality score found in review_output`);
                   }
                 }
               }
               
-              await prisma.campaign.update({
-                where: { id: campaign_id },
-                data: updateData,
-              });
+              await safePrismaUpdate(campaign_id, updateData);
 
               const statusChanged = campaign?.status !== 'awaiting_human_approval';
               if (statusChanged && campaign) {
@@ -348,6 +416,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               }
 
               io.to(`campaign:${campaign_id}`).emit('human_approval_required', data);
+              io.to(`campaign:${campaign_id}`).emit('awaiting_human_approval', data);
               console.log(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);
 
             } else if (status === 'failed') {
@@ -364,7 +433,6 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 }
               }
 
-              // Use campaignService so the "Campaign failed" notification is sent.
               await campaignService.updateWithAIOutputs(
                 campaign_id,
                 '',
@@ -375,12 +443,28 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               io.to(`campaign:${campaign_id}`).emit('campaign_failed', data);
               console.log(`[Redis Subscriber] Campaign failed | id=${campaign_id} | error=${data.error}`);
             }
-          } catch (dbErr: any) {
-            console.error(
-              `[Redis Subscriber] DB update failed | id=${campaign_id} | status=${status} | err=${dbErr.message}`
-            );
-          }
-        });
+          }).catch(async (err: any) => {
+            console.error(`[Redis Subscriber DB Queue] CRITICAL: Terminal DB update failed after retries | campaign=${campaign_id} | status=${status} | error=${err.message}`);
+            try {
+              const dlqKey = `dlq:campaign_db_write:${campaign_id}:${Date.now()}`;
+              await redis.set(dlqKey, JSON.stringify({ campaign_id, status, error: err.message, payload: data }), 'EX', 86400 * 7);
+              console.log(`[Redis Subscriber] Saved terminal failed DB write to Redis DLQ: ${dlqKey}`);
+            } catch (dlqErr) {
+              console.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
+            }
+            // Emit terminal socket fallback so UI doesn't hang indefinitely
+            if (status === 'campaign_complete') io.to(`campaign:${campaign_id}`).emit('campaign_complete', { ...data, db_persisted: false });
+            else if (status === 'awaiting_human_approval') io.to(`campaign:${campaign_id}`).emit('awaiting_human_approval', { ...data, db_persisted: false });
+            else if (status === 'failed') io.to(`campaign:${campaign_id}`).emit('campaign_failed', { ...data, db_persisted: false });
+          });
+        } else {
+          // Secondary replicas broadcast socket event without duplicate DB write
+          if (status === 'campaign_complete') io.to(`campaign:${campaign_id}`).emit('campaign_complete', data);
+          else if (status === 'awaiting_human_approval') {
+            io.to(`campaign:${campaign_id}`).emit('human_approval_required', data);
+            io.to(`campaign:${campaign_id}`).emit('awaiting_human_approval', data);
+          } else if (status === 'failed') io.to(`campaign:${campaign_id}`).emit('campaign_failed', data);
+        }
       }
     } catch (err: any) {
       console.error('[Redis Subscriber] Unexpected error in pmessage handler:', err.message || err);

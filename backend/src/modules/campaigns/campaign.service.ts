@@ -3,6 +3,7 @@ import { AIAgentOutputs } from './campaign.types';
 import { notificationService } from '../notifications/notification.service';
 import { saveMemorySnapshot } from './campaign-memory.service';
 import { redis } from '../../utils/redis';
+import { extractReviewScore } from '../../utils/score-extractor';
 
 export const campaignService = {
   async create(projectId: string, data: {
@@ -43,37 +44,7 @@ export const campaignService = {
     let reviewScore: number | null = null;
     
     if (aiOutputs.review_output) {
-      try {
-        const reviewOutput = typeof aiOutputs.review_output === 'string'
-          ? JSON.parse(aiOutputs.review_output)
-          : aiOutputs.review_output;
-        
-        const scores: number[] = [];
-        
-        if (reviewOutput.research_review?.score !== undefined && reviewOutput.research_review?.score !== null) {
-          scores.push(reviewOutput.research_review.score);
-        }
-        if (reviewOutput.strategy_review?.score !== undefined && reviewOutput.strategy_review?.score !== null) {
-          scores.push(reviewOutput.strategy_review.score);
-        }
-        if (reviewOutput.copy_review?.score !== undefined && reviewOutput.copy_review?.score !== null) {
-          scores.push(reviewOutput.copy_review.score);
-        }
-        if (reviewOutput.image_review?.score !== undefined && reviewOutput.image_review?.score !== null) {
-          scores.push(reviewOutput.image_review.score);
-        }
-        
-        const overallScore = reviewOutput.overall_quality_score ?? reviewOutput.quality_score;
-        if (typeof overallScore === 'number') {
-          reviewScore = parseFloat(overallScore.toFixed(1));
-        } else if (scores.length > 0) {
-          const avgScore100 = scores.reduce((a, b) => a + b, 0) / scores.length;
-          reviewScore = parseFloat(avgScore100.toFixed(1));
-        }
-      } catch (err) {
-        console.error(`[CampaignService] Failed to parse review_output for score extraction (campaign: ${campaignId}):`, err);
-        // reviewScore stays null — campaign still saves without a score
-      }
+      reviewScore = extractReviewScore(aiOutputs.review_output);
     }
 
     const existing = await prisma.campaign.findUnique({

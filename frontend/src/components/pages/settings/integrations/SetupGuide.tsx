@@ -16,7 +16,7 @@ export const SetupGuide: React.FC<SetupGuideProps> = ({ onBack, isLocal }) => {
   const faqs = [
     {
       q: 'Claude does not show the AgentMark tools. What should I check?',
-      a: 'First, ensure Claude Desktop has been completely restarted. On Windows, check your system tray (next to the clock) and choose "Quit Claude", then open it again. Second, verify that your backend server is running on port 5003.',
+      a: 'First, ensure Claude Desktop has been completely restarted. On Windows, check your system tray (next to the clock) and choose "Quit Claude", then open it again. Second, verify that your backend server is running on port 5001.',
     },
     {
       q: 'I get a "Permission Denied" or "Write Error" when connecting.',

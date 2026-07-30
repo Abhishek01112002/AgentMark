@@ -42,12 +42,13 @@ export const selectRevisionCounts = (campaign: NormalizedCampaign | null) => {
 export const selectReviewerNotes = (campaign: NormalizedCampaign | null) => {
   if (!campaign || !campaign.review) return null;
   const criticalGaps = campaign.review.critical_gaps || [];
+  const execSummary = campaign.review.executive_summary || campaign.review.feedback || '';
   return {
-    executiveSummary: campaign.review.executive_summary || '',
+    executiveSummary: execSummary,
     criticalGaps,
     issues: criticalGaps,
     recommendations: campaign.review.recommendations || [],
-    feedback: campaign.review.feedback || '',
+    feedback: campaign.review.feedback || execSummary,
   };
 };
 

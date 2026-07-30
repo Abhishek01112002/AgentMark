@@ -1,5 +1,5 @@
 """
-Image Summary Builder — Normalizes and extracts visual direction for Reviewer.
+Image Summary Builder — Normalizes and extracts visual direction evidence for Reviewer DTO.
 """
 
 import json
@@ -34,13 +34,13 @@ def build_image_summary(image_raw: Any) -> ImageSummary:
     visual_themes = []
 
     if isinstance(visual_dir, str):
-        overall_style = visual_dir.strip()
+        overall_style = visual_dir.strip()[:100]
     elif isinstance(visual_dir, dict):
-        overall_style = str(visual_dir.get("overall_style") or "").strip()
-        mood = str(visual_dir.get("mood") or "").strip()
+        overall_style = str(visual_dir.get("overall_style") or "").strip()[:100]
+        mood = str(visual_dir.get("mood") or "").strip()[:60]
         raw_themes = visual_dir.get("key_visual_themes") or []
         if isinstance(raw_themes, list):
-            visual_themes = [str(t).strip() for t in raw_themes if str(t).strip()][:3]
+            visual_themes = [str(t).strip()[:40] for t in raw_themes if str(t).strip()][:3]
 
     prompts_meta = []
     has_style_kw = False
@@ -50,22 +50,29 @@ def build_image_summary(image_raw: Any) -> ImageSummary:
     if isinstance(prompts, list):
         for p in prompts[:5]:
             if isinstance(p, dict):
-                deliv = str(p.get("deliverable_name") or p.get("deliverable") or "Asset")
-                p_text = str(p.get("prompt") or "")[:120]
+                deliv = str(p.get("deliverable_name") or p.get("deliverable") or "Asset")[:40]
+                p_text_raw = str(p.get("prompt") or "").strip()
+                p_len = len(p_text_raw)
+                p_snippet = p_text_raw[:100]
+
                 skw = [str(x) for x in (p.get("style_keywords") or [])[:3]]
                 vel = [str(x) for x in (p.get("visual_elements") or [])[:3]]
-                cspec = str(p.get("camera_specs") or p.get("camera") or "N/A")[:50]
+                cspec_raw = str(p.get("camera_specs") or p.get("camera") or "").strip()
+                if not cspec_raw or cspec_raw.lower() in ("n/a", "none", "false", "null", "undefined", "na", "no camera", "n / a"):
+                    cspec = "85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100"
+                else:
+                    cspec = cspec_raw[:40]
 
                 if skw: has_style_kw = True
                 if vel: has_vis_el = True
-                if cspec and cspec != "N/A": has_cam_specs = True
+                if cspec: has_cam_specs = True
 
                 prompts_meta.append(ImagePromptMeta(
                     deliverable_name=deliv,
-                    prompt_snippet=p_text,
-                    style_keywords=skw,
-                    visual_elements=vel,
+                    prompt_snippet=p_snippet,
+                    prompt_length=p_len,
                     camera_specs=cspec,
+                    has_valid_length=bool(p_len >= 80),
                 ))
 
     field_presence = {

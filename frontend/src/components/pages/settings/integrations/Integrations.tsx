@@ -115,7 +115,7 @@ export const Integrations: React.FC = () => {
       relaunch: 'idle',
     });
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5003';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
     const token = localStorage.getItem('token');
 
     try {
@@ -237,13 +237,15 @@ export const Integrations: React.FC = () => {
     }
   };
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
   const configJsonString = JSON.stringify({
     mcpServers: {
       agentmark: {
         command: "uvx",
         args: ["agentmark-mcp-server"],
         env: {
-          AGENTMARK_API_URL: 'http://localhost:5003',
+          AGENTMARK_API_URL: API_BASE_URL,
           AGENTMARK_API_KEY: newlyGeneratedKey || (status?.maskedKey ? "PASTE_YOUR_API_KEY_HERE" : "GENERATING...")
         }
       }

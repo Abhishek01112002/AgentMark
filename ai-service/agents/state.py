@@ -90,4 +90,5 @@ class CampaignState(BaseModel):
     research_revision_count: int = Field(default=0)
     strategy_revision_count: int = Field(default=0)
     copy_revision_count: int = Field(default=0)
+    creative_hook_matrix_revision_count: int = Field(default=0)
     image_revision_count: int = Field(default=0)

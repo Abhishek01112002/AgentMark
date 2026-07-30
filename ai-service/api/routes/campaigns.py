@@ -16,10 +16,13 @@ import os
 import logging
 import asyncio
 import json
+import contextvars
+from typing import Optional, Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from concurrent.futures import ThreadPoolExecutor
+from pydantic import BaseModel
 
 # Dedicated thread pool for executing long-running campaign workflows.
 # This prevents campaign runs (which take 1-2 minutes) from exhausting FastAPI's default thread pool.
@@ -35,8 +38,6 @@ from schemas.campaign import (
 )
 from llm.factory import set_llm_config, get_llm_client
 from utils.redis_publisher import publish_agent_event
-from pydantic import BaseModel
-from typing import Optional, Any, Dict
 from agents.copywriter import copywriter_agent
 
 logger = logging.getLogger("agentmark.campaigns")
@@ -70,7 +71,8 @@ def _has_explicit_provider_keys(llm_config: dict | None) -> bool:
     return False
 
 
-def _require_explicit_provider_keys(llm_config: dict | None, *, context: str) -> None:
+def _require_explicit_provider_keys(llm_config: dict | None, context: str):
+    """Utility validator to check explicit keys."""
     if _has_explicit_provider_keys(llm_config):
         return
     raise HTTPException(
@@ -79,63 +81,76 @@ def _require_explicit_provider_keys(llm_config: dict | None, *, context: str) ->
     )
 
 
+def _run_workflow_isolated(workflow, state: CampaignState, llm_config: dict | None = None) -> CampaignState:
+    """
+    Executes _run_workflow within an isolated ContextVar context.
+    Prevents LLM API keys or provider pool state from leaking across reused ThreadPoolExecutor threads.
+    """
+    ctx = contextvars.copy_context()
+    return ctx.run(_run_workflow, workflow, state, llm_config)
+
+
 def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None) -> CampaignState:
     """Invoke LangGraph workflow synchronously (called via threadpool)."""
     from llm.factory import set_llm_config
     from llm.rate_limiter import reset_rate_limiter
     reset_rate_limiter()  # Clear stale cooldowns from previous runs
     set_llm_config(llm_config)
-    
-    config = {
-        "configurable": {"thread_id": state.campaign_id},
-        "recursion_limit": 100
-    }
-    
-    current_state = workflow.get_state(config)
-    
-    if current_state.values:
-        next_nodes = current_state.next
-        if next_nodes and "human_approval" in next_nodes:
-            logger.info("🔄 Resuming workflow from HITL human_approval checkpoint thread_id=%s", state.campaign_id)
-            workflow.update_state(
-                config,
-                {
-                    "human_approval_status": state.human_approval_status,
-                    "human_feedback": state.human_feedback,
-                    "human_revision_target": state.human_revision_target,
-                    "awaiting_human_approval": False,
-                    "status": "processing",
-                    "error": "",
-                },
-                as_node="human_approval"
-            )
-        else:
-            failed_node = next_nodes[0] if next_nodes else "unknown"
-            logger.info("🔄 Resuming failed agent step '%s' directly from checkpoint | thread_id=%s", failed_node, state.campaign_id)
-            workflow.update_state(
-                config,
-                {
-                    "status": "processing",
-                    "error": "",
-                }
-            )
-        result = workflow.invoke(None, config=config)
-    else:
-        logger.info("🚀 Initiating new campaign workflow run thread_id=%s", state.campaign_id)
-        result = workflow.invoke(state, config=config)
+    try:
+        config = {
+            "configurable": {"thread_id": state.campaign_id},
+            "recursion_limit": 100
+        }
         
-    next_nodes = workflow.get_state(config).next
-    
-    if isinstance(result, dict):
-        if next_nodes and "human_approval" in next_nodes:
-            result["awaiting_human_approval"] = True
-            result["status"] = "awaiting_human_approval"
-        return CampaignState(**result)
-    else:
-        if next_nodes and "human_approval" in next_nodes:
-            result.awaiting_human_approval = True
-            result.status = "awaiting_human_approval"
-        return result
+        current_state = workflow.get_state(config)
+        
+        if current_state.values:
+            next_nodes = current_state.next
+            if next_nodes and "human_approval" in next_nodes:
+                logger.info("🔄 Resuming workflow from HITL human_approval checkpoint thread_id=%s", state.campaign_id)
+                workflow.update_state(
+                    config,
+                    {
+                        "human_approval_status": state.human_approval_status,
+                        "human_feedback": state.human_feedback,
+                        "human_revision_target": state.human_revision_target,
+                        "awaiting_human_approval": False,
+                        "status": "processing",
+                        "error": "",
+                    },
+                    as_node="human_approval"
+                )
+            else:
+                failed_node = next_nodes[0] if next_nodes else "unknown"
+                logger.info("🔄 Resuming failed agent step '%s' directly from checkpoint | thread_id=%s", failed_node, state.campaign_id)
+                workflow.update_state(
+                    config,
+                    {
+                        "status": "processing",
+                        "error": "",
+                    }
+                )
+            result = workflow.invoke(None, config=config)
+        else:
+            logger.info("🚀 Initiating new campaign workflow run thread_id=%s", state.campaign_id)
+            result = workflow.invoke(state, config=config)
+            
+        next_nodes = workflow.get_state(config).next
+        
+        if isinstance(result, dict):
+            if next_nodes and "human_approval" in next_nodes:
+                result["awaiting_human_approval"] = True
+                result["status"] = "awaiting_human_approval"
+            return CampaignState(**result)
+        else:
+            if next_nodes and "human_approval" in next_nodes:
+                result.awaiting_human_approval = True
+                result.status = "awaiting_human_approval"
+            return result
+    finally:
+        set_llm_config(None)
+
+
 # ── Route ─────────────────────────────────────────────────────────────────────
 
 @router.post(
@@ -144,7 +159,7 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
     summary="Create a new marketing campaign",
     description=(
         "Runs the complete LangGraph multi-agent pipeline for the given input:\n\n"
-        "**Manager** \u2192 **Research** \u2192 **Strategy** \u2192 **Copywriter** \u2192 **Image Prompt** \u2192 **Reviewer** \u2192 **Publisher**\n\n"
+        "**Manager** → **Research** → **Strategy** → **Copywriter** → **Image Prompt** → **Reviewer** → **Publisher**\n\n"
         "The workflow pauses at the Human-in-the-Loop approval gate "
         "(`awaiting_human_approval: true`) if manual review is required. "
         "When `workflow_finished: true` the Publisher has executed successfully.\n\n"
@@ -154,23 +169,16 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
     ),
     responses={
         200: {"description": "Workflow completed (or paused at HITL gate)"},
-        422: {"description": "Validation error \u2014 check field values and enums"},
+        422: {"description": "Validation error — check field values and enums"},
         500: {"description": "Unexpected error during agent execution"},
     },
 )
-
 async def create_campaign(payload: CampaignCreateRequest, request: Request):
     """
     Accept campaign input, invoke `workflow.invoke(state)`, return all agent outputs.
 
     The LangGraph workflow is a long-running synchronous operation (1-3 min).
     It is executed in a thread pool to avoid blocking the async event loop.
-
-    campaign_id flow:
-      - Express creates the campaign in PostgreSQL and gets a DB UUID.
-      - Express passes that UUID as `campaign_id` in this request.
-      - We store it in CampaignState so every graph node can publish to the
-        correct Redis channel without needing to know the channel name.
     """
     campaign_id = payload.campaign_id
 
@@ -194,7 +202,6 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         except Exception:
             return str(val)
 
-    # Build initial state — campaign_id flows through all nodes for Redis publishing.
     state = CampaignState(
         campaign_id=campaign_id,
         campaign_name=payload.campaign_name,
@@ -215,21 +222,18 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         human_approval_status=payload.human_approval_status,
         human_feedback=payload.human_feedback,
         human_revision_target=payload.human_revision_target,
-        # HITL revision counts from DB
         research_revision_count=payload.research_revision_count or 0,
         strategy_revision_count=payload.strategy_revision_count or 0,
         copy_revision_count=payload.copy_revision_count or 0,
+        creative_hook_matrix_revision_count=payload.creative_hook_matrix_revision_count or 0,
         image_revision_count=payload.image_revision_count or 0,
         client_memory_context=payload.client_memory_context,
     )
 
-    # Retrieve the pre-built workflow from app.state (set at startup via lifespan)
     workflow = request.app.state.workflow
-
     semaphore = get_campaign_semaphore()
 
     try:
-        # Wait up to 15 seconds to acquire a concurrency slot
         await asyncio.wait_for(semaphore.acquire(), timeout=15.0)
     except asyncio.TimeoutError:
         logger.warning("Campaign creation request timed out waiting for semaphore slot | id=%s", campaign_id)
@@ -239,12 +243,10 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         )
 
     try:
-        # Run blocking LangGraph call in our dedicated campaign thread pool — never block the main event loop
         loop = asyncio.get_running_loop()
-        final_state = await loop.run_in_executor(campaign_executor, _run_workflow, workflow, state, payload.llm_config)
+        final_state = await loop.run_in_executor(campaign_executor, _run_workflow_isolated, workflow, state, payload.llm_config)
     except Exception as exc:
         logger.error("Workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
-        # Publish failure event to Redis so Express can update DB status.
         publish_agent_event(
             campaign_id=campaign_id,
             agent="system",
@@ -262,11 +264,6 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         final_state.workflow_finished,
     )
 
-    # ── Publish terminal Redis event ──────────────────────────────────────────
-    # This is the single place where the final/terminal event is published,
-    # keeping graph node publishes lightweight (progress ticks only).
-    # The full agent outputs are included so Express can update PostgreSQL
-    # without needing a synchronous HTTP response.
     outputs_dict = {
         "manager_output": try_parse_json(final_state.manager_output),
         "research_output": try_parse_json(final_state.research_output),
@@ -276,10 +273,10 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         "image_output": try_parse_json(final_state.image_output),
         "review_output": try_parse_json(final_state.review_output),
         "publisher_output": try_parse_json(final_state.publisher_output),
-        # Include revision counts for DB persistence
         "research_revision_count": final_state.research_revision_count or 0,
         "strategy_revision_count": final_state.strategy_revision_count or 0,
         "copy_revision_count": final_state.copy_revision_count or 0,
+        "creative_hook_matrix_revision_count": final_state.creative_hook_matrix_revision_count or 0,
         "image_revision_count": final_state.image_revision_count or 0,
     }
 
@@ -343,73 +340,78 @@ async def enhance_prompt_route(payload: EnhancePromptRequest):
     Enhance a prompt using the configured LLM and optional user instructions.
     """
     _require_explicit_provider_keys(payload.llm_config, context="prompt enhancement")
-    set_llm_config(payload.llm_config)
+    ctx = contextvars.copy_context()
+
+    def _enhance_worker():
+        set_llm_config(payload.llm_config)
+        try:
+            client = get_llm_client()
+            system_prompt = (
+                "You are an elite Visual Creative Director — the kind whose campaigns win Cannes Lions, "
+                "D&AD Black Pencils, and One Show Gold. You have 20 years of experience directing "
+                "commercial shoots for Apple, Nike, Patagonia, and Porsche.\n\n"
+                "Your OBSESSION is specificity. You despise generic stock photography. "
+                "Every pixel must earn its place in the frame.\n\n"
+                "You will receive an existing image generation prompt and optional user instructions.\n\n"
+                "Your job is to TRANSFORM the prompt into a world-class, production-ready visual prompt "
+                "following the MANDATORY 10-LAYER ARCHITECTURE:\n\n"
+                "LAYER 1 — FROZEN MOMENT (30%): Specific person (age, ethnicity, defining detail) "
+                "at a specific micro-second. Describe hands, face, body language. "
+                "FORBIDDEN: 'A professional stands in...' or 'A person smiles at...'\n"
+                "REQUIRED: 'A 44-year-old [ethnicity] [role] at the exact micro-second of [action] — "
+                "[face expression], [hand position], [emotional state visible in posture]'\n\n"
+                "LAYER 2 — ENVIRONMENT (15%): Specific location with architectural detail, "
+                "time of day through light quality, at least one character-revealing object. "
+                "Three depth planes: foreground texture, midground subject, background context.\n\n"
+                "LAYER 3 — ATMOSPHERIC TEXTURE (10%): What you can FEEL in the air. "
+                "Dust motes in light shafts, screen glow on glass, steam from a mug catching sidelight, "
+                "rain-beaded windows diffusing city lights.\n\n"
+                "LAYER 4 — SURFACE & MATERIAL (8%): What you can TOUCH. "
+                "2-3 key textures: 'brushed brass lamp, matte black laptop, soft grey cashmere sleeve.' "
+                "Fabric texture, material contrast.\n\n"
+                "LAYER 5 — LIGHTING DESIGN (12%): Describe like a cinematographer. "
+                "Key light position, shadow pattern, fill ratio, practical lights, color temperature. "
+                "Match to mood: Rembrandt for authority, wraparound soft for warmth, "
+                "split for drama, low-key for luxury.\n\n"
+                "LAYER 6 — LENS PHYSICS (8%): Describe VISUAL EFFECTS, not equipment. "
+                "'Medium telephoto compression, shallow depth of field, subject eyes razor-sharp, "
+                "background dissolved into creamy luminous bokeh.' Match to format.\n\n"
+                "LAYER 7 — COLOR SCIENCE (7%): Emotional color engineering. "
+                "'Cool desaturated shadows, electric blue accent highlights, crisp clinical whites' "
+                "or 'Rich velvety shadows, warm amber midtones, deeply restrained saturation.'\n\n"
+                "LAYER 8 — COMPOSITION (5%): Intentional negative space for text overlay if needed. "
+                "Rule of thirds, visual hierarchy, eye-path design.\n\n"
+                "LAYER 9 — QUALITY ANCHORS (3%): "
+                "'Award-winning advertising photography, Cannes Lions Grand Prix quality, "
+                "campaign-hero-grade production value, hyper-realistic, obsessively detailed'\n\n"
+                "LAYER 10 — SAFETY TAIL (2%): ALWAYS end with: "
+                "'no text, no words, no letters, no typography, no logos, no watermarks, "
+                "no labels, no captions, no signatures, no stamps, clean uncluttered composition'\n\n"
+                "OUTPUT RULES:\n"
+                "- Return ONLY the enhanced prompt text — no explanations, no preamble\n"
+                "- Target 700-1000 characters of dense visual storytelling\n"
+                "- Keep the original subject intent but elevate EVERY layer\n"
+                "- If the original is abstract, convert to a specific frozen human moment\n"
+                "- If user gave instructions, incorporate them naturally into the scene"
+            )
+
+            user_message = (
+                f"Original prompt: {payload.prompt}\n"
+                f"User instructions: {payload.user_input or 'None — enhance automatically'}"
+            )
+
+            full_prompt = f"{system_prompt}\n\n{user_message}"
+            return client.generate(full_prompt)
+        finally:
+            set_llm_config(None)
+
     try:
-        client = get_llm_client()
-    except Exception as e:
-        logger.error("Failed to initialize LLM for prompt enhancement: %s", e)
-        raise HTTPException(status_code=400, detail=f"No LLM configured or API key invalid: {str(e)}")
-
-    system_prompt = (
-        "You are an elite Visual Creative Director — the kind whose campaigns win Cannes Lions, "
-        "D&AD Black Pencils, and One Show Gold. You have 20 years of experience directing "
-        "commercial shoots for Apple, Nike, Patagonia, and Porsche.\n\n"
-        "Your OBSESSION is specificity. You despise generic stock photography. "
-        "Every pixel must earn its place in the frame.\n\n"
-        "You will receive an existing image generation prompt and optional user instructions.\n\n"
-        "Your job is to TRANSFORM the prompt into a world-class, production-ready visual prompt "
-        "following the MANDATORY 10-LAYER ARCHITECTURE:\n\n"
-        "LAYER 1 — FROZEN MOMENT (30%): Specific person (age, ethnicity, defining detail) "
-        "at a specific micro-second. Describe hands, face, body language. "
-        "FORBIDDEN: 'A professional stands in...' or 'A person smiles at...'\n"
-        "REQUIRED: 'A 44-year-old [ethnicity] [role] at the exact micro-second of [action] — "
-        "[face expression], [hand position], [emotional state visible in posture]'\n\n"
-        "LAYER 2 — ENVIRONMENT (15%): Specific location with architectural detail, "
-        "time of day through light quality, at least one character-revealing object. "
-        "Three depth planes: foreground texture, midground subject, background context.\n\n"
-        "LAYER 3 — ATMOSPHERIC TEXTURE (10%): What you can FEEL in the air. "
-        "Dust motes in light shafts, screen glow on glass, steam from a mug catching sidelight, "
-        "rain-beaded windows diffusing city lights.\n\n"
-        "LAYER 4 — SURFACE & MATERIAL (8%): What you can TOUCH. "
-        "2-3 key textures: 'brushed brass lamp, matte black laptop, soft grey cashmere sleeve.' "
-        "Fabric texture, material contrast.\n\n"
-        "LAYER 5 — LIGHTING DESIGN (12%): Describe like a cinematographer. "
-        "Key light position, shadow pattern, fill ratio, practical lights, color temperature. "
-        "Match to mood: Rembrandt for authority, wraparound soft for warmth, "
-        "split for drama, low-key for luxury.\n\n"
-        "LAYER 6 — LENS PHYSICS (8%): Describe VISUAL EFFECTS, not equipment. "
-        "'Medium telephoto compression, shallow depth of field, subject eyes razor-sharp, "
-        "background dissolved into creamy luminous bokeh.' Match to format.\n\n"
-        "LAYER 7 — COLOR SCIENCE (7%): Emotional color engineering. "
-        "'Cool desaturated shadows, electric blue accent highlights, crisp clinical whites' "
-        "or 'Rich velvety shadows, warm amber midtones, deeply restrained saturation.'\n\n"
-        "LAYER 8 — COMPOSITION (5%): Intentional negative space for text overlay if needed. "
-        "Rule of thirds, visual hierarchy, eye-path design.\n\n"
-        "LAYER 9 — QUALITY ANCHORS (3%): "
-        "'Award-winning advertising photography, Cannes Lions Grand Prix quality, "
-        "campaign-hero-grade production value, hyper-realistic, obsessively detailed'\n\n"
-        "LAYER 10 — SAFETY TAIL (2%): ALWAYS end with: "
-        "'no text, no words, no letters, no typography, no logos, no watermarks, "
-        "no labels, no captions, no signatures, no stamps, clean uncluttered composition'\n\n"
-        "OUTPUT RULES:\n"
-        "- Return ONLY the enhanced prompt text — no explanations, no preamble\n"
-        "- Target 700-1000 characters of dense visual storytelling\n"
-        "- Keep the original subject intent but elevate EVERY layer\n"
-        "- If the original is abstract, convert to a specific frozen human moment\n"
-        "- If user gave instructions, incorporate them naturally into the scene"
-    )
-
-    user_message = (
-        f"Original prompt: {payload.prompt}\n"
-        f"User instructions: {payload.user_input or 'None — enhance automatically'}"
-    )
-
-    full_prompt = f"{system_prompt}\n\n{user_message}"
-
-    try:
-        result = await run_in_threadpool(client.generate, full_prompt)
+        result = await run_in_threadpool(ctx.run, _enhance_worker)
         return EnhancePromptResponse(enhanced_prompt=result.strip())
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error("Prompt enhancement failed: %s", e)
         raise HTTPException(status_code=500, detail=f"Prompt enhancement failed: {str(e)}")
 
 
@@ -428,8 +430,6 @@ async def test_key_route(payload: TestKeyRequest):
     """
     Test an API key by making a minimal LLM call.
     """
-    from llm.factory import get_llm_client
-
     try:
         if payload.provider.lower() == "tavily":
             from services.search_service import search_web
@@ -444,10 +444,18 @@ async def test_key_route(payload: TestKeyRequest):
                 return TestKeyResponse(success=True, message="Tavily API key is valid")
             return TestKeyResponse(success=False, message=result.error_message or "Tavily search failed")
 
-        config = {f"{payload.provider}_api_key": payload.api_key}
-        set_llm_config(config)
-        client = get_llm_client(payload.provider)
-        result = await run_in_threadpool(client.generate, "Reply with a single word: ok")
+        config = {f"{payload.provider.lower()}_api_key": payload.api_key}
+        ctx = contextvars.copy_context()
+
+        def _test_key_worker():
+          set_llm_config(config)
+          try:
+            client = get_llm_client(payload.provider)
+            return client.generate("Reply with a single word: ok")
+          finally:
+            set_llm_config(None)
+
+        result = await run_in_threadpool(ctx.run, _test_key_worker)
         if result and result.strip():
             return TestKeyResponse(success=True, message="API key is valid")
         return TestKeyResponse(success=False, message="API returned empty response")
@@ -465,6 +473,8 @@ async def test_key_route(payload: TestKeyRequest):
         if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
             return TestKeyResponse(success=False, message="Rate limited — try again later")
         return TestKeyResponse(success=False, message=f"Connection failed: {str(e)[:80]}")
+    finally:
+        set_llm_config(None)
 
 
 @router.post("/generate-copy-variant")
@@ -475,7 +485,6 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
     _require_explicit_provider_keys(payload.llm_config, context="copy variant generation")
     set_llm_config(payload.llm_config)
     
-    # 1. Build a minimal CampaignState with the provided fields
     state = CampaignState(
         campaign_id=payload.campaign_id,
         campaign_name="Variant Generation",
@@ -499,15 +508,12 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         )
     
-    # 2. Set human feedback to run in targeted variant mode
-    # Wrap steering_note in <user_input> XML tags to isolate raw user input and prevent prompt injection
     steering_instructions = (
         f"Steering instruction: <user_input>{payload.steering_note}</user_input>"
         if payload.steering_note
         else "Generate a fresh alternative with different angle/tone."
     )
 
-    # If focus group context is provided, prepend it as mandatory constraints
     focus_group_section = ""
     if payload.focus_group_context:
         focus_group_section = (
@@ -527,13 +533,18 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
         f"{focus_group_section}"
         f"{existing_variants_section}"
     )
-    state.human_revision_target = "copywriter"
-    
+    ctx = contextvars.copy_context()
+
+    def _copy_variant_worker():
+        set_llm_config(payload.llm_config)
+        try:
+            return copywriter_agent(state)
+        finally:
+            set_llm_config(None)
+
     try:
-        # Run copywriter_agent in threadpool since LLM calls are blocking/synchronous
-        final_state = await run_in_threadpool(copywriter_agent, state)
+        final_state = await run_in_threadpool(ctx.run, _copy_variant_worker)
         
-        # 3. Parse result and extract only the requested channel's copy
         if not final_state.copy_output:
             raise HTTPException(status_code=500, detail="Copywriter failed to return output")
             
@@ -543,10 +554,8 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
             logger.error("Failed to parse generated copy: %s", e, exc_info=True)
             raise HTTPException(status_code=500, detail="Internal server error") from e
             
-        # Get the channel copies dictionary
         copies = parsed_copy.get("copies", {})
         
-        # Find matching key based on name
         from schemas.agent_outputs import Channel
         channel_enum_key = None
         for k in Channel:
@@ -554,11 +563,9 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
                 channel_enum_key = k
                 break
                 
-        # Fallback to string key if enum key lookup fails
         channel_data = copies.get(channel_enum_key) if channel_enum_key else copies.get(payload.channel)
         
         if not channel_data:
-            # Maybe the agent returned it flat
             channel_data = parsed_copy.get(payload.channel)
             
         if not channel_data:
@@ -572,6 +579,10 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
             "copy_data": channel_data
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Error in generate_copy_variant_route: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error") from e
+    finally:
+        set_llm_config(None)

@@ -25,6 +25,7 @@ import prisma from './db';
 import { notificationService } from './modules/notifications/notification.service';
 import { initRedisSubscriber, shutdownRedisSubscriber } from './utils/redis-subscriber';
 import { verifyToken } from './utils/jwt';
+import { authenticateToken, AuthenticatedUser } from './middlewares/auth.middleware';
 import { setSocketIO } from './modules/campaigns/campaign.controller';
 import { globalRateLimiter } from './middlewares/rate-limit.middleware';
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -33,7 +34,7 @@ import { mcpLoggerMiddleware } from './middlewares/mcp-logger.middleware';
 
 
 export const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5003;
 
 // Helmet secures Express by setting various HTTP headers
 app.use(helmet());
@@ -88,75 +89,97 @@ const io = new SocketIOServer(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST'],
+    credentials: true,
   },
+  pingInterval: 10000,
+  pingTimeout: 5000,
+  connectTimeout: 10000,
+  maxHttpBufferSize: 2e6, // 2MB safety buffer
+  perMessageDeflate: {
+    threshold: 1024, // Compress payloads larger than 1KB
+    zlibDeflateOptions: {
+      chunkSize: 8 * 1024,
+    },
+    zlibInflateOptions: {
+      chunkSize: 16 * 1024,
+    },
+  },
+  transports: ['websocket', 'polling'],
+  allowUpgrades: true,
+  httpCompression: true,
 });
 
 // Register io singleton so campaign.controller can emit socket events
 // from the background AI runner without needing io passed through routes.
 setSocketIO(io);
 
-io.on('connection', (socket) => {
-  console.log(`[Socket.io] Client connected: ${socket.id}`);
-
-  // Authenticate socket on connection — disconnect immediately if token is invalid
+// Socket.io authentication middleware supporting dual auth (JWT + Developer API keys)
+io.use(async (socket, next) => {
   try {
-    const token = socket.handshake.auth?.token as string | undefined;
-    if (token) {
-      const decoded = verifyToken(token);
-      const userRoom = `user:${decoded.userId}`;
-      void socket.join(userRoom);
-      console.log(`[Socket.io] Socket ${socket.id} securely joined user room: ${userRoom}`);
-    } else {
-      socket.emit('auth_error', { message: 'Authentication required' });
-      socket.disconnect(true);
-      console.log(`[Socket.io] Socket ${socket.id} disconnected: no token provided`);
-      return;
+    const token = (socket.handshake.auth?.token ||
+      socket.handshake.auth?.apiKey ||
+      socket.handshake.headers?.authorization ||
+      socket.handshake.query?.token) as string | undefined;
+
+    if (!token) {
+      return next(new Error('Authentication required'));
     }
-  } catch (err) {
-    socket.emit('auth_error', { message: 'Unauthorized connection' });
-    socket.disconnect(true);
-    console.log(`[Socket.io] Socket ${socket.id} disconnected: invalid token`);
-    return;
+
+    const authUser = await authenticateToken(token);
+    if (!authUser) {
+      return next(new Error('Unauthorized: invalid token or API key'));
+    }
+
+    socket.data.user = authUser;
+    next();
+  } catch (err: any) {
+    next(new Error(`Authentication error: ${err?.message || err}`));
+  }
+});
+
+io.on('connection', (socket) => {
+  const user = socket.data.user as AuthenticatedUser;
+  console.log(`[Socket.io] Client connected: ${socket.id} (user: ${user?.userId}, method: ${user?.authMethod})`);
+
+  if (user?.userId) {
+    const userRoom = `user:${user.userId}`;
+    void socket.join(userRoom);
+    console.log(`[Socket.io] Socket ${socket.id} securely joined user room: ${userRoom}`);
   }
 
   /**
    * join_campaign — client requests real-time updates for a specific campaign.
    *
-   * Security: We verify the JWT from socket.handshake.auth.token and confirm
-   * the campaign belongs to the authenticated user before joining the room.
-   * This prevents any user from snooping on another user's agent events.
+   * Security: We verify campaign ownership against authenticated user ID before joining room.
    */
   socket.on('join_campaign', async (campaignId: string) => {
     try {
-      // 1. Verify JWT
-      const token = socket.handshake.auth?.token as string | undefined;
-      if (!token) {
-        socket.emit('auth_error', { message: 'Unauthorized: no token' });
-        socket.disconnect(true);
+      const authUser = socket.data.user as AuthenticatedUser | undefined;
+      if (!authUser?.userId) {
+        socket.emit('auth_error', { message: 'Unauthorized: no valid auth context' });
         return;
       }
-      const decoded = verifyToken(token);
 
-      // 2. Confirm campaign belongs to this user
+      // Confirm campaign belongs to this user
       const campaign = await prisma.campaign.findFirst({
-        where: { id: campaignId },
-        include: { project: { select: { userId: true } } },
+        where: {
+          id: campaignId,
+          project: { userId: authUser.userId },
+        },
+        select: { id: true },
       });
 
-      if (!campaign || campaign.project.userId !== decoded.userId) {
+      if (!campaign) {
         socket.emit('auth_error', { message: 'Unauthorized: campaign not found' });
-        socket.disconnect(true);
         return;
       }
 
-      // 3. Join the room
-      const room = `campaign:${campaignId}`;
+      const room = `campaign:${campaign.id}`;
       void socket.join(room);
-      console.log(`[Socket.io] ${socket.id} joined room: ${room} | user=${decoded.userId}`);
+      console.log(`[Socket.io] ${socket.id} joined room: ${room} | user=${authUser.userId}`);
     } catch (err: any) {
-      // Invalid/expired token
-      socket.emit('auth_error', { message: 'Unauthorized: invalid token' });
-      socket.disconnect(true);
+      console.error(`[Socket.io] Error joining campaign room:`, err);
+      socket.emit('auth_error', { message: 'Failed to join campaign room' });
     }
   });
 
@@ -186,14 +209,15 @@ const startServer = async () => {
   await ensureAvatarColumn();
 
   // Create duplicate Redis connections for Socket.io adapter pub/sub
-  const pubClient = redis.duplicate();
-  const subClient = redis.duplicate();
+  const pubClient = redis.duplicate({ lazyConnect: true });
+  const subClient = redis.duplicate({ lazyConnect: true });
 
   pubClient.on('error', (err) => console.error('[Redis Socket.io Adapter Pub Client Error]', err));
   subClient.on('error', (err) => console.error('[Redis Socket.io Adapter Sub Client Error]', err));
 
   try {
-    await Promise.all([pubClient.connect(), subClient.connect()]);
+    if (pubClient.status === 'wait') await pubClient.connect();
+    if (subClient.status === 'wait') await subClient.connect();
     io.adapter(createAdapter(pubClient, subClient));
     console.log('[Redis PubSub] Successfully attached Redis adapter to Socket.io');
   } catch (err: any) {

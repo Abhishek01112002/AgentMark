@@ -268,6 +268,57 @@ def _fallback_copy_output(
     )
 
 
+def _extract_surgical_copy_context(strategy: dict, state: CampaignState) -> dict:
+    """
+    Surgical Context Filtering for Copywriter Agent:
+    - Preserves: positioning, key_messages, content_pillars, audience_segments,
+                 pain_points, motivations, brand_voice, inferred_goal, competitive_differentiation.
+    - Prunes: downstream camera specs, raw HTML web dumps, full timeline phase dicts, and raw TAM.
+    """
+    positioning = strategy.get("positioning", "")
+    key_messages = strategy.get("key_messages", [])[:5]
+    content_pillars = strategy.get("content_pillars", [])[:4]
+    audience_segments = strategy.get("audience_segments", [])[:3]
+    inferred_goal = strategy.get("inferred_goal", state.primary_goal or "awareness")
+
+    raw_timeline = strategy.get("timeline", {})
+    if isinstance(raw_timeline, dict):
+        timeline_summary = raw_timeline.get("duration") or raw_timeline.get("phase_1", {}).get("duration", "4 weeks")
+    else:
+        timeline_summary = str(raw_timeline)[:50]
+
+    competitive_differentiation = strategy.get("competitive_differentiation", {})
+    if isinstance(competitive_differentiation, dict):
+        competitive_differentiation = {
+            k: v for k, v in competitive_differentiation.items()
+            if k in ("primary_differentiation", "competitive_advantage", "unique_value_proposition", "positioning_statement")
+        }
+
+    research = strategy.get("research_foundation", {})
+    aud_insights = research.get("audience_insights", {})
+    market_analysis = research.get("market_analysis", {})
+
+    pain_points = aud_insights.get("pain_points", [])[:4]
+    motivations = aud_insights.get("motivations", [])[:4]
+    buyer_objections = aud_insights.get("buyer_objections", []) or aud_insights.get("objections", [])
+    market_trends = market_analysis.get("market_trends", [])[:4]
+
+    return {
+        "positioning": positioning,
+        "key_messages": key_messages,
+        "content_pillars": content_pillars,
+        "audience_segments": audience_segments,
+        "timeline_summary": timeline_summary,
+        "competitive_differentiation": competitive_differentiation,
+        "inferred_goal": inferred_goal,
+        "pain_points": pain_points,
+        "motivations": motivations,
+        "buyer_objections": buyer_objections,
+        "market_trends": market_trends,
+        "growth_rate": market_analysis.get("growth_rate", ""),
+    }
+
+
 # ==================== COPYWRITER AGENT FUNCTION ====================
 
 def copywriter_agent(state: CampaignState) -> CampaignState:
@@ -317,15 +368,22 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
             "inferred_goal": state.primary_goal or "awareness"
         }
 
-    # Extract all strategy fields needed for copy generation
-    positioning = strategy.get("positioning", "")
-    key_messages = strategy.get("key_messages", [])
-    content_pillars = strategy.get("content_pillars", [])
-    audience_segments = strategy.get("audience_segments", [])
-    timeline = strategy.get("timeline", {})
-    competitive_differentiation = strategy.get("competitive_differentiation", {})
-    inferred_goal = strategy.get("inferred_goal", "awareness")
-    research_foundation = strategy.get("research_foundation", {})
+    # Extract all strategy fields needed for copy generation via Surgical Context Filtering
+    surgical_ctx = _extract_surgical_copy_context(strategy, state)
+    positioning = surgical_ctx["positioning"]
+    key_messages = surgical_ctx["key_messages"]
+    content_pillars = surgical_ctx["content_pillars"]
+    audience_segments = surgical_ctx["audience_segments"]
+    timeline = {"duration": surgical_ctx["timeline_summary"]}
+    competitive_differentiation = surgical_ctx["competitive_differentiation"]
+    inferred_goal = surgical_ctx["inferred_goal"]
+    pain_points = surgical_ctx["pain_points"]
+    motivations = surgical_ctx["motivations"]
+    buyer_objections = surgical_ctx["buyer_objections"]
+    market_trends = surgical_ctx["market_trends"]
+    growth_rate = surgical_ctx["growth_rate"]
+    competitive_advantage = competitive_differentiation.get("competitive_advantage", "") if isinstance(competitive_differentiation, dict) else ""
+
     execution = strategy.get("execution", {})
     deliverables = execution.get("deliverables", [])
     channels = normalize_channel_list(execution.get("channels", []))
@@ -340,7 +398,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Key Messages: {len(key_messages)} found")
     logger.info(f"✓ Content Pillars: {len(content_pillars)} defined")
     logger.info(f"✓ Audience Segments: {len(audience_segments)} identified")
-    logger.info(f"✓ Timeline Phases: {len(timeline)}")
+    logger.info(f"✓ Timeline Summary: {surgical_ctx['timeline_summary']}")
     logger.info(f"✓ Inferred Goal: {inferred_goal}")
     logger.info(f"✓ Deliverables: {deliverables}")
     logger.info(f"✓ Channels: {channels}")
@@ -361,25 +419,14 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     logger.info(f"✓ Brief: {brief[:60]}...")
 
     # ========== STEP 3: EXTRACT RESEARCH INSIGHTS ==========
-    logger.info("\n[STEP 3] Extracting research insights for copy context...")
+    logger.info("\n[STEP 3] Extracting research insights for copy context (Surgical Context Filtering)...")
     logger.info("-" * 80)
-
-    market_analysis = research_foundation.get("market_analysis", {})
-    audience_insights = research_foundation.get("audience_insights", {})
-    research_foundation.get("competitor_analysis", {})
-
-    pain_points = audience_insights.get("pain_points", [])
-    buyer_objections = audience_insights.get("buyer_objections", []) or audience_insights.get("objections", [])
-    motivations = audience_insights.get("motivations", [])
-    market_trends = market_analysis.get("market_trends", [])
-    growth_rate = market_analysis.get("growth_rate", "")
-    competitive_advantage = competitive_differentiation.get("competitive_advantage", "")
 
     logger.info(f"✓ Pain Points ({len(pain_points)}): {pain_points[:2]}")
     logger.info(f"✓ Motivations ({len(motivations)}): {motivations[:2]}")
     logger.info(f"✓ Market Trends ({len(market_trends)}): {market_trends[:2]}")
     logger.info(f"✓ Growth Rate: {growth_rate}")
-    logger.info(f"✓ Competitive Advantage: {competitive_advantage[:60]}...")
+    logger.info(f"✓ Competitive Advantage: {str(competitive_advantage)[:60]}...")
 
     # ========== STEP 4: GENERATE COPY WITH LLM ==========
     logger.info("\n[STEP 4] Generating copy with LLM...")
@@ -505,70 +552,197 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     )
     human_feedback_section = human_feedback_section + mandatory_marketing_constraints
 
-    # Load copywriter prompt and format with all campaign data
-    prompt = load_prompt(
-        "copywriter",
-        # Campaign metadata
-        campaign_name=campaign_name,
-        brand_name=brand_name,
-        brand_voice=brand_voice,
-        target_audience=target_audience,
-        industry=industry,
-        primary_goal=primary_goal,
-        brief=brief,
-        additional_context=additional_context,
-        human_feedback_section=human_feedback_section,
-        # Strategy fields
-        positioning=positioning,
-        inferred_goal=inferred_goal,
-        key_messages=json.dumps(key_messages, separators=(",", ":"), ensure_ascii=False),
-        content_pillars=json.dumps(content_pillars, separators=(",", ":"), ensure_ascii=False),
-        audience_segments=json.dumps(audience_segments, separators=(",", ":"), ensure_ascii=False),
-        timeline=json.dumps(timeline, separators=(",", ":"), ensure_ascii=False),
-        competitive_differentiation=json.dumps(competitive_differentiation, separators=(",", ":"), ensure_ascii=False),
-        channels=(
-            f"ACTIVE CAMPAIGN CHANNELS (Generate copy ONLY for these): {json.dumps([c for c in channels if c], separators=(',', ':'), ensure_ascii=False)}\n"
-            f"FORBIDDEN CHANNELS (MUST set copy to null and copy_readiness to false): {json.dumps([c for c in ['instagram', 'facebook', 'linkedin', 'twitter', 'tiktok', 'youtube', 'email', 'google_ads'] if c not in channels], separators=(',', ':'), ensure_ascii=False)}"
-        ),
-        # Research insights
-        pain_points=json.dumps(pain_points, separators=(",", ":"), ensure_ascii=False),
-        motivations=json.dumps(motivations, separators=(",", ":"), ensure_ascii=False),
-        market_trends=json.dumps(market_trends, separators=(",", ":"), ensure_ascii=False),
-        growth_rate=growth_rate,
-        competitive_advantage=competitive_advantage,
-        # Derived helper fields for the prompt
-        pain_points_primary=pain_points[0] if pain_points else "business inefficiencies",
-        key_message_primary=key_messages[0] if key_messages else positioning,
-        goal_keywords=goal_keywords,
-        voice_keywords=voice_keywords,
-        key_messages_count=len(key_messages),
-        content_pillars_count=len(content_pillars),
-        audience_segments_count=len(audience_segments),
-        deliverables_json=json.dumps(deliverables)
-    )
+    # Define channel batch categories for Sub-Task Chunking
+    BATCH_A_NAMES = {"linkedin", "twitter", "instagram", "facebook"}
+    BATCH_B_NAMES = {"email", "youtube", "google_ads", "tiktok"}
+    ALL_KNOWN_CHANNELS = ["instagram", "facebook", "linkedin", "twitter", "tiktok", "youtube", "email", "google_ads"]
 
-    logger.info("   Querying LLM with structured output...")
-    revision_temperature = 0.0 if is_surgical_revision else 0.7
-    revision_max_tokens = 8000 if (is_surgical_revision or is_focus_group_rewrite) else 6000
-    cache_key = make_key(
-        "Copywriter",
-        prompt=prompt,
-        industry=state.industry or "",
-        temperature=revision_temperature,
-        max_tokens=revision_max_tokens,
-    )
-    cached = cache_get(cache_key)
-    if cached is not None:
-        logger.info("📦 Cache hit — using cached Copywriter response")
-        copy_output = CopywriterOutput(**cached)
-    else:
-        copy_output, state = safe_llm_call(
-            state,
-            "Copywriter",
-            lambda: llm.generate_structured(prompt, CopywriterOutput, temperature=revision_temperature, max_tokens=revision_max_tokens)
+    # Normalize active campaign channels
+    normalized_active = []
+    for c in channels:
+        norm = normalize_channel_name(c)
+        if norm and norm not in normalized_active:
+            normalized_active.append(norm)
+    if not normalized_active:
+        normalized_active = ["linkedin", "email"]
+
+    batch_a_chans = [c for c in normalized_active if c in BATCH_A_NAMES]
+    batch_b_chans = [c for c in normalized_active if c in BATCH_B_NAMES]
+
+    # Assign non-standard custom channels to balance batch load
+    for c in normalized_active:
+        if c not in BATCH_A_NAMES and c not in BATCH_B_NAMES:
+            if len(batch_a_chans) <= len(batch_b_chans):
+                batch_a_chans.append(c)
+            else:
+                batch_b_chans.append(c)
+
+    batches_to_run = []
+    if batch_a_chans:
+        batches_to_run.append(("Batch A (Short-form Social)", batch_a_chans))
+    if batch_b_chans:
+        batches_to_run.append(("Batch B (Long-form & Ads)", batch_b_chans))
+
+    # Context Pruning: Trim excessive research lists to keep prompt tight and prevent token waste
+    pruned_pain_points = pain_points[:4] if isinstance(pain_points, list) else pain_points
+    pruned_motivations = motivations[:4] if isinstance(motivations, list) else motivations
+    pruned_market_trends = market_trends[:4] if isinstance(market_trends, list) else market_trends
+
+    from utils.prompt_loader import load_split_prompt
+
+    def _build_batch_prompt(batch_chans: list[str]) -> tuple[str | None, str]:
+        forbidden = [c for c in ALL_KNOWN_CHANNELS if c not in batch_chans]
+        channels_str = (
+            f"ACTIVE CAMPAIGN CHANNELS (Generate copy ONLY for these): {json.dumps(batch_chans, separators=(',', ':'), ensure_ascii=False)}\n"
+            f"FORBIDDEN CHANNELS (MUST set copy to null and copy_readiness to false): {json.dumps(forbidden, separators=(',', ':'), ensure_ascii=False)}"
         )
-        if copy_output is not None:
-            cache_set(cache_key, copy_output.model_dump())
+        return load_split_prompt(
+            "copywriter",
+            campaign_name=campaign_name,
+            brand_name=brand_name,
+            brand_voice=brand_voice,
+            target_audience=target_audience,
+            industry=industry,
+            primary_goal=primary_goal,
+            brief=brief,
+            additional_context=additional_context,
+            human_feedback_section=human_feedback_section,
+            positioning=positioning,
+            inferred_goal=inferred_goal,
+            key_messages=json.dumps(key_messages, separators=(",", ":"), ensure_ascii=False),
+            content_pillars=json.dumps(content_pillars, separators=(",", ":"), ensure_ascii=False),
+            audience_segments=json.dumps(audience_segments, separators=(",", ":"), ensure_ascii=False),
+            timeline=json.dumps(timeline, separators=(",", ":"), ensure_ascii=False),
+            competitive_differentiation=json.dumps(competitive_differentiation, separators=(",", ":"), ensure_ascii=False),
+            channels=channels_str,
+            pain_points=json.dumps(pruned_pain_points, separators=(",", ":"), ensure_ascii=False),
+            motivations=json.dumps(pruned_motivations, separators=(",", ":"), ensure_ascii=False),
+            market_trends=json.dumps(pruned_market_trends, separators=(",", ":"), ensure_ascii=False),
+            growth_rate=growth_rate,
+            competitive_advantage=competitive_advantage,
+            pain_points_primary=pruned_pain_points[0] if pruned_pain_points else "business inefficiencies",
+            key_message_primary=key_messages[0] if key_messages else positioning,
+            goal_keywords=goal_keywords,
+            voice_keywords=voice_keywords,
+            key_messages_count=len(key_messages),
+            content_pillars_count=len(content_pillars),
+            audience_segments_count=len(audience_segments),
+            deliverables_json=json.dumps(deliverables)
+        )
+
+    revision_temperature = 0.0 if is_surgical_revision else 0.7
+    revision_max_tokens = 5000 if (is_surgical_revision or is_focus_group_rewrite) else 4500
+
+    def _execute_batch(batch_name: str, batch_chans: list[str]) -> tuple[str, CopywriterOutput | None]:
+        system_prompt, batch_prompt = _build_batch_prompt(batch_chans)
+        cache_key = make_key(
+            f"Copywriter_{batch_name}",
+            prompt=batch_prompt,
+            industry=state.industry or "",
+            temperature=revision_temperature,
+            max_tokens=revision_max_tokens,
+        )
+        cached = cache_get(cache_key)
+        if cached is not None:
+            logger.info(f"   [{batch_name}] 📦 Cache hit — using cached Copywriter batch response")
+            return batch_name, CopywriterOutput(**cached)
+
+        out, _ = safe_llm_call(
+            state,
+            f"Copywriter[{batch_name}]",
+            lambda: llm.generate_structured(
+                batch_prompt,
+                CopywriterOutput,
+                system_prompt=system_prompt,
+                temperature=revision_temperature,
+                max_tokens=revision_max_tokens
+            )
+        )
+        if out is not None:
+            cache_set(cache_key, out.model_dump())
+        return batch_name, out
+
+    import concurrent.futures
+
+    logger.info(f"   Querying LLM with Sub-Task Chunking ({len(batches_to_run)} batch(es))...")
+
+    batch_outputs: list[CopywriterOutput] = []
+    if len(batches_to_run) == 1:
+        b_name, b_chans = batches_to_run[0]
+        _, out = _execute_batch(b_name, b_chans)
+        if out:
+            batch_outputs.append(out)
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(batches_to_run)) as executor:
+            future_to_name = {
+                executor.submit(_execute_batch, b_name, b_chans): b_name
+                for b_name, b_chans in batches_to_run
+            }
+            for future in concurrent.futures.as_completed(future_to_name):
+                b_name = future_to_name[future]
+                try:
+                    _, out = future.result()
+                    if out:
+                        batch_outputs.append(out)
+                except Exception as exc:
+                    logger.error(f"   ⚠️ Batch {b_name} generated exception: {exc}")
+
+    if batch_outputs:
+        if len(batch_outputs) == 1 or not all(isinstance(o, CopywriterOutput) for o in batch_outputs):
+            copy_output = batch_outputs[0]
+        else:
+            base = batch_outputs[0]
+            merged_goal = getattr(base, "inferred_goal", None) or "awareness"
+            merged_copies: dict = {}
+            merged_readiness: dict = {}
+
+            for out in batch_outputs:
+                if hasattr(out, "copies") and isinstance(out.copies, dict):
+                    for chan_enum, copy_obj in out.copies.items():
+                        if copy_obj is not None:
+                            merged_copies[chan_enum] = copy_obj
+                if hasattr(out, "copy_readiness") and isinstance(out.copy_readiness, dict):
+                    for c_str, ready_flag in out.copy_readiness.items():
+                        if ready_flag:
+                            merged_readiness[c_str] = True
+                        elif c_str not in merged_readiness:
+                            merged_readiness[c_str] = ready_flag
+
+            merged_framework = getattr(base, "messaging_framework", MessagingFramework())
+            if hasattr(merged_framework, "channel_messaging") and isinstance(merged_framework.channel_messaging, list):
+                existing_cm = {cm.channel_name for cm in merged_framework.channel_messaging if hasattr(cm, "channel_name")}
+                for out in batch_outputs[1:]:
+                    fw = getattr(out, "messaging_framework", None)
+                    if fw and hasattr(fw, "channel_messaging") and isinstance(fw.channel_messaging, list):
+                        for cm in fw.channel_messaging:
+                            cm_name = getattr(cm, "channel_name", None)
+                            if cm_name and cm_name not in existing_cm:
+                                merged_framework.channel_messaging.append(cm)
+                                existing_cm.add(cm_name)
+
+            # Ensure all requested active campaign channels are populated (fill missing with fallback)
+            missing_channels = [c for c in channels if c not in merged_copies or merged_copies[c] is None]
+            if missing_channels:
+                logger.warning(f"   ⚠️ Copywriter batch merging missing {len(missing_channels)} channel(s): {missing_channels} — filling from strategy fallback")
+                fallback_obj = _fallback_copy_output(
+                    state, channels, inferred_goal, brand_name, brand_voice,
+                    positioning, key_messages, pain_points, buyer_objections, deliverables
+                )
+                if hasattr(fallback_obj, "copies") and isinstance(fallback_obj.copies, dict):
+                    for missing_ch in missing_channels:
+                        if missing_ch in fallback_obj.copies:
+                            merged_copies[missing_ch] = fallback_obj.copies[missing_ch]
+                            merged_readiness[missing_ch] = True
+
+            copy_output = CopywriterOutput(
+                inferred_goal=merged_goal,
+                copies=merged_copies,
+                messaging_framework=merged_framework,
+                strategic_alignment=getattr(base, "strategic_alignment", StrategicAlignment()),
+                copy_readiness=merged_readiness
+            )
+    else:
+        copy_output = None
     
     if copy_output is None:
         logger.info("   ⚠️ Copywriter LLM unavailable — using strategy-grounded fallback copy")
@@ -587,13 +761,17 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         state.status = "copy_complete"
         logger.info("   ✅ Fallback copy ready — error flag cleared, pipeline will continue")
 
-    # ========== POST-REVISION MERGE SAFETY NET ==========
-    # Even with surgical mode instructions, LLMs can occasionally drop a channel.
-    # This layer detects dropped channels and restores them from the previous copy.
-    if is_human_revision and state.copy_output:
-        logger.info("\n[MERGE] Running post-revision safety check...")
+    # ========== POST-REVISION DEEP MERGE (DELTA PATCHING) ==========
+    if (is_human_revision or is_surgical_revision) and state.copy_output:
+        logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge...")
         try:
-            previous = CopywriterOutput.model_validate_json(state.copy_output)
+            from utils.delta_merger import deep_merge_dicts
+            previous_dict = json.loads(state.copy_output)
+            merged_dict = deep_merge_dicts(previous_dict, copy_output.model_dump(exclude_none=True))
+            copy_output = CopywriterOutput(**merged_dict)
+            logger.info("   ✅ Semantic Delta Patch merged cleanly over previous copy_output")
+        except Exception as exc:
+            logger.warning(f"   ⚠️ Delta merge warning: {exc} — preserving current copy_output")
             restored = []
             feedback_lower = (state.human_feedback or "").lower()
             for chan_enum in list(Channel):
@@ -619,6 +797,31 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
                 logger.info(f"   ✅ Restored {len(restored)} channel(s): {', '.join(restored)}")
         except Exception as merge_err:
             logger.info(f"   ⚠️  Merge check failed (non-critical): {merge_err}")
+
+    # ========== PRE-VALIDATION & LOCAL REPAIR LOOP ==========
+    try:
+        from utils.pre_validator import PreValidator
+        coverage_res = PreValidator.validate_channel_coverage(
+            copy_dict={k.value if hasattr(k, "value") else str(k): v for k, v in copy_output.copies.items()} if hasattr(copy_output, "copies") and isinstance(copy_output.copies, dict) else {},
+            required_channels=channels
+        )
+        logger.info(f"   [PRE-VALIDATION] Copywriter channel coverage: {coverage_res.metadata.get('coverage_pct')}% (is_valid={coverage_res.is_valid})")
+        if not coverage_res.is_valid:
+            missing_chans = coverage_res.metadata.get("missing_channels", [])
+            logger.info(f"   [LOCAL REPAIR] Fixing missing channels in copywriter: {missing_chans}")
+            fallback_copy = _fallback_copy_output(
+                state, channels, inferred_goal, brand_name, brand_voice, positioning, key_messages, pain_points, deliverables
+            )
+            for m_chan in missing_chans:
+                norm_m = normalize_channel_name(m_chan)
+                if norm_m and norm_m in fallback_copy.copies:
+                    copy_output.copies[norm_m] = fallback_copy.copies[norm_m]
+                    if hasattr(copy_output, "copy_readiness") and isinstance(copy_output.copy_readiness, dict):
+                        copy_output.copy_readiness[norm_m] = True
+            from utils.telemetry import get_telemetry_tracker
+            get_telemetry_tracker().record_pre_validation_repair("copywriter", f"Restored missing channels: {missing_chans}")
+    except Exception as exc:
+        logger.warning(f"   ⚠️ Copywriter pre-validation non-blocking error: {exc}")
 
     # ========== STEP 5: DISPLAY COPY SUMMARY ==========
     logger.info("\n[STEP 5] Copy generated!")

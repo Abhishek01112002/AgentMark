@@ -5,6 +5,7 @@ Your role: Transform deep market research into a bold, cohesive, and highly exec
 TASK:
 Build a comprehensive, campaign-ready marketing strategy grounded in the research insights below. Be specific, opinionated, and actionable — do not hedge or give generic advice.
 
+---USER_PROMPT---
 CAMPAIGN CONTEXT:
 - Campaign Name: {campaign_name}
 - Brand Name: {brand_name}

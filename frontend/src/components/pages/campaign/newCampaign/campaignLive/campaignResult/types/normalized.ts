@@ -19,6 +19,7 @@ export interface NormalizedReviewOutput {
     research: number | null;
     strategy: number | null;
     copywriter: number | null;
+    creative_hook_matrix?: number | null;
     image_prompt: number | null;
   };
   executive_summary?: string;
