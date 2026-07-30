@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette } from 'lucide-react';
+import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette, Globe } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
@@ -29,7 +29,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
   const recommendedApproach = data?.recommended_approach || '';
 
   const rawSources: SourceMeta[] = data?.literas_sources ?? data?.tavily_sources ?? [];
-  const searchStatus = data?.search_status;
+  /* searchStatus */ void data?.search_status;
 
   const [activeFilter, setActiveFilter] = useState<"all"|"market"|"competitor"|"official_website"|"customer_voice"|"ad_hooks">("all");
 
@@ -180,18 +180,18 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
       {/* Grounded Brand DNA & Official Website Intelligence Banner */}
       {brandDnaData && (
-        <div className="rounded-2xl border border-[#4edea3]/30 bg-gradient-to-r from-[#042F1D]/90 via-[#0A1628]/95 to-[#111118] p-6 shadow-[0_10px_35px_rgba(78,222,163,0.12)] relative overflow-hidden">
-          <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-[#4edea3]" />
+        <div className="rounded-xl bg-[#111118] border border-[#2A2A38] p-5 md:p-6 relative overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#4edea3]/60" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#4edea3]/15 border border-[#4edea3]/30 flex items-center justify-center shrink-0">
-                <span className="text-lg">🌐</span>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-[#4edea3]/10 border border-[#4edea3]/20 flex items-center justify-center shrink-0">
+                <Globe size={17} className="text-[#4edea3]" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-semibold text-white font-sora">Verified Official Brand Website & DNA Intelligence</h3>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#4edea3]/20 border border-[#4edea3]/30 text-[10px] font-mono font-medium text-[#4edea3] flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-ping" /> Live Website Ingested
+                  <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Verified Official Brand Website & DNA Intelligence</h3>
+                  <span className="px-2 py-0.5 rounded bg-[#4edea3]/10 text-[10px] text-[#4edea3]">
+                    Live Website Ingested
                   </span>
                 </div>
                 {brandDnaData.source_url && (
@@ -199,22 +199,22 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                     href={brandDnaData.source_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-[#4edea3] hover:underline font-mono flex items-center gap-1.5 mt-1"
+                    className="text-xs text-[#8B8B9E] hover:text-[#4edea3] flex items-center gap-1.5 mt-1"
                   >
                     <span>Source: {brandDnaData.source_url}</span>
-                    <ArrowUpRight size={13} />
+                    <ArrowUpRight size={12} />
                   </a>
                 )}
               </div>
             </div>
-            <span className="text-[11px] text-[#94A3B8] font-sans bg-[#111118]/80 px-3.5 py-2 rounded-xl border border-white/10 self-start md:self-auto">
+            <span className="text-[10px] text-[#6B6B80] bg-[#1E1E2A] px-3 py-1.5 rounded">
               SSRF Guarded • 5s Timeout Engine • 0% Hallucination
             </span>
           </div>
           {brandDnaData.extracted_hero_text && (
-            <div className="mt-3 text-xs text-[#CBD5E1] bg-[#000000]/40 rounded-xl p-4 border border-white/10 font-mono leading-relaxed">
-              <span className="text-[#4edea3] font-bold mr-2">Grounded Value Proposition:</span>
-              "{brandDnaData.extracted_hero_text}"
+            <div className="mt-3 text-xs text-[#B0B0C0] bg-[#0A0A0F] rounded-lg p-3.5 border border-[#2A2A38] leading-relaxed">
+              <span className="text-[#4edea3] font-semibold mr-2">Grounded Value Proposition:</span>
+              &ldquo;{brandDnaData.extracted_hero_text}&rdquo;
             </div>
           )}
         </div>
@@ -458,86 +458,81 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
           </div>
         </div>
 
-        {/* 💬 100x Real Customer Voice & Reddit Complaints */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(244,63,94,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(26,17,20,0.95) 100%)', border: '1px solid rgba(244,63,94,0.2)' }}>
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F43F5E]/4 via-transparent to-[#E11D48]/2 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F43F5E] via-[#FB7185] to-transparent" />
+        {/* Customer Voice & Reddit Pain Points */}
+        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-[#111118] border border-[#2A2A38] overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F43F5E]/50" />
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#F43F5E]/15 border border-[#F43F5E]/30 flex items-center justify-center shrink-0">
-                <span className="text-sm">💬</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#F43F5E]/10 border border-[#F43F5E]/20 flex items-center justify-center shrink-0">
+                <MessageCircle size={16} className="text-[#FB7185]" />
               </div>
               <div>
-                <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Real Customer Voice & Reddit Pain Points</h3>
-                <p className="text-xs text-[#94A3B8] font-sans m-0">Direct buyer quotes & dissatisfaction triggers mined from community discussions</p>
+                <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Real Customer Voice & Reddit Pain Points</h3>
+                <p className="text-xs text-[#8B8B9E]">Direct buyer quotes mined from community discussions</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[10px] font-mono text-[#FB7185]">
-              Customer Voice Mining Active
+            <span className="px-2.5 py-1 rounded bg-[#F43F5E]/10 text-[10px] text-[#FB7185]">
+              Customer Voice
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {displayCustomerVoice.map((quote: string, idx: number) => (
-              <div key={idx} className="rounded-xl p-4 bg-[#111118]/90 border border-[#F43F5E]/20 relative hover:border-[#F43F5E]/40 transition-all duration-300">
-                <div className="text-xs text-[#FDA4AF] font-mono leading-relaxed italic">
+              <div key={idx} className="rounded-lg p-3.5 bg-[#0A0A0F] border border-[#2A2A38]">
+                <p className="text-xs text-[#B0B0C0] leading-relaxed">
                   {quote.startsWith('"') ? quote : `"${quote}"`}
-                </div>
+                </p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 🥊 Competitor Vulnerabilities & Counter-Angles */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(245,158,11,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(26,22,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-[#D97706]/2 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
+        {/* Competitor Vulnerability & Counter-Angles */}
+        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-[#111118] border border-[#2A2A38] overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#F59E0B]/50" />
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/15 border border-[#F59E0B]/30 flex items-center justify-center shrink-0">
-                <span className="text-sm">🥊</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center shrink-0">
+                <Crosshair size={16} className="text-[#FBBF24]" />
               </div>
               <div>
-                <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Competitor Vulnerability & Counter-Angles</h3>
-                <p className="text-xs text-[#94A3B8] font-sans m-0">Exploitable gaps, pricing friction, and feature weaknesses in market rivals</p>
+                <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Competitor Vulnerability & Counter-Angles</h3>
+                <p className="text-xs text-[#8B8B9E]">Exploitable gaps and weaknesses in market rivals</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[10px] font-mono text-[#FBBF24]">
+            <span className="px-2.5 py-1 rounded bg-[#F59E0B]/10 text-[10px] text-[#FBBF24]">
               Counter-Positioning
             </span>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {displayCompetitorVulns.map((vuln: string, idx: number) => (
-              <div key={idx} className="rounded-lg p-3.5 bg-[#111118]/90 border border-[#F59E0B]/20 flex items-start gap-3 hover:border-[#F59E0B]/40 transition-all duration-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shrink-0 mt-2" />
-                <p className="text-xs text-[#FEF3C7] font-sans leading-relaxed m-0">{vuln}</p>
+              <div key={idx} className="rounded-lg p-3 bg-[#0A0A0F] border border-[#2A2A38]">
+                <p className="text-xs text-[#B0B0C0] leading-relaxed">{vuln}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* 🎨 Proven Visual Hooks & Ad Angles */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(168,85,247,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(22,17,26,0.95) 100%)', border: '1px solid rgba(168,85,247,0.2)' }}>
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#A855F7]/4 via-transparent to-[#9333EA]/2 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#A855F7] via-[#C084FC] to-transparent" />
+        {/* Proven Ad Hooks & Visual Angles */}
+        <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative bg-[#111118] border border-[#2A2A38] overflow-hidden">
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#A855F7]/50" />
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#A855F7]/15 border border-[#A855F7]/30 flex items-center justify-center shrink-0">
-                <span className="text-sm">🎨</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#A855F7]/10 border border-[#A855F7]/20 flex items-center justify-center shrink-0">
+                <Palette size={16} className="text-[#C084FC]" />
               </div>
               <div>
-                <h3 className="m-0 text-base font-semibold tracking-tight font-sora text-white">Proven Ad Hooks & Visual Angles (2026)</h3>
-                <p className="text-xs text-[#94A3B8] font-sans m-0">High-converting visual themes and ad creative concepts for max CTR</p>
+                <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Proven Ad Hooks & Visual Angles</h3>
+                <p className="text-xs text-[#8B8B9E]">High-converting creative concepts for max CTR</p>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full bg-[#A855F7]/10 border border-[#A855F7]/20 text-[10px] font-mono text-[#C084FC]">
+            <span className="px-2.5 py-1 rounded bg-[#A855F7]/10 text-[10px] text-[#C084FC]">
               High CTR Creative
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {displayAdHooks.map((hook: string, idx: number) => (
-              <div key={idx} className="rounded-lg p-3.5 bg-[#111118]/90 border border-[#A855F7]/20 flex items-start gap-3 hover:border-[#A855F7]/40 transition-all duration-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] shrink-0 mt-2" />
-                <p className="text-xs text-[#E9D5FF] font-sans leading-relaxed m-0">{hook}</p>
+              <div key={idx} className="rounded-lg p-3 bg-[#0A0A0F] border border-[#2A2A38]">
+                <p className="text-xs text-[#B0B0C0] leading-relaxed">{hook}</p>
               </div>
             ))}
           </div>
@@ -597,7 +592,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             {/* Section Header */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justify: 'center', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, rgba(99,102,241,0.22), rgba(129,140,248,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(99,102,241,0.18)', boxShadow: '0 2px 8px rgba(99,102,241,0.08)' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </div>
                 <div>
@@ -678,7 +673,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
                       <div className="relative">
                         {/* Header: favicon + domain + type badge */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, mb: 10, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
                           <div style={{ position: 'relative', width: 26, height: 26, flexShrink: 0 }}>
                             <img
                               src={`https://www.google.com/s2/favicons?domain=${src.domain}&sz=32`}

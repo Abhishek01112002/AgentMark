@@ -201,14 +201,36 @@ def format_campaign_brief(
         market_analysis: Dict[str, Any] = research_output.get("market_analysis") or {}
         competitor_analysis: Dict[str, Any] = research_output.get("competitor_analysis") or {}
         recommended_approach = research_output.get("recommended_approach", "")
+        customer_voice: List[str] = research_output.get("customer_voice_insights") or []
+        competitor_vulns: List[str] = research_output.get("competitor_vulnerabilities") or []
+        proven_hooks: List[str] = research_output.get("proven_ad_hooks") or []
+        brand_dna: Dict[str, Any] = research_output.get("brand_dna") or {}
 
-        has_research = any([market_analysis, competitor_analysis, recommended_approach])
+        has_research = any([market_analysis, competitor_analysis, recommended_approach, customer_voice, competitor_vulns, proven_hooks, brand_dna])
         if has_research:
             md.append("\n---")
             md.append("\n## Market Intelligence (Summary)")
 
             if recommended_approach:
                 md.append(f"\n**Recommended Approach:** {recommended_approach}")
+
+            if customer_voice:
+                md.append("\n**Customer Voice & Pain Points (Verbatim Quotes):**")
+                for q in customer_voice[:4]:
+                    md.append(f"- {q}")
+
+            if competitor_vulns:
+                md.append("\n**Competitor Vulnerabilities & Counter-Angles:**")
+                for v in competitor_vulns[:4]:
+                    md.append(f"- {v}")
+
+            if proven_hooks:
+                md.append("\n**Proven Ad Hooks & Creative Patterns:**")
+                for h in proven_hooks[:4]:
+                    md.append(f"- {h}")
+
+            if brand_dna and isinstance(brand_dna, dict) and brand_dna.get("extracted_hero_text"):
+                md.append(f"\n**Official Brand DNA:** {brand_dna.get('extracted_hero_text')} *(Source: {brand_dna.get('source_url', brand_name)})*")
 
             if market_analysis:
                 tam = market_analysis.get("total_addressable_market", "")

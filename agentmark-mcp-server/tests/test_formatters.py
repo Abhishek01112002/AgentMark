@@ -59,6 +59,10 @@ def full_campaign() -> dict:
                 "competitor_analysis": {
                     "differentiation_opportunity": "Unique open-source integration"
                 },
+                "customer_voice_insights": ["'I hate spending weeks configuring tools'"],
+                "competitor_vulnerabilities": ["Enterprise tool friction"],
+                "proven_ad_hooks": ["Build in 60 seconds"],
+                "brand_dna": {"extracted_hero_text": "Agentic AI Intelligence"},
             },
             "copy_output": {
                 "copies": {
@@ -213,6 +217,11 @@ class TestBriefFormatter:
         assert "## Market Intelligence (Summary)" in md
         assert "$5B" in md
         assert "AI growth" in md
+        assert "Customer Voice & Pain Points" in md
+        assert "I hate spending weeks configuring tools" in md
+        assert "Enterprise tool friction" in md
+        assert "Build in 60 seconds" in md
+        assert "Agentic AI Intelligence" in md
 
         # Copy
         assert "## Generated Creative Copy" in md
