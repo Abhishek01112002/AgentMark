@@ -1428,7 +1428,7 @@ const CampaignLivePage: React.FC = () => {
 
         {/* ── Human Review Inspector Drawer ─────────────────────────────────── */}
         {/* Partial left-side dim overlay — does NOT block interaction with main content */}
-        {showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' && (
+        {showHumanReview && !isMinimized && (campaignPreviewData?.status === 'awaiting_human_approval' || showHumanReview) && (
           <div
             onClick={() => setIsMinimized(true)}
             className="fixed inset-0 z-[90] cursor-pointer"
@@ -1437,7 +1437,7 @@ const CampaignLivePage: React.FC = () => {
         )}
 
         {/* "Human Review Required" floating badge — click to toggle minimized/expanded state */}
-        {showHumanReview && isMinimized && campaign?.status === 'awaiting_human_approval' && (
+        {showHumanReview && isMinimized && campaignPreviewData?.status === 'awaiting_human_approval' && (
           <div
             onClick={() => {
               if (isMinimized) {
@@ -1461,7 +1461,7 @@ const CampaignLivePage: React.FC = () => {
         {/* Right-side Inspector Drawer */}
         <div
           className={`inspector-drawer fixed top-0 right-0 h-full z-[100] flex flex-col transition-all duration-400 ease-out ${
-            showHumanReview && !isMinimized && campaign?.status === 'awaiting_human_approval' ? 'open translate-x-0' : 'translate-x-full'
+            showHumanReview && !isMinimized && (campaignPreviewData?.status === 'awaiting_human_approval' || showHumanReview) ? 'open translate-x-0' : 'translate-x-full'
           }`}
           style={{ width: '100%', maxWidth: '480px', background: '#0c0c14', borderLeft: '1px solid rgba(192,193,255,0.08)', boxShadow: '-24px 0 80px rgba(0,0,0,0.7), inset 1px 0 0 rgba(255,255,255,0.02)' }}
         >
