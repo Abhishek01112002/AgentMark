@@ -191,7 +191,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Verified Official Brand Website & DNA Intelligence</h3>
+                    <h3 className="text-lg font-semibold tracking-tight text-[#F1F1F3]">Verified Official Brand Website & DNA Intelligence</h3>
                     <span className="px-2 py-0.5 rounded-full bg-[#4edea3]/15 border border-[#4edea3]/25 text-[10px] text-[#4edea3] flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#4edea3] animate-ping" /> Live
                     </span>
@@ -214,7 +214,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               </span>
             </div>
             {brandDnaData.extracted_hero_text && (
-              <div className="mt-3 text-xs text-[#CBD5E1] bg-[#000000]/40 rounded-lg p-3.5 border border-white/5 leading-relaxed">
+              <div className="mt-3 text-sm text-[#E4E1E9] bg-[#000000]/40 rounded-lg p-4 border border-white/5 leading-relaxed">
                 <span className="text-[#4edea3] font-semibold mr-2">Grounded Value Proposition:</span>
                 &ldquo;{brandDnaData.extracted_hero_text}&rdquo;
               </div>
@@ -472,8 +472,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                   <MessageCircle size={16} className="text-[#FB7185]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Real Customer Voice & Reddit Pain Points</h3>
-                  <p className="text-xs text-[#94A3B8]">Direct buyer quotes mined from community discussions</p>
+                  <h3 className="text-lg font-semibold tracking-tight text-[#F1F1F3]">Real Customer Voice & Reddit Pain Points</h3>
+                  <p className="text-sm text-[#8B8B9E]">Direct buyer quotes mined from community discussions</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-[#F43F5E]/10 border border-[#F43F5E]/20 text-[10px] text-[#FB7185]">
@@ -482,8 +482,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {displayCustomerVoice.map((quote: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#F43F5E]/10">
-                  <p className="text-xs text-[#FDA4AF] leading-relaxed">
+                <div key={idx} className="rounded-lg p-4 bg-[#000000]/40 border border-[#2A2A38]">
+                  <p className="text-sm text-[#E4E1E9] leading-relaxed">
                     {quote.startsWith('"') ? quote : `"${quote}"`}
                   </p>
                 </div>
@@ -503,8 +503,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                   <Crosshair size={16} className="text-[#FBBF24]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Competitor Vulnerability & Counter-Angles</h3>
-                  <p className="text-xs text-[#94A3B8]">Exploitable gaps and weaknesses in market rivals</p>
+                  <h3 className="text-lg font-semibold tracking-tight text-[#F1F1F3]">Competitor Vulnerability & Counter-Angles</h3>
+                  <p className="text-sm text-[#8B8B9E]">Exploitable gaps and weaknesses in market rivals</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-[#F59E0B]/10 border border-[#F59E0B]/20 text-[10px] text-[#FBBF24]">
@@ -513,8 +513,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             </div>
             <div className="space-y-2">
               {displayCompetitorVulns.map((vuln: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-3 bg-[#000000]/40 border border-[#F59E0B]/10">
-                  <p className="text-xs text-[#FEF3C7] leading-relaxed">{vuln}</p>
+                <div key={idx} className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38]">
+                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{vuln}</p>
                 </div>
               ))}
             </div>
@@ -532,8 +532,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                   <Palette size={16} className="text-[#C084FC]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Proven Ad Hooks & Visual Angles</h3>
-                  <p className="text-xs text-[#94A3B8]">High-converting creative concepts for max CTR</p>
+                  <h3 className="text-lg font-semibold tracking-tight text-[#F1F1F3]">Proven Ad Hooks & Visual Angles</h3>
+                  <p className="text-sm text-[#8B8B9E]">High-converting creative concepts for max CTR</p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-[#A855F7]/10 border border-[#A855F7]/20 text-[10px] text-[#C084FC]">
@@ -542,8 +542,8 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {displayAdHooks.map((hook: string, idx: number) => (
-                <div key={idx} className="rounded-lg p-3 bg-[#000000]/40 border border-[#A855F7]/10">
-                  <p className="text-xs text-[#E9D5FF] leading-relaxed">{hook}</p>
+                <div key={idx} className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38]">
+                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{hook}</p>
                 </div>
               ))}
             </div>

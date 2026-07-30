@@ -14,7 +14,6 @@ export const useCampaignResult = (campaignId: string | undefined) => {
 
   // Transient UI-only State
   const decisionMadeRef = useRef(false);
-  const humanReviewShownRef = useRef(false);
   const [showHumanReview, setShowHumanReview] = useState(false);
   const [isMinimized, setIsMinimized] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');

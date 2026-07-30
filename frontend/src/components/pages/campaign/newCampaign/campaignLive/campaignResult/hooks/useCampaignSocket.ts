@@ -81,7 +81,8 @@ export const useCampaignSocket = ({
               type: 'FOCUS_GROUP_COMPLETE',
               payload: {
                 report: data.report,
-                participants: data.participants,
+                hashKey: data.hashKey,
+                score: data.score,
               },
             });
             toast.success('Focus Group Simulation Completed!');
@@ -95,7 +96,7 @@ export const useCampaignSocket = ({
             const res = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
             if (res.data?.data && mounted) {
               dispatch({
-                type: 'CAMPAIGN_LOAD_SUCCESS',
+                type: 'CAMPAIGN_LOADED',
                 payload: res.data.data,
               });
             }
@@ -112,7 +113,7 @@ export const useCampaignSocket = ({
             const res = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
             if (res.data?.data && mounted) {
               dispatch({
-                type: 'CAMPAIGN_LOAD_SUCCESS',
+                type: 'CAMPAIGN_LOADED',
                 payload: res.data.data,
               });
             }
