@@ -65,8 +65,8 @@ def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
 
     raw_metrics = data.get("success_metrics") or data.get("kpis") or []
     comp_diff = str(data.get("competitive_differentiation") or "N/A")[:100]
-    inf_goal = str(data.get("inferred_goal") or "").strip()
-    res_found = bool(data.get("research_foundation"))
+    res_foundation = data.get("research_foundation", {}) if isinstance(data, dict) else {}
+    res_found = bool(res_foundation)
     exec_plan = bool(data.get("execution"))
 
     field_presence = {
@@ -83,6 +83,10 @@ def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
         "inferred_goal": bool(inf_goal),
         "research_foundation": res_found,
         "execution": exec_plan,
+        "customer_voice_insights": bool(res_foundation.get("customer_voice_insights")),
+        "competitor_vulnerabilities": bool(res_foundation.get("competitor_vulnerabilities")),
+        "proven_ad_hooks": bool(res_foundation.get("proven_ad_hooks")),
+        "brand_dna": bool(res_foundation.get("brand_dna")),
     }
 
     return StrategySummary(
@@ -94,6 +98,10 @@ def build_strategy_summary(strategy_raw: Any) -> StrategySummary:
         timeline_summary=timeline_summary,
         competitive_differentiation=comp_diff,
         inferred_goal=inf_goal,
+        customer_voice_insights=[str(q)[:100] for q in (res_foundation.get("customer_voice_insights") or [])[:3]],
+        competitor_vulnerabilities=[str(v)[:100] for v in (res_foundation.get("competitor_vulnerabilities") or [])[:3]],
+        proven_ad_hooks=[str(h)[:100] for h in (res_foundation.get("proven_ad_hooks") or [])[:3]],
+        brand_dna=res_foundation.get("brand_dna"),
         research_foundation_present=res_found,
         execution_present=exec_plan,
         field_presence=field_presence,

@@ -49,6 +49,10 @@ def build_research_summary(research_raw: Any) -> ResearchSummary:
         "pain_points": bool(audience.get("pain_points")),
         "motivations": bool(audience.get("motivations")),
         "preferred_channels": bool(audience.get("preferred_channels")),
+        "customer_voice_insights": bool(data.get("customer_voice_insights")),
+        "competitor_vulnerabilities": bool(data.get("competitor_vulnerabilities")),
+        "proven_ad_hooks": bool(data.get("proven_ad_hooks")),
+        "brand_dna": bool(data.get("brand_dna")),
         "market_opportunities": bool(data.get("market_opportunities")),
         "recommended_approach": bool(data.get("recommended_approach")),
     }
@@ -64,5 +68,9 @@ def build_research_summary(research_raw: Any) -> ResearchSummary:
         motivations=[str(m)[:80] for m in (audience.get("motivations") or [])[:3]],
         preferred_channels=[str(ch)[:40] for ch in (audience.get("preferred_channels") or [])[:3]],
         recommended_approach=rec_approach[:100],
+        customer_voice_insights=[str(q)[:100] for q in (data.get("customer_voice_insights") or [])[:3]],
+        competitor_vulnerabilities=[str(v)[:100] for v in (data.get("competitor_vulnerabilities") or [])[:3]],
+        proven_ad_hooks=[str(h)[:100] for h in (data.get("proven_ad_hooks") or [])[:3]],
+        brand_dna=data.get("brand_dna"),
         field_presence=field_presence,
     )

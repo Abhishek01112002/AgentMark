@@ -18,6 +18,10 @@ class ResearchSummary(BaseModel):
     motivations: List[str] = Field(default_factory=list, alias="mot")
     preferred_channels: List[str] = Field(default_factory=list, alias="chan")
     recommended_approach: str = Field("N/A", alias="rec")
+    customer_voice_insights: List[str] = Field(default_factory=list, alias="cvi")
+    competitor_vulnerabilities: List[str] = Field(default_factory=list, alias="cv")
+    proven_ad_hooks: List[str] = Field(default_factory=list, alias="pah")
+    brand_dna: Optional[Dict[str, Any]] = Field(None, alias="dna")
     field_presence: Dict[str, bool] = Field(default_factory=dict, alias="fp")
 
 
@@ -32,6 +36,10 @@ class StrategySummary(BaseModel):
     timeline_summary: str = Field("4 phases", alias="time")
     competitive_differentiation: str = Field("N/A", alias="diff")
     inferred_goal: str = Field("", alias="goal")
+    customer_voice_insights: List[str] = Field(default_factory=list, alias="cvi")
+    competitor_vulnerabilities: List[str] = Field(default_factory=list, alias="cv")
+    proven_ad_hooks: List[str] = Field(default_factory=list, alias="pah")
+    brand_dna: Optional[Dict[str, Any]] = Field(None, alias="dna")
     research_foundation_present: bool = Field(False, alias="rf")
     execution_present: bool = Field(False, alias="ex")
     field_presence: Dict[str, bool] = Field(default_factory=dict, alias="fp")
