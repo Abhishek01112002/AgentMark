@@ -45,6 +45,16 @@ AUDIENCE INTELLIGENCE (from Research Agent):
 - Market Growth Rate: {growth_rate}
 - Differentiation Opportunity: {differentiation_opportunity}
 
+OFFICIAL BRAND DNA & GROUNDED RESEARCH INTELLIGENCE:
+- Grounded Brand Value Prop & Website DNA:
+{brand_dna_context}
+- Customer Voice & Pain Points (Verbatim Quotes):
+{customer_voice_insights}
+- Competitor Vulnerabilities & Battle Angles:
+{competitor_vulnerabilities}
+- Proven Ad Hooks & Creative Visual Angles:
+{proven_ad_hooks}
+
 COPY CONTEXT (for text overlay alignment):
 {copy_overlay_context}
 

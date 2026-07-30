@@ -198,6 +198,26 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
       </div>
 
+      {/* Section Quick Nav */}
+      {hasRealData && (
+        <div className="overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 min-w-max">
+            {sectionNav.map((s) => (
+              <a
+                key={s.id}
+                href={`#research-${s.id}`}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1E1E2A] border border-[#2A2A38] text-xs text-[#8B8B9E] hover:bg-[#2A2A38] hover:text-[#F1F1F3] transition-all shrink-0"
+              >
+                {s.label}
+                {s.count !== undefined && (
+                  <span className="px-1.5 py-0.5 rounded bg-[#111118] text-[10px] text-[#6B6B80]">{s.count}</span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Grounded Brand DNA & Official Website Intelligence Banner */}
       {brandDnaData && (
         <div className="rounded-xl bg-gradient-to-br from-[#111118] to-[#0F1A14] border border-[#4edea3]/20 p-5 md:p-6 relative overflow-hidden shadow-[0_0_30px_rgba(78,222,163,0.06)]">
@@ -293,7 +313,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
       {/* Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         {/* Market Trends */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+        <div id="research-market-trends" className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0EA5E9] to-transparent" />
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
             <TrendingUp size={20} className="text-[#0EA5E9]" />
@@ -319,7 +339,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Competitor Analysis */}
-        <div className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+        <div id="research-competitors" className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
           <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F43F5E] to-transparent" />
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2.5 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
             <Compass size={20} className="text-[#F43F5E]" />

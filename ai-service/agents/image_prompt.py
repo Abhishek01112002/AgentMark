@@ -435,6 +435,11 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         market_trends=json.dumps(research_context["market_trends"], indent=2),
         growth_rate=research_context["growth_rate"],
         differentiation_opportunity=research_context["differentiation_opportunity"],
+        # Grounded Brand DNA & Research Intelligence
+        brand_dna_context=json.dumps(research_context.get("brand_dna"), indent=2) if research_context.get("brand_dna") else "None provided",
+        customer_voice_insights=json.dumps(research_context.get("customer_voice_insights", []), indent=2),
+        competitor_vulnerabilities=json.dumps(research_context.get("competitor_vulnerabilities", []), indent=2),
+        proven_ad_hooks=json.dumps(research_context.get("proven_ad_hooks", []), indent=2),
         # Copy overlay context
         copy_overlay_context=copy_overlay_context,
         # Derived counts
