@@ -445,7 +445,13 @@ const CampaignLivePage: React.FC = () => {
 
               // Set overall quality score (normalized out of 10)
               let calculatedOverall: number | null = null;
-              if (reviewData.overall_quality_score) {
+              const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
+                (v): v is number => typeof v === 'number' && v > 0
+              );
+              if (validVals.length > 0) {
+                const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
+              } else if (reviewData.overall_quality_score) {
                 const os = Number(reviewData.overall_quality_score);
                 calculatedOverall = os > 10 ? os / 10 : os;
               } else if (reviewData.overall?.quality_score) {
@@ -453,14 +459,6 @@ const CampaignLivePage: React.FC = () => {
                 calculatedOverall = os > 10 ? os / 10 : os;
               } else if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
                 calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
-              } else {
-                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
-                  (v): v is number => typeof v === 'number' && v > 0
-                );
-                if (validVals.length > 0) {
-                  const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
-                  calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
-                }
               }
               if (calculatedOverall !== null) {
                 setQualityScore(calculatedOverall);

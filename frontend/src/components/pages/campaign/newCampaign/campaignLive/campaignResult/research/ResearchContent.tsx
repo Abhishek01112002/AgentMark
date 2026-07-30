@@ -1,6 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette, Globe, Copy } from 'lucide-react';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import { Search, TrendingUp, ArrowUpRight, Compass, Users, Rocket, Workflow, AlertTriangle, MessageCircle, Crosshair, Palette, Globe, Zap, Radio, Hash, ExternalLink } from 'lucide-react';
 import { ChannelIcon } from '../../../../../../shared/ChannelIcon';
 
 interface ResearchContentProps {
@@ -41,8 +40,6 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         { title: 'Zero-Party Data Collection', desc: 'Shift towards direct consumer engagement for privacy compliance.' },
         { title: 'Hyper-Personalization', desc: 'Dynamic content generation based on real-time user behavior.' },
       ];
-  const tam = marketAnalysis?.total_addressable_market || '$14.2B Global TAM';
-  const growthRate = marketAnalysis?.growth_rate || '18.5% YoY';
 
   const rawCompetitors = competitorAnalysis?.top_competitors || competitorAnalysis?.competitors;
   const competitors = (Array.isArray(rawCompetitors) && rawCompetitors.length > 0)
@@ -157,25 +154,6 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
     };
   }, [classifiedSources]);
 
-  const copyToClipboard = useCallback(async (text: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(`${label} copied`);
-    } catch {
-      toast.error('Failed to copy');
-    }
-  }, []);
-
-  const sectionNav = [
-    { id: 'market-trends', label: 'Market Trends', count: marketTrends.length },
-    { id: 'competitors', label: 'Competitors', count: competitors.length },
-    { id: 'audience', label: 'Audience' },
-    { id: 'customer-voice', label: 'Customer Voice', count: displayCustomerVoice.length },
-    { id: 'vulnerabilities', label: 'Vulnerabilities', count: displayCompetitorVulns.length },
-    { id: 'ad-hooks', label: 'Ad Hooks', count: displayAdHooks.length },
-    { id: 'sources', label: 'Sources', count: classifiedSources.length },
-  ];
-
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Page Header (Apple Pro Luxury Header) */}
@@ -199,26 +177,6 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
           </div>
         </div>
       </div>
-
-      {/* Section Quick Nav */}
-      {hasRealData && (
-        <div className="overflow-x-auto no-scrollbar">
-          <div className="flex gap-2 min-w-max">
-            {sectionNav.map((s) => (
-              <a
-                key={s.id}
-                href={`#research-${s.id}`}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#1E1E2A] border border-[#2A2A38] text-xs text-[#8B8B9E] hover:bg-[#2A2A38] hover:text-[#F1F1F3] transition-all shrink-0"
-              >
-                {s.label}
-                {s.count !== undefined && (
-                  <span className="px-1.5 py-0.5 rounded bg-[#111118] text-[10px] text-[#6B6B80]">{s.count}</span>
-                )}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Grounded Brand DNA & Official Website Intelligence Banner */}
       {brandDnaData && (
@@ -274,77 +232,42 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
       )}
 
-      {/* Market Overview Cards */}
-      {(tam || growthRate) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {tam && (
-            <div className="group relative bg-gradient-to-br from-[#14141C] to-[#0E0E16] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#6366F1]/30 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] hover:scale-[1.015] transition-all duration-400 shadow-[0_0_20px_rgba(99,102,241,0.06)]">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'radial-gradient(600px circle at 50% -20%, rgba(99,102,241,0.08), transparent)' }} />
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#6366F1]/20 via-[#6366F1]/80 to-[#6366F1]/20" />
-              <div className="relative p-5 md:p-6">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-6 h-6 rounded-md bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center group-hover:bg-[#6366F1]/15 group-hover:scale-110 transition-all duration-300">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
-                  </div>
-                  <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#6366F1]/60">TAM</span>
-                </div>
-                <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Total Addressable Market</h4>
-                <p className="text-base md:text-lg font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{tam}</p>
-              </div>
-            </div>
-          )}
-          {growthRate && (
-            <div className="group relative bg-gradient-to-br from-[#14141C] to-[#0E0E16] border border-[#2A2A38] rounded-xl overflow-hidden hover:border-[#4edea3]/30 hover:shadow-[0_0_30px_rgba(78,222,163,0.15)] hover:scale-[1.015] transition-all duration-400 shadow-[0_0_20px_rgba(78,222,163,0.06)]">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: 'radial-gradient(600px circle at 50% -20%, rgba(78,222,163,0.08), transparent)' }} />
-              <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-[#4edea3]/20 via-[#4edea3]/80 to-[#4edea3]/20" />
-              <div className="relative p-5 md:p-6">
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-6 h-6 rounded-md bg-[#4edea3]/10 border border-[#4edea3]/20 flex items-center justify-center group-hover:bg-[#4edea3]/15 group-hover:scale-110 transition-all duration-300">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4edea3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                  </div>
-                  <span className="text-[9px] uppercase font-semibold tracking-[0.12em] text-[#4edea3]/60">CAGR</span>
-                </div>
-                <h4 className="text-xs font-medium text-[#7A7A8E] mb-1.5">Market Growth Rate</h4>
-                <p className="text-base md:text-lg font-bold tracking-tight group-hover:text-white transition-colors duration-300" style={{ fontFamily: 'Inter, sans-serif', color: '#DDDDE5' }}>{growthRate}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Dashboard Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
         {/* Market Trends */}
-        <div id="research-market-trends" className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#0EA5E9] to-transparent" />
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <TrendingUp size={20} className="text-[#0EA5E9]" />
+        <div id="research-market-trends" className="rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#0EA5E9]/20 via-[#0EA5E9]/80 to-transparent" />
+          <h3 className="text-lg font-semibold mb-5 flex items-center gap-2.5 text-[#F1F1F3]">
+            <div className="w-7 h-7 rounded-lg bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center">
+              <TrendingUp size={15} className="text-[#38BDF8]" />
+            </div>
             Market Trends
           </h3>
-          <ul className="space-y-4">
+          <div className="space-y-4">
             {marketTrends.slice(0, 5).map((trend: any, idx: number) => (
-              <li key={idx} className="flex items-start gap-3 group">
-                <ArrowUpRight size={18} className="text-[#0EA5E9] mt-0.5 flex-shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                <div className="min-w-0">
-                  <h4 className="text-sm font-semibold mb-1 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {trend.title || trend.name || trend}
-                  </h4>
-                  {trend.desc && (
-                    <p className="text-sm leading-relaxed text-[#7A7A8E]" style={{ fontFamily: 'Inter, sans-serif' }}>
-                      {trend.desc || trend.description}
-                    </p>
-                  )}
+              <div key={idx} className="group relative pl-4 py-2 hover:bg-[#0A0A0F] rounded-lg transition-all">
+                <div className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full bg-[#0EA5E9]/20 group-hover:bg-[#0EA5E9]/60 transition-colors" />
+                <div className="flex items-start gap-3">
+                  <ArrowUpRight size={15} className="text-[#0EA5E9]/60 mt-0.5 shrink-0 group-hover:text-[#0EA5E9] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold text-[#F1F1F3]">{trend.title || trend.name || trend}</h4>
+                    {trend.desc && (
+                      <p className="text-sm leading-relaxed text-[#7A7A8E] mt-0.5">{trend.desc || trend.description}</p>
+                    )}
+                  </div>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
 
         {/* Competitor Analysis */}
-        <div id="research-competitors" className="card-elevate rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F43F5E] to-transparent" />
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2.5 text-[#F1F1F3]" style={{ fontFamily: 'Inter, sans-serif' }}>
-            <Compass size={20} className="text-[#F43F5E]" />
+        <div id="research-competitors" className="rounded-xl p-5 md:p-6 relative overflow-hidden" style={{ background: '#111118', border: '1px solid #2A2A38' }}>
+          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#F43F5E]/20 via-[#F43F5E]/80 to-transparent" />
+          <h3 className="text-lg font-semibold mb-5 flex items-center gap-2.5 text-[#F1F1F3]">
+            <div className="w-7 h-7 rounded-lg bg-[#F43F5E]/10 border border-[#F43F5E]/20 flex items-center justify-center">
+              <Compass size={15} className="text-[#FB7185]" />
+            </div>
             Competitor Landscape
           </h3>
           <div className="space-y-4">
@@ -429,7 +352,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               </div>
             )}
             {differentiationOpp && (
-              <div className="mt-4 p-3 rounded-lg bg-[#F43F5E]/5 border border-[#F43F5E]/15">
+              <div className="mt-4 rounded-lg p-3.5 bg-[#F43F5E]/5 border border-[#F43F5E]/15 hover:bg-[#F43F5E]/10 hover:border-[#F43F5E]/30 transition-all">
                 <span className="text-xs font-semibold text-[#FDA4AF] block mb-1">Differentiation Opportunity</span>
                 <p className="text-xs text-[#DDDDE5] leading-relaxed">{differentiationOpp}</p>
               </div>
@@ -438,9 +361,9 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
         </div>
 
         {/* Audience Insights (Full Width) */}
-        <div id="research-audience" className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(24,20,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.15)' }}>
+        <div id="research-audience" className="rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(24,20,17,0.95) 100%)', border: '1px solid rgba(245,158,11,0.15)' }}>
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#F59E0B]/4 via-transparent to-[#F97316]/2 pointer-events-none" />
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#F59E0B] via-[#FBBF24] to-transparent" />
+          <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#F59E0B]/20 via-[#F59E0B]/80 to-transparent" />
           <div className="flex items-center gap-2.5 mb-5">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F59E0B]/20 to-[#F97316]/10 flex items-center justify-center shrink-0 border border-[#F59E0B]/20">
               <Users size={16} className="text-[#FBBF24]" />
@@ -453,7 +376,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             {/* Pain Points */}
             <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(244,63,94,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(244,63,94,0.1)' }}>
               <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #F43F5E, transparent)' }} />
-              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FB7185] mb-3">Pain Points</h4>
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FB7185] mb-3 flex items-center gap-2"><AlertTriangle size={13} className="text-[#FB7185]" />Pain Points</h4>
               <ul className="space-y-2">
                 {painPoints.slice(0, 5).map((point: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
@@ -467,7 +390,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             {/* Motivations */}
             <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(245,158,11,0.1)' }}>
               <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #F59E0B, transparent)' }} />
-              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FBBF24] mb-3">Motivations</h4>
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#FBBF24] mb-3 flex items-center gap-2"><Zap size={13} className="text-[#FBBF24]" />Motivations</h4>
               <ul className="space-y-2">
                 {motivations.slice(0, 5).map((motivation: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-2.5 text-sm leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
@@ -481,7 +404,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             {/* Preferred Channels */}
             <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(14,165,233,0.1)' }}>
               <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #0EA5E9, transparent)' }} />
-              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#38BDF8] mb-3">Preferred Channels</h4>
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#38BDF8] mb-3 flex items-center gap-2"><Radio size={13} className="text-[#38BDF8]" />Preferred Channels</h4>
               <div className="flex flex-wrap gap-2">
                 {preferredChannels.slice(0, 5).map((channel: string, idx: number) => (
                   <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.18)', color: '#7DD3FC' }}>
@@ -495,7 +418,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
             {/* Language Style */}
             <div className="rounded-xl p-4 md:p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.04) 0%, rgba(17,17,24,0.6) 100%)', border: '1px solid rgba(139,92,246,0.1)' }}>
               <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #8B5CF6, transparent)' }} />
-              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#A78BFA] mb-3">Language Style</h4>
+              <h4 className="text-[11px] font-mono uppercase font-semibold tracking-wider text-[#A78BFA] mb-3 flex items-center gap-2"><Hash size={13} className="text-[#A78BFA]" />Language Style</h4>
               <p className="text-sm leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>
                 {languageStyle}
               </p>
@@ -528,13 +451,9 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                 return (
                   <div
                     key={idx}
-                    onClick={() => copyToClipboard(text, 'Quote')}
-                    className="group rounded-lg p-4 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#F43F5E]/30 hover:bg-[#000000]/60 transition-all"
+                    className="rounded-lg p-4 bg-[#000000]/40 border border-[#2A2A38] hover:border-[#F43F5E]/30 hover:bg-[#000000]/60 transition-all"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm text-[#E4E1E9] leading-relaxed">{text}</p>
-                      <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
-                    </div>
+                    <p className="text-sm text-[#E4E1E9] leading-relaxed">{text}</p>
                   </div>
                 );
               })}
@@ -565,13 +484,9 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               {displayCompetitorVulns.map((vuln: string, idx: number) => (
                 <div
                   key={idx}
-                  onClick={() => copyToClipboard(vuln, 'Vulnerability')}
-                  className="group rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#F59E0B]/30 hover:bg-[#000000]/60 transition-all"
+                  className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] hover:border-[#F59E0B]/30 hover:bg-[#000000]/60 transition-all"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm text-[#E4E1E9] leading-relaxed">{vuln}</p>
-                    <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
-                  </div>
+                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{vuln}</p>
                 </div>
               ))}
             </div>
@@ -601,13 +516,9 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
               {displayAdHooks.map((hook: string, idx: number) => (
                 <div
                   key={idx}
-                  onClick={() => copyToClipboard(hook, 'Hook')}
-                  className="group rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] cursor-pointer hover:border-[#A855F7]/30 hover:bg-[#000000]/60 transition-all"
+                  className="rounded-lg p-3.5 bg-[#000000]/40 border border-[#2A2A38] hover:border-[#A855F7]/30 hover:bg-[#000000]/60 transition-all"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm text-[#E4E1E9] leading-relaxed">{hook}</p>
-                    <Copy size={13} className="text-[#6B6B80] opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />
-                  </div>
+                  <p className="text-sm text-[#E4E1E9] leading-relaxed">{hook}</p>
                 </div>
               ))}
             </div>
@@ -616,23 +527,27 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
         {/* Market Opportunities */}
         {marketOpportunities.length > 0 && (
-          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(16,185,129,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(17,24,20,0.95) 100%)', border: '1px solid rgba(16,185,129,0.15)' }}>
+          <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(17,24,20,0.95) 100%)', border: '1px solid rgba(16,185,129,0.15)', boxShadow: '0 4px 24px rgba(16,185,129,0.06)' }}>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#10B981]/4 via-transparent to-[#059669]/2 pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#10B981] via-[#34D399] to-transparent" />
+            <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#10B981]/20 via-[#10B981]/80 to-transparent" />
             <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 flex items-center justify-center shrink-0 border border-[#10B981]/20">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#10B981]/20 to-[#059669]/10 flex items-center justify-center shrink-0 border border-[#10B981]/20">
                 <Rocket size={16} className="text-[#34D399]" />
               </div>
-              <h3 className="m-0 text-base font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                Market Opportunities
-              </h3>
+              <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Market Opportunities</h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {marketOpportunities.map((opp: string, idx: number) => (
-                <div key={idx} className="rounded-xl p-4 md:p-5 flex items-start gap-3 relative overflow-hidden transition-all duration-200" style={{ background: 'rgba(17,17,24,0.5)', border: '1px solid rgba(16,185,129,0.1)' }}>
+                <div
+                  key={idx}
+                  className="rounded-lg p-4 flex items-start gap-3.5 relative overflow-hidden transition-all duration-200 hover:scale-[1.02]"
+                  style={{ background: 'rgba(17,17,24,0.5)', border: '1px solid rgba(16,185,129,0.1)' }}
+                >
                   <div className="absolute top-0 left-0 w-0.5 bottom-0" style={{ background: 'linear-gradient(180deg, #10B981, transparent)' }} />
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)', color: '#34D399' }}>{idx + 1}</div>
-                  <p className="text-sm leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#E4E1E9' }}>{opp}</p>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))', border: '1px solid rgba(16,185,129,0.2)', color: '#34D399' }}>{String(idx + 1).padStart(2, '0')}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm leading-relaxed text-[#E4E1E9]">{opp}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -641,21 +556,28 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
 
         {/* Recommended Strategic Approach */}
         {recommendedApproach && (
-          <div className="card-elevate rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden shadow-[0_4px_24px_rgba(99,102,241,0.06)]" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(20,17,26,0.95) 100%)', border: '1px solid rgba(99,102,241,0.15)' }}>
+          <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(20,17,26,0.95) 100%)', border: '1px solid rgba(99,102,241,0.15)', boxShadow: '0 4px 24px rgba(99,102,241,0.06)' }}>
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6366F1]/4 via-transparent to-[#818CF8]/2 pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-transparent" />
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#6366F1]/20 to-[#818CF8]/10 flex items-center justify-center shrink-0 border border-[#6366F1]/20">
-                <Workflow size={16} className="text-[#818CF8]" />
+            <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#6366F1]/20 via-[#6366F1]/80 to-transparent" />
+            <div className="relative">
+              <div className="flex items-center gap-2.5 mb-5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366F1]/20 to-[#818CF8]/10 flex items-center justify-center shrink-0 border border-[#6366F1]/20">
+                  <Workflow size={16} className="text-[#818CF8]" />
+                </div>
+                <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Recommended Strategic Approach</h3>
               </div>
-              <h3 className="m-0 text-base font-semibold tracking-tight" style={{ fontFamily: 'Sora, sans-serif', color: '#F1F1F3' }}>
-                Recommended Strategic Approach
-              </h3>
-            </div>
-            <div className="relative pl-5 py-4 pr-2" style={{ borderLeft: '2px solid rgba(99,102,241,0.25)' }}>
-              <p className="text-sm md:text-base leading-relaxed m-0" style={{ fontFamily: 'Sora, sans-serif', color: '#C7C4D7' }}>
-                {recommendedApproach}
-              </p>
+              <div className="flex gap-4">
+                <div className="w-1 shrink-0 rounded-full" style={{ background: 'linear-gradient(180deg, #6366F1, rgba(99,102,241,0.2))' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm md:text-base leading-relaxed text-[#C7C4D7]">{recommendedApproach}</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="flex-1 h-1 rounded-full bg-[#1E1E2A] overflow-hidden">
+                      <div className="h-full w-[85%] rounded-full" style={{ background: 'linear-gradient(90deg, #6366F1, #818CF8)' }} />
+                    </div>
+                    <span className="text-[10px] font-mono text-[#818CF8] shrink-0">AI Confidence: 85%</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -677,7 +599,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 20, background: 'linear-gradient(135deg, rgba(78,222,163,0.08), rgba(78,222,163,0.03))', border: '1px solid rgba(78,222,163,0.15)', boxShadow: '0 0 12px rgba(78,222,163,0.04)' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#4edea3' }} />
+                <span className="animate-pulse" style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: '#4edea3' }} />
                 <span style={{ fontSize: 10, fontWeight: 600, color: '#4edea3', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.02em' }}>Live Grounding</span>
               </div>
             </div>
@@ -734,7 +656,7 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                   return (
                     <div
                       key={i}
-                      className="group relative overflow-hidden transition-all duration-300"
+                      className="group relative overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)]"
                       style={{
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))',
                         border: '1px solid rgba(255,255,255,0.06)',
@@ -806,16 +728,16 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                           </div>
                           <a
                             href={src.url} target="_blank" rel="noopener noreferrer"
+                            className="group/btn opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[rgba(99,102,241,0.1)] hover:border-[rgba(99,102,241,0.25)] hover:text-[#818CF8]"
                             style={{
-                              fontSize: 11.5, fontWeight: 500, color: '#6B6B80', textDecoration: 'none',
+                              fontSize: 11.5, fontWeight: 500, color: '#5A5A6E', textDecoration: 'none',
                               display: 'flex', alignItems: 'center', gap: 5, padding: '4px 12px', borderRadius: 6,
-                              transition: 'all 0.2s ease',
-                              border: '1px solid transparent',
+                              border: '1px solid rgba(255,255,255,0.04)',
+                              background: 'rgba(255,255,255,0.02)',
                             }}
-                            className="hover:border-[rgba(99,102,241,0.15)] hover:bg-[rgba(99,102,241,0.04)] hover:text-[#818CF8]"
                           >
                             Open
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            <ExternalLink size={11} className="transition-transform duration-200 group-hover/btn:translate-x-[2px] group-hover/btn:-translate-y-[2px]" />
                           </a>
                         </div>
                       </div>

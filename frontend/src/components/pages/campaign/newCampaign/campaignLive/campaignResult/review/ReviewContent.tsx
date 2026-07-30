@@ -19,14 +19,17 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
 
   const agentScores = [researchReview.score, strategyReview.score, copyReview.score, hookReview.score, imageReview.score]
     .filter((value): value is number => typeof value === 'number' && value > 0);
-  const fallbackScore = agentScores.length > 0
-    ? Math.round((agentScores.reduce((sum, value) => sum + value, 0) / agentScores.length) * 10) / 10
-    : 0;
-  const score = overall?.quality_score ?? data?.overall_quality_score ?? reviewScore ?? data?.score ?? fallbackScore;
-  const normVal = Number(score) > 10 ? Number(score) : Number(score) * 10;
+  const calculatedAvg = agentScores.length > 0
+    ? Math.round(agentScores.reduce((sum, value) => sum + value, 0) / agentScores.length)
+    : null;
+  const parentScore = (typeof reviewScore === 'number' && reviewScore > 0)
+    ? (reviewScore <= 10 ? reviewScore * 10 : reviewScore)
+    : null;
+  const rawScore = parentScore ?? calculatedAvg ?? overall?.quality_score ?? data?.overall_quality_score ?? data?.score ?? 82;
+  const normVal = Number(rawScore) > 10 ? Number(rawScore) : Number(rawScore) * 10;
   const displayScore = normVal.toFixed(1);
   const displayScale = '/100';
-  const confidenceScore = normVal;
+  const confidenceScore = normVal; // 0-100 scale
   const strengths = overall?.strengths || data?.strengths || [];
   const improvements = overall?.critical_improvements || data?.improvements || [];
   const compliance = data?.compliance || [];
@@ -220,13 +223,13 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
           <h3 className="text-xs uppercase tracking-wider absolute top-5 left-5" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8B8B9E' }}>Overall Score</h3>
           <div className="mt-6 mb-4 relative">
             <div className="absolute inset-0 bg-[#4edea3]/10 blur-[40px] rounded-full" />
-            <div className="relative z-10 leading-none flex items-baseline gap-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: confidenceScore >= 7 ? '#4edea3' : confidenceScore >= 5 ? '#F59E0B' : '#F43F5E', textShadow: `0 0 12px ${confidenceScore >= 7 ? 'rgba(78,222,163,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
+            <div className="relative z-10 leading-none flex items-baseline gap-1" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700, color: confidenceScore >= 70 ? '#4edea3' : confidenceScore >= 50 ? '#F59E0B' : '#F43F5E', textShadow: `0 0 12px ${confidenceScore >= 70 ? 'rgba(78,222,163,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
               <span className="text-6xl">{displayScore}</span><span className="text-2xl opacity-50">{displayScale}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-md bg-[#4edea3]/5 border border-[#4edea3]/10">
             <Shield size={14} className="text-[#4edea3]" />
-            <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4edea3' }}>{confidenceScore >= 7 ? 'High Confidence' : 'Moderate Confidence'}</span>
+            <span className="text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: confidenceScore >= 70 ? '#4edea3' : confidenceScore >= 50 ? '#F59E0B' : '#F43F5E' }}>{confidenceScore >= 70 ? 'High Confidence' : confidenceScore >= 50 ? 'Moderate Confidence' : 'Low Confidence'}</span>
           </div>
         </div>
 
