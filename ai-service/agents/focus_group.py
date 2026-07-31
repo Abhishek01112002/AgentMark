@@ -103,20 +103,33 @@ async def run_focus_group_simulation(
     logger.info("Executing Pre-Flight Simulation Engine (Parallel Agent Orchestration)")
 
     # ── Step 1: Run Isolated Persona Audits + Trust Analyzer + Devil's Advocate in Parallel ──
+    # Limit concurrency to avoid Gemini rate limits (e.g. 15 RPM)
+    sem = asyncio.Semaphore(2)
+
     async def run_isolated_persona(persona: PersonaProfile):
-        return await asyncio.wait_for(
-            _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, sanitized_copy, campaign_context=campaign_context)),
-            timeout=35.0
-        )
+        async with sem:
+            return await asyncio.wait_for(
+                _run_with_retry(lambda: _run_single_persona_critique(client, persona, brand_name, sanitized_copy, campaign_context=campaign_context)),
+                timeout=35.0
+            )
 
     from agents.trust_analyzer import analyze_trust_signals
     from agents.devils_advocate import run_devils_advocate_audit
 
     persona_tasks = [run_isolated_persona(p) for p in personas]
-    trust_task = _run_with_retry(lambda: analyze_trust_signals(copy_output, client))
-    devils_task = _run_with_retry(lambda: run_devils_advocate_audit(copy_output, brand_name, client, campaign_context=campaign_context))
+    
+    async def run_trust_task():
+        async with sem:
+            return await _run_with_retry(lambda: analyze_trust_signals(copy_output, client))
+            
+    async def run_devils_task():
+        async with sem:
+            return await _run_with_retry(lambda: run_devils_advocate_audit(copy_output, brand_name, client, campaign_context=campaign_context))
 
-    # Execute all 3 agent groups concurrently
+    trust_task = run_trust_task()
+    devils_task = run_devils_task()
+
+    # Execute all 3 agent groups concurrently (controlled by semaphore)
     results = await asyncio.gather(*persona_tasks, trust_task, devils_task, return_exceptions=True)
 
     persona_results = results[:-2]

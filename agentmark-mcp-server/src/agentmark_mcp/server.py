@@ -544,6 +544,7 @@ async def get_user_profile(
 @mcp.tool()
 async def list_projects(
     ctx: Context,
+    force_refresh: bool = False,
 ) -> str:
     """
     List all projects created by or belonging to the authenticated user.
@@ -783,6 +784,7 @@ async def delete_project(
 @mcp.tool()
 async def get_dashboard_stats(
     ctx: Context,
+    force_refresh: bool = False,
 ) -> str:
     """
     Get user dashboard stats including total projects, completed campaigns, running campaigns, success rates.
@@ -1065,6 +1067,7 @@ async def mark_all_notifications_read(
 @mcp.tool()
 async def list_api_keys(
     ctx: Context,
+    force_refresh: bool = False,
 ) -> str:
     """
     List developer API keys.
@@ -1100,6 +1103,7 @@ async def list_api_keys(
 @mcp.tool()
 async def get_mcp_activity(
     ctx: Context,
+    force_refresh: bool = False,
 ) -> str:
     """
     Fetch MCP activity logs.

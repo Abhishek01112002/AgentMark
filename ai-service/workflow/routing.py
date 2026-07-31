@@ -66,7 +66,6 @@ def _log_routing(func_name: str, state, decision: str) -> str:
         f"  - revision_counts: {rev_counts}"
     )
     logger.info(log_msg)
-    print(log_msg, flush=True)
     return decision
 
 

@@ -1,18 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GitBranch } from 'lucide-react';
+import { GitBranch, Copy, Check, HelpCircle } from 'lucide-react';
 import { useCampaignResultContext } from '../context/CampaignResultContext';
 import { getStatusStyle, formatGoalLabel, formatIndustryLabel } from '../utils/campaignUtils';
+import toast from 'react-hot-toast';
 
 export const ResultHeader: React.FC = React.memo(() => {
   const navigate = useNavigate();
   const { campaign, campaignId, setShowVariantModal } = useCampaignResultContext();
+  const [copiedId, setCopiedId] = useState(false);
 
   if (!campaign) return null;
 
   const statusStyle = getStatusStyle(campaign.status);
   const headerGoal = formatGoalLabel(campaign.primaryGoal);
   const headerIndustry = formatIndustryLabel(campaign.industry);
+
+  const copyCampaignId = () => {
+    if (!campaignId) return;
+    navigator.clipboard.writeText(campaignId);
+    setCopiedId(true);
+    toast.success('Campaign ID copied to clipboard!');
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  const whatsappMsg = `Hi AgentMark Support, I need help with my campaign "${campaign.name}" (ID: ${campaignId})`;
 
   return (
     <div className="rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl p-4 sm:p-5 shadow-[0_20px_50px_rgba(0,0,0,0.6)] relative overflow-hidden">
@@ -37,6 +49,27 @@ export const ResultHeader: React.FC = React.memo(() => {
             >
               {statusStyle.label}
             </span>
+
+            <button
+              type="button"
+              onClick={copyCampaignId}
+              className="inline-flex items-center gap-1.5 text-xs text-[#94A3B8] hover:text-white transition-all font-mono cursor-pointer bg-white/5 hover:bg-white/10 px-2.5 py-1 rounded-xl border border-white/10"
+              title="Click to copy full Campaign ID"
+            >
+              {copiedId ? <Check size={12} className="text-[#10B981]" /> : <Copy size={12} className="text-[#818CF8]" />}
+              <span>{copiedId ? "Copied ID!" : `ID: ${campaignId?.slice(0, 8).toUpperCase()}...`}</span>
+            </button>
+
+            <a
+              href={`https://wa.me/916366411798?text=${encodeURIComponent(whatsappMsg)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-[#25D366] hover:text-white transition-all font-sora font-medium cursor-pointer bg-[#25D366]/10 hover:bg-[#25D366]/20 px-2.5 py-1 rounded-xl border border-[#25D366]/30"
+              title="Get Support on WhatsApp"
+            >
+              <HelpCircle size={12} />
+              <span>Support</span>
+            </a>
           </div>
 
           <div>

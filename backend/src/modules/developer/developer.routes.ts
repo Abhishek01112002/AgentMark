@@ -26,6 +26,8 @@ import {
   verifyApiKeyScope,
   connectClaudeFlow,
   pingClaude,
+  verifyClaudeConnection,
+  setClaudeSelection,
 } from './developer.controller';
 import { developerConnectionRateLimiter } from '../../middlewares/rate-limit.middleware';
 
@@ -36,6 +38,7 @@ router.use(authMiddleware);
 
 // Exposed before the jwtOnly block to allow both session JWT and program key access
 router.get('/mcp-activity', verifyApiKeyScope, listMcpActivities);
+router.get('/keys', listApiKeys);
 
 // Middleware to enforce that only JWT session authentication is allowed (no API key access to key management)
 const jwtOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
@@ -49,15 +52,16 @@ const jwtOnly = (req: AuthRequest, res: Response, next: NextFunction): void => {
 router.use(jwtOnly);
 
 router.post('/keys', createApiKey);
-router.get('/keys', listApiKeys);
 router.delete('/keys/:id', revokeApiKey);
 
 // Claude Desktop Connection Endpoints
 router.get('/claude-status', developerConnectionRateLimiter, getClaudeStatus);
 router.post('/claude-ping', developerConnectionRateLimiter, pingClaude);
+router.get('/claude-verify', developerConnectionRateLimiter, verifyClaudeConnection);
 router.post('/claude-connect', developerConnectionRateLimiter, connectClaude);
 router.get('/claude-connect-flow', developerConnectionRateLimiter, connectClaudeFlow);
 router.post('/claude-regenerate', developerConnectionRateLimiter, regenerateClaudeKey);
 router.post('/claude-disconnect', developerConnectionRateLimiter, disconnectClaude);
+router.post('/claude-selection', developerConnectionRateLimiter, setClaudeSelection);
 
 export default router;

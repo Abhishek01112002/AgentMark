@@ -395,6 +395,33 @@ async def enhance_prompt_route(payload: EnhancePromptRequest):
                 "- If user gave instructions, incorporate them naturally into the scene"
             )
 
+            combined_text = f"{payload.prompt}\n{payload.user_input or ''}".lower()
+            visual_markers = (
+                "image", "visual", "photo", "photorealistic", "render", "cinematic",
+                "dall-e", "midjourney", "stable diffusion", "aspect ratio", "lens",
+                "lighting", "composition",
+            )
+            is_visual_prompt = any(marker in combined_text for marker in visual_markers)
+            if is_visual_prompt:
+                system_prompt = (
+                    "You are an elite visual creative director. Transform the input into a "
+                    "production-ready image-generation prompt with concrete subject, setting, "
+                    "atmosphere, materials, lighting, composition, color, and quality anchors. "
+                    "Preserve the original intent. Return only the enhanced visual prompt. "
+                    "End with: no text, no words, no letters, no typography, no logos, no watermarks."
+                )
+            else:
+                system_prompt = (
+                    "You are a senior growth strategist and direct-response creative lead. "
+                    "Enhance the user's campaign, ad, or marketing brief so it is clearer, "
+                    "more actionable, and better suited for a multi-agent campaign generator. "
+                    "Preserve the brand, audience, offer, goal, and constraints. Add useful "
+                    "specificity around positioning, audience insight, desired channels, proof, "
+                    "CTA direction, tone, and success criteria only when implied by the input. "
+                    "Do not convert the brief into an image-generation prompt unless explicitly requested. "
+                    "Return only the enhanced campaign/ad prompt text."
+                )
+
             user_message = (
                 f"Original prompt: {payload.prompt}\n"
                 f"User instructions: {payload.user_input or 'None — enhance automatically'}"

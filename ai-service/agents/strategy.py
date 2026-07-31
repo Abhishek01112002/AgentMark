@@ -82,13 +82,18 @@ def _write_fallback_strategy(
     brand_name: str,
     channels: list[str],
     deliverables: list[str],
-    market_analysis: dict,
-    competitor_analysis: dict,
-    audience_insights: dict,
-    market_opportunities: list,
-    recommended_approach: str,
+    research: dict,
 ) -> CampaignState:
     """Write a deterministic research-grounded strategy when the LLM is unavailable."""
+    market_analysis = research.get("market_analysis", {})
+    competitor_analysis = research.get("competitor_analysis", {})
+    audience_insights = research.get("audience_insights", {})
+    market_opportunities = research.get("market_opportunities", [])
+    recommended_approach = research.get("recommended_approach", "")
+    customer_voice_insights = research.get("customer_voice_insights", [])
+    competitor_vulnerabilities = research.get("competitor_vulnerabilities", [])
+    proven_ad_hooks = research.get("proven_ad_hooks", [])
+
     preferred_channels = audience_insights.get("preferred_channels", []) or []
     normalized_preferred = normalize_channel_list(preferred_channels)
     final_channels = channels or normalized_preferred or ["linkedin", "email"]
@@ -188,10 +193,10 @@ def _write_fallback_strategy(
             "market_analysis": market_analysis,
             "competitor_analysis": competitor_analysis,
             "audience_insights": audience_insights,
-            "customer_voice_insights": audience_insights.get("customer_voice_insights", []),
-            "competitor_vulnerabilities": competitor_analysis.get("competitor_vulnerabilities", []),
-            "proven_ad_hooks": audience_insights.get("proven_ad_hooks", []),
-            "brand_dna": getattr(state, "brand_dna", None),
+            "customer_voice_insights": customer_voice_insights,
+            "competitor_vulnerabilities": competitor_vulnerabilities,
+            "proven_ad_hooks": proven_ad_hooks,
+            "brand_dna": getattr(state, "brand_dna", None) or research.get("brand_dna", None),
             "market_opportunities": market_opportunities,
             "recommended_approach": recommended_approach,
         },
@@ -416,11 +421,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             brand_name,
             channels,
             deliverables,
-            market_analysis,
-            competitor_analysis,
-            audience_insights,
-            market_opportunities,
-            recommended_approach,
+            research,
         )
     
     # ========== STEP 4: ENHANCE TIMELINE WITH DATES ==========

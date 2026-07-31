@@ -1,5 +1,8 @@
 import { Response, NextFunction, Request } from 'express';
 import crypto from 'crypto';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
 import { z } from 'zod';
 import type { Server as SocketIOServer } from 'socket.io';
 import { AuthRequest } from '../../middlewares/auth.middleware';
@@ -943,6 +946,86 @@ const updateCreativeHookSchema = z.object({
   })).min(2).max(3).optional(),
 });
 
+const parseAIOutputs = (raw: any): Record<string, any> => {
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return raw as Record<string, any>;
+};
+
+const sanitizeExportName = (name: string): string =>
+  name.replace(/[^a-z0-9._-]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'campaign';
+
+const getOwnedCampaignForRead = async (campaignId: string, userId: string) => {
+  return prisma.campaign.findFirst({
+    where: { id: campaignId, project: { userId } },
+    include: { project: { select: { id: true, name: true, userId: true } } },
+  });
+};
+
+const buildCampaignExportPayload = (campaign: any) => {
+  const aiOutputs = parseAIOutputs(campaign.aiOutputs);
+  return {
+    campaign: {
+      id: campaign.id,
+      name: campaign.name,
+      brandName: campaign.brandName,
+      industry: campaign.industry,
+      primaryGoal: campaign.primaryGoal,
+      targetAudience: campaign.targetAudience,
+      brandVoice: campaign.brandVoice,
+      status: campaign.status,
+      reviewScore: campaign.reviewScore,
+      createdAt: campaign.createdAt,
+      updatedAt: campaign.updatedAt,
+    },
+    outputs: aiOutputs,
+  };
+};
+
+const pdfEscape = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
+const buildMinimalPdf = (title: string, lines: string[]): Buffer => {
+  const pageLines = [title, '', ...lines].slice(0, 42);
+  const content = [
+    'BT',
+    '/F1 12 Tf',
+    '50 780 Td',
+    ...pageLines.flatMap((line, index) => [
+      index === 0 ? '/F1 16 Tf' : '/F1 10 Tf',
+      `(${pdfEscape(line.slice(0, 105))}) Tj`,
+      '0 -18 Td',
+    ]),
+    'ET',
+  ].join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Length ${Buffer.byteLength(content, 'utf8')} >>\nstream\n${content}\nendstream`,
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((obj, index) => {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'));
+    pdf += `${index + 1} 0 obj\n${obj}\nendobj\n`;
+  });
+  const xrefOffset = Buffer.byteLength(pdf, 'utf8');
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return Buffer.from(pdf, 'utf8');
+};
+
 export const generateCopyVariant = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { id } = req.params;
   try {
@@ -1789,6 +1872,117 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
   } catch (err) {
     next(err);
   }
+};
+
+export const exportCampaignJson = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaign = await getOwnedCampaignForRead(req.params.id, req.userId!);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    const payload = buildCampaignExportPayload(campaign);
+    const exportDir = path.join(os.tmpdir(), 'agentmark-exports');
+    await fs.mkdir(exportDir, { recursive: true });
+    const fileName = `${sanitizeExportName(campaign.name)}-${campaign.id}.json`;
+    const filePath = path.join(exportDir, fileName);
+    await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8');
+
+    res.json({
+      success: true,
+      campaignId: campaign.id,
+      fileName,
+      filePath,
+      export: payload,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const exportCampaignPdf = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaign = await getOwnedCampaignForRead(req.params.id, req.userId!);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+
+    const payload = buildCampaignExportPayload(campaign);
+    const publisher = payload.outputs.publisher_output || {};
+    const lines = [
+      `Campaign ID: ${campaign.id}`,
+      `Brand: ${campaign.brandName || 'N/A'}`,
+      `Industry: ${campaign.industry}`,
+      `Goal: ${campaign.primaryGoal}`,
+      `Status: ${campaign.status}`,
+      `Review Score: ${campaign.reviewScore ?? 'N/A'}`,
+      `Executive Summary: ${publisher.executive_summary || 'N/A'}`,
+      `Publishing Decision: ${publisher.publishing_decision || 'N/A'}`,
+    ];
+    const exportDir = path.join(os.tmpdir(), 'agentmark-exports');
+    await fs.mkdir(exportDir, { recursive: true });
+    const fileName = `${sanitizeExportName(campaign.name)}-${campaign.id}.pdf`;
+    const filePath = path.join(exportDir, fileName);
+    await fs.writeFile(filePath, buildMinimalPdf(campaign.name, lines));
+
+    res.json({
+      success: true,
+      campaignId: campaign.id,
+      fileName,
+      filePath,
+      downloadUrl: filePath,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPublishingSchedule = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaign = await getOwnedCampaignForRead(req.params.id, req.userId!);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    const outputs = parseAIOutputs(campaign.aiOutputs);
+    const publisher = outputs.publisher_output || {};
+    const schedule = publisher.content_calendar || outputs.strategy_output?.content_calendar || null;
+    if (!schedule) {
+      return res.status(404).json({
+        error: 'Publishing schedule is not available for this campaign yet.',
+        status: campaign.status,
+      });
+    }
+    res.json({
+      success: true,
+      campaignId: campaign.id,
+      status: campaign.status,
+      schedule,
+      publishingPlan: publisher.publishing_plan || [],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCampaignAnalytics = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const campaign = await getOwnedCampaignForRead(req.params.id, req.userId!);
+    if (!campaign) return res.status(404).json({ error: 'Campaign not found' });
+    const outputs = parseAIOutputs(campaign.aiOutputs);
+    const publisher = outputs.publisher_output || {};
+    res.json({
+      success: true,
+      campaignId: campaign.id,
+      status: campaign.status,
+      reviewScore: campaign.reviewScore,
+      projectedMetrics: publisher.projected_metrics || null,
+      publishingDecision: publisher.publishing_decision || null,
+      channelBreakdown: publisher.projected_metrics?.channel_breakdown || null,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const generateImageAsset = async (_req: AuthRequest, res: Response) => {
+  res.status(501).json({
+    error: 'Direct image asset generation is not implemented in this deployment. Use campaign image_prompt outputs or add a real image provider endpoint before enabling this tool.',
+    code: 'IMAGE_ASSET_GENERATION_UNSUPPORTED',
+  });
 };
 
 

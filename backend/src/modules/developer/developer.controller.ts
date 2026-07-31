@@ -28,10 +28,14 @@ import os from 'os';
 import { exec, execSync } from 'child_process';
 const execPromise = require('util').promisify(exec);
 import {
-  getClaudeConfigPath,
+  resolveActiveClaudeConfig,
   getClaudeConfigStatus,
+  getTruthfulClaudeStatus,
+  runConnectionDiagnostic,
   writeClaudeConfig,
   removeClaudeConfig,
+  ConnectionState,
+  setUserSelection,
 } from '../../utils/claude-config';
 
 /**
@@ -295,23 +299,14 @@ export const getClaudeStatus = async (
         where: { keyHash },
         select: { isActive: true, userId: true },
       });
-      if (!activeKey || !activeKey.isActive) {
-        return { valid: false };
-      }
-      if (activeKey.userId !== userId) {
-        return { valid: false, isOtherUser: true };
-      }
+      if (!activeKey || !activeKey.isActive) return { valid: false };
+      if (activeKey.userId !== userId) return { valid: false, isOtherUser: true };
       return { valid: true };
     };
 
-    const status = await getClaudeConfigStatus(userId, validateKey);
+    const status = await getTruthfulClaudeStatus(userId, validateKey);
     
-    // Save to cache
-    statusCache.set(userId, {
-      status,
-      timestamp: now,
-    });
-
+    statusCache.set(userId, { status, timestamp: now });
     res.json(status);
   } catch (error) {
     next(error);
@@ -336,51 +331,81 @@ export const pingClaude = async (
         where: { keyHash },
         select: { isActive: true, userId: true },
       });
-      if (!activeKey || !activeKey.isActive) {
-        return { valid: false };
-      }
-      if (activeKey.userId !== userId) {
-        return { valid: false, isOtherUser: true };
-      }
+      if (!activeKey || !activeKey.isActive) return { valid: false };
+      if (activeKey.userId !== userId) return { valid: false, isOtherUser: true };
       return { valid: true };
     };
 
-    const status = await getClaudeConfigStatus(userId, validateKey);
+    const status = await getTruthfulClaudeStatus(userId, validateKey);
 
-    // Check actual DB last used key timestamp for this user
-    const mostRecentKey = await prisma.apiKey.findFirst({
-      where: { userId, isActive: true, lastUsedAt: { not: null } },
-      orderBy: { lastUsedAt: 'desc' },
-      select: { lastUsedAt: true },
-    });
-
-    const mcpActivityTime = userLastMcpActivity.get(userId);
-    const dbLastUsedTime = mostRecentKey?.lastUsedAt ? new Date(mostRecentKey.lastUsedAt).getTime() : 0;
-    const effectiveLastActive = Math.max(mcpActivityTime || 0, dbLastUsedTime || 0);
-
-    const now = Date.now();
-    const isLiveConnected = Boolean(effectiveLastActive > 0 && (now - effectiveLastActive < 120_000));
-    
-    const liveStatus = isLiveConnected 
-      ? 'Active (Connected)' 
-      : (status.status === 'Connected' || status.status === 'Configuration Outdated')
-      ? 'Configured (Idle)'
-      : 'Disconnected';
-
-    const message = isLiveConnected
-      ? 'Verified live telemetry: MCP server is active & processing tool calls.'
-      : status.status === 'Connected'
-      ? 'Configuration verified on disk. Awaiting first tool command from Claude Desktop.'
-      : status.error || 'Claude Desktop configuration not found or inactive.';
+    const MESSAGE_BY_STATE: Record<ConnectionState, string> = {
+      CONNECTED: `Claude Desktop connection verified. ${status.registeredToolCount} AgentMark tools discovered.`,
+      TOOLS_DISCOVERED: 'Claude requested the AgentMark tool catalog. Finalizing connection verification.',
+      HANDSHAKE_VERIFIED: 'Claude connected to the AgentMark MCP server. Verifying available tools.',
+      WAITING_FOR_CLAUDE: 'Configuration is valid. Waiting for Claude Desktop to initialize the AgentMark MCP server.',
+      CONFIGURED: 'AgentMark has been added to Claude Desktop configuration. Connection has not yet been verified.',
+      NOT_CONFIGURED: 'AgentMark is not configured in Claude Desktop.',
+      DISCONNECTED: `Connection lost: ${status.disconnectReason || 'Claude Desktop closed or MCP server stopped.'}`,
+      SERVER_START_FAILED: 'MCP server process failed to start. Check server logs.',
+      ERROR: `Error: ${status.errorMessage || 'Unknown error'}`,
+    };
 
     res.json({
-      success: isLiveConnected,
-      liveStatus,
-      isLiveConnected,
-      lastActiveAt: effectiveLastActive > 0 ? new Date(effectiveLastActive).toISOString() : null,
-      configStatus: status.status,
-      message,
+      ...status,
+      success: status.state === 'CONNECTED',
+      message: MESSAGE_BY_STATE[status.state],
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -- GET /api/developer/claude-verify ------------------------------------------
+/**
+ * Runs a full 12-stage diagnostic and returns stage-by-stage results.
+ * Never silently repairs; never reports success without evidence.
+ */
+export const verifyClaudeConnection = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.userId!;
+    statusCache.delete(userId);
+
+    const validateKey = async (apiKey: string): Promise<{ valid: boolean; isOtherUser?: boolean }> => {
+      const keyHash = crypto.createHash('sha256').update(apiKey, 'utf8').digest('hex');
+      const activeKey = await prisma.apiKey.findUnique({
+        where: { keyHash },
+        select: { isActive: true, userId: true },
+      });
+      if (!activeKey || !activeKey.isActive) return { valid: false };
+      if (activeKey.userId !== userId) return { valid: false, isOtherUser: true };
+      return { valid: true };
+    };
+
+    const result = await runConnectionDiagnostic(userId, validateKey);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -- POST /api/developer/claude-selection --------------------------------------
+export const setClaudeSelection = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { selectedId } = req.body;
+    if (!selectedId) {
+      res.status(400).json({ error: 'selectedId is required' });
+      return;
+    }
+    await setUserSelection(selectedId);
+    res.json({ success: true, message: 'Claude installation selection saved.' });
   } catch (error) {
     next(error);
   }
@@ -492,7 +517,8 @@ export const regenerateClaudeKey = async (
 ): Promise<void> => {
   try {
     const userId = req.userId!;
-    const configPath = getClaudeConfigPath();
+    const resolution = await resolveActiveClaudeConfig();
+    const configPath = resolution.configPath || 'Unknown';
 
     // Enforce 20 key limit
     const activeKeyCount = await prisma.apiKey.count({
@@ -541,7 +567,8 @@ export const disconnectClaude = async (
 ): Promise<void> => {
   try {
     const userId = req.userId!;
-    const configPath = getClaudeConfigPath();
+    const resolution = await resolveActiveClaudeConfig();
+    const configPath = resolution.configPath || 'Unknown';
 
     // 1. Read existing API key from config before removing it, so we can revoke it in DB
     try {
@@ -621,14 +648,15 @@ export const connectClaudeFlow = async (
     'Connection': 'keep-alive',
   });
 
-  const emit = (step: string, status: 'pending' | 'success' | 'failed', message: string, data?: any) => {
+  const emit = (step: string, status: 'pending' | 'success' | 'failed' | 'waiting', message: string, data?: any) => {
     res.write(`data: ${JSON.stringify({ step, status, message, ...data })}\n\n`);
   };
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   const osType = process.platform;
-  const configPath = getClaudeConfigPath();
+  const resolution = await resolveActiveClaudeConfig();
+  const configPath = resolution.configPath || 'Unknown';
   const configDir = path.dirname(configPath);
   const backupPath = `${configPath}.backup_${Date.now()}`;
   const tempPath = `${configPath}.tmp`;
@@ -873,7 +901,6 @@ export const connectClaudeFlow = async (
         } else if (runningPath) {
           exec(`start "" "${runningPath}"`);
         } else {
-          // Default Store AUMID fallback
           exec('explorer.exe shell:AppsFolder\\Claude_pzs8sxrjxfjjc!Claude');
         }
       } else if (osType === 'darwin') {
@@ -881,13 +908,21 @@ export const connectClaudeFlow = async (
       } else {
         exec('claude &');
       }
-      emit('relaunch', 'success', 'Claude Desktop relaunched successfully');
+      emit('relaunch', 'success', 'Claude Desktop relaunch command sent.');
     } catch (err: any) {
-      emit('relaunch', 'success', 'Claude Desktop relaunch requested (please start manually if needed)');
+      emit('relaunch', 'success', 'Claude Desktop relaunch requested (start manually if needed).');
     }
 
-    // ── STEP 7: COMPLETE ─────────────────────────────────────────────────────
-    emit('complete', 'success', 'AgentMark connected successfully! Claude Desktop has been restarted.');
+    // ── STEP 7: COMPLETE — honest state: WAITING_FOR_CLAUDE ─────────────────
+    // We cannot report CONNECTED here. Config was written and Claude was asked to
+    // start, but we have no MCP protocol evidence yet. The UI will poll
+    // /claude-status and transition from WAITING_FOR_CLAUDE → CONNECTED
+    // once the real initialize + tools/list handshake is observed.
+    emit('complete', 'waiting', [
+      'AgentMark has been added to Claude Desktop configuration.',
+      'Waiting for Claude Desktop to initialize the AgentMark MCP server.',
+      'The connection badge will update automatically once Claude completes the MCP handshake.',
+    ].join(' '));
     statusCache.delete(userId);
   } catch (err: any) {
     emit('merge', 'failed', `Installation failed: ${err.message}`);

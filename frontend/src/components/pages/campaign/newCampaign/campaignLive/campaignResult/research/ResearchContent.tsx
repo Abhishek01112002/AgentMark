@@ -554,27 +554,48 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
           </div>
         )}
 
-        {/* Recommended Strategic Approach */}
+        {/* Recommended Strategic Approach — Premium Hero Card */}
         {recommendedApproach && (
-          <div className="rounded-xl p-5 md:p-6 lg:col-span-2 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(17,17,24,0.95) 0%, rgba(20,17,26,0.95) 100%)', border: '1px solid rgba(99,102,241,0.15)', boxShadow: '0 4px 24px rgba(99,102,241,0.06)' }}>
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#6366F1]/4 via-transparent to-[#818CF8]/2 pointer-events-none" />
-            <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-[#6366F1]/20 via-[#6366F1]/80 to-transparent" />
-            <div className="relative">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366F1]/20 to-[#818CF8]/10 flex items-center justify-center shrink-0 border border-[#6366F1]/20">
-                  <Workflow size={16} className="text-[#818CF8]" />
+          <div className="rounded-xl p-0 lg:col-span-2 relative overflow-hidden shadow-[0_0_60px_rgba(99,102,241,0.1)]" style={{ background: 'linear-gradient(145deg, #0C0C1A 0%, #12101E 40%, #0F0D1A 100%)', border: '1px solid rgba(99,102,241,0.2)' }}>
+            {/* Ambient glow orbs */}
+            <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#6366F1]/10 blur-[100px] pointer-events-none" />
+            <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#F59E0B]/5 blur-[100px] pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[#818CF8]/4 blur-[120px] pointer-events-none" />
+            {/* Premium top border glow */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#818CF8] to-[#F59E0B] opacity-90" />
+            {/* Subtle dot-pattern overlay */}
+            <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #A5B4FC 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+            <div className="relative p-5 md:p-7">
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366F1]/30 to-[#818CF8]/10 flex items-center justify-center shrink-0 border border-[#818CF8]/25 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+                    <Workflow size={18} className="text-[#A5B4FC]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold tracking-tight text-[#F1F1F3] font-sora">Recommended Strategic Approach</h3>
+                    <p className="text-[11px] text-[#6B6B80] mt-0.5">AI-generated go-to-market strategy</p>
+                  </div>
                 </div>
-                <h3 className="text-base font-semibold tracking-tight text-[#F1F1F3]">Recommended Strategic Approach</h3>
+                <div className="px-3 py-1.5 rounded-full bg-gradient-to-r from-[#6366F1]/20 to-[#F59E0B]/10 border border-[#818CF8]/20 text-[10px] font-semibold tracking-wider text-[#A5B4FC] shadow-[0_0_15px_rgba(99,102,241,0.08)] shrink-0">
+                  Strategy
+                </div>
               </div>
-              <div className="flex gap-4">
-                <div className="w-1 shrink-0 rounded-full" style={{ background: 'linear-gradient(180deg, #6366F1, rgba(99,102,241,0.2))' }} />
+              {/* Content area with multi-color accent bar */}
+              <div className="flex gap-5">
+                <div className="w-[3px] shrink-0 rounded-full overflow-hidden relative">
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, #6366F1 0%, #818CF8 35%, #A78BFA 65%, #F59E0B 100%)' }} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm md:text-base leading-relaxed text-[#C7C4D7]">{recommendedApproach}</p>
-                  <div className="mt-4 flex items-center gap-3">
-                    <div className="flex-1 h-1 rounded-full bg-[#1E1E2A] overflow-hidden">
-                      <div className="h-full w-[85%] rounded-full" style={{ background: 'linear-gradient(90deg, #6366F1, #818CF8)' }} />
+                  <p className="text-sm md:text-base leading-[1.8] text-[#D8D4E6] font-sans" style={{ fontFamily: "'Inter', sans-serif", letterSpacing: '0.005em' }}>{recommendedApproach}</p>
+                  <div className="mt-5 flex items-center gap-4">
+                    <div className="flex-1 h-[3px] rounded-full bg-[#1A1A28] overflow-hidden">
+                      <div className="h-full w-[85%] rounded-full bg-gradient-to-r from-[#6366F1] via-[#818CF8] to-[#A78BFA]" />
                     </div>
-                    <span className="text-[10px] font-mono text-[#818CF8] shrink-0">AI Confidence: 85%</span>
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#818CF8]/15 bg-[#6366F1]/8">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#34D399] animate-pulse shrink-0" />
+                      <span className="text-[10px] font-mono font-semibold text-[#A5B4FC]">AI Confidence 85%</span>
+                    </div>
                   </div>
                 </div>
               </div>

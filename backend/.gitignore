@@ -2,3 +2,5 @@ node_modules
 dist
 .env
 *.log
+db_backup.sql
+*.sql.bak

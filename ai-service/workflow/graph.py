@@ -955,8 +955,7 @@ def create_campaign_graph():
     logger.info("✅ Graph with HITL compiled successfully with checkpointer!")
     try:
         compiled_graph = graph.compile(
-            checkpointer=checkpointer,
-            interrupt_before=["human_approval"]
+            checkpointer=checkpointer
         )
     except TypeError:
         compiled_graph = graph.compile(

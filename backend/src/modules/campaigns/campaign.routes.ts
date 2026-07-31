@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middlewares/auth.middleware';
 import { campaignRateLimiter } from '../../middlewares/rate-limit.middleware';
-import { createCampaign, getCampaigns, getCampaign, getCampaignStatus, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, updateCreativeHookMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials } from './campaign.controller';
+import { createCampaign, getCampaigns, getCampaign, getCampaignStatus, deleteCampaign, approveCampaign, enhancePrompt, getMemoryInsights, getProjectMemoryHub, testKey, getActiveCampaigns, getAllCampaigns, generateCopyVariant, updateCopyVariantMeta, updateCreativeHookMeta, saveCopyVersion, getCopyVersions, forkCampaign, resetCampaignRevisions, retryCampaign, compareCampaigns, verifyChannelCredentials, exportCampaignJson, exportCampaignPdf, getPublishingSchedule, getCampaignAnalytics, generateImageAsset } from './campaign.controller';
 
 import { verifyApiKeyScope } from '../developer/developer.controller';
 
@@ -12,6 +12,7 @@ router.use(verifyApiKeyScope);
 
 router.post('/', campaignRateLimiter, createCampaign);
 router.post('/compare', compareCampaigns);
+router.post('/generate-image', generateImageAsset);
 router.post('/:id/verify-channels', verifyChannelCredentials);
 router.post('/verify-channels', verifyChannelCredentials);
 router.post('/test-key', testKey);
@@ -27,6 +28,10 @@ router.patch('/:id/variants/copy', updateCopyVariantMeta);
 router.patch('/:id/hooks/:hookId', updateCreativeHookMeta);
 
 router.get('/:id/status', getCampaignStatus);
+router.get('/:id/export/json', exportCampaignJson);
+router.get('/:id/export/pdf', exportCampaignPdf);
+router.get('/:id/publishing-schedule', getPublishingSchedule);
+router.get('/:id/analytics', getCampaignAnalytics);
 router.get('/:id', getCampaign);
 router.get('/:id/memory-insights', getMemoryInsights);
 router.delete('/:id', deleteCampaign);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Copy, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../../services/api';
 import Sidebar, { SidebarProvider } from '../../shared/sidebar/Sidebar';
@@ -546,14 +546,6 @@ const CampaignHistoryContent: React.FC = () => {
                                 </td>
                                 <td style={{ padding: '16px 20px', textAlign: 'right' }}>
                                   <div className="flex items-center justify-end gap-1">
-                                    <button
-                                      onClick={() => navigate(`/campaign/new?duplicateFromId=${campaign.id}`)}
-                                      className="p-2.5 min-w-[36px] min-h-[36px] flex items-center justify-center rounded transition-colors text-[#8B8B9E] hover:text-[#6366F1] hover:bg-[#1A1A24]"
-                                      title="Clone Campaign"
-                                      style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-                                    >
-                                      <Copy size={16} />
-                                    </button>
                                     <button
                                       onClick={() => {
                                         const inProgress = ['processing', 'awaiting_human_approval', 'running'];

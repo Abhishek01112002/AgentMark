@@ -140,8 +140,8 @@ IMPORTANT:
             if model_inst:
                 return model_inst
 
-            logger.warning("Groq JSON validation failed (%s), returning safe fallback instance", err_msg)
-            return instantiate_fallback_instance(response_model)
+            logger.warning("Groq JSON validation failed (%s), raising for pool retry...", err_msg)
+            raise ValueError(f"json_invalid: Groq output failed validation: {err_msg}")
         except Exception as exc:
             self._raise_typed_error(exc)
 

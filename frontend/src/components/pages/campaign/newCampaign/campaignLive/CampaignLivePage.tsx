@@ -15,7 +15,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { TypewriterText } from './TypewriterText';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Loader2, XCircle, Trash, PenTool, FolderOpen, RotateCcw, AlertTriangle, Copy, Check, HelpCircle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Sidebar, { SidebarProvider } from '../../../../shared/sidebar/Sidebar';
 import TopNav from '../../../../shared/topNav/TopNav';
@@ -153,6 +153,15 @@ const CampaignLivePage: React.FC = () => {
   const { campaignId } = useParams<{ campaignId: string }>();
   const location = useLocation();
   const [creativeHookMatrixEnabled, setCreativeHookMatrixEnabled] = useState(true);
+  const [copiedId, setCopiedId] = useState(false);
+
+  const copyCampaignId = () => {
+    if (!campaignId) return;
+    navigator.clipboard.writeText(campaignId);
+    setCopiedId(true);
+    toast.success('Campaign ID copied to clipboard!');
+    setTimeout(() => setCopiedId(false), 2000);
+  };
 
   const [agents, setAgents] = useState<Agent[]>(() => {
     return buildInitialAgentState(location.state?.initialActiveAgent, true);
@@ -1138,9 +1147,26 @@ const CampaignLivePage: React.FC = () => {
                     <span className="text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace', color: campaignFailed ? '#F43F5E' : '#4edea3' }}>
                       {campaignFailed ? 'Campaign Failed' : 'Campaign Running'}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-[#1f1f25] border border-[#2A2A38] text-xs" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#4A4A5E' }}>
-                      ID: {campaignId?.slice(0, 8).toUpperCase()}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={copyCampaignId}
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#1f1f25] border border-[#2A2A38] hover:border-[#6366F1] text-xs font-mono transition-all cursor-pointer text-[#8B8B9E] hover:text-white"
+                      title="Click to copy full Campaign ID"
+                    >
+                      {copiedId ? <Check size={12} className="text-[#10B981]" /> : <Copy size={12} className="text-[#818CF8]" />}
+                      <span>{copiedId ? "Copied ID!" : `ID: ${campaignId?.slice(0, 8).toUpperCase()}...`}</span>
+                    </button>
+
+                    <a
+                      href={`https://wa.me/916366411798?text=${encodeURIComponent(`Hi AgentMark Support, I need help with my running campaign (ID: ${campaignId})`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#25D366]/10 border border-[#25D366]/30 hover:border-[#25D366] text-xs font-sora transition-all cursor-pointer text-[#25D366] hover:text-white"
+                      title="Get Support on WhatsApp"
+                    >
+                      <HelpCircle size={12} />
+                      <span>Support</span>
+                    </a>
                     {/* Socket connection indicator */}
                     <span
                       className="px-2 py-0.5 rounded text-xs"

@@ -443,3 +443,96 @@ async def get_campaign_status_impl(
         lines.append("\n> **⏳ Campaign is still processing.** Check back in a few minutes.\n")
 
     return "".join(lines)
+
+
+async def revise_creative_hook_matrix_impl(
+    client: AgentMarkClient,
+    campaign_id: str,
+    feedback: str,
+    preserve_hook_ids: Optional[list] = None,
+    wait_for_completion: bool = True,
+    on_progress: Optional[Callable[[str], None]] = None,
+) -> str:
+    """
+    Revise the creative hook matrix for a campaign, with optional polling for completion
+    and preservation of specific pinned/favorite hooks.
+    """
+    try:
+        campaign = await client.get_campaign(campaign_id)
+        current_revs = campaign.get("creativeHookMatrixRevisionCount", 0)
+        if current_revs >= 5:
+            return "❌ Maximum revision limit (5) reached for Creative Hook Matrix."
+    except Exception as exc:
+        logger.warning("Failed to pre-check revision count: %s", exc)
+        
+    if preserve_hook_ids:
+        feedback = f"{feedback}\n\n[SYSTEM INSTRUCTION: You MUST preserve the exact following hook IDs unchanged: {', '.join(preserve_hook_ids)}]"
+        
+    if on_progress:
+        on_progress("[AgentMark] [Revision] Triggering Creative Hook Matrix agent re-run with feedback...")
+        
+    try:
+        await client.post(
+            f"/api/campaigns/{campaign_id}/approve",
+            {
+                "action": "reject",
+                "revisionTarget": "creative_hook_matrix",
+                "feedback": feedback[:2000],
+            }
+        )
+        logger.info("Creative hook revision triggered | campaign=%s", campaign_id)
+    except Exception as exc:
+        logger.error("Failed to trigger creative hook revision: %s", exc)
+        if "400" in str(exc) or "maximum" in str(exc).lower():
+            return "❌ Maximum revisions reached or invalid state for Creative Hook Matrix revision."
+        raise RuntimeError("Failed to trigger creative hook revision: %s" % exc) from exc
+        
+    if not wait_for_completion:
+        return f"✅ Creative Hook Matrix revision triggered in background for campaign {campaign_id}."
+        
+    # Poll for completion
+    max_attempts = max(1, REVISION_TIMEOUT_SECS // POLL_INTERVAL_SECS)
+    consecutive_failures = 0
+    elapsed = 0.0
+    
+    # Store before state for delta
+    ai_outputs_before = _parse_ai_outputs(campaign)
+    matrix_before = ai_outputs_before.get("creative_hook_matrix_output")
+    if isinstance(matrix_before, str):
+        try: matrix_before = json.loads(matrix_before)
+        except Exception: matrix_before = {}
+        
+    for attempt in range(max_attempts):
+        await asyncio.sleep(POLL_INTERVAL_SECS)
+        elapsed += POLL_INTERVAL_SECS
+        
+        try:
+            campaign_after = await client.get_campaign(campaign_id)
+            consecutive_failures = 0
+        except Exception as exc:
+            consecutive_failures += 1
+            if consecutive_failures >= 5:
+                raise RuntimeError("Lost connection while waiting for creative hook revision to complete.") from exc
+            continue
+            
+        status = campaign_after.get("status", "processing").lower()
+        if status in ("awaiting_human_approval", "completed"):
+            if on_progress:
+                on_progress("[AgentMark] [Revision] ✅ Creative Hook Matrix revision complete!")
+                
+            ai_outputs_after = _parse_ai_outputs(campaign_after)
+            matrix_after = ai_outputs_after.get("creative_hook_matrix_output")
+            if isinstance(matrix_after, str):
+                try: matrix_after = json.loads(matrix_after)
+                except Exception: matrix_after = {}
+                
+            from ..formatters.hook_formatter import format_creative_hook_delta
+            return format_creative_hook_delta(matrix_before or {}, matrix_after or {})
+            
+        elif status in ("failed", "error", "cancelled"):
+            error_msg = campaign_after.get("aiError") or "Unknown error during revision"
+            raise RuntimeError("Creative hook revision failed: %s" % error_msg)
+            
+    raise TimeoutError("Creative hook revision did not complete within %d seconds." % REVISION_TIMEOUT_SECS)
+
+

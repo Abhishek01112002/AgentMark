@@ -59,19 +59,20 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
   if (!showGuides && status === 'Connected') {
     return (
       <div className="space-y-6">
-        <div className="p-5 rounded-xl border border-[#10B981]/25 bg-[#10B981]/5 space-y-3">
+        <div className="relative overflow-hidden p-5 rounded-2xl border border-[#10B981]/25 bg-gradient-to-br from-[#10B981]/[0.08] to-[#12121A]/95 backdrop-blur-xl space-y-3 shadow-[0_0_30px_rgba(16,185,129,0.06)]">
+          <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#10B981]/70 to-transparent" />
           <div className="flex items-center justify-between border-b border-[#10B981]/20 pb-3">
             <div className="flex items-center gap-2 text-[#10B981]">
-              <BookOpen size={14} />
-              <h4 className="font-semibold text-xs uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                Integration Active
-              </h4>
+              <div className="w-7 h-7 rounded-lg bg-[#10B981]/15 border border-[#10B981]/25 flex items-center justify-center shrink-0">
+                <BookOpen size={14} />
+              </div>
+              <h4 className="font-semibold text-xs uppercase tracking-wider font-mono">Integration Active</h4>
             </div>
-            <span className="text-[10px] font-mono text-[#10B981] px-2 py-0.5 rounded bg-[#10B981]/10">
+            <span className="text-[10px] font-mono text-[#10B981] px-2 py-0.5 rounded-full bg-[#10B981]/10 border border-[#10B981]/20">
               CONNECTED
             </span>
           </div>
-          <p className="text-xs text-text-secondary leading-relaxed" style={{ color: '#8B8B9E' }}>
+          <p className="text-xs text-[#8B8B9E] leading-relaxed">
             Claude Desktop is configured and ready. Local campaigns, metrics, and MCP operations are linked.
           </p>
           <button
@@ -89,23 +90,29 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
   return (
     <div className="space-y-5">
       {/* Onboarding Checklist Card */}
-      <div className="p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+      <div className="relative overflow-hidden p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#818CF8]/40 via-transparent to-transparent opacity-70" />
         <div className="flex items-center gap-2 border-b border-[#262636] pb-3">
-          <BookOpen size={14} className="text-[#818CF8]" />
+          <div className="w-6 h-6 rounded-lg bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center shrink-0">
+            <BookOpen size={12} className="text-[#818CF8]" />
+          </div>
           <h4 className="font-semibold text-xs uppercase tracking-wider text-[#94A3B8] font-mono">
             Setup Checklist
           </h4>
         </div>
-        
-        <div className="space-y-3">
+
+        <div className="space-y-1">
           {steps.map((s, i) => (
-            <div key={i} className="flex items-start gap-3 text-xs font-sans">
-              <div className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                s.done ? 'bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30' : 'bg-white/5 text-[#94A3B8] border border-white/10'
+            <div key={i} className="relative flex items-start gap-3.5 text-xs font-sans pb-4">
+              {i < steps.length - 1 && (
+                <span className="absolute left-[7.5px] top-6 bottom-0 w-px bg-gradient-to-b from-[#2A2A38] via-[#2A2A38]/60 to-transparent" />
+              )}
+              <div className={`relative z-10 mt-0.5 w-[15px] h-[15px] rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                s.done ? 'bg-gradient-to-br from-[#10B981]/25 to-[#059669]/10 text-[#10B981] border border-[#10B981]/40 shadow-[0_0_8px_rgba(16,185,129,0.2)]' : 'bg-white/5 text-[#94A3B8] border border-white/10'
               }`}>
-                {s.done ? <Check size={10} /> : i + 1}
+                {s.done ? <Check size={9} strokeWidth={3} /> : i + 1}
               </div>
-              <div className="space-y-0.5">
+              <div className="space-y-0.5 min-w-0">
                 <p className={`font-semibold font-sora ${s.done ? 'text-white' : 'text-[#CBD5E1]'}`}>{s.label}</p>
                 <p className="text-[11px] text-[#94A3B8] leading-relaxed">{s.desc}</p>
               </div>
@@ -115,9 +122,12 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
       </div>
 
       {/* Troubleshooting & FAQ Card */}
-      <div className="p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+      <div className="relative overflow-hidden p-6 rounded-2xl border border-white/[0.08] bg-[#12121A]/95 backdrop-blur-2xl space-y-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#F59E0B]/40 via-transparent to-transparent opacity-70" />
         <div className="flex items-center gap-2 border-b border-[#262636] pb-3">
-          <ShieldAlert size={14} className="text-[#F59E0B]" />
+          <div className="w-6 h-6 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/20 flex items-center justify-center shrink-0">
+            <ShieldAlert size={12} className="text-[#FBBF24]" />
+          </div>
           <h4 className="font-semibold text-xs uppercase tracking-wider text-[#94A3B8] font-mono">
             Troubleshooting & FAQ
           </h4>
@@ -125,16 +135,18 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
 
         <div className="space-y-2">
           {faqs.map((faq, idx) => (
-            <div key={idx} className="border border-[#262636] rounded-xl overflow-hidden bg-[#0B0B12]">
+            <div key={idx} className={`border rounded-xl overflow-hidden bg-[#0B0B12] transition-all duration-300 ${openFaq === idx ? 'border-[#818CF8]/30' : 'border-[#262636] hover:border-[#333348]'}`}>
               <button
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className="w-full text-left p-3 flex items-center justify-between text-xs font-semibold font-sora text-white hover:bg-white/[0.02] transition-colors border-none bg-transparent cursor-pointer"
+                className="w-full text-left p-3.5 flex items-center justify-between gap-2 text-xs font-semibold font-sora text-white hover:bg-white/[0.02] transition-colors border-none bg-transparent cursor-pointer"
               >
-                <span className="pr-2">{faq.q}</span>
-                {openFaq === idx ? <ChevronUp size={14} className="text-[#818CF8] shrink-0" /> : <ChevronDown size={14} className="text-[#94A3B8] shrink-0" />}
+                <span className="pr-2 leading-snug">{faq.q}</span>
+                <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 border transition-colors ${openFaq === idx ? 'bg-[#6366F1]/10 border-[#6366F1]/25' : 'border-white/10'}`}>
+                  {openFaq === idx ? <ChevronUp size={12} className="text-[#818CF8]" /> : <ChevronDown size={12} className="text-[#94A3B8]" />}
+                </div>
               </button>
               {openFaq === idx && (
-                <div className="px-3 pb-3 pt-1 text-[11px] text-[#94A3B8] font-sans leading-relaxed border-t border-[#262636]/60">
+                <div className="px-3.5 pb-3.5 pt-1 text-[11px] text-[#94A3B8] font-sans leading-relaxed border-t border-[#262636]/60">
                   {faq.a}
                 </div>
               )}

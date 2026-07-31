@@ -559,9 +559,8 @@ class AgentMarkClient:
         Fetch all focus group personas via GET /api/focus-group/personas.
         """
         raw = await self.get("/api/focus-group/personas")
-        personas = raw.get("personas")
-        if isinstance(personas, list):
-            return personas
+        if isinstance(raw, dict):
+            return raw.get("personas") or []
         if isinstance(raw, list):
             return raw
         return []
@@ -571,9 +570,8 @@ class AgentMarkClient:
         Fetch user notifications via GET /api/notifications.
         """
         raw = await self.get("/api/notifications")
-        notifications = raw.get("notifications")
-        if isinstance(notifications, list):
-            return notifications
+        if isinstance(raw, dict):
+            return raw.get("notifications") or []
         if isinstance(raw, list):
             return raw
         return []
@@ -595,9 +593,8 @@ class AgentMarkClient:
         List developer API keys via GET /api/developer/keys.
         """
         raw = await self.get("/api/developer/keys")
-        keys = raw.get("keys")
-        if isinstance(keys, list):
-            return keys
+        if isinstance(raw, dict):
+            return raw.get("keys") or []
         if isinstance(raw, list):
             return raw
         return []

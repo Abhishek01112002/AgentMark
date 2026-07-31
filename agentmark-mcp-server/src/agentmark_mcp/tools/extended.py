@@ -280,3 +280,97 @@ async def compare_campaigns_impl(
             "Failed to compare campaigns (target: '%s'): %s"
             % (target_campaign_id, exc)
         ) from exc
+
+
+async def get_creative_hook_matrix_impl(
+    client: AgentMarkClient,
+    campaign_id: str,
+    category: Optional[str] = None,
+    min_virality_score: Optional[int] = None,
+    platform: Optional[str] = None,
+    favorites_only: bool = False,
+    output_format: str = "markdown",
+) -> str:
+    logger.info("Fetching creative hook matrix | campaign=%s", campaign_id)
+    try:
+        from ..formatters.hook_formatter import format_creative_hook_matrix
+        
+        status = await client.get_campaign_status(campaign_id)
+        current_outputs = status.get("currentOutputs", {})
+        matrix_output = current_outputs.get("creative_hook_matrix_output")
+        
+        if not matrix_output:
+            campaign_status = status.get("status", "unknown")
+            return "Campaign is currently in state '%s'. Creative Hook Matrix is not yet generated." % campaign_status
+            
+        if isinstance(matrix_output, str):
+            import json
+            try:
+                matrix_output = json.loads(matrix_output)
+            except Exception:
+                return "Error parsing creative hook matrix output."
+                
+        filters = {}
+        if category: filters["category"] = category
+        if min_virality_score is not None: filters["min_virality_score"] = min_virality_score
+        if platform: filters["platform"] = platform
+        if favorites_only: filters["favorites_only"] = favorites_only
+        
+        return format_creative_hook_matrix(matrix_output, filters=filters, output_format=output_format)
+    except Exception as exc:
+        logger.error("get_creative_hook_matrix failed | campaign=%s | error=%s", campaign_id, exc)
+        raise RuntimeError("Failed to retrieve creative hook matrix: %s" % exc) from exc
+
+
+async def toggle_creative_hook_pin_impl(
+    client: AgentMarkClient,
+    campaign_id: str,
+    hook_id: str,
+    action: str,
+) -> Dict[str, Any]:
+    VALID_ACTIONS = {'pin', 'favorite', 'lock', 'approve', 'reject', 'archive'}
+    if action not in VALID_ACTIONS:
+        raise ValueError("Action must be one of %s" % VALID_ACTIONS)
+    
+    logger.info("Toggling hook pin/meta | campaign=%s | hook=%s | action=%s", campaign_id, hook_id, action)
+    try:
+        return await client.update_creative_hook_meta(campaign_id, hook_id, action)
+    except Exception as exc:
+        logger.error("toggle_creative_hook_pin failed | campaign=%s | hook=%s | error=%s", campaign_id, hook_id, exc)
+        raise RuntimeError("Failed to update hook meta: %s" % exc) from exc
+
+
+async def export_creative_hooks_impl(
+    client: AgentMarkClient,
+    campaign_id: str,
+    export_format: str = "csv",
+) -> str:
+    logger.info("Exporting creative hooks | campaign=%s | format=%s", campaign_id, export_format)
+    try:
+        from ..formatters.hook_formatter import export_hooks_csv, export_hooks_ad_script
+        
+        status = await client.get_campaign_status(campaign_id)
+        current_outputs = status.get("currentOutputs", {})
+        matrix_output = current_outputs.get("creative_hook_matrix_output")
+        
+        if not matrix_output:
+            return "No Creative Hook Matrix found to export."
+            
+        if isinstance(matrix_output, str):
+            import json
+            matrix_output = json.loads(matrix_output)
+            
+        if export_format.lower() == "csv":
+            return export_hooks_csv(matrix_output)
+        elif export_format.lower() == "ad_script":
+            return export_hooks_ad_script(matrix_output)
+        elif export_format.lower() == "json":
+            import json
+            return json.dumps(matrix_output, indent=2)
+        else:
+            raise ValueError("Unsupported export format '%s'" % export_format)
+            
+    except Exception as exc:
+        logger.error("export_creative_hooks failed | campaign=%s | error=%s", campaign_id, exc)
+        raise RuntimeError("Failed to export creative hooks: %s" % exc) from exc
+
