@@ -1,387 +1,163 @@
-## Below Project File Structure is just a reference structure of the project not the actual project structure.
+# AgentMark Repository Directory & File Structure
+
+This document provides a complete and accurate reference tree of the **AgentMark** repository.
 
 ```
-/home/tis/MyKarobar/
-├── backend/
-│ ├── drizzle/
-│ │ ├── meta/
-│ │ │ ├── \_journal.json
-│ │ │ ├── 0000_snapshot.json
-│ │ │ ├── 0001_snapshot.json
-│ │ │ ├── 0002_snapshot.json
-│ │ │ ├── 0003_snapshot.json
-│ │ │ ├── 0004_snapshot.json
-│ │ │ ├── 0005_snapshot.json
-│ │ │ └── 0006_snapshot.json
-│ │ ├── 0000_orange_post.sql
-│ │ ├── 0001_omniscient_jack_murdock.sql
-│ │ ├── 0002_nasty_toad.sql
-│ │ ├── 0003_lovely_cloak.sql
-│ │ ├── 0004_overconfident_hannibal_king.sql
-│ │ ├── 0005_fixed_rawhide_kid.sql
-│ │ └── 0006_overrated_red_hulk.sql
-│ ├── migrations/
-│ │ ├── 0008_add_low_stock_threshold.sql
-│ │ ├── 0009_fix_order_items_cascade.sql
-│ │ ├── 0010_add_trial_lifecycle_fields.sql
-│ │ ├── add_admin_tables.sql
-│ │ ├── add_authorised_signatory.sql
-│ │ ├── add_bank_and_invoice_terms.sql
-│ │ ├── add_customer_pan.sql
-│ │ ├── add_gst_tables.sql
-│ │ ├── add_gst_type_to_proforma.sql
-│ │ ├── add_order_items_gst_rate.sql
-│ │ ├── add_payment_method_category.sql
-│ │ ├── add_payment_settings.sql
-│ │ ├── add_phone_to_users.sql
-│ │ ├── add_product_gst_rate.sql
-│ │ ├── add_proforma_invoices.sql
-│ │ ├── add_razorpay_fields.sql
-│ │ ├── add_subscription_razorpay_fields.sql
-│ │ ├── ADMIN_MIGRATION_GUIDE.md
-│ │ ├── create_admin_user.js
-│ │ ├── create_store_settings.sql
-│ │ ├── INDEX.md
-│ │ ├── MIGRATION_PACKAGE_SUMMARY.md
-│ │ ├── QUICK_REFERENCE.md
-│ │ ├── README_ADMIN_MIGRATION.md
-│ │ ├── run_admin_migration.sh
-│ │ ├── run_phone_migration.sh
-│ │ └── verify_admin_migration.sh
-│ ├── src/
-│ │ ├── config/
-│ │ │ ├── env.ts
-│ │ │ ├── firebase.config.ts
-│ │ │ └── index.ts
-│ │ ├── constants/
-│ │ │ ├── messages.ts
-│ │ │ └── roles.ts
-│ │ ├── db/
-│ │ │ ├── migrations/
-│ │ │ │ └── fix-customers-is-deleted.ts
-│ │ │ ├── seeds/
-│ │ │ │ ├── seedCustomers.ts
-│ │ │ │ ├── seedPlans.ts
-│ │ │ │ └── seedProducts.ts
-│ │ │ ├── index.ts
-│ │ │ └── schema.ts
-│ │ ├── middlewares/
-│ │ │ ├── adminAuth.middleware.ts
-│ │ │ ├── auth.middleware.ts
-│ │ │ ├── error.middleware.ts
-│ │ │ └── store.middleware.ts
-│ │ ├── modules/
-│ │ │ ├── admin/
-│ │ │ │ ├── admin.controller.ts
-│ │ │ │ ├── admin.routes.ts
-│ │ │ │ └── admin.services.ts
-│ │ │ ├── auth/
-│ │ │ │ ├── auth.controller.ts
-│ │ │ │ ├── auth.routes.ts
-│ │ │ │ ├── auth.service.ts
-│ │ │ │ ├── auth.types.ts
-│ │ │ │ ├── password-reset.controller.ts
-│ │ │ │ └── password-reset.service.ts
-│ │ │ ├── customer/
-│ │ │ │ ├── customer.controller.ts
-│ │ │ │ ├── customer.routes.ts
-│ │ │ │ └── customer.service.ts
-│ │ │ ├── customize/
-│ │ │ │ ├── customize.controller.ts
-│ │ │ │ ├── customize.routes.ts
-│ │ │ │ └── customize.service.ts
-│ │ │ ├── dashboard/
-│ │ │ │ ├── dashboard.controller.ts
-│ │ │ │ ├── dashboard.routes.ts
-│ │ │ │ ├── dashboard.service.ts
-│ │ │ │ └── dashboard.types.ts
-│ │ │ ├── domain/
-│ │ │ │ ├── domain.controller.ts
-│ │ │ │ ├── domain.routes.ts
-│ │ │ │ ├── domain.service.ts
-│ │ │ │ └── domain.types.ts
-│ │ │ ├── gst/
-│ │ │ │ ├── gst.controller.ts
-│ │ │ │ ├── gst.routes.ts
-│ │ │ │ ├── gst.service.ts
-│ │ │ │ └── gst.types.ts
-│ │ │ ├── merchant/
-│ │ │ │ └── merchant-lifecycle.service.ts
-│ │ │ ├── notification/
-│ │ │ │ ├── notification.controller.ts
-│ │ │ │ ├── notification.routes.ts
-│ │ │ │ └── notification.service.ts
-│ │ │ ├── order/
-│ │ │ │ ├── customer.service.ts
-│ │ │ │ ├── order.controller.ts
-│ │ │ │ ├── order.routes.ts
-│ │ │ │ └── order.service.ts
-│ │ │ ├── payment/
-│ │ │ │ ├── payment.controller.ts
-│ │ │ │ ├── payment.routes.ts
-│ │ │ │ └── payment.service.ts
-│ │ │ ├── product/
-│ │ │ │ ├── product.controller.ts
-│ │ │ │ ├── product.model.ts
-│ │ │ │ ├── product.routes.ts
-│ │ │ │ └── product.service.ts
-│ │ │ ├── proforma/
-│ │ │ │ ├── proforma.controller.ts
-│ │ │ │ ├── proforma.routes.ts
-│ │ │ │ ├── proforma.service.ts
-│ │ │ │ └── proforma.types.ts
-│ │ │ ├── sales/
-│ │ │ │ ├── sales.controller.ts
-│ │ │ │ ├── sales.routes.ts
-│ │ │ │ ├── sales.service.ts
-│ │ │ │ └── sales.types.ts
-│ │ │ ├── settings/
-│ │ │ │ ├── settings.controller.ts
-│ │ │ │ ├── settings.routes.ts
-│ │ │ │ ├── settings.service.ts
-│ │ │ │ └── settings.types.ts
-│ │ │ ├── store/
-│ │ │ │ ├── store.controller.ts
-│ │ │ │ ├── store.routes.ts
-│ │ │ │ └── store.service.ts
-│ │ │ ├── subscription/
-│ │ │ │ ├── lifecycle-jobs.ts
-│ │ │ │ ├── subscription.controller.ts
-│ │ │ │ ├── subscription.routes.ts
-│ │ │ │ └── subscription.service.ts
-│ │ │ ├── support/
-│ │ │ │ ├── support.controller.ts
-│ │ │ │ ├── support.routes.ts
-│ │ │ │ └── support.service.ts
-│ │ │ └── user/
-│ │ │ ├── user.model.ts
-│ │ │ └── user.types.ts
-│ │ ├── scripts/
-│ │ │ └── createAdmin.ts
-│ │ ├── utils/
-│ │ │ ├── auth/
-│ │ │ │ ├── hash.ts
-│ │ │ │ ├── index.ts
-│ │ │ │ └── jwt.ts
-│ │ │ ├── common/
-│ │ │ │ ├── index.ts
-│ │ │ │ ├── logger.ts
-│ │ │ │ └── validation.ts
-│ │ │ ├── email/
-│ │ │ │ ├── emailService.ts
-│ │ │ │ └── index.ts
-│ │ │ ├── http/
-│ │ │ │ ├── index.ts
-│ │ │ │ └── response.ts
-│ │ │ ├── index.ts
-│ │ │ ├── paymentMethodHelper.ts
-│ │ │ ├── subscriptionPeriod.ts
-│ │ │ └── timezone.ts
-│ │ ├── app.ts
-│ │ ├── index.ts
-│ │ ├── routes.ts
-│ │ └── server.ts
-│ ├── tests/
-│ ├── .env
-│ ├── .gitignore
-│ ├── drizzle.config.ts
-│ ├── IMAGEKIT_SETUP.md
-│ ├── package-lock.json
-│ ├── package.json
-│ ├── README.md
-│ └── tsconfig.json
-├── frontend/
-│ ├── .vercel/
-│ │ ├── project.json
-│ │ └── README.txt
-│ ├── public/
-│ │ ├── firebase-messaging-sw.js
-│ │ └── vite.svg
-│ ├── src/
-│ │ ├── api/
-│ │ │ ├── admin/
-│ │ │ │ └── index.ts
-│ │ │ ├── auth/
-│ │ │ │ └── index.ts
-│ │ │ ├── dashboard/
-│ │ │ │ └── index.ts
-│ │ │ ├── domain/
-│ │ │ │ └── index.ts
-│ │ │ ├── gst/
-│ │ │ │ └── index.ts
-│ │ │ ├── products/
-│ │ │ │ └── index.ts
-│ │ │ ├── proforma/
-│ │ │ │ └── index.ts
-│ │ │ ├── sales/
-│ │ │ │ └── index.ts
-│ │ │ ├── settings/
-│ │ │ │ └── index.ts
-│ │ │ ├── subscription/
-│ │ │ │ └── index.ts
-│ │ │ ├── support/
-│ │ │ │ └── index.ts
-│ │ │ ├── config.ts
-│ │ │ ├── index.ts
-│ │ │ └── phoneAuth.ts
-│ │ ├── assets/
-│ │ │ └── react.svg
-│ │ ├── components/
-│ │ │ ├── auth/
-│ │ │ │ └── PhoneLogin.tsx
-│ │ │ ├── layouts/
-│ │ │ │ ├── GSTLayout.tsx
-│ │ │ │ └── ProtectedLayout.tsx
-│ │ │ ├── pages/
-│ │ │ │ ├── admin/
-│ │ │ │ │ ├── AdminAuditLogs.tsx
-│ │ │ │ │ ├── AdminDashboard.tsx
-│ │ │ │ │ ├── AdminLayout.tsx
-│ │ │ │ │ ├── AdminLogin.tsx
-│ │ │ │ │ ├── AdminMerchantDetail.tsx
-│ │ │ │ │ ├── AdminMerchants.tsx
-│ │ │ │ │ ├── AdminOrders.tsx
-│ │ │ │ │ ├── AdminPlans.tsx
-│ │ │ │ │ ├── AdminRevenue.tsx
-│ │ │ │ │ ├── AdminSettings.tsx
-│ │ │ │ │ ├── AdminStores.tsx
-│ │ │ │ │ ├── AdminSubscriptions.tsx
-│ │ │ │ │ ├── AdminSupport.tsx
-│ │ │ │ │ ├── AdminTeam.tsx
-│ │ │ │ │ └── AdminTicketDetail.tsx
-│ │ │ │ ├── customers/
-│ │ │ │ │ ├── addCustomer/
-│ │ │ │ │ │ └── AddCustomer.tsx
-│ │ │ │ │ ├── customerProfile/
-│ │ │ │ │ │ └── CustomerProfile.tsx
-│ │ │ │ │ ├── editCustomer/
-│ │ │ │ │ │ └── EditCustomer.tsx
-│ │ │ │ │ └── Customers.tsx
-│ │ │ │ ├── customize/
-│ │ │ │ │ └── Customize.tsx
-│ │ │ │ ├── dashboard/
-│ │ │ │ │ ├── previewStore/
-│ │ │ │ │ │ └── PreviewStore.tsx
-│ │ │ │ │ ├── upgradeNow/
-│ │ │ │ │ │ └── UpgradeNow.tsx
-│ │ │ │ │ └── Dashboard.tsx
-│ │ │ │ ├── domain/
-│ │ │ │ │ └── Domain.tsx
-│ │ │ │ ├── forgotPassword/
-│ │ │ │ │ └── ForgotPassword.tsx
-│ │ │ │ ├── gst/
-│ │ │ │ │ ├── CreditDebitNotes.tsx
-│ │ │ │ │ ├── GSTDashboard.tsx
-│ │ │ │ │ ├── GSTInvoices.tsx
-│ │ │ │ │ ├── GSTLocked.tsx
-│ │ │ │ │ ├── GSTReports.tsx
-│ │ │ │ │ ├── GSTSettings.tsx
-│ │ │ │ │ ├── InvoiceForm.tsx
-│ │ │ │ │ ├── NewInvoicePage.tsx
-│ │ │ │ │ └── NewNotePage.tsx
-│ │ │ │ ├── landingPage/
-│ │ │ │ │ └── LandingPage.tsx
-│ │ │ │ ├── login/
-│ │ │ │ │ └── Login.tsx
-│ │ │ │ ├── orders/
-│ │ │ │ │ ├── createOrder/
-│ │ │ │ │ │ └── CreateOrder.tsx
-│ │ │ │ │ ├── editOrder/
-│ │ │ │ │ │ └── EditOrder.tsx
-│ │ │ │ │ ├── exportOrders/
-│ │ │ │ │ │ └── ExportOrders.tsx
-│ │ │ │ │ ├── orderDetail/
-│ │ │ │ │ │ └── OrderDetail.tsx
-│ │ │ │ │ └── Orders.tsx
-│ │ │ │ ├── payments/
-│ │ │ │ │ └── Payments.tsx
-│ │ │ │ ├── products/
-│ │ │ │ │ ├── addProduct/
-│ │ │ │ │ │ └── AddProduct.tsx
-│ │ │ │ │ ├── editProduct/
-│ │ │ │ │ │ └── EditProduct.tsx
-│ │ │ │ │ ├── importProducts/
-│ │ │ │ │ │ └── ImportProducts.tsx
-│ │ │ │ │ └── Products.tsx
-│ │ │ │ ├── proforma/
-│ │ │ │ │ ├── CreateProforma.tsx
-│ │ │ │ │ ├── EditProforma.tsx
-│ │ │ │ │ ├── ProformaDetail.tsx
-│ │ │ │ │ └── ProformaInvoices.tsx
-│ │ │ │ ├── publicStore/
-│ │ │ │ │ ├── StoreCheckout.tsx
-│ │ │ │ │ ├── StoreHome.tsx
-│ │ │ │ │ ├── StoreLayout.tsx
-│ │ │ │ │ ├── StoreMyOrders.tsx
-│ │ │ │ │ └── StoreProductDetail.tsx
-│ │ │ │ ├── sales/
-│ │ │ │ │ └── Sales.tsx
-│ │ │ │ ├── settings/
-│ │ │ │ │ └── Settings.tsx
-│ │ │ │ ├── sidebar/
-│ │ │ │ │ ├── GSTSidebar.tsx
-│ │ │ │ │ └── Sidebar.tsx
-│ │ │ │ ├── signup/
-│ │ │ │ │ └── SignUp.tsx
-│ │ │ │ ├── subscription/
-│ │ │ │ │ ├── GracePeriodDashboardAlert.tsx
-│ │ │ │ │ ├── InactiveStoreBanner.tsx
-│ │ │ │ │ └── UpgradeModalForGracePeriod.tsx
-│ │ │ │ └── support/
-│ │ │ │ └── Support.tsx
-│ │ │ └── shared/
-│ │ ├── config/
-│ │ │ └── firebase.ts
-│ │ ├── constants/
-│ │ │ ├── ordersData/
-│ │ │ │ └── index.ts
-│ │ │ ├── productsData/
-│ │ │ │ └── index.ts
-│ │ │ └── indianStates.ts
-│ │ ├── context/
-│ │ │ ├── AdminContext.tsx
-│ │ │ ├── CustomerContext.tsx
-│ │ │ ├── CustomizeContext.tsx
-│ │ │ ├── DashboardContext.tsx
-│ │ │ ├── DomainContext.tsx
-│ │ │ ├── GSTContext.tsx
-│ │ │ ├── OrderContext.tsx
-│ │ │ ├── PaymentContext.tsx
-│ │ │ ├── ProductContext.tsx
-│ │ │ ├── ProformaContext.tsx
-│ │ │ ├── SalesContext.tsx
-│ │ │ ├── SettingsContext.tsx
-│ │ │ └── SubscriptionContext.tsx
-│ │ ├── services/
-│ │ │ ├── notificationService.ts
-│ │ │ └── phoneAuth.ts
-│ │ ├── types/
-│ │ │ └── gst.ts
-│ │ ├── utils/
-│ │ │ ├── cn.ts
-│ │ │ ├── dateUtils.ts
-│ │ │ ├── gstValidation.ts
-│ │ │ ├── invoicePDF.ts
-│ │ │ ├── pdfExport.ts
-│ │ │ ├── proformaInvoicePDF.ts
-│ │ │ └── taxCalculation.ts
-│ │ ├── .env
-│ │ ├── App.css
-│ │ ├── App.tsx
-│ │ ├── index.css
-│ │ ├── main.tsx
-│ │ └── vite-env.d.ts
-│ ├── .env
-│ ├── .gitignore
-│ ├── eslint.config.ts
-│ ├── index.html
-│ ├── package-lock.json
-│ ├── package.json
-│ ├── README.md
-│ ├── tsconfig.json
-│ ├── tsconfig.node.json
-│ ├── vercel.json
-│ └── vite.config.ts
-├── firebase-setup.sh
-└── verify_domain_module.sh
+AgentMark/
+├── agentmark-mcp-server/                   # Python Model Context Protocol (MCP) Server
+│   ├── pyproject.toml                      # FastMCP server configuration & dependencies
+│   ├── run_audit.py                        # Audit runner for MCP server
+│   ├── test_audit.py                       # Test script to verify registered tools
+│   ├── src/
+│   │   └── agentmark_mcp/
+│   │       ├── client.py                   # Async HTTP client calling Express backend API
+│   │       ├── server.py                   # FastMCP server & tool registrations (6 tools)
+│   │       ├── session_status.py           # Session status evidence writer
+│   │       ├── formatters/
+│   │       │   └── hook_formatter.py       # Hook formatting utilities
+│   │       └── tools/                      # MCP tool implementations
+│   │           ├── campaign.py             # generate_campaign tool
+│   │           ├── extended.py             # create_project & publish_to_channel tools
+│   │           ├── focus_group.py          # run_focus_group tool
+│   │           └── revision.py             # revise_copy_with_feedback & get_campaign_status tools
+│   └── tests/
+│       ├── test_client.py                  # MCP client unit tests
+│       ├── test_server.py                  # MCP tool integration tests
+│       └── test_session_state_machine.py   # State machine tests
+│
+├── ai-service/                             # Python FastAPI AI Service (LangGraph Engine)
+│   ├── main.py                             # FastAPI app factory, CORS & lifespan startup hook
+│   ├── run.py                              # Uvicorn server entry point (Port 5002)
+│   ├── pyproject.toml                      # Dependencies & pytest configuration
+│   ├── requirements.txt                    # Pip dependencies
+│   ├── version.py                          # Service version definition
+│   ├── ADR.md                              # Architecture Decision Records
+│   ├── ARCHITECTURE_PRINCIPLES.md          # Design principles & invariants
+│   ├── agents/                             # LangGraph Agent Nodes
+│   │   ├── copywriter.py                   # Multi-channel copy generator
+│   │   ├── creative_hook_matrix.py         # Viral hook matrix generator (feature-flagged)
+│   │   ├── devils_advocate.py              # Adversarial critique generator
+│   │   ├── evaluator.py                    # Independent evaluator for quality gates
+│   │   ├── focus_group.py                  # Synthetic persona focus group simulation
+│   │   ├── human_approval.py               # HITL approval gate node
+│   │   ├── image_prompt.py                 # Visual art prompt generator
+│   │   ├── manager.py                      # Workflow orchestrator & coordinator
+│   │   ├── persona_composer.py             # Persona composition helper
+│   │   ├── publisher.py                    # Distribution planner & content calendar
+│   │   ├── research.py                     # LiteRAG market research (Tavily search)
+│   │   ├── reviewer.py                     # Quality scoring & compliance check
+│   │   ├── state.py                        # Shared CampaignState TypedDict definition
+│   │   ├── strategy.py                     # Positioning & messaging strategy
+│   │   └── trust_analyzer.py               # Copy trust signal analyzer
+│   ├── api/                                # FastAPI Routes & Guards
+│   │   ├── dependencies.py                 # INTERNAL_SERVICE_SECRET header verification
+│   │   └── routes/
+│   │       ├── campaigns.py                # Workflow creation, variant & prompt enhancer endpoints
+│   │       └── health.py                   # Health check endpoint
+│   ├── config/                             # App Configuration
+│   │   ├── emos_config.py                  # EMOS system configuration
+│   │   └── settings.py                     # Environment variable loader
+│   ├── domain/                             # Core Domain Models
+│   │   └── campaign_context.py             # Immutable Campaign Context model
+│   ├── llm/                                # Multi-Provider LLM Clients
+│   │   ├── gemini_client.py                # Google Gemini client
+│   │   ├── groq_client.py                  # Groq (Llama 3.3-70b) client
+│   │   └── openai_client.py                # OpenAI (GPT-4o) client
+│   ├── persona_templates/                  # Demographic & Psychographic Persona Specs
+│   ├── routers/
+│   │   └── focus_group_router.py           # Focus group simulation & Q&A endpoints
+│   ├── schemas/                            # Pydantic Output Schemas
+│   │   ├── agent_outputs.py                # Output models per agent
+│   │   ├── campaign.py                     # Request/Response schemas
+│   │   └── simulation.py                   # Focus group report schemas
+│   ├── services/
+│   │   └── search_service.py               # Tavily search abstraction
+│   ├── tests/                              # Unit & integration test suites
+│   ├── utils/                              # Utilities (Redis publisher, telemetry, sanitizers)
+│   │   └── telemetry/                      # OpenTelemetry tracing & diagnostics
+│   └── workflow/                           # LangGraph Workflow Assembly
+│       ├── context.py                      # Context Contract Builder
+│       ├── graph.py                        # LangGraph StateGraph assembly & singleton compilation
+│       ├── learning.py                     # Memory decay & learning rules
+│       ├── policy.py                       # 4-Tier Layered Policy Engine
+│       ├── retrieval.py                    # Hybrid RRF search engine
+│       └── routing.py                      # Conditional routing & review thresholds
+│
+├── backend/                                # Node.js + Express Backend & API Bridge
+│   ├── package.json                        # Dependencies & npm scripts
+│   ├── tsconfig.json                       # TypeScript compiler options
+│   ├── .env.example                        # Template for backend environment variables
+│   ├── prisma/
+│   │   └── schema.prisma                   # PostgreSQL database models (Prisma)
+│   └── src/
+│       ├── index.ts                        # Server entry point, Express app & Socket.IO server
+│       ├── db.ts                           # Prisma client singleton
+│       ├── middlewares/                    # Middlewares
+│       │   ├── auth.middleware.ts          # Dual-mode auth (JWT + Developer API Key)
+│       │   ├── mcp-logger.middleware.ts    # Logs MCP tool calls to McpActivity table
+│       │   └── rate-limit.middleware.ts    # Endpoint rate limiters
+│       ├── modules/                        # Feature Modules
+│       │   ├── auth/                       # Signup, login, JWT token issuance
+│       │   ├── brand-vault/                # Brand Vault events, snapshots & contract endpoints
+│       │   ├── campaigns/                  # Campaign CRUD, AI runner, HITL approval & Socket.IO emitter
+│       │   ├── developer/                  # Developer API keys & Claude Desktop config auto-installer
+│       │   ├── focus-group/                # Focus group proxy & Q&A router
+│       │   ├── imagekit/                   # ImageKit CDN auth token endpoint
+│       │   ├── notifications/              # Real-time notifications CRUD
+│       │   └── projects/                   # Project management & memory status
+│       └── utils/                          # Helper utilities
+│           ├── ai-client.ts                # HTTP client for Python AI Service
+│           ├── claude-config.ts            # Truthful 9-state MCP connection architecture
+│           ├── claude-config-resolver.ts   # Configuration path resolver
+│           ├── jwt.ts                      # JWT sign/verify
+│           ├── learning.ts                 # Memory decay calculation utilities
+│           ├── password.ts                 # bcrypt hashing
+│           ├── redis-subscriber.ts         # Redis Pub/Sub → Socket.IO bridge
+│           ├── retrieval.ts                # Hybrid RRF search helper
+│           └── telemetry.ts                # OpenTelemetry backend tracer
+│
+├── frontend/                               # React 18 + Vite Frontend Application
+│   ├── package.json                        # Dependencies & Vite build scripts
+│   ├── vite.config.ts                      # Vite configuration & proxy settings
+│   ├── tsconfig.json                       # Frontend TypeScript config
+│   ├── index.html                          # SPA HTML template
+│   ├── .env.example                        # Template for frontend environment variables
+│   ├── public/                             # Static assets & tutorial video files
+│   │   ├── create_campaign.mp4             # Tutorial video: Launching campaigns
+│   │   ├── customize_copy.mp4              # Tutorial video: Reviewing copy
+│   │   ├── setup_api_keys.mp4              # Tutorial video: Setting up credentials
+│   │   └── visual_studio_bridges.mp4       # Tutorial video: Visual prompt studio
+│   └── src/
+│       ├── main.tsx                        # React application entry point
+│       ├── App.tsx                         # Router definitions & AuthContext provider
+│       ├── index.css                       # Global CSS design system (HSL custom properties)
+│       ├── contexts/
+│       │   └── AuthContext.tsx             # Auth state, login/logout, JWT token storage
+│       ├── services/
+│       │   ├── api.ts                      # Axios HTTP client, headers & Brand Vault API
+│       │   ├── llmSettings.ts              # Local storage manager for API keys
+│       │   └── notifications.service.ts    # Real-time notifications service
+│       ├── types/
+│       │   └── emos.ts                     # EMOS contract interfaces & types
+│       └── components/
+│           ├── shared/                     # Reusable UI components
+│           │   ├── sidebar/Sidebar.tsx     # Navigation sidebar
+│           │   └── topNav/TopNav.tsx       # Top navigation bar & notification bell
+│           └── pages/                      # Page routes
+│               ├── campaign/               # Campaign creation, live runner & multi-tab results
+│               ├── dashboard/              # Project & campaign overview dashboard
+│               ├── docs/                   # In-app documentation (DocsPage.tsx)
+│               ├── history/                # Searchable campaign history list
+│               ├── landingPage/            # Marketing landing page
+│               ├── login/ & signup/        # Authentication forms
+│               ├── memoryHub/              # Brand memory analytics
+│               ├── projects/               # Project management views
+│               ├── settings/               # API key settings & MCP 1-click installer
+│               └── support/                # Support center, FAQs & video modal (Support.tsx)
+│
+├── run_all_tests.ps1                       # Power-Shell runner for all test suites
+├── start-agentmark.bat                     # One-click Windows startup script
+├── default_personas.json                   # Default persona definitions for focus group
+├── .gitignore                              # Git exclusion rules
+└── README.md                               # Root project documentation
 ```

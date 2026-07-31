@@ -168,7 +168,7 @@ AgentMark/
 
 ### 4. MCP Server (`/agentmark-mcp-server`)
 *   **Tech Stack:** Python 3.12, FastMCP SDK, HTTPX.
-*   **Purpose:** Exposes AgentMark capabilities to AI desktop environments (such as Claude Desktop) via the Model Context Protocol (MCP), providing 5 tool suites for campaign management, focus group simulations, asset publishing, and revision resets.
+*   **Purpose:** Exposes AgentMark capabilities to AI desktop environments (such as Claude Desktop) via the Model Context Protocol (MCP), providing 6 tools for campaign management, focus group simulations, asset publishing, project creation, and copy revisions.
 
 ---
 
