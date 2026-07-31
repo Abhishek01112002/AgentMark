@@ -70,7 +70,15 @@ const SupportContent: React.FC = () => {
     },
     {
       question: 'How do I connect AgentMark to Claude Desktop or Cursor IDE via MCP?',
-      answer: 'Go to Settings > Integrations and click "Connect Claude Desktop". On a local development environment, our system automatically writes the required configuration to your claude_desktop_config.json file. For cloud-hosted instances, you can download the config file and manually place it in your Claude folder. Once configured, completely restart Claude Desktop from your taskbar/tray to use AgentMark tools inside your chat assistant.',
+      answer: 'Go to Settings \u2192 Integrations and click "Connect Claude Desktop". This generates a Developer API Key and automatically writes the configuration to your claude_desktop_config.json. The AgentMark MCP Server is a local Python service — you must have Python 3.10+ and the uv package manager installed. Once configured, completely restart Claude Desktop from your taskbar/tray. You can then use tools like generate_campaign, run_focus_group, create_project, revise_copy_with_feedback, get_campaign_status, and publish_to_channel directly from Claude.',
+    },
+    {
+      question: 'How do Developer API Keys work for programmatic access?',
+      answer: 'Developer API Keys are long-lived credentials with the prefix am_ followed by a 32-character hex string. They are stored on the server as SHA-256 hashes — the plaintext key is shown only once at creation time and is never recoverable. Use these keys in the AGENTMARK_API_KEY environment variable for the MCP server, or pass them as Bearer tokens to the AgentMark REST API. You can manage, revoke, and rotate keys from Settings \u2192 Integrations.',
+    },
+    {
+      question: 'My campaign shows "Failed" — how do I recover?',
+      answer: 'The "Failed" status indicates a transient error during the AI pipeline (e.g. LLM rate limit, Redis timeout, or network issue). From your Dashboard or Campaign History, click the action menu on the failed campaign and select "Retry". The retry mechanism uses exponential backoff — it will attempt the pipeline again from the beginning. If failures persist, check that your API keys in backend/.env and ai-service/.env are valid and that Redis is running.',
     },
     {
       question: 'How long does campaign generation take?',

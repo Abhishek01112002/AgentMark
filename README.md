@@ -432,6 +432,7 @@ VITE_SOCKET_URL=http://localhost:5003
 |---|---|---|
 | `VITE_API_URL` | Yes | Base URL of the Express backend |
 | `VITE_SOCKET_URL` | Yes | Socket.IO server URL (usually same as API URL) |
+| `VITE_EMOS_BRAND_VAULT_ENABLED` | No | Set to `true` to enable Brand Vault UI features (default: `false`) |
 
 ---
 
@@ -487,9 +488,24 @@ TAVILY_API_KEY="your-tavily-key"
 # Model selection
 GROQ_MODEL="llama-3.3-70b-versatile"
 COPYWRITER_MODEL="llama-3.3-70b-versatile"
+
+# Feature flags
+# Set to true to enable the Creative Hook Matrix agent between Copywriter and Image Prompt
+ENABLE_CREATIVE_HOOK_MATRIX=false
 ```
 
 > **Critical:** `INTERNAL_SERVICE_SECRET` must be **identical** in both `backend/.env` and `ai-service/.env`. Mismatched values will cause all AI service calls to fail with HTTP 403.
+
+---
+
+### MCP Server — Environment Variables
+
+The MCP server reads two variables (set in the Claude Desktop config `env` block, **not** in a `.env` file):
+
+| Variable | Required | Description |
+|---|---|---|
+| `AGENTMARK_API_URL` | Yes | URL of the AgentMark backend (e.g. `http://localhost:5003`) |
+| `AGENTMARK_API_KEY` | Yes | Developer API key generated in Settings → Integrations (`am_…` prefix) |
 
 ---
 
@@ -528,9 +544,14 @@ Campaign Created
 │  Strategy   │  — Builds campaign framework & messaging pillars
 └──────┬──────┘
        ▼
-┌─────────────┐
-│ Copywriter  │  — Generates multi-channel copy (X, LinkedIn, Email, SMS, Google Ads, etc.)
-└──────┬──────┘
+┌─────────────────────────┐
+│       Copywriter        │  — Generates multi-channel copy (X, LinkedIn, Email, SMS, Google Ads, etc.)
+└──────┬──────────────────┘
+       ▼
+┌──────────────────────────────────────────┐
+│  Creative Hook Matrix (feature-flagged)  │  — Generates viral angle hooks per channel
+│  enabled via ENABLE_CREATIVE_HOOK_MATRIX │  (falls back silently when disabled)
+└──────┬───────────────────────────────────┘
        ▼
 ┌─────────────┐
 │Image Prompt │  — Creates detailed prompts for DALL-E 3, Midjourney, Imagen 3
@@ -562,6 +583,9 @@ The MCP Server exposes three primary tools to AI assistants:
 | `generate_campaign` | Run the full 7-agent pipeline from a natural language prompt |
 | `run_focus_group` | Simulate audience persona reactions to campaign copy |
 | `publish_to_channel` | Approve campaign and trigger the Publisher agent |
+| `create_project` | Create a new project workspace and return its ID |
+| `revise_copy_with_feedback` | Re-run copywriter with feedback notes and auto-run focus group |
+| `get_campaign_status` | Check campaign status, quality scores, and version history |
 
 **Example conversation in Claude Desktop:**
 ```

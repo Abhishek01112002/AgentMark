@@ -1,12 +1,12 @@
 # AgentMark MCP Server
 
-[![PyPI version](https://img.shields.io/pypi/v/agentmark-mcp-server.svg)](https://pypi.org/project/agentmark-mcp-server/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **AgentMark MCP Server** is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that connects AI assistants — Claude Desktop, Cursor, Windsurf, and any other MCP-compatible host — directly to the AgentMark AI marketing platform.
 
-Generate complete multi-channel campaigns, simulate audience reactions, and publish content without leaving your chat window.
+Generate complete multi-channel campaigns, simulate audience reactions, check campaign status, and revise copy without leaving your chat window.
+
+> **Local-only server.** The MCP server is bundled inside the AgentMark monorepo and runs as a local Python process. It is **not** published to PyPI. Setup requires the monorepo to be installed and the backend to be running.
 
 ---
 
@@ -17,20 +17,23 @@ Generate complete multi-channel campaigns, simulate audience reactions, and publ
 | "Generate a campaign for my SaaS product" | Full LangGraph pipeline runs: Research → Strategy → Copy → Visuals → Review. Structured Markdown brief delivered in-chat. |
 | "Run the focus group on that campaign" | AI personas evaluate your copy, score it, list objections, and suggest revisions. |
 | "Publish the LinkedIn post now" | Publisher agent triggers, formats distribution schedule, returns confirmation. |
+| "Create a project called Q3 Launch" | Creates a new project workspace and returns the UUID. |
+| "Revise the LinkedIn copy — make it punchier" | Re-runs the Copywriter agent with your feedback, then auto-runs Focus Group. |
+| "What's the status of campaign X?" | Returns current status, review score, version history, and any pending approvals. |
 
 ---
 
 ## Architecture
 
 ```
-+-------------------+   stdin/stdout   +----------------------+   HTTPS   +---------------------+
-|   MCP Host        | <=============>  | AgentMark MCP Server | <=======> |  AgentMark Backend  |
-| (Claude / Cursor) |   MCP Protocol   |  (this package)      |  REST API |  (Node.js/Express)  |
-+-------------------+                  +----------------------+           +---------------------+
++-------------------+   stdin/stdout   +----------------------+   HTTP REST   +---------------------+
+|   MCP Host        | <=============>  | AgentMark MCP Server | <==========>  |  AgentMark Backend  |
+| (Claude / Cursor) |   MCP Protocol   |  (this directory)    |  Port 5003    |  (Node.js/Express)  |
++-------------------+                  +----------------------+               +---------------------+
 ```
 
 - **No direct database access.** All calls go through the AgentMark REST API, preserving authorization and rate limit policies.
-- **Long-running jobs are polled safely.** The LangGraph pipeline takes 2–4 minutes. The MCP server wraps this in a fault-tolerant polling loop with simulated progress milestones delivered to the chat window.
+- **Long-running jobs are polled safely.** The LangGraph pipeline takes 60–120 seconds. The MCP server wraps this in a fault-tolerant polling loop with live progress milestones delivered to the chat window.
 - **Fire-and-forget progress.** Every agent milestone (`[Research]`, `[Strategy]`, `[Copywriter]`, etc.) surfaces as a live notification in the chat client so users never see a silent spinner.
 
 ---
@@ -38,24 +41,43 @@ Generate complete multi-channel campaigns, simulate audience reactions, and publ
 ## Prerequisites
 
 - Python 3.10 or higher
-- A running AgentMark instance (self-hosted or cloud)
+- [`uv`](https://docs.astral.sh/uv/) package manager
+- A running AgentMark backend (Port 5003)
 - A **Developer API Key** generated from your AgentMark account (see below)
+
+---
+
+## Installation
+
+The MCP server lives inside the AgentMark monorepo at `agentmark-mcp-server/`. No separate clone is needed.
+
+```bash
+cd agentmark-mcp-server
+
+# Create virtual environment and install
+uv venv
+.venv\Scripts\activate       # Windows
+# or: source .venv/bin/activate   # macOS / Linux
+
+uv pip install -e .
+```
 
 ---
 
 ## Generating a Developer API Key
 
-Developer API keys (`am_<hex>`) are separate from your web login session. They are long-lived, revocable, and designed for programmatic access.
+**Recommended (automatic):** Log into the AgentMark web app → **Settings → Integrations → Connect Claude Desktop**. Click the button to generate an API key and auto-write the claude_desktop_config.json.
 
-**Step 1:** Log into the AgentMark web app and obtain a JWT token (from your browser DevTools → Network → any authenticated request → `Authorization` header).
-
-**Step 2:** Create a Developer API key:
+**Manual via REST API:**
 
 ```bash
-curl -X POST https://your-agentmark-url/api/developer/keys \
+# Step 1: Get your JWT token from any authenticated browser request (DevTools → Network → Authorization header)
+
+# Step 2: Create a Developer API key
+curl -X POST http://localhost:5003/api/developer/keys \
   -H "Authorization: Bearer <YOUR_JWT_TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"label": "Claude Desktop - MacBook Pro"}'
+  -d '{"label": "Claude Desktop"}'
 ```
 
 **Response (save the key — it is shown only once):**
@@ -63,36 +85,12 @@ curl -X POST https://your-agentmark-url/api/developer/keys \
 ```json
 {
   "id": "a1b2c3d4-...",
-  "label": "Claude Desktop - MacBook Pro",
+  "label": "Claude Desktop",
   "key": "am_4f3a8b2c1d...",
   "warning": "Store this key securely. It will not be shown again.",
-  "createdAt": "2026-07-21T07:00:00.000Z",
+  "createdAt": "2026-07-31T00:00:00.000Z",
   "isActive": true
 }
-```
-
-**Step 3:** Use the `am_...` key as your `AGENTMARK_API_KEY` in the configuration below.
-
----
-
-## Installation
-
-### Option A — Install from PyPI (recommended)
-
-```bash
-# Using uvx (no install needed, runs in isolated env):
-uvx agentmark-mcp-server
-
-# Or install permanently:
-pip install agentmark-mcp-server
-```
-
-### Option B — Run from source
-
-```bash
-git clone https://github.com/agentmark/agentmark-mcp-server
-cd agentmark-mcp-server
-uv venv && uv pip install -e .
 ```
 
 ---
@@ -102,19 +100,19 @@ uv venv && uv pip install -e .
 ### Claude Desktop
 
 Config file location:
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows:** `%APPDATA%\Rationality\Claude\claude_desktop_config.json`
 
-**From PyPI (recommended):**
+**From source (standard setup):**
 
 ```json
 {
   "mcpServers": {
     "agentmark": {
-      "command": "uvx",
-      "args": ["agentmark-mcp-server"],
+      "command": "E:/AgentMark/AgentMark/agentmark-mcp-server/.venv/Scripts/python.exe",
+      "args": ["-m", "agentmark_mcp.server"],
       "env": {
-        "AGENTMARK_API_URL": "https://your-agentmark-api.com",
+        "AGENTMARK_API_URL": "http://localhost:5003",
         "AGENTMARK_API_KEY": "am_your_developer_key_here"
       }
     }
@@ -122,7 +120,11 @@ Config file location:
 }
 ```
 
-**From source:**
+> **Windows path:** Replace `E:/AgentMark/AgentMark` with your actual clone location. Use forward slashes or escaped backslashes.
+
+> **macOS / Linux path:** Use `agentmark-mcp-server/.venv/bin/python` instead.
+
+**Using `uv run` (alternative):**
 
 ```json
 {
@@ -133,7 +135,9 @@ Config file location:
         "run",
         "--directory",
         "/path/to/agentmark-mcp-server",
-        "agentmark-mcp-server"
+        "python",
+        "-m",
+        "agentmark_mcp.server"
       ],
       "env": {
         "AGENTMARK_API_URL": "http://localhost:5003",
@@ -144,7 +148,7 @@ Config file location:
 }
 ```
 
-Restart Claude Desktop after editing the config.
+**Restart Claude Desktop completely** (close from system tray, not just the window) after editing the config.
 
 ---
 
@@ -153,12 +157,10 @@ Restart Claude Desktop after editing the config.
 1. Open **Settings** → **Features** → **MCP**
 2. Click **+ Add New MCP Server**
 3. Set **Type** to `command`
-4. **Command:**
-   ```
-   uvx agentmark-mcp-server
-   ```
-5. **Environment Variables:**
-   - `AGENTMARK_API_URL` = `https://your-agentmark-api.com`
+4. **Command:** `E:/AgentMark/AgentMark/agentmark-mcp-server/.venv/Scripts/python.exe`
+5. **Args:** `-m agentmark_mcp.server`
+6. **Environment Variables:**
+   - `AGENTMARK_API_URL` = `http://localhost:5003`
    - `AGENTMARK_API_KEY` = `am_your_developer_key_here`
 
 ---
@@ -171,10 +173,10 @@ Add to your Windsurf MCP config (`~/.codeium/windsurf/mcp_config.json`):
 {
   "mcpServers": {
     "agentmark": {
-      "command": "uvx",
-      "args": ["agentmark-mcp-server"],
+      "command": "/path/to/agentmark-mcp-server/.venv/bin/python",
+      "args": ["-m", "agentmark_mcp.server"],
       "env": {
-        "AGENTMARK_API_URL": "https://your-agentmark-api.com",
+        "AGENTMARK_API_URL": "http://localhost:5003",
         "AGENTMARK_API_KEY": "am_your_developer_key_here"
       }
     }
@@ -244,36 +246,93 @@ Approves the campaign and triggers the Publisher agent to produce the final dist
 
 ---
 
+### `create_project`
+
+Creates a new AgentMark project workspace.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `name` | string | Yes | Project display name |
+| `description` | string | No | Optional project description |
+
+**Returns:** Project UUID to use with `generate_campaign`.
+
+---
+
+### `revise_copy_with_feedback`
+
+Re-runs the Copywriter agent with specific feedback notes, then automatically runs a Focus Group simulation on the revised copy.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `campaign_id` | string (UUID) | Yes | Campaign to revise |
+| `feedback` | string | Yes | Revision instructions (e.g., "Make the headline punchier and cut 30 words") |
+| `openai_api_key` | string | No | LLM key override |
+| `gemini_api_key` | string | No | Gemini key override |
+| `groq_api_key` | string | No | Groq key override |
+
+**Returns:** Revised copy + Focus Group scores.
+
+---
+
+### `get_campaign_status`
+
+Returns the current status, quality scores, and version history for a campaign.
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `campaign_id` | string (UUID) | Yes | Campaign to query |
+
+**Returns:** Status badge (`draft`, `processing`, `awaiting_human_approval`, `completed`, `failed`), review score, revision count, and version list.
+
+---
+
 ## Example Conversation Flow
 
-The following is a complete generate → simulate → publish workflow in Claude Desktop:
-
 ```
-You: Generate a campaign for Novateches CRM.
-     Brand: Novateches
-     Industry: SaaS
-     Goal: lead_gen
-     Audience: B2B sales managers at SMBs
-     Voice: bold and data-driven
-     Project ID: [your-project-uuid]
+You: Create a project called "Q3 SaaS Launch"
 
-[AgentMark] Campaign "Novateches CRM Launch" is being generated...
-[AgentMark] [Manager] Analyzing campaign brief and dispatching agents...
-[AgentMark] [Research] Gathering market intelligence and competitor data...
-[AgentMark] [Strategy] Building campaign framework and messaging pillars...
-[AgentMark] [Copywriter] Generating multi-channel creative copy...
-[AgentMark] [Reviewer] Scoring and quality-checking all outputs...
+Claude: Project created. ID: abc-123-...
+
+---
+
+You: Generate a campaign for Novateches CRM.
+     Brand: Novateches, Industry: SaaS, Goal: lead_gen
+     Audience: B2B sales managers at SMBs
+     Voice: bold and data-driven, Project ID: abc-123-...
+
+[AgentMark] [Manager] Analyzing campaign brief...
+[AgentMark] [Research] Gathering market intelligence...
+[AgentMark] [Strategy] Building messaging pillars...
+[AgentMark] [Copywriter] Generating multi-channel copy...
+[AgentMark] [Reviewer] Scoring outputs...
 [AgentMark] Complete! Review Score: 84/100
 
-Claude: ## Campaign Brief: Novateches CRM Launch — Lead Generation
+Claude: ## Campaign Brief: Novateches CRM Launch
         ...
 
 ---
 
-You: Run the focus group on that campaign.
+You: Run the focus group.
 
-Claude: ## Focus Group Simulation Results
-        Overall Score: 7.8 / 10 — Mixed Reception
+Claude: ## Focus Group Results — Overall: 7.8/10
+        ...
+
+---
+
+You: Revise the LinkedIn copy — make it 30% shorter with bullet points.
+
+[AgentMark] Revising Copywriter output...
+[AgentMark] Running Focus Group on revised copy...
+
+Claude: ## Revised Copy + Focus Group
+        LinkedIn Score: 8.4/10 (improved)
         ...
 
 ---
@@ -281,7 +340,7 @@ Claude: ## Focus Group Simulation Results
 You: Publish to channel.
 
 Claude: ## Distribution Plan
-        Campaign approved and Publisher agent triggered.
+        Campaign approved. Publisher agent triggered.
         ...
 ```
 
@@ -293,10 +352,6 @@ Claude: ## Distribution Plan
 |---|---|---|---|
 | `AGENTMARK_API_URL` | Yes | `http://localhost:5003` | Base URL of your AgentMark backend |
 | `AGENTMARK_API_KEY` | Yes | — | Developer API key (format: `am_<hex>`) |
-| `OPENAI_API_KEY` | No | — | Server-level OpenAI key (tool params take precedence) |
-| `GEMINI_API_KEY` | No | — | Server-level Gemini key |
-| `GROQ_API_KEY` | No | — | Server-level Groq key |
-| `TAVILY_API_KEY` | No | — | Server-level Tavily search key |
 | `LOG_LEVEL` | No | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
 | `AGENTMARK_POLL_INTERVAL_SECS` | No | `5` | Seconds between campaign status polls |
 | `AGENTMARK_CAMPAIGN_TIMEOUT_SECS` | No | `900` | Max seconds to wait for campaign generation |
@@ -310,20 +365,25 @@ Claude: ## Distribution Plan
 ## Local Development and Testing
 
 ```bash
-# Clone and install in editable mode
-git clone https://github.com/agentmark/agentmark-mcp-server
 cd agentmark-mcp-server
+
+# Install in editable mode with dev dependencies
 uv venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+.venv\Scripts\activate    # Windows
+# or: source .venv/bin/activate
+
 uv pip install -e ".[dev]"
 
 # Run unit tests
-pytest tests/ -v
+uv run pytest tests/ -v
+
+# Audit registered tools
+python test_audit.py
 
 # Launch MCP Inspector (interactive browser-based debugger)
-export AGENTMARK_API_URL="http://localhost:5003"
-export AGENTMARK_API_KEY="am_your_key_here"
-npx @modelcontextprotocol/inspector uv run --directory . agentmark-mcp-server
+set AGENTMARK_API_URL=http://localhost:5003
+set AGENTMARK_API_KEY=am_your_key_here
+npx @modelcontextprotocol/inspector python -m agentmark_mcp.server
 ```
 
 The Inspector runs at `http://localhost:5173` and lets you invoke every tool manually, inspect request/response payloads, and audit progress messages.
@@ -332,28 +392,22 @@ The Inspector runs at `http://localhost:5173` and lets you invoke every tool man
 
 ## Managing Your API Keys
 
+From the AgentMark web app: **Settings → Integrations** — create, view, and revoke Developer API Keys.
+
+Via REST API:
+
 ```bash
 # List all your keys
-curl https://your-agentmark-url/api/developer/keys \
+curl http://localhost:5003/api/developer/keys \
   -H "Authorization: Bearer <JWT_TOKEN>"
 
 # Revoke a key
-curl -X DELETE https://your-agentmark-url/api/developer/keys/<KEY_ID> \
+curl -X DELETE http://localhost:5003/api/developer/keys/<KEY_ID> \
   -H "Authorization: Bearer <JWT_TOKEN>"
-```
-
----
-
-## Publishing to PyPI
-
-```bash
-cd agentmark-mcp-server
-uv build
-uv publish --token $PYPI_API_TOKEN
 ```
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+Developed by **Novateches Software Pvt Ltd**. All Rights Reserved.

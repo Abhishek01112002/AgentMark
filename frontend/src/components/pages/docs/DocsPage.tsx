@@ -558,7 +558,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'preflight-engine',
-    title: '8. EMOS v9 Architecture & Enterprise Quality Gates',
+    title: '9. EMOS v9 Architecture & Enterprise Quality Gates',
     category: 'Features',
     icon: <ShieldCheck size={16} className="text-emerald-400 filter drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]" />,
     content: (
@@ -614,7 +614,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'mcp',
-    title: '9. Claude Desktop & MCP Integration',
+    title: '10. Claude Desktop & MCP Integration',
     category: 'Integrations',
     icon: <Waypoints size={16} className="text-cyan-400 filter drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]" />,
     content: (
@@ -626,38 +626,39 @@ const sections: DocSection[] = [
         <div className="space-y-5">
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-              <Terminal size={18} className="text-cyan-400" /> Step 1: Install the MCP Server
+              <Terminal size={18} className="text-cyan-400" /> Step 1: Generate a Developer API Key
             </h4>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Make sure you have <strong>Node.js (v18 or higher)</strong> installed on your computer. Then open your terminal and run:
+              Go to <strong>Settings → Integrations → Connect Claude Desktop</strong> inside the AgentMark web app. Click the button to issue a Developer API Key. The app will automatically write the correct configuration file to your Claude Desktop config folder.
             </p>
-            <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-cyan-300 leading-relaxed overflow-x-auto">
-              npx @novateches/agentmark-mcp
-            </div>
             <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-              This command downloads and starts the AgentMark MCP server on your machine. Keep this terminal window open — the server needs to keep running.
+              The AgentMark MCP Server is a local Python service that runs on your machine. It requires <strong>Python 3.10+</strong> and the <code className="font-mono bg-[#0b0b0f] px-1 rounded">uv</code> package manager. See your Setup Guide for full installation instructions.
             </p>
           </div>
 
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
             <h4 className="text-white font-bold text-sm md:text-base flex items-center gap-2">
-              <Terminal size={18} className="text-cyan-400" /> Step 2: Connect Claude Desktop to AgentMark
+              <Terminal size={18} className="text-cyan-400" /> Step 2: Configure Claude Desktop
             </h4>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Open <strong>Claude Desktop</strong> and go to <strong>Settings → MCP Servers</strong>. Click <strong>"Add Server"</strong> and paste the following:
+              If auto-configuration didn't work, manually edit <strong>%APPDATA%\Claude\claude_desktop_config.json</strong> and add:
             </p>
             <div className="p-3 sm:p-4 rounded-xl bg-[#0b0b0f] border border-[#1e1e2d] font-mono text-[11px] md:text-xs text-cyan-300 leading-relaxed overflow-x-auto">
               {`{
   "mcpServers": {
     "agentmark": {
-      "command": "npx",
-      "args": ["@novateches/agentmark-mcp"]
+      "command": "C:/path/to/agentmark-mcp-server/.venv/Scripts/python.exe",
+      "args": ["-m", "agentmark_mcp.server"],
+      "env": {
+        "AGENTMARK_API_URL": "http://localhost:5003",
+        "AGENTMARK_API_KEY": "am_your_developer_key_here"
+      }
     }
   }
 }`}
             </div>
             <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-              Save the settings and restart Claude Desktop. You should see a small <strong>plug icon</strong> appear — that means AgentMark is connected!
+              Replace the path with your actual install location and your API key from Settings → Integrations. Restart Claude Desktop completely (close from system tray) after saving.
             </p>
           </div>
 
@@ -698,7 +699,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'memory',
-    title: '10. Memory Hub & Brand Intelligence',
+    title: '11. Memory Hub & Brand Intelligence',
     category: 'Features',
     icon: <Brain size={16} className="text-pink-400 filter drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]" />,
     content: (
@@ -721,12 +722,12 @@ const sections: DocSection[] = [
   },
   {
     id: 'api-keys',
-    title: '11. API Keys & Provider Configuration',
+    title: '12. API Keys & Provider Configuration',
     category: 'Setup',
     icon: <ShieldCheck size={16} className="text-yellow-400 filter drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]" />,
     content: (
       <div className="space-y-5">
-        <p className="text-xs md:text-sm text-slate-200">AgentMark uses your own API keys to run LLM calls across all 7 agents and the Research web search Tavily API. Keys are stored in your browser and sent per-request — no keys are stored on our servers.</p>
+        <p className="text-xs md:text-sm text-slate-200">AgentMark uses LLM API keys configured in your backend environment file (<code className="font-mono bg-[#12121a] px-1 rounded text-[11px]">backend/.env</code>). These are system-level credentials used server-side — they are never stored in your browser or exposed to the client.</p>
 
         <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-4 shadow-md">
           <h4 className="text-white text-sm font-bold">Supported Providers</h4>
@@ -756,12 +757,12 @@ const sections: DocSection[] = [
         </div>
 
         <div className="p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] space-y-3 shadow-md">
-          <h4 className="text-white text-sm font-bold">Adding Keys</h4>
+          <h4 className="text-white text-sm font-bold">Configuring Keys</h4>
           <ol className="text-xs text-slate-400 space-y-2 list-decimal list-inside">
-            <li>Go to <strong className="text-indigo-300">Settings &gt; API Keys</strong>.</li>
-            <li>Paste your key into the input field for the provider.</li>
-            <li>Click <strong className="text-indigo-300">Test</strong> to verify the connection works.</li>
-            <li>Click <strong className="text-indigo-300">Save</strong>. The key is stored locally in your browser.</li>
+            <li>Open <strong className="text-indigo-300">backend/.env</strong> in your editor.</li>
+            <li>Set <code className="font-mono bg-[#0b0b0f] px-1 rounded">GEMINI_API_KEY</code>, <code className="font-mono bg-[#0b0b0f] px-1 rounded">GROQ_API_KEY</code>, and/or <code className="font-mono bg-[#0b0b0f] px-1 rounded">TAVILY_API_KEY</code>.</li>
+            <li>Restart the backend server to load the new values.</li>
+            <li>Similarly, set the same keys in <strong className="text-indigo-300">ai-service/.env</strong> — both services must share the same credentials.</li>
           </ol>
         </div>
       </div>
@@ -769,7 +770,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'troubleshooting',
-    title: '12. Frequently Asked Questions (FAQ)',
+    title: '13. Frequently Asked Questions (FAQ)',
     category: 'Support',
     icon: <HelpCircle size={16} className="text-rose-400 filter drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]" />,
     content: (
@@ -792,7 +793,7 @@ const sections: DocSection[] = [
   },
   {
     id: 'contact',
-    title: '13. Dedicated Support & Assistance',
+    title: '14. Dedicated Support & Assistance',
     category: 'Support',
     icon: <Mail size={16} className="text-sky-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]" />,
     content: (

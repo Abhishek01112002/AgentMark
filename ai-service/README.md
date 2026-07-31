@@ -58,6 +58,7 @@ Verify: `curl http://127.0.0.1:5002/health` → `{"status":"ok","service":"Agent
 | `GROQ_MODEL` | No | Groq model name (default: `llama-3.3-70b-versatile`) |
 | `COPYWRITER_MODEL` | No | Model used by Copywriter Agent |
 | `MAX_CONCURRENT_CAMPAIGNS` | No | Max parallel workflow executions (default: `4`) |
+| `ENABLE_CREATIVE_HOOK_MATRIX` | No | Set to `true` to enable the Creative Hook Matrix agent step (default: `false`) |
 
 > At least one LLM provider key (`GEMINI_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`) must be set. Users can also provide keys per-campaign via the web app settings.
 
@@ -77,11 +78,16 @@ ai-service/
 │   ├── research.py                   # Market intelligence + Tavily web search
 │   ├── strategy.py                   # Campaign framework + messaging pillars
 │   ├── copywriter.py                 # Multi-channel copy generation
+│   ├── creative_hook_matrix.py       # Viral hook angles per channel (feature-flagged: ENABLE_CREATIVE_HOOK_MATRIX)
 │   ├── image_prompt.py               # Visual prompt generation
 │   ├── reviewer.py                   # Quality scoring (0–100) + compliance
 │   ├── publisher.py                  # Publishing plan + content calendar
 │   ├── human_approval.py             # HITL gate — pauses workflow for review
-│   └── focus_group.py                # Synthetic persona simulation
+│   ├── focus_group.py                # Synthetic persona simulation
+│   ├── evaluator.py                  # Independent evaluator for EMOS quality gates
+│   ├── persona_composer.py           # Persona composition utilities for focus group
+│   ├── devils_advocate.py            # Adversarial critique generator
+│   └── trust_analyzer.py             # Trust signal analyzer for copy quality
 │
 ├── workflow/                         # LangGraph graph assembly
 │   └── graph.py                      # StateGraph build + routing logic
@@ -141,6 +147,11 @@ CampaignState (input)
 ┌─────────────┐   Redis: [Copywriter] running / completed
 │ copywriter  │   — Generates copy for: X, LinkedIn, Email, SMS, Google Ads, Meta, etc.
 └──────┬──────┘
+       ▼
+┌────────────────────────────────────┐
+│ creative_hook_matrix (conditional) │   — Viral hook angles per channel
+│ Enabled via ENABLE_CREATIVE_HOOK_MATRIX │   Falls back silently if disabled
+└──────┬─────────────────────────────┘
        ▼
 ┌──────────────┐  Redis: [ImagePrompt] running / completed
 │ image_prompt │
