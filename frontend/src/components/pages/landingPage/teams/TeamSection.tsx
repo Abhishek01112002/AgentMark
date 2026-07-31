@@ -14,49 +14,41 @@ export const TeamSection = memo(() => {
   const agents = [
     {
       icon: <BriefcaseIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "LangGraph State Engine",
       title: "Campaign Manager",
       desc: "Orchestrates the entire pipeline, delegates tasks, and ensures alignment with the initial brief.",
     },
     {
       icon: <SearchIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "Tavily & Google RAG",
       title: "Research Analyst",
       desc: "Scours the web for market trends, competitor data, and audience insights to inform strategy.",
     },
     {
       icon: <TargetIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "UVP & Angle Synthesis",
       title: "Chief Strategist",
       desc: "Synthesizes research into actionable campaign angles, positioning, and channel selection.",
     },
     {
       icon: <PenToolIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "Multi-Channel Copy",
       title: "Master Copywriter",
       desc: "Drafts compelling ad copy, landing pages, and emails optimized for conversion.",
     },
     {
       icon: <LightbulbIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "Hook Matrix Engine",
       title: "Creative Hook Analyst",
       desc: "Formulates psychological hook matrices, emotional angles, and viral pattern-interrupt frameworks.",
     },
     {
       icon: <ImageIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "Midjourney & DALL-E 3",
       title: "Visual Prompt Engineer",
       desc: "Translates strategy into precise prompts for image generation models to create stunning assets.",
     },
     {
       icon: <CheckSquareIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "0-100 Quality Audit",
       title: "Quality Reviewer",
       desc: "Critiques outputs against brand voice and brief constraints, enforcing high standards before delivery.",
     },
     {
       icon: <SendIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      tag: "1-Click Dispatch & Calendar",
       title: "Publisher Protocol",
       desc: "Packages all approved assets into structured, ready-to-deploy formats for your ad platforms.",
     },
@@ -83,20 +75,13 @@ export const TeamSection = memo(() => {
           {agents.map((agent, i) => (
             <div
               key={i}
-              className="hover-card glass-card rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col justify-between"
+              className="hover-card glass-card rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6"
             >
-              <div>
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <div className="text-indigo-400">{agent.icon}</div>
-                  <span className="text-[9px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-[#6366F1]/10 text-[#818CF8] border border-[#6366F1]/20">
-                    {agent.tag}
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1.5 sm:mb-2">{agent.title}</h3>
-                <p className="text-xs sm:text-sm leading-5 sm:leading-6" style={{ color: "#8B8B9E" }}>
-                  {agent.desc}
-                </p>
-              </div>
+              <div className="text-indigo-400 mb-3 sm:mb-4">{agent.icon}</div>
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1.5 sm:mb-2">{agent.title}</h3>
+              <p className="text-xs sm:text-sm leading-5 sm:leading-6" style={{ color: "#8B8B9E" }}>
+                {agent.desc}
+              </p>
             </div>
           ))}
         </div>
