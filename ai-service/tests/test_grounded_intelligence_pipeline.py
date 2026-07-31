@@ -55,17 +55,21 @@ def test_strategy_fallback_populates_research_foundation():
     competitor_analysis = {"top_competitors": ["AlphaCorp"], "differentiation_opportunity": "Zero demo setup"}
     audience_insights = {"pain_points": ["Manual patching"], "motivations": ["Saved time"], "preferred_channels": ["linkedin"]}
 
+    research = {
+        "market_analysis": market_analysis,
+        "competitor_analysis": competitor_analysis,
+        "audience_insights": audience_insights,
+        "market_opportunities": ["Market opp"],
+        "recommended_approach": "Automate pipelines"
+    }
+
     res_state = _write_fallback_strategy(
         state,
         "Test Campaign",
         "TestBrand",
         ["linkedin"],
         ["case_study"],
-        market_analysis,
-        competitor_analysis,
-        audience_insights,
-        ["Market opp"],
-        "Automate pipelines"
+        research
     )
 
     strat = json.loads(res_state.strategy_output)
