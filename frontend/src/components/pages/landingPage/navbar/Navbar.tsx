@@ -9,7 +9,6 @@ const navItems = [
   { label: "How It Works", href: "#workflow" },
   { label: "Agents", href: "#agents" },
   { label: "Features", href: "#features-showcase" },
-  { label: "Capabilities", href: "#features" },
   { label: "Why AgentMark", href: "#why-agentmark" },
 ];
 
