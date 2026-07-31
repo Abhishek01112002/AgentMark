@@ -4,8 +4,11 @@ import { Navbar } from './navbar/Navbar';
 import { HeroSection } from './hero/HeroSection';
 import { WorkflowSection } from './workflow/WorkflowSection';
 import { TeamSection } from './teams/TeamSection';
+import { InnovationsSection } from './innovations/InnovationsSection';
 import { ScaleSection } from './scale/ScaleSection';
 import { SavingsSection } from './saving/SavingsSection';
+import { RoiCalculatorSection } from './roi/RoiCalculatorSection';
+import { FaqSection } from './faq/FaqSection';
 import { Footer } from './footer/Footer';
 
 const TUTORIALS = [
@@ -193,8 +196,11 @@ export default function LandingPage() {
 
         <WorkflowSection />
         <TeamSection />
+        <InnovationsSection />
         <ScaleSection />
         <SavingsSection />
+        <RoiCalculatorSection />
+        <FaqSection />
       </main>
 
       <Footer />
