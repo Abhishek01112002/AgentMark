@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+import { Sparkles } from 'lucide-react';
 import { useCampaignResultContext } from '../context/CampaignResultContext';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -1063,7 +1064,7 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
     resultCtx.setRevisionFeedback(text);
 
     if (resultCtx.campaign?.status === 'completed') {
-      toast('Campaign is already approved! Opening Create Variant to test this revision in a new draft...', { icon: '💡' });
+      toast('Campaign is already approved! Opening Create Variant to test this revision in a new draft...', { icon: <Sparkles className="w-5 h-5 text-[#818CF8]" /> });
       resultCtx.setShowVariantModal(true);
       return;
     }

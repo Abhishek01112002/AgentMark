@@ -118,6 +118,7 @@ def manager_agent(state: CampaignState) -> CampaignState:
         primary_goal=primary_goal,
         target_audience=target_audience,
         brand_voice=brand_voice,
+        brief=state.brief or "None provided",
         client_memory_context=state.client_memory_context or "None provided"
     )
     

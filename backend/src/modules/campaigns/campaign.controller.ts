@@ -650,6 +650,10 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
     // Send 200 response immediately — do NOT do DB or AI work after this point
     res.json({ message: 'Campaign approval submitted', campaign: updatedCampaign });
 
+    const briefText = campaign.additionalInfo?.trim()
+      ? `Additional Context: ${campaign.additionalInfo.trim()}`
+      : undefined;
+
     // Fire background workflow asynchronously — errors are handled inside, never touch res
     void runApprovalBackground(campaign.id, {
       projectId: campaign.projectId,
@@ -659,6 +663,7 @@ export const approveCampaign = async (req: AuthRequest, res: Response, next: Nex
       primaryGoal: campaign.primaryGoal,
       targetAudience: campaign.targetAudience,
       brandVoice: campaign.brandVoice,
+      brief: briefText,
       action,
       feedback: feedback ?? null,
       revisionTarget: revisionTarget ?? null,
@@ -688,6 +693,7 @@ async function runApprovalBackground(
     primaryGoal: string;
     targetAudience: string;
     brandVoice: string;
+    brief?: string;
     action: string;
     feedback: string | null;
     revisionTarget: string | null;
@@ -728,6 +734,7 @@ async function runApprovalBackground(
       primary_goal: context.primaryGoal,
       target_audience: context.targetAudience,
       brand_voice: context.brandVoice,
+      brief: context.brief ?? undefined,
       campaign_id: campaignId,
       llm_config: effectiveLlmConfig,
       client_memory_context: memoryContext?.formattedText ?? null,

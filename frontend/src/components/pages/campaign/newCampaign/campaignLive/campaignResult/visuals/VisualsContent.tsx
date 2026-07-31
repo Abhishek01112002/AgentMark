@@ -124,17 +124,45 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       ) 
     },
     { 
-      name: 'Google Imagen 3', 
-      label: 'Generate on Imagen 3', 
-      url: 'https://aistudio.google.com/', 
-      color: '#00D2FF', 
+      name: 'Nano Banana 2', 
+      label: 'Generate on Nano Banana 2', 
+      url: 'https://gemini.google.com/app', 
+      color: '#F59E0B', 
       icon: (
-        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#00D2FF] fill-current" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#F59E0B] fill-current" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 2c-.3 2.7-2.3 4.7-5 5 2.7.3 4.7 2.3 5 5 .3-2.7 2.3-4.7 5-5-2.7-.3-4.7-2.3-5-5zM6 14c-.2 1.3-1.2 2.3-2.5 2.5 1.3.2 2.3 1.2 2.5 2.5.2-1.3 1.2-2.3 2.5-2.5-1.3-.2-2.3-1.2-2.5-2.5z" />
         </svg>
       ) 
     },
   ];
+
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (!text) return false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      console.warn('navigator.clipboard failed:', e);
+    }
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      return false;
+    }
+  };
 
   const getStudioUrl = (name: string, baseUrl: string, promptText: string) => {
     const encoded = encodeURIComponent(promptText);
@@ -147,8 +175,8 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
     if (name === 'Leonardo.ai') {
       return `https://app.leonardo.ai/ai-generations?prompt=${encoded}`;
     }
-    if (name === 'Google Imagen 3') {
-      return `https://gemini.google.com/app`;
+    if (name === 'Nano Banana 2' || name === 'Google Imagen 3') {
+      return `https://gemini.google.com/app?q=${encoded}`;
     }
     if (name === 'Ideogram 2.0') {
       return `https://ideogram.ai/?prompt=${encoded}`;
@@ -162,9 +190,9 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       return;
     }
     try {
-      await navigator.clipboard.writeText(promptText);
+      await copyToClipboard(promptText);
       const destinationUrl = getStudioUrl(studioName, baseUrl, promptText);
-      toast.success('Prompt copied & pre-filled — opening studio...', { duration: 2500 });
+      toast.success(`Prompt copied — opening ${studioName}...`, { duration: 2500 });
       setTimeout(() => {
         window.open(destinationUrl, '_blank', 'noopener,noreferrer');
       }, 400);
@@ -665,7 +693,10 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                                   {AI_STUDIOS.map(studio => (
                                     <button
                                       key={studio.name}
-                                      onClick={() => openInStudio(card.prompt || '', studio.name, studio.url)}
+                                      onClick={() => {
+                                        const promptToUse = enhancedPrompt[cardId] !== undefined ? enhancedPrompt[cardId] : (card.prompt || card.prompt_text || card.image_prompt || card.visual_prompt || card.description || '');
+                                        openInStudio(promptToUse, studio.name, studio.url);
+                                      }}
                                       className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left text-xs font-sora font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-white transition-colors cursor-pointer border-none group/studio"
                                     >
                                       <span className="flex items-center justify-center shrink-0 w-5 h-5 bg-[#0B0B12] border border-[#262636] rounded-lg">{studio.icon}</span>

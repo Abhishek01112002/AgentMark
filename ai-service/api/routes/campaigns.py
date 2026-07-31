@@ -106,8 +106,15 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
         
         if current_state.values:
             next_nodes = current_state.next
-            if next_nodes and "human_approval" in next_nodes:
-                logger.info("🔄 Resuming workflow from HITL human_approval checkpoint thread_id=%s", state.campaign_id)
+            is_hitl_resume = (
+                (next_nodes and "human_approval" in next_nodes)
+                or state.human_approval_status in ("approved", "rejected")
+                or current_state.values.get("awaiting_human_approval")
+                or current_state.values.get("status") in ("awaiting_human_approval", "human_approved")
+            )
+            if is_hitl_resume and state.human_approval_status:
+                logger.info("🔄 Resuming workflow from HITL human_approval checkpoint thread_id=%s | action=%s | target=%s",
+                            state.campaign_id, state.human_approval_status, state.human_revision_target)
                 workflow.update_state(
                     config,
                     {
@@ -115,7 +122,7 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
                         "human_feedback": state.human_feedback,
                         "human_revision_target": state.human_revision_target,
                         "awaiting_human_approval": False,
-                        "status": "processing",
+                        "status": "processing" if state.human_approval_status == "approved" else f"{state.human_revision_target}_revision_required",
                         "error": "",
                     },
                     as_node="human_approval"
