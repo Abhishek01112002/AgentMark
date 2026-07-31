@@ -285,6 +285,7 @@ const CampaignLivePage: React.FC = () => {
   
   // HITL Modal State
   const [selectedAgent, setSelectedAgent] = useState<string>('copywriter');
+  const hasUserSelectedAgentRef = useRef<boolean>(false);
   const [revisionFeedback, setRevisionFeedback] = useState<string>('');
   const [revisionCounts, setRevisionCounts] = useState({
     research: 0,
@@ -487,7 +488,9 @@ const CampaignLivePage: React.FC = () => {
                   lowestAgent = agent;
                 }
               });
-              setSelectedAgent(lowestAgent);
+              if (!hasUserSelectedAgentRef.current) {
+                setSelectedAgent(lowestAgent);
+              }
 
               const overallReview = reviewData.overall || {};
               setReviewerNotes({
@@ -891,7 +894,9 @@ const CampaignLivePage: React.FC = () => {
                   lowestAgent = agent;
                 }
               });
-              setSelectedAgent(lowestAgent);
+              if (!hasUserSelectedAgentRef.current) {
+                setSelectedAgent(lowestAgent);
+              }
 
               const overallReview = reviewData.overall || {};
               setReviewerNotes({
@@ -1883,7 +1888,12 @@ const CampaignLivePage: React.FC = () => {
                       return (
                         <button
                           key={key}
-                          onClick={() => !isMax && setSelectedAgent(key)}
+                          onClick={() => {
+                            if (!isMax) {
+                              hasUserSelectedAgentRef.current = true;
+                              setSelectedAgent(key);
+                            }
+                          }}
                           disabled={isMax}
                           title={downstream}
                           className="relative flex flex-col items-start p-3.5 rounded-xl text-left transition-all duration-200"
