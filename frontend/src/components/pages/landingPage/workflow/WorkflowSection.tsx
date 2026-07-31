@@ -5,6 +5,7 @@ import {
   TargetIcon, 
   PenToolIcon, 
   ImageIcon, 
+  UsersIcon,
   CheckSquareIcon, 
   SendIcon 
 } from '../icons';
@@ -15,6 +16,7 @@ const PIPELINE_STEPS = [
   { icon: <TargetIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Strategy", text: "Shaping angles, positioning, and channel strategy for the campaign..." },
   { icon: <PenToolIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Copywriter", text: "Drafting multi-variant ad copy for Facebook and LinkedIn based on strategic brief..." },
   { icon: <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Visual", text: "Creating visual prompt directions and asset-ready creative variations..." },
+  { icon: <UsersIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Focus Group", text: "Simulating synthetic consumer reactions, sentiment ratings, and objection quotes..." },
   { icon: <CheckSquareIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Review", text: "Reviewing tone, brand alignment, and quality constraints before launch..." },
   { icon: <SendIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Publish", text: "Packaging the final campaign assets and preparing everything for deployment..." },
 ] as const;
@@ -100,7 +102,7 @@ export const WorkflowSection = memo(() => {
               {
                 num: "02",
                 title: "Agents Execute",
-                desc: "The 7-agent pipeline autonomously researches, strategizes, and drafts.",
+                desc: "The 8-agent pipeline autonomously researches, strategizes, drafts, and simulates responses.",
               },
               {
                 num: "03",
@@ -182,7 +184,7 @@ export const WorkflowSection = memo(() => {
               </div>
 
               {/* Agent nodes - Responsive grid */}
-              <div className="relative flex gap-3 overflow-x-auto pb-2 sm:gap-4 md:grid md:grid-cols-7 md:overflow-visible md:gap-4">
+              <div className="relative flex gap-3 overflow-x-auto pb-2 sm:gap-4 md:grid md:grid-cols-8 md:overflow-visible md:gap-3">
                 {agentNodes.map((node, i) => (
                   <div key={i} className="relative flex min-w-[4.35rem] flex-col items-center gap-1 sm:min-w-[4.75rem] sm:gap-2 md:min-w-0">
                     <div

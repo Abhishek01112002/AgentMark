@@ -5,6 +5,7 @@ import {
   TargetIcon, 
   PenToolIcon, 
   ImageIcon, 
+  UsersIcon,
   CheckSquareIcon, 
   SendIcon 
 } from '../icons';
@@ -37,6 +38,11 @@ export const TeamSection = memo(() => {
       desc: "Translates strategy into precise prompts for image generation models to create stunning assets.",
     },
     {
+      icon: <UsersIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
+      title: "Focus Group Analyst",
+      desc: "Simulates synthetic consumer responses to evaluate objection quotes, click probabilities, and sentiment.",
+    },
+    {
       icon: <CheckSquareIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
       title: "Quality Reviewer",
       desc: "Critiques outputs against brand voice and brief constraints, enforcing high standards before delivery.",
@@ -61,17 +67,15 @@ export const TeamSection = memo(() => {
             Meet Your New Team
           </h2>
           <p className="text-xs sm:text-sm md:text-base px-4" style={{ color: "#8B8B9E" }}>
-            7 specialized AI models working in perfect sync.
+            8 specialized AI models working in perfect sync.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {agents.map((agent, i) => (
             <div
               key={i}
-              className={`hover-card glass-card rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 ${
-                i === 6 ? "sm:col-span-2 lg:col-span-1 lg:col-start-2" : ""
-              }`}
+              className="hover-card glass-card rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6"
             >
               <div className="text-indigo-400 mb-3 sm:mb-4">{agent.icon}</div>
               <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1.5 sm:mb-2">{agent.title}</h3>

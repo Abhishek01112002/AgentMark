@@ -41,7 +41,7 @@ const sections: DocSection[] = [
     content: (
       <div className="space-y-6">
         <p className="text-xs md:text-sm text-slate-200 leading-relaxed font-normal">
-          <strong className="text-white font-semibold">AgentMark</strong> is an all-in-one AI Marketing Department in your browser. Simply provide a high-level campaign goal, and <strong className="text-indigo-300 font-semibold">7 autonomous AI specialist agents</strong> collaborate to conduct live web market research, formulate positioning strategy, write multi-channel copy, generate visual art prompts, run audience focus group simulations, and generate your posting calendar — all in under 90 seconds.
+          <strong className="text-white font-semibold">AgentMark</strong> is an all-in-one AI Marketing Department in your browser. Simply provide a high-level campaign goal, and <strong className="text-indigo-300 font-semibold">8 autonomous AI specialist agents</strong> collaborate to conduct live web market research, formulate positioning strategy, write multi-channel copy, generate visual art prompts, run audience focus group simulations, audit quality, and generate your posting calendar — all in under 90 seconds.
         </p>
 
         {/* Hero Banner */}
@@ -60,7 +60,7 @@ const sections: DocSection[] = [
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 py-3">
           <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
-            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-indigo-400">7 AI Agents</div>
+            <div className="text-lg sm:text-xl md:text-2xl font-extrabold text-indigo-400">8 AI Agents</div>
             <div className="text-[10px] sm:text-xs text-slate-400 font-medium mt-0.5">Autonomous Team</div>
           </div>
           <div className="p-4 sm:p-5 rounded-2xl bg-[#12121a] border border-[#1e1e2d] text-center shadow-md">
@@ -115,9 +115,9 @@ const sections: DocSection[] = [
           <div className="p-4 sm:p-6 rounded-2xl bg-[#12121a] border border-[#1e1e2d] flex items-start gap-3 sm:gap-4 shadow-sm">
             <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-500 text-white flex items-center justify-center text-xs font-extrabold shrink-0 mt-0.5 shadow-md">2</div>
             <div>
-              <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Launch the 7 AI Agents</strong>
+              <strong className="text-white text-xs md:text-sm block mb-1 font-semibold">Launch the 8 AI Agents</strong>
               <p className="text-xs md:text-sm text-slate-400 leading-relaxed">
-                Click <strong>"Launch Campaign"</strong>. Watch real-time status updates as each AI specialist conducts live research, creates strategy pillars, drafts multi-channel copy, and audits quality.
+                Click <strong>"Launch Campaign"</strong>. Watch real-time status updates as each AI specialist conducts live research, creates strategy pillars, drafts multi-channel copy, runs focus group simulations, and audits quality.
               </p>
             </div>
           </div>
@@ -324,7 +324,7 @@ const sections: DocSection[] = [
               </tr>
               <tr>
                 <td className="p-4"><span className="px-3 py-1 rounded-md font-mono text-[11px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">Processing</span></td>
-                <td className="p-4">The 7 AI agents are actively running live web search and copywriting.</td>
+                <td className="p-4">The 8 AI agents are actively running live web search, copywriting, and simulations.</td>
                 <td className="p-4 text-slate-400">Wait ~60 seconds. Progress streams live.</td>
               </tr>
               <tr>
@@ -350,12 +350,12 @@ const sections: DocSection[] = [
   },
   {
     id: 'agents',
-    title: '6. Meet Your 7 AI Specialist Agents',
+    title: '6. Meet Your 8 AI Specialist Agents',
     category: 'AI Agents',
     icon: <Brain size={16} className="text-purple-400 filter drop-shadow-[0_0_8px_rgba(192,132,252,0.6)]" />,
     content: (
       <div className="space-y-6">
-        <p className="text-xs md:text-sm text-slate-200">Here is a breakdown of how each of the 7 AI agents contributes to your campaign:</p>
+        <p className="text-xs md:text-sm text-slate-200">Here is a breakdown of how each of the 8 AI agents contributes to your campaign:</p>
 
         {/* Distinct Luxury Colored Cards for Each AI Agent */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
@@ -374,7 +374,7 @@ const sections: DocSection[] = [
               </div>
             </div>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Orchestrates execution flow across all 7 agents, parses campaign briefs, injects memory context, and ensures handoff integrity.
+              Orchestrates execution flow across all 8 agents, parses campaign briefs, injects memory context, and ensures handoff integrity.
             </p>
           </div>
 
@@ -450,7 +450,25 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Agent 6: Quality Reviewer */}
+          {/* Agent 6: Focus Group */}
+          <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-violet-950/40 via-[#12121a] to-violet-900/10 border border-violet-500/30 hover:border-violet-500/60 shadow-lg transition-all group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-violet-500/20 text-violet-400 border border-violet-500/30 group-hover:scale-105 transition-transform">
+                  <Users size={22} />
+                </div>
+                <div>
+                  <h5 className="font-bold text-violet-200 text-base">6. Focus Group Specialist</h5>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-violet-400 font-bold">Synthetic Consumer Panels</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Simulates synthetic consumer persona panels to evaluate copy sentiment, objection quotes, and click intent before publishing.
+            </p>
+          </div>
+
+          {/* Agent 7: Quality Reviewer */}
           <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-rose-950/40 via-[#12121a] to-rose-900/10 border border-rose-500/30 hover:border-rose-500/60 shadow-lg transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -458,7 +476,7 @@ const sections: DocSection[] = [
                   <ShieldCheck size={22} />
                 </div>
                 <div>
-                  <h5 className="font-bold text-rose-200 text-base">6. Quality Reviewer Specialist</h5>
+                  <h5 className="font-bold text-rose-200 text-base">7. Quality Reviewer Specialist</h5>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-rose-400 font-bold">Policy & Quality Audit</span>
                 </div>
               </div>
@@ -468,15 +486,15 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Agent 7: Distribution Publisher */}
-          <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-teal-950/40 via-[#12121a] to-teal-900/10 border border-teal-500/30 hover:border-teal-500/60 shadow-lg transition-all group col-span-1 md:col-span-2">
+          {/* Agent 8: Distribution Publisher */}
+          <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-teal-950/40 via-[#12121a] to-teal-900/10 border border-teal-500/30 hover:border-teal-500/60 shadow-lg transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 group-hover:scale-105 transition-transform">
                   <Send size={22} />
                 </div>
                 <div>
-                  <h5 className="font-bold text-teal-200 text-base">7. Distribution Publisher Specialist</h5>
+                  <h5 className="font-bold text-teal-200 text-base">8. Distribution Publisher Specialist</h5>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-teal-400 font-bold">1-Click Dispatch & Calendar</span>
                 </div>
               </div>
