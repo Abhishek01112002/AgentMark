@@ -370,9 +370,12 @@ def strategy_agent(state: CampaignState) -> CampaignState:
     logger.info("   Querying LLM with structured output...")
 
     # Revision runs: lower temperature prevents unnecessary field changes;
-    # higher token budget compensates for the extra existing-output context
+    # higher token budget compensates for the extra existing-output context.
+    # Strategy output with content_calendar + all 13 fields can reach 8000-10000 tokens
+    # — raised from 8192 to 12000 to prevent mid-generation truncation of positioning/
+    # differentiation fields (the most critical strategic outputs).
     revision_temperature = 0.0 if is_human_revision else 0.7
-    revision_max_tokens = 8192
+    revision_max_tokens = 12000
 
     if is_human_revision:
         logger.info(f"   [REVISION MODE] temperature={revision_temperature}, max_tokens={revision_max_tokens}")
@@ -393,10 +396,29 @@ def strategy_agent(state: CampaignState) -> CampaignState:
             cache_set(cache_key, strategy_plan.model_dump())
 
     if strategy_plan and strategy_plan.research_foundation:
+        # ── Research Foundation Bypass ────────────────────────────────────────
+        # Populate research_foundation entirely from Python variables, NOT from LLM output.
+        # Reason: The LLM was asked to reproduce the research input data back into the output
+        # JSON (circular injection). This wastes ~1500+ output tokens on fields that are
+        # already available in memory, directly increasing the risk of truncating critical
+        # strategic fields (positioning, differentiation). We override the LLM-generated
+        # values with the authoritative, already-parsed research data.
+        from schemas.agent_outputs import MarketAnalysis, CompetitorAnalysis, AudienceInsights
+        # market_analysis, competitor_analysis, audience_insights are raw dicts — use
+        # model_validate() to safely coerce into the expected Pydantic types.
+        try:
+            strategy_plan.research_foundation.market_analysis = MarketAnalysis.model_validate(market_analysis)
+            strategy_plan.research_foundation.competitor_analysis = CompetitorAnalysis.model_validate(competitor_analysis)
+            strategy_plan.research_foundation.audience_insights = AudienceInsights.model_validate(audience_insights)
+        except Exception as _rf_err:
+            logger.warning("   ⚠️ research_foundation typed field coercion partial error: %s — proceeding", _rf_err)
         strategy_plan.research_foundation.customer_voice_insights = customer_voice_insights
         strategy_plan.research_foundation.competitor_vulnerabilities = competitor_vulnerabilities
         strategy_plan.research_foundation.proven_ad_hooks = proven_ad_hooks
         strategy_plan.research_foundation.brand_dna = brand_dna
+        strategy_plan.research_foundation.market_opportunities = market_opportunities
+        strategy_plan.research_foundation.recommended_approach = recommended_approach
+        logger.info("   ✅ research_foundation populated from Python (bypassed LLM circular injection)")
 
     if is_human_revision and state.strategy_output and strategy_plan is not None:
         logger.info("\n[MERGE] Executing Semantic Delta Patching deep merge for Strategy...")

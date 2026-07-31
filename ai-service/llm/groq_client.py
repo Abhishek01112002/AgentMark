@@ -89,7 +89,10 @@ IMPORTANT:
 - Follow the exact field names and types specified"""
 
         from utils.token_budget import TokenBudgetManager
-        MAX_INPUT_BUDGET = 8000
+        # Groq llama-3.3-70b supports 128k context window — raised from 8000 to 16000 to
+        # prevent silent truncation of research instructions (TAM, market analysis) when
+        # LiteRAG context (5 Tavily searches + Brand DNA) is injected into the prompt.
+        MAX_INPUT_BUDGET = 16000
         sys_tok = TokenBudgetManager.count_tokens(system_prompt or "")
         if sys_tok + TokenBudgetManager.count_tokens(enhanced_prompt) > MAX_INPUT_BUDGET:
             user_budget = max(500, MAX_INPUT_BUDGET - sys_tok)
@@ -134,6 +137,22 @@ IMPORTANT:
                     raise mode_exc
 
             self._record_success()
+
+            # ── Truncation Guard ──────────────────────────────────────────────
+            # If the model stopped due to hitting max_tokens, the JSON output is
+            # definitively incomplete. Raise a validation-style error so the pool
+            # fast-paths to the next provider for a fresh, complete generation.
+            finish_reason = response.choices[0].finish_reason
+            if finish_reason == "length":
+                logger.warning(
+                    "Groq output TRUNCATED (finish_reason=length, max_tokens=%d, model=%s) "
+                    "— raising for pool retry on next provider",
+                    max_tokens, self.model,
+                )
+                raise ValueError(
+                    "json_invalid: output_truncated — Groq hit max_tokens limit before "
+                    "completing JSON output. Pool will retry on next provider."
+                )
 
             response_text = response.choices[0].message.content or ""
             model_inst, err_msg, _ = parse_and_validate(response_text, response_model, agent_name="GroqClient")

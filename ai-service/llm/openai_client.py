@@ -188,6 +188,21 @@ class OpenAIClient(BaseLLMClient):
             except Exception as _tel_err:
                 logger.warning(f"Telemetry logging non-blocking error: {_tel_err}")
 
+        # ── Truncation Guard ──────────────────────────────────────────────
+        # OpenAI native parse: finish_reason="length" means the model hit max_tokens
+        # before completing the JSON. The parsed object will be null or corrupt.
+        finish_reason = response.choices[0].finish_reason
+        if finish_reason == "length":
+            logger.warning(
+                "OpenAI native parse TRUNCATED (finish_reason=length, max_tokens=%d, model=%s) "
+                "— raising for pool retry on next provider",
+                max_tokens, self.model,
+            )
+            raise ValueError(
+                "json_invalid: output_truncated — OpenAI hit max_tokens limit before "
+                "completing JSON output. Pool will retry on next provider."
+            )
+
         parsed = response.choices[0].message.parsed
         if parsed:
             return parsed
@@ -248,6 +263,22 @@ class OpenAIClient(BaseLLMClient):
                     raise e
 
             self._record_success()
+
+            # ── Truncation Guard ──────────────────────────────────────────────
+            # JSON-mode fallback: finish_reason="length" means truncated output.
+            # Raise json_invalid so the SmartClient pool fast-paths to next provider.
+            finish_reason = response.choices[0].finish_reason
+            if finish_reason == "length":
+                logger.warning(
+                    "OpenAI JSON mode TRUNCATED (finish_reason=length, max_tokens=%d, model=%s) "
+                    "— raising for pool retry on next provider",
+                    max_tokens, self.model,
+                )
+                raise ValueError(
+                    "json_invalid: output_truncated — OpenAI JSON mode hit max_tokens limit. "
+                    "Pool will retry on next provider."
+                )
+
             raw_json = response.choices[0].message.content or "{}"
             model_inst, err_msg, _ = parse_and_validate(raw_json, response_model, agent_name="OpenAIClient")
             if model_inst:

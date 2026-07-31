@@ -22,9 +22,13 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-# Maximum raw response bytes (500KB cap)
-MAX_RESPONSE_BYTES = 500_000
-DEFAULT_TIMEOUT_SECONDS = 5.0
+# Maximum raw response bytes (300KB cap — sufficient to capture full hero/above-the-fold HTML;
+# reduced from 500KB to avoid unnecessary memory pressure on large brand sites)
+MAX_RESPONSE_BYTES = 300_000
+# Raised from 5.0s to 10.0s: heavy brand sites (e.g. FMCG, retail) often take 6-8s to
+# respond due to CDN routing and JS-heavy page skeletons. 5s was too aggressive, causing
+# silent failures and downstream 'Brand DNA missing' reviewer flags.
+DEFAULT_TIMEOUT_SECONDS = 10.0
 
 
 def is_ip_private_or_reserved(ip_str: str) -> bool:
@@ -176,7 +180,7 @@ async def fetch_brand_website_dna_async(
             verify=True,
         ) as client:
             curr_url = target_url
-            max_redirects = 3
+            max_redirects = 5  # raised from 3: some brands use multi-hop CDN redirect chains
             raw_html = ""
 
             for _ in range(max_redirects + 1):

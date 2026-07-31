@@ -305,6 +305,29 @@ def research_agent(state: CampaignState) -> CampaignState:
             "</official_brand_dna_context>"
         )
         logger.info("   ✅ Integrated Brand DNA into Research Agent context")
+    elif result_5.success and result_5.snippets:
+        # ── Tavily Brand DNA Fallback ─────────────────────────────────────────
+        # Direct website crawl returned None (timeout / blocked / non-HTML content).
+        # Synthesize Brand DNA from the Tavily official website search (query_5) which
+        # ran in parallel and always has results. This prevents the downstream reviewer
+        # from flagging 'Brand DNA field missing' for sites that block crawlers.
+        tavily_source_url = result_5.sources[0].url if result_5.sources else f"https://{brand_name.lower().replace(' ', '')}.com"
+        tavily_hero_text = "\n".join(f"- {s}" for s in result_5.snippets[:5])
+        dna_data = {
+            "source_url": tavily_source_url,
+            "extracted_hero_text": tavily_hero_text,
+            "crawled_at_host": brand_name,
+            "source": "tavily_fallback",  # Distinguishes from direct crawl
+        }
+        state.brand_dna = dna_data
+        context_parts.append(
+            "<official_brand_dna_context>\n" +
+            f"Source URL: {tavily_source_url}\n" +
+            f"Grounded Brand Value Prop & Product Facts (via Tavily):\n{tavily_hero_text}\n" +
+            "</official_brand_dna_context>"
+        )
+        logger.info("   ✅ Brand DNA synthesized from Tavily fallback (direct crawl unavailable): %s", tavily_source_url)
+
 
     # Collect all sources for UI
     all_sources = []
@@ -344,7 +367,13 @@ def research_agent(state: CampaignState) -> CampaignState:
                 })
 
     if context_parts:
-        prompt += "\n\n" + "\n\n".join(context_parts)
+        # CRITICAL: Prepend context BEFORE the research instructions (not append after).
+        # Reason: When token budget truncation fires, `slice_context_to_budget` uses head/tail
+        # slicing. If context is appended last, truncation trims the INSTRUCTIONS (TAM, schema)
+        # which are mission-critical. By prepending context, any overflow trims the grounding
+        # snippets (recoverable) and keeps the instructions (non-negotiable) intact at the end.
+        context_block = "\n\n".join(context_parts)
+        prompt = context_block + "\n\n" + prompt
     
     logger.info("   Querying LLM with structured output...")
 
