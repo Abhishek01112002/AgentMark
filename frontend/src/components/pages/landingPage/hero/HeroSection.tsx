@@ -56,22 +56,6 @@ export const HeroSection = memo(({ onViewDemoClick }: { onViewDemoClick?: () => 
           </button>
         </div>
 
-        {/* Technical Feature Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-8 max-w-2xl mx-auto px-4 font-mono text-[10px] sm:text-xs">
-          <span className="px-2.5 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-[#8B8B9E] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live Web Search RAG
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-[#8B8B9E] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#6366F1]" /> LangGraph Workflows
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-[#8B8B9E] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#38BDF8]" /> Bring Your Own Key (BYOK)
-          </span>
-          <span className="px-2.5 py-1 rounded-full bg-[#1A1A24] border border-[#2A2A38] text-[#8B8B9E] flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B]" /> 1-Click Social Bridges
-          </span>
-        </div>
-
         <p className="px-2 text-[9px] sm:text-[10px] uppercase tracking-[0.28em] sm:tracking-[0.35em] text-[#4A4A5E] font-mono font-bold">
           Trusted by forward-thinking marketing teams
         </p>

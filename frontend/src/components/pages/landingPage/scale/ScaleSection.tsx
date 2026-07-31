@@ -10,26 +10,26 @@ export const ScaleSection = memo(() => {
   const features = [
     {
       icon: <ZapIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      title: "Lightning Fast Execution",
-      desc: "Generate complete campaigns in minutes, not weeks. Our models process complex briefs instantly, letting you iterate rapidly and capitalize on market trends before your competitors.",
+      title: "Autonomous 8-Agent Pipeline",
+      desc: "Run end-to-end campaigns from brief to deployment. Our 8 AI specialist agents collaborate sequentially using LangGraph state management to deliver market research, positioning angles, ad copy, creative hooks, and visual art direction in under 90 seconds.",
       span: "md:col-span-2",
     },
     {
       icon: <LayoutGridIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      title: "Omnichannel Assets",
-      desc: "Get ready-to-use formats for Facebook, Google, LinkedIn, and Email simultaneously.",
+      title: "Omnichannel Asset Formats",
+      desc: "Instantly generate tailored, high-converting copy formats for X (Twitter), LinkedIn, promotional Email, Google Ads, and Facebook simultaneously.",
       span: "md:col-span-1",
     },
     {
       icon: <BarChart2Icon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      title: "Data-Driven Strategy",
-      desc: "Every campaign is backed by real-time market research and competitor analysis.",
+      title: "Real-Time Web Research RAG",
+      desc: "Every campaign is grounded in live market data using Tavily and Google web search RAG, discovering current competitor trends and real audience pain points.",
       span: "md:col-span-1",
     },
     {
       icon: <ShieldCheckIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      title: "Brand Voice Guardrails",
-      desc: "Upload your brand guidelines once. Our Quality Reviewer agent strictly enforces tone, terminology, and visual constraints across every single generated asset to ensure perfect consistency.",
+      title: "Brand Vault & Policy Guardrails",
+      desc: "Upload your brand guidelines once to the Context Memory Vault. Our 4-tier policy engine and Quality Reviewer agent strictly enforce tone, terminology, and compliance constraints across every generated asset.",
       span: "md:col-span-2",
     },
   ];

@@ -4,7 +4,6 @@ import { Navbar } from './navbar/Navbar';
 import { HeroSection } from './hero/HeroSection';
 import { WorkflowSection } from './workflow/WorkflowSection';
 import { TeamSection } from './teams/TeamSection';
-import { InnovationsSection } from './innovations/InnovationsSection';
 import { ScaleSection } from './scale/ScaleSection';
 import { SavingsSection } from './saving/SavingsSection';
 import { Footer } from './footer/Footer';
@@ -194,7 +193,6 @@ export default function LandingPage() {
 
         <WorkflowSection />
         <TeamSection />
-        <InnovationsSection />
         <ScaleSection />
         <SavingsSection />
       </main>
