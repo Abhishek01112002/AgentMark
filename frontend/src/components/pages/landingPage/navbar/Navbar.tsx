@@ -9,8 +9,8 @@ const navItems = [
   { label: "How It Works", href: "#workflow" },
   { label: "Agents", href: "#agents" },
   { label: "Features", href: "#features-showcase" },
-  { label: "Scale", href: "#features" },
-  { label: "Why AgentMark", href: "#savings" },
+  { label: "Capabilities", href: "#features" },
+  { label: "Why AgentMark", href: "#why-agentmark" },
 ];
 
 export const Navbar = memo(({ onLoginClick, onGetStartedClick }: NavbarProps) => {
