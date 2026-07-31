@@ -34,7 +34,7 @@ export const HeroSection = memo(({ onViewDemoClick }: { onViewDemoClick?: () => 
 
         <p className="mx-auto mt-4 sm:mt-6 max-w-3xl text-[0.875rem] sm:text-[0.98rem] md:text-[1.05rem] lg:text-[1.1rem] leading-[1.55] sm:leading-[1.65] text-[#8B8B9E] px-4 sm:px-6">
           Deploy a specialized team of 8 autonomous AI agents. From strategy
-          and research to copywriting, visual generation, and focus group testing, execute
+          and research to creative hooks, copywriting, and visual generation, execute
           high-converting campaigns instantly.
         </p>
 

@@ -5,7 +5,7 @@ import {
   TargetIcon, 
   PenToolIcon, 
   ImageIcon, 
-  UsersIcon,
+  LightbulbIcon,
   CheckSquareIcon, 
   SendIcon 
 } from '../icons';
@@ -15,8 +15,8 @@ const PIPELINE_STEPS = [
   { icon: <SearchIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Research", text: "Researching competitors, market trends, and audience opportunities..." },
   { icon: <TargetIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Strategy", text: "Shaping angles, positioning, and channel strategy for the campaign..." },
   { icon: <PenToolIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Copywriter", text: "Drafting multi-variant ad copy for Facebook and LinkedIn based on strategic brief..." },
+  { icon: <LightbulbIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Creative Hooks", text: "Formulating psychological hook matrices, emotional angles, and viral frameworks..." },
   { icon: <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Visual", text: "Creating visual prompt directions and asset-ready creative variations..." },
-  { icon: <UsersIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Focus Group", text: "Simulating synthetic consumer reactions, sentiment ratings, and objection quotes..." },
   { icon: <CheckSquareIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Review", text: "Reviewing tone, brand alignment, and quality constraints before launch..." },
   { icon: <SendIcon className="w-4 h-4 sm:w-5 sm:h-5" />, label: "Publish", text: "Packaging the final campaign assets and preparing everything for deployment..." },
 ] as const;

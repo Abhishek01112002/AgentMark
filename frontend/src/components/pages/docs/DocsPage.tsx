@@ -432,7 +432,25 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Agent 5: Visual Prompt */}
+          {/* Agent 5: Creative Hook Matrix */}
+          <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-[#12121a] to-indigo-900/10 border border-indigo-500/30 hover:border-indigo-500/60 shadow-lg transition-all group">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 group-hover:scale-105 transition-transform">
+                  <Lightbulb size={22} />
+                </div>
+                <div>
+                  <h5 className="font-bold text-indigo-200 text-base">5. Creative Hook Specialist</h5>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400 font-bold">Psychological Hook Matrix</span>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              Formulates high-converting psychological hook matrices, emotional angles, and viral pattern-interrupt frameworks.
+            </p>
+          </div>
+
+          {/* Agent 6: Visual Prompt */}
           <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-amber-950/40 via-[#12121a] to-amber-900/10 border border-amber-500/30 hover:border-amber-500/60 shadow-lg transition-all group">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
@@ -440,31 +458,13 @@ const sections: DocSection[] = [
                   <Palette size={22} />
                 </div>
                 <div>
-                  <h5 className="font-bold text-amber-200 text-base">5. Visual Prompt Specialist</h5>
+                  <h5 className="font-bold text-amber-200 text-base">6. Visual Prompt Specialist</h5>
                   <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400 font-bold">Art Direction Prompts</span>
                 </div>
               </div>
             </div>
             <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
               Generates high-detail art direction prompts matching your campaign moodboard for DALL-E 3, Midjourney, Imagen 3, and Flux generators.
-            </p>
-          </div>
-
-          {/* Agent 6: Focus Group */}
-          <div className="p-6 md:p-7 rounded-2xl bg-gradient-to-br from-violet-950/40 via-[#12121a] to-violet-900/10 border border-violet-500/30 hover:border-violet-500/60 shadow-lg transition-all group">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-violet-500/20 text-violet-400 border border-violet-500/30 group-hover:scale-105 transition-transform">
-                  <Users size={22} />
-                </div>
-                <div>
-                  <h5 className="font-bold text-violet-200 text-base">6. Focus Group Specialist</h5>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-violet-400 font-bold">Synthetic Consumer Panels</span>
-                </div>
-              </div>
-            </div>
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-              Simulates synthetic consumer persona panels to evaluate copy sentiment, objection quotes, and click intent before publishing.
             </p>
           </div>
 

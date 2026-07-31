@@ -5,7 +5,7 @@ import {
   TargetIcon, 
   PenToolIcon, 
   ImageIcon, 
-  UsersIcon,
+  LightbulbIcon,
   CheckSquareIcon, 
   SendIcon 
 } from '../icons';
@@ -33,14 +33,14 @@ export const TeamSection = memo(() => {
       desc: "Drafts compelling ad copy, landing pages, and emails optimized for conversion.",
     },
     {
+      icon: <LightbulbIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
+      title: "Creative Hook Analyst",
+      desc: "Formulates psychological hook matrices, emotional angles, and viral pattern-interrupt frameworks.",
+    },
+    {
       icon: <ImageIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
       title: "Visual Prompt Engineer",
       desc: "Translates strategy into precise prompts for image generation models to create stunning assets.",
-    },
-    {
-      icon: <UsersIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
-      title: "Focus Group Analyst",
-      desc: "Simulates synthetic consumer responses to evaluate objection quotes, click probabilities, and sentiment.",
     },
     {
       icon: <CheckSquareIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />,
