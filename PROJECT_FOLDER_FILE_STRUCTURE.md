@@ -138,9 +138,10 @@ agentmark-mcp-server/
     ├── session_status.py           # Session evidence status file generator
     ├── formatters/
     │   └── hook_formatter.py       # Terminal & Markdown output formatting utilities
-    └── tools/                      # Tool implementations (6 Tools total)
+    │   └── hook_formatter.py       # Terminal & Markdown output formatting utilities
+    └── tools/                      # Tool implementations (18 Tools total)
         ├── campaign.py             # generate_campaign tool
-        ├── extended.py             # create_project & publish_to_channel tools
+        ├── extended.py             # create_project, publish_to_channel, request_targeted_revision, etc.
         ├── focus_group.py          # run_focus_group tool
         └── revision.py             # revise_copy_with_feedback & get_campaign_status tools
 ```
@@ -149,12 +150,24 @@ agentmark-mcp-server/
 
 | MCP Tool Name | Implementation File | Functionality & Output |
 | :--- | :--- | :--- |
-| `generate_campaign` | [`tools/campaign.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/campaign.py) | Triggers the complete 7-agent LangGraph pipeline from a brief; streams progress and returns a Markdown campaign brief. |
+| `generate_campaign` | [`tools/campaign.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/campaign.py) | Triggers the complete 8-agent LangGraph pipeline from a brief; streams progress and returns a Markdown campaign brief. |
 | `run_focus_group` | [`tools/focus_group.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/focus_group.py) | Runs synthetic consumer focus group testing on campaign copy; returns persona scores, objection quotes, and rewrite tips. |
 | `publish_to_channel` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Approves campaign and invokes Publisher agent to generate distribution schedules and content calendars. |
 | `create_project` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Programmatically creates a new project workspace and returns its unique UUID. |
 | `revise_copy_with_feedback` | [`tools/revision.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/revision.py) | Re-runs Copywriter agent with specific steering notes, then automatically re-evaluates copy with Focus Group. |
 | `get_campaign_status` | [`tools/revision.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/revision.py) | Returns real-time status badge, quality score, revision count, and version history array. |
+| `request_targeted_revision` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Target specific upstream agent (`copywriter`, `strategy`, `research`, `creative_hook_matrix`, `image_prompt`) for re-execution. |
+| `submit_human_approval` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Submit approval decision (`approved` or `rejected`) at the HITL gate. |
+| `update_client_memory` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Update brand guidelines, tone of voice, or audience context in Memory Hub. |
+| `clear_client_memory` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Reset Memory Hub context for a project. |
+| `export_campaign_pdf` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Export strategy, copy, visual prompts, and content calendar as a PDF document. |
+| `export_campaign_json` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Export raw creative assets as JSON payload for integrations. |
+| `get_publishing_schedule` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Retrieve 4-week content calendar publishing timeline and channel readiness status. |
+| `verify_channel_credentials` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Test connected social media and email publishing API credentials. |
+| `generate_image_asset` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Directly generate visual image asset from prompt using Gemini or DALL-E. |
+| `get_campaign_analytics` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Fetch projected reach, estimated CTR, conversion targets, and performance ROI. |
+| `synthesize_brand_memory_intelligence` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Synthesize brand voice guidelines and winning positioning patterns into Memory Hub. |
+| `compare_campaign_performance_vectors` | [`tools/extended.py`](file:///e:/AgentMark/AgentMark/agentmark-mcp-server/src/agentmark_mcp/tools/extended.py) | Perform comparative performance analysis between a target campaign and baseline. |
 
 ---
 

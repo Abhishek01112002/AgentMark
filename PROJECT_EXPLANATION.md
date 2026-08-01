@@ -105,7 +105,7 @@ Here is the exact journey of a campaign from the moment you click **"Launch Camp
                                                                         │
   [Frontend Displays Results] ◄── [Socket.IO Emits Events] ◄── [Redis Publishes Agent Events]
                                                                         │
-                                                         [LangGraph Runs 7-Agent Pipeline]
+                                                         [LangGraph Runs 8-Agent Pipeline]
 ```
 
 1. **User Submits Brief:** In the React Frontend (`NewCampaignPage.tsx`), you enter product name, audience, goal, tone, and budget. Clicking **Launch** sends `POST /api/campaigns` to the Express Backend.
@@ -113,38 +113,40 @@ Here is the exact journey of a campaign from the moment you click **"Launch Camp
 3. **AI Pipeline Trigger:** Backend calls Python AI Service `POST http://127.0.0.1:5002/campaigns/create`.
 4. **LangGraph Graph Execution:** The AI Service initializes `CampaignState` and starts graph traversal:
    - `Manager` analyzes brief constraints.
-   - `Research` queries Tavily API for live web market data.
-   - `Strategy` builds messaging pillars and channel split.
-   - `Copywriter` crafts copy for X, LinkedIn, Email, Google Ads, Meta.
+   - `Research` queries Tavily API and scrapes Brand DNA.
+   - `Strategy` builds messaging pillars using typed Brand DNA context.
+   - `Copywriter` crafts copy for X, LinkedIn, Email, Google Ads, Meta with concrete claims.
+   - `Creative Hook Matrix` formulates viral psychological hooks.
    - `Image Prompt` designs visual artwork prompts.
-   - `Reviewer` scores quality (0–100) and checks compliance.
+   - `Reviewer` scores quality (0–100), checks grounded Brand DNA claims and policy compliance.
 5. **Real-Time Streaming:** As each agent starts and finishes, Python calls `publish_agent_event()`, sending JSON to Redis. Express (`redis-subscriber.ts`) receives the event and immediately forwards it to your browser via Socket.IO.
 6. **Human-in-the-Loop (HITL) Review:** If Reviewer score $\ge 75$, workflow pauses at `human_approval` (`status = "awaiting_human_approval"`).
 7. **User Approval & Publisher Run:** Clicking **Approve Campaign** triggers `POST /api/campaigns/:id/approve`. The graph resumes, running the `Publisher` agent to create content calendars and distribution schedules. Status turns `completed`.
 
 ---
 
-## 4. 🤖 The 7 AI Specialist Agents & Auxiliaries Explained
+## 4. 🤖 The 8 AI Specialist Agents & Auxiliaries Explained
 
-AgentMark features **7 Core Pipeline Agents** and **5 Auxiliary Intelligence Agents**:
+AgentMark features **8 Core Pipeline Agents** and **Auxiliary Intelligence Engines**:
 
 ### Core Pipeline Agents
 
 | Agent Name | Source File | Plain English Explanation | Key Output Fields |
 | :--- | :--- | :--- | :--- |
 | **1. Manager** | [`manager.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/manager.py) | **The Project Manager.** Inspects your input brief, ensures goals are clear, and sets up execution rules. | `campaign_name`, `channels[]` |
-| **2. Research** | [`research.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/research.py) | **The Market Researcher.** Runs live web searches to find market size, competitor moves, and buyer pain points. | `total_addressable_market`, `top_competitors[]`, `pain_points[]` |
+| **2. Research** | [`research.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/research.py) | **The Market Researcher.** Runs live web searches to find market size, competitor moves, buyer pain points, and scrapes Brand DNA. | `total_addressable_market`, `top_competitors[]`, `pain_points[]` |
 | **3. Strategy** | [`strategy.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/strategy.py) | **The Strategist.** Decides *how* to position the product, which channels to prioritize, and what key messages to use. | `positioning`, `content_pillars[]`, `kpis` |
-| **4. Copywriter** | [`copywriter.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/copywriter.py) | **The Copywriter.** Writes channel-tailored ad copy, subject lines, body text, and calls-to-action (CTAs). | `headline`, `body_text`, `call_to_action` |
-| **5. Image Prompt** | [`image_prompt.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/image_prompt.py) | **The Art Director.** Generates visual concepts and exact AI image prompts for Midjourney and DALL-E 3. | `visual_direction`, `ai_image_prompt`, `aspect_ratio` |
-| **6. Reviewer** | [`reviewer.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/reviewer.py) | **The Quality Inspector.** Grades deliverables on a 0–100 scale and verifies brand safety and compliance. | `overall_score`, `approved`, `issues[]` |
-| **7. Publisher** | [`publisher.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/publisher.py) | **The Distribution Manager.** Formulates multi-week publishing schedules, calendars, and asset checklists. | `publishing_plan[]`, `content_calendar` |
+| **4. Copywriter** | [`copywriter.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/copywriter.py) | **The Copywriter.** Writes channel-tailored ad copy, subject lines, body text, and calls-to-action (CTAs) grounded in Brand DNA. | `headline`, `body_text`, `call_to_action` |
+| **5. Creative Hook Matrix** | [`creative_hook_matrix.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/creative_hook_matrix.py) | **The Hook Specialist.** Formulates psychological hook matrices, pattern interrupts, and viral angle variations. | `hooks[]`, `matrix[]` |
+| **6. Image Prompt** | [`image_prompt.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/image_prompt.py) | **The Art Director.** Generates visual concepts and exact AI image prompts for Midjourney and DALL-E 3. | `visual_direction`, `ai_image_prompt`, `aspect_ratio` |
+| **7. Reviewer** | [`reviewer.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/reviewer.py) | **The Quality Inspector.** Grades deliverables on a 0–100 scale, validates grounded Brand DNA claims, and checks compliance. | `overall_score`, `approved`, `issues[]` |
+| **8. Publisher** | [`publisher.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/publisher.py) | **The Distribution Manager.** Formulates multi-week publishing schedules, calendars, and asset checklists. | `publishing_plan[]`, `content_calendar` |
 
 ---
 
-### Auxiliary Intelligence Agents
+### Auxiliary Intelligence Engines
 
-- **Creative Hook Matrix ([`creative_hook_matrix.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/creative_hook_matrix.py)):** Generates viral angle hooks per social channel (gated by `ENABLE_CREATIVE_HOOK_MATRIX`).
+- **Brand DNA Consumption Engine ([`brand_dna_context.py`](file:///e:/AgentMark/AgentMark/ai-service/utils/brand_dna_context.py)):** Purpose-specific, token-budgeted Brand DNA context builder with grounded claim verification.
 - **Focus Group Engine ([`focus_group.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/focus_group.py)):** Runs parallel LLM persona simulations representing diverse consumer demographics to score copy resonance and list objections.
 - **Independent Evaluator ([`evaluator.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/evaluator.py)):** Prompt-isolated evaluation agent for EMOS Phase 3 quality gates.
 - **Persona Composer ([`persona_composer.py`](file:///e:/AgentMark/AgentMark/ai-service/agents/persona_composer.py)):** Dynamically synthesizes target consumer personas.

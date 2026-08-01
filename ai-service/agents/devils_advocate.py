@@ -60,8 +60,11 @@ async def run_devils_advocate_audit(copy_text: str, brand_name: str, client=None
             res_ctx_parts.append("VERBATIM CUSTOMER PAIN QUOTES:\n" + "\n".join(f"- {q}" for q in cvi[:3]))
         if cvul:
             res_ctx_parts.append("COMPETITOR WEAKNESSES TO BEAT:\n" + "\n".join(f"- {v}" for v in cvul[:3]))
-        if dna and isinstance(dna, dict) and dna.get("extracted_hero_text"):
-            res_ctx_parts.append(f"OFFICIAL BRAND DNA VALUE PROP: {dna.get('extracted_hero_text')}")
+            
+        from utils.brand_dna_context import build_brand_dna_context
+        dna_context = build_brand_dna_context(dna, purpose="devils_advocate", max_tokens=1500)
+        if dna_context.text:
+            res_ctx_parts.append(f"OFFICIAL BRAND DNA VALUE PROP:\n{dna_context.text}")
 
     res_ctx_str = ("\n\nRESEARCH INTELLIGENCE EVIDENCE:\n" + "\n".join(res_ctx_parts)) if res_ctx_parts else ""
 

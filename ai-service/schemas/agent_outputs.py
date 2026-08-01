@@ -37,6 +37,20 @@ class CampaignIntelligenceObject(BaseModel):
     visual_theme_direction: str = ""
 
 
+# ==================== BRAND DNA SCHEMAS ====================
+
+class BrandDnaOutput(BaseModel):
+    """
+    Structured extraction of brand DNA from the official website.
+    """
+    core_value_proposition: str = Field(default="", description="The main value proposition of the brand")
+    brand_voice: str = Field(default="", description="Tone and style of the brand's communication")
+    facts: List[str] = Field(default_factory=list, description="Meaningful facts extracted from the website. Max 6.")
+    products: List[str] = Field(default_factory=list, description="Primary products or services offered")
+    target_audience: List[str] = Field(default_factory=list, description="The intended audience or user base")
+    confidence: Literal["HIGH", "MEDIUM", "LOW"] = Field(default="MEDIUM", description="Confidence in the extraction quality")
+
+
 # ==================== REVIEWER V2 SCHEMAS ====================
 
 class MarketingQualityScores(BaseModel):

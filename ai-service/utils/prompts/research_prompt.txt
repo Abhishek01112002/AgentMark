@@ -82,9 +82,7 @@ Respond ONLY with valid JSON in this exact structure (no markdown, no explanatio
       "Competitor Name: positioning angle + key weakness",
       "Competitor Name: positioning angle + key weakness"
     ],
-    "differentiation_opportunity": "Specific, compelling differentiation statement for {brand_name}",
-    "white_space": ["Opportunity 1", "Opportunity 2", "Opportunity 3"],
-    "recent_competitor_moves": "What competitors have done recently"
+    "differentiation_opportunity": "Specific, compelling differentiation statement for {brand_name}"
   }},
   "audience_insights": {{
     "pain_points": [
@@ -103,6 +101,18 @@ Respond ONLY with valid JSON in this exact structure (no markdown, no explanatio
     "trust_barriers": ["Barrier 1", "Barrier 2"],
     "preferred_channels": ["Channel with rationale", "Channel with rationale", "Channel with rationale"]
   }},
+  "customer_voice_insights": [
+    "Specific customer quote or complaint 1",
+    "Specific customer quote or complaint 2"
+  ],
+  "competitor_vulnerabilities": [
+    "Competitor weakness or counter-positioning angle 1",
+    "Competitor weakness or counter-positioning angle 2"
+  ],
+  "proven_ad_hooks": [
+    "High-converting ad hook 1",
+    "High-converting ad hook 2"
+  ],
   "market_opportunities": [
     "HIGH IMPACT: Specific opportunity 1 — what competitors are missing",
     "HIGH IMPACT: Specific opportunity 2 — audience sub-segment gap",

@@ -60,12 +60,21 @@ _client_instance: Optional[AgentMarkClient] = None
 @asynccontextmanager
 async def mcp_lifespan(server: FastMCP):
     global _client_instance
+    from .session_status import init_writer, get_writer
+    
+    # Initialize the writer
+    tool_names = [t.name for t in server._tool_manager.list_tools()] if hasattr(server, "_tool_manager") else []
+    writer = init_writer(tool_names)
+    writer.server_started()
+    await writer.start_heartbeat()
+    
     logger.info("Initializing AgentMark Client connection pool (lifespan start)")
     _client_instance = AgentMarkClient()
     try:
         yield
     finally:
         logger.info("Closing AgentMark Client connection pool (lifespan end)")
+        await writer.shutdown()
         if _client_instance:
             await _client_instance.close()
             _client_instance = None
@@ -1258,7 +1267,8 @@ async def submit_human_approval(
     client = get_client()
     client.set_active_tool("submit_human_approval")
     try:
-        res = await submit_human_approval_impl(client, campaign_id, decision, feedback)
+        impl = _get_impl("extended", "submit_human_approval_impl")
+        res = await impl(client, campaign_id, decision, feedback)
         return f"# Human Approval Submitted ✅\n\n- **Campaign ID**: `{campaign_id}`\n- **Decision**: `{decision}`\n- **Status**: {res.get('status', 'updated')}"
     except Exception as exc:
         logger.error("Error in submit_human_approval tool: %s", exc)
@@ -1285,7 +1295,8 @@ async def request_targeted_revision(
     client = get_client()
     client.set_active_tool("request_targeted_revision")
     try:
-        res = await request_targeted_revision_impl(client, campaign_id, target_agent, feedback)
+        impl = _get_impl("extended", "request_targeted_revision_impl")
+        res = await impl(client, campaign_id, target_agent, feedback)
         return f"# Targeted Revision Requested 🔄\n\n- **Campaign ID**: `{campaign_id}`\n- **Target Agent**: `{target_agent}`\n- **Status**: {res.get('status', 'processing')}"
     except Exception as exc:
         logger.error("Error in request_targeted_revision tool: %s", exc)
@@ -1314,7 +1325,8 @@ async def update_client_memory(
     client = get_client()
     client.set_active_tool("update_client_memory")
     try:
-        res = await update_client_memory_impl(client, project_id, brand_voice, target_audience, key_insights)
+        impl = _get_impl("extended", "update_client_memory_impl")
+        res = await impl(client, project_id, brand_voice, target_audience, key_insights)
         return f"# Client Memory Hub Updated 🧠\n\n- **Project ID**: `{project_id}`\n- **Status**: Updated successfully"
     except Exception as exc:
         logger.error("Error in update_client_memory tool: %s", exc)
@@ -1332,7 +1344,8 @@ async def clear_client_memory(project_id: str) -> str:
     client = get_client()
     client.set_active_tool("clear_client_memory")
     try:
-        res = await clear_client_memory_impl(client, project_id)
+        impl = _get_impl("extended", "clear_client_memory_impl")
+        res = await impl(client, project_id)
         return f"# Client Memory Cleared 🧹\n\n- **Project ID**: `{project_id}`\n- **Status**: Memory context reset"
     except Exception as exc:
         logger.error("Error in clear_client_memory tool: %s", exc)
@@ -1350,7 +1363,8 @@ async def export_campaign_pdf(campaign_id: str) -> str:
     client = get_client()
     client.set_active_tool("export_campaign_pdf")
     try:
-        res = await export_campaign_pdf_impl(client, campaign_id)
+        impl = _get_impl("extended", "export_campaign_pdf_impl")
+        res = await impl(client, campaign_id)
         return f"# Campaign PDF Export Ready 📄\n\n- **Campaign ID**: `{campaign_id}`\n- **Download URL**: {res.get('downloadUrl', 'Available in campaign exports tab')}"
     except Exception as exc:
         logger.error("Error in export_campaign_pdf tool: %s", exc)
@@ -1368,7 +1382,8 @@ async def export_campaign_json(campaign_id: str) -> str:
     client = get_client()
     client.set_active_tool("export_campaign_json")
     try:
-        res = await export_campaign_json_impl(client, campaign_id)
+        impl = _get_impl("extended", "export_campaign_json_impl")
+        res = await impl(client, campaign_id)
         return f"# Campaign JSON Export Ready 📦\n\n```json\n{res}\n```"
     except Exception as exc:
         logger.error("Error in export_campaign_json tool: %s", exc)
@@ -1386,7 +1401,8 @@ async def get_publishing_schedule(campaign_id: str) -> str:
     client = get_client()
     client.set_active_tool("get_publishing_schedule")
     try:
-        res = await get_publishing_schedule_impl(client, campaign_id)
+        impl = _get_impl("extended", "get_publishing_schedule_impl")
+        res = await impl(client, campaign_id)
         return f"# 4-Week Publishing Schedule 📅\n\n```json\n{res}\n```"
     except Exception as exc:
         logger.error("Error in get_publishing_schedule tool: %s", exc)
@@ -1407,7 +1423,8 @@ async def verify_channel_credentials(
     client = get_client()
     client.set_active_tool("verify_channel_credentials")
     try:
-        res = await verify_channel_credentials_impl(client, campaign_id, channels)
+        impl = _get_impl("extended", "verify_channel_credentials_impl")
+        res = await impl(client, campaign_id, channels)
         return f"# Channel Credentials Verification 🔗\n\n- **Campaign ID**: `{campaign_id}`\n- **Status**: {res.get('status', 'Verified')}"
     except Exception as exc:
         logger.error("Error in verify_channel_credentials tool: %s", exc)
@@ -1428,7 +1445,8 @@ async def generate_image_asset(
     client = get_client()
     client.set_active_tool("generate_image_asset")
     try:
-        res = await generate_image_asset_impl(client, prompt, aspect_ratio)
+        impl = _get_impl("extended", "generate_image_asset_impl")
+        res = await impl(client, prompt, aspect_ratio)
         return f"# Visual Asset Generated 🖼️\n\n- **Image URL**: {res.get('imageUrl', 'Generated successfully')}"
     except Exception as exc:
         logger.error("Error in generate_image_asset tool: %s", exc)
@@ -1446,7 +1464,8 @@ async def get_campaign_analytics(campaign_id: str) -> str:
     client = get_client()
     client.set_active_tool("get_campaign_analytics")
     try:
-        res = await get_campaign_analytics_impl(client, campaign_id)
+        impl = _get_impl("extended", "get_campaign_analytics_impl")
+        res = await impl(client, campaign_id)
         return f"# Campaign Analytics & Metrics 📊\n\n```json\n{res}\n```"
     except Exception as exc:
         logger.error("Error in get_campaign_analytics tool: %s", exc)
@@ -1464,7 +1483,8 @@ async def synthesize_brand_memory_intelligence(project_id: str) -> str:
     client = get_client()
     client.set_active_tool("synthesize_brand_memory_intelligence")
     try:
-        res = await synthesize_brand_memory_impl(client, project_id)
+        impl = _get_impl("extended", "synthesize_brand_memory_impl")
+        res = await impl(client, project_id)
         return f"# Brand Memory Intelligence Synthesized 🧠\n\n- **Project**: `{project_id}`\n- **Status**: {res.get('message', 'Synthesized')}\n\n```json\n{res}\n```"
     except Exception as exc:
         logger.error("Error in synthesize_brand_memory_intelligence tool: %s", exc)
@@ -1485,7 +1505,8 @@ async def compare_campaign_performance_vectors(
     client = get_client()
     client.set_active_tool("compare_campaign_performance_vectors")
     try:
-        res = await compare_campaigns_impl(client, target_campaign_id, baseline_campaign_id)
+        impl = _get_impl("extended", "compare_campaigns_impl")
+        res = await impl(client, target_campaign_id, baseline_campaign_id)
         return f"# Campaign Performance Vector Comparison 📈\n\n- **Target Campaign**: `{target_campaign_id}`\n\n```json\n{res}\n```"
     except Exception as exc:
         logger.error("Error in compare_campaign_performance_vectors tool: %s", exc)
@@ -1494,7 +1515,41 @@ async def compare_campaign_performance_vectors(
         client.set_active_tool(None)
 
 
+def instrument_session_status():
+    from mcp.server.session import ServerSession
+    from mcp import types
+    from .session_status import get_writer
+    
+    orig_received_request = ServerSession._received_request
+    orig_handle_incoming = ServerSession._handle_incoming
+    
+    async def hooked_received_request(self, responder):
+        writer = get_writer()
+        if writer:
+            writer.on_activity()
+            req = responder.request.root
+            if isinstance(req, types.InitializeRequest):
+                client_name = getattr(req.params.clientInfo, "name", None) if getattr(req.params, "clientInfo", None) else None
+                client_version = getattr(req.params.clientInfo, "version", None) if getattr(req.params, "clientInfo", None) else None
+                writer.on_initialize(client_name, client_version)
+        return await orig_received_request(self, responder)
+        
+    async def hooked_handle_incoming(self, message):
+        writer = get_writer()
+        if writer:
+            writer.on_activity()
+            if hasattr(message, "request") and getattr(message.request, "root", None):
+                req = message.request.root
+                if isinstance(req, types.ListToolsRequest):
+                    writer.on_tools_list()
+        return await orig_handle_incoming(self, message)
+
+    ServerSession._received_request = hooked_received_request
+    ServerSession._handle_incoming = hooked_handle_incoming
+
+
 def main():
+    instrument_session_status()
     mcp.run()
 
 

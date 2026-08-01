@@ -27,16 +27,30 @@ export const selectQualityScore = (campaign: NormalizedCampaign | null): number 
   return campaign.reviewScore;
 };
 
-export const selectAgentScores = (campaign: NormalizedCampaign | null) => {
+import { AgentScores, RevisionCounts } from '../types';
+
+export const selectAgentScores = (campaign: NormalizedCampaign | null): AgentScores => {
   if (!campaign || !campaign.review) {
-    return { research: null, strategy: null, copywriter: null, image_prompt: null };
+    return { research: null, strategy: null, copywriter: null, creative_hook_matrix: null, image_prompt: null };
   }
-  return campaign.review.agent_scores || { research: null, strategy: null, copywriter: null, image_prompt: null };
+  return {
+    research: campaign.review.agent_scores?.research ?? null,
+    strategy: campaign.review.agent_scores?.strategy ?? null,
+    copywriter: campaign.review.agent_scores?.copywriter ?? null,
+    creative_hook_matrix: campaign.review.agent_scores?.creative_hook_matrix ?? null,
+    image_prompt: campaign.review.agent_scores?.image_prompt ?? null,
+  };
 };
 
-export const selectRevisionCounts = (campaign: NormalizedCampaign | null) => {
-  if (!campaign) return { research: 0, strategy: 0, copywriter: 0, image_prompt: 0 };
-  return campaign.revisionCounts;
+export const selectRevisionCounts = (campaign: NormalizedCampaign | null): RevisionCounts => {
+  if (!campaign) return { research: 0, strategy: 0, copywriter: 0, creative_hook_matrix: 0, image_prompt: 0 };
+  return {
+    research: campaign.revisionCounts.research || 0,
+    strategy: campaign.revisionCounts.strategy || 0,
+    copywriter: campaign.revisionCounts.copywriter || 0,
+    creative_hook_matrix: (campaign.revisionCounts as any).creative_hook_matrix || 0,
+    image_prompt: campaign.revisionCounts.image_prompt || 0,
+  };
 };
 
 export const selectReviewerNotes = (campaign: NormalizedCampaign | null) => {

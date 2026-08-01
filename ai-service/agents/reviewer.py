@@ -86,6 +86,7 @@ from config.settings import (
     MAX_HUMAN_REVISIONS,
     MIN_AGENT_SCORE,
     MIN_QUALITY_SCORE,
+    ENABLE_CREATIVE_HOOK_MATRIX,
 )
 
 MAX_REVISIONS = MAX_AUTO_REVISIONS
@@ -317,10 +318,25 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         except Exception as e:
             logger.warning(f"⚠️ Failed to parse image_output: {e}")
 
+    # Creative Hook Matrix — only read if feature flag is enabled AND output exists
+    hook_data: Optional[dict] = None
+    hook_output_raw: Optional[str] = state.creative_hook_matrix_output if ENABLE_CREATIVE_HOOK_MATRIX else None
+    if hook_output_raw:
+        if isinstance(hook_output_raw, dict):
+            hook_data = hook_output_raw
+        else:
+            try:
+                hook_data = json.loads(hook_output_raw)
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to parse creative_hook_matrix_output: {e}")
+
     logger.info(f"✓ Research Output: parsed ({len(state.research_output)} chars)")
     logger.info(f"✓ Strategy Output: parsed ({len(state.strategy_output)} chars)")
     logger.info(f"✓ Copy Output:     parsed ({len(state.copy_output)} chars)")
     logger.info(f"✓ Image Output:    parsed ({len(state.image_output)} chars)")
+    if ENABLE_CREATIVE_HOOK_MATRIX:
+        hook_chars = len(str(hook_output_raw)) if hook_output_raw else 0
+        logger.info(f"✓ Hook Matrix:     {'parsed' if hook_data else 'not available'} ({hook_chars} chars)")
 
     # ========== STEP 2: READ CAMPAIGN METADATA ==========
     logger.info("\n[STEP 2] Reading campaign metadata from state...")
@@ -360,10 +376,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_revision_count = getattr(state, "strategy_revision_count", 0) or 0
     copy_revision_count = getattr(state, "copy_revision_count", 0) or 0
     image_revision_count = getattr(state, "image_revision_count", 0) or 0
+    creative_hook_matrix_revision_count = getattr(state, "creative_hook_matrix_revision_count", 0) or 0
 
     logger.info(f"✓ Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
     logger.info(f"✓ Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
     logger.info(f"✓ Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
+    if ENABLE_CREATIVE_HOOK_MATRIX:
+        logger.info(f"✓ Hook revisions:      {creative_hook_matrix_revision_count}/{MAX_REVISIONS}")
     logger.info(f"✓ Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
 
     # ========== STEP 4: EXTRACT KEY FIELDS FOR DISPLAY ==========
@@ -396,6 +415,11 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     image_prompts = image_data.get("image_prompts", [])
     logger.info(f"✓ Image — Prompts: {len(image_prompts)} | "
           f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
+
+    # Hook summary (only log when feature flag enabled)
+    if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
+        hooks_list = hook_data.get("hooks", hook_data.get("matrix", hook_data.get("hook_matrix", [])))
+        logger.info(f"✓ Hooks — Count: {len(hooks_list)} hook archetypes generated")
 
     # ========== STEP 5: REVIEW WITH LLM ==========
     logger.info("\n[STEP 5] Sending structured agent summary evidence (all 28 schema fields) to LLM for quality analysis...")
@@ -430,6 +454,18 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     except Exception as exc:
         logger.warning(f"   ⚠️ Reviewer pre-validation non-blocking error: {exc}")
 
+    # Build creative hook summary for the prompt (compact to save tokens)
+    if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
+        hooks_list = hook_data.get("hooks", hook_data.get("matrix", hook_data.get("hook_matrix", [])))
+        hook_categories = [h.get("category", "unknown") for h in hooks_list if isinstance(h, dict)]
+        hook_summary_for_prompt = (
+            f"{len(hooks_list)} hooks generated. "
+            f"Categories: {', '.join(hook_categories[:10])}. "
+            f"Sample headline: {hooks_list[0].get('headline', 'N/A')[:80] if hooks_list else 'N/A'}"
+        )
+    else:
+        hook_summary_for_prompt = "Not enabled (ENABLE_CREATIVE_HOOK_MATRIX=false) — skip this section."
+
     # Load reviewer prompt and format with normalized agent output summaries
     system_prompt, prompt = load_split_prompt(
         "reviewer",
@@ -453,12 +489,16 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         research_revision_count=research_revision_count,
         strategy_revision_count=strategy_revision_count,
         copy_revision_count=copy_revision_count,
+        creative_hook_matrix_revision_count=creative_hook_matrix_revision_count,
         image_revision_count=image_revision_count,
+        # Feature flag for hooks
+        enable_creative_hook_matrix=ENABLE_CREATIVE_HOOK_MATRIX,
         # Normalized agent output summaries (saving 3,500-5,000 tokens)
         research_output=review_dict["research_summary"],
         strategy_output=review_dict["strategy_summary"],
         copy_output=review_dict["copy_summary"],
-        image_output=review_dict["image_summary"]
+        image_output=review_dict["image_summary"],
+        creative_hook_matrix_output=hook_summary_for_prompt,
     )
 
     logger.info("   Querying LLM with structured output...")
@@ -469,7 +509,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     cached = cache_get(cache_key) if "PYTEST_CURRENT_TEST" not in os.environ else None
     if cached is not None:
         logger.info("📦 Cache hit — using cached Reviewer response")
-        review_analysis = ReviewerOutput(**cached)
+        review_analysis = ReviewerOutput.model_validate(cached)
     else:
         review_analysis, state = safe_llm_call(
             state,
@@ -486,6 +526,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             strategy_data,
             copy_data,
             image_data,
+            hook_data=hook_data,
         )
         # ✅ Clear error flag so downstream routing/publisher doesn't skip
         state.error = None
@@ -501,12 +542,17 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_review = review_analysis.strategy_review
     copy_review = review_analysis.copy_review
     image_review = review_analysis.image_review
+    # Creative hooks review — only present when flag is enabled AND LLM returned it
+    hook_review: Optional[AgentReview] = getattr(review_analysis, "creative_hook_matrix_review", None)
+    if not ENABLE_CREATIVE_HOOK_MATRIX or hook_data is None:
+        hook_review = None  # Always None when feature is off or no output to review
     overall = review_analysis.overall
 
     research_score = research_review.score
     strategy_score = strategy_review.score
     copy_score = copy_review.score
     image_score = image_review.score
+    hook_score: Optional[int] = hook_review.score if hook_review else None
     overall_score = overall.quality_score
 
     # ========== STEP 6.5: POST-PROCESSING VALIDATION ==========
@@ -524,14 +570,31 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_score = _compute_hybrid_score(strategy_data, strategy_score, "strategy")
     copy_score = _compute_hybrid_score(copy_data, copy_score, "copy")
     image_score = _compute_hybrid_score(image_data, image_score, "image")
+    if hook_review and hook_data:
+        hook_score = _compute_hybrid_score(hook_data, hook_review.score, "creative_hook_matrix")
+        hook_review.score = hook_score
+
     # Recalculate overall score server-side using blended per-agent scores
-    overall_score = round(research_score * 0.25 + strategy_score * 0.30 + copy_score * 0.25 + image_score * 0.20)
+    # When hooks are active: redistribute weights (hooks take 15% from strategy)
+    if hook_review and hook_score is not None:
+        overall_score = round(
+            research_score * 0.20
+            + strategy_score * 0.25
+            + copy_score * 0.25
+            + hook_score * 0.15
+            + image_score * 0.15
+        )
+    else:
+        overall_score = round(research_score * 0.25 + strategy_score * 0.30 + copy_score * 0.25 + image_score * 0.20)
+
     # Sync back into the LLM output model so the nested field is accurate
     review_analysis.overall.quality_score = overall_score
     review_analysis.research_review.score = research_score
     review_analysis.strategy_review.score = strategy_score
     review_analysis.copy_review.score = copy_score
     review_analysis.image_review.score = image_score
+    if hook_review:
+        review_analysis.creative_hook_matrix_review = hook_review
 
     # IMPORTANT: approved should be based on threshold, not LLM judgment
     # Override LLM's approved field with threshold-based logic
@@ -539,11 +602,14 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_approved = strategy_score >= MIN_AGENT_SCORE and not strategy_review.issues
     copy_approved = copy_score >= MIN_AGENT_SCORE and not copy_review.issues
     image_approved = image_score >= MIN_AGENT_SCORE and not image_review.issues
+    hook_approved = (hook_score >= MIN_AGENT_SCORE and not hook_review.issues) if hook_review and hook_score is not None else True
 
     research_review.approved = research_approved
     strategy_review.approved = strategy_approved
     copy_review.approved = copy_approved
     image_review.approved = image_approved
+    if hook_review:
+        hook_review.approved = hook_approved
 
     # ========== STEP 7: DISPLAY QUALITY SCORES ==========
     logger.info("✅ Quality analysis complete!")
@@ -555,6 +621,9 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
           f"({'Approved' if strategy_approved else 'Issues Found'})")
     logger.info(f"   Copy:      {copy_score}/100  {'✅' if copy_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if copy_approved else 'Issues Found'})")
+    if hook_review and hook_score is not None:
+        logger.info(f"   Hooks:     {hook_score}/100  {'✅' if hook_score >= MIN_AGENT_SCORE else '❌'}  "
+              f"({'Approved' if hook_approved else 'Issues Found'})")
     logger.info(f"   Image:     {image_score}/100  {'✅' if image_score >= MIN_AGENT_SCORE else '❌'}  "
           f"({'Approved' if image_approved else 'Issues Found'})")
     logger.info(f"\n📈 Overall Quality Score: {overall_score}/100 "
@@ -562,12 +631,15 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
           f"{'✅' if overall_score >= MIN_QUALITY_SCORE else '❌'}")
 
     # Print issues per agent
-    for agent_name, agent_review in [
+    agents_to_log = [
         ("Research", research_review),
         ("Strategy", strategy_review),
         ("Copy", copy_review),
-        ("Image", image_review)
-    ]:
+        ("Image", image_review),
+    ]
+    if hook_review:
+        agents_to_log.insert(3, ("Creative Hooks", hook_review))  # Before Image
+    for agent_name, agent_review in agents_to_log:
         issues = agent_review.issues
         if issues:
             logger.info(f"\n   ⚠️  {agent_name} Issues:")
@@ -580,7 +652,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     logger.info("\n[STEP 8] Applying threshold logic and determining action...")
     logger.info("-" * 80)
 
-    all_approved = research_approved and strategy_approved and copy_approved and image_approved
+    all_approved = research_approved and strategy_approved and copy_approved and hook_approved and image_approved
     meets_overall_threshold = overall_score >= MIN_QUALITY_SCORE
 
     # ========== STEP 9: BUILD REVIEW OUTPUT ==========
@@ -591,12 +663,18 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     review_output["strategy_review"]["approved"] = strategy_approved
     review_output["copy_review"]["approved"] = copy_approved
     review_output["image_review"]["approved"] = image_approved
+    # Only include hook review in output when feature is active and review exists
+    if hook_review and ENABLE_CREATIVE_HOOK_MATRIX:
+        review_output["creative_hook_matrix_review"] = hook_review.model_dump()
+        review_output["creative_hook_matrix_review"]["approved"] = hook_approved
+    else:
+        review_output["creative_hook_matrix_review"] = None
     review_output["status"] = "approved" if (all_approved and meets_overall_threshold) else "revision_required"
     # Backward-compatible flat fields (backend consumers use these)
     review_output["overall_quality_score"] = overall_score
     review_output["individual_threshold_met"] = all_approved
     review_output["overall_threshold_met"] = meets_overall_threshold
-    review_output["can_publish"] = all_approved and meets_overall_threshold  # <-- NEW: Publisher gate
+    review_output["can_publish"] = all_approved and meets_overall_threshold
     review_output["reviewed_at"] = datetime.now().isoformat()
     review_output["reviewer"] = "Reviewer Agent (LLM-Powered)"
 
@@ -622,11 +700,13 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     else:
         # ⚠️ REVISION REQUIRED
-        # Determine which agent to send back (priority: research → strategy → copy → image), skipping exhausted agents
+        # Determine which agent to send back (priority: research → strategy → copy → hooks → image)
         revision_target = _determine_revision_target(
             research_review, strategy_review, copy_review, image_review,
             research_score, strategy_score, copy_score, image_score,
-            all_approved, state=state
+            all_approved, state=state,
+            creative_hook_matrix_review=hook_review,
+            creative_hook_matrix_score=hook_score,
         )
 
         if not revision_target:
@@ -696,6 +776,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
                     "research": "research",
                     "strategy": "strategy",
                     "copy": "copywriter",
+                    "creative_hook_matrix": "creative_hook_matrix",
                     "image": "image_prompt"
                 }
                 state.human_revision_target = target_map.get(agent_key, agent_key)
@@ -804,6 +885,26 @@ def _add_explicit_validation_checks(
             image_review.issues.append(issue)
             image_review.action_items = image_review.action_items or []
             image_review.action_items.append("Create at least 3 image prompts for key campaign deliverables")
+
+    # Check 3: Brand DNA Exact Claims Checking (Semantic Status Modeling)
+    brand_dna = research_data.get("brand_dna") or {}
+    from utils.brand_dna_context import build_brand_dna_context
+    dna_context = build_brand_dna_context(brand_dna, purpose="reviewer")
+    
+    if dna_context.confidence in ("HIGH", "MEDIUM"):
+        copy_str = json.dumps(copy_data).lower()
+        dna_str = dna_context.text.lower()
+        
+        risky_claims = ["guarantee", "100%", "number one", "best in class", "voted", "award winning"]
+        for claim in risky_claims:
+            if claim in copy_str and claim not in dna_str:
+                issue = f"Copy contains unverified claim '{claim}' not grounded in Brand DNA."
+                if issue not in (copy_review.issues or []):
+                    copy_review.issues = copy_review.issues or []
+                    copy_review.issues.append(issue)
+                    copy_review.action_items = copy_review.action_items or []
+                    copy_review.action_items.append(f"Remove or substantiate the claim '{claim}' based on official Brand DNA.")
+                    copy_review.score = max(0, copy_review.score - 5)
 
 
 def _compute_objective_score(agent_data: dict, agent_type: str) -> int:

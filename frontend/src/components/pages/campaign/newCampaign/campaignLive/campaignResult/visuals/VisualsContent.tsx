@@ -67,6 +67,17 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       ) 
     },
     { 
+      name: 'Nano Banana 2', 
+      label: 'Generate on Nano Banana 2', 
+      url: 'https://gemini.google.com/app', 
+      color: '#F59E0B', 
+      icon: (
+        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#F59E0B] fill-current" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2c-.3 2.7-2.3 4.7-5 5 2.7.3 4.7 2.3 5 5 .3-2.7 2.3-4.7 5-5-2.7-.3-4.7-2.3-5-5zM6 14c-.2 1.3-1.2 2.3-2.5 2.5 1.3.2 2.3 1.2 2.5 2.5.2-1.3 1.2-2.3 2.5-2.5-1.3-.2-2.3-1.2-2.5-2.5z" />
+        </svg>
+      ) 
+    },
+    { 
       name: 'Midjourney', 
       label: 'Imagine on Midjourney', 
       url: 'https://www.midjourney.com/imagine', 
@@ -120,17 +131,6 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
       icon: (
         <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#EC4899] fill-none stroke-current" strokeWidth="3" strokeLinecap="round" xmlns="http://www.w3.org/2000/svg">
           <path d="M9 4h6M12 4v16M9 20h6" />
-        </svg>
-      ) 
-    },
-    { 
-      name: 'Nano Banana 2', 
-      label: 'Generate on Nano Banana 2', 
-      url: 'https://gemini.google.com/app', 
-      color: '#F59E0B', 
-      icon: (
-        <svg viewBox="0 0 24 24" className="w-3 h-3 text-[#F59E0B] fill-current" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2c-.3 2.7-2.3 4.7-5 5 2.7.3 4.7 2.3 5 5 .3-2.7 2.3-4.7 5-5-2.7-.3-4.7-2.3-5-5zM6 14c-.2 1.3-1.2 2.3-2.5 2.5 1.3.2 2.3 1.2 2.5 2.5.2-1.3 1.2-2.3 2.5-2.5-1.3-.2-2.3-1.2-2.5-2.5z" />
         </svg>
       ) 
     },

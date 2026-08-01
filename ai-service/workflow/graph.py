@@ -690,6 +690,7 @@ def reviewer_node(state: CampaignState) -> dict:
             "research_revision_count": updated_state.research_revision_count or 0,
             "strategy_revision_count": updated_state.strategy_revision_count or 0,
             "copy_revision_count": updated_state.copy_revision_count or 0,
+            "creative_hook_matrix_revision_count": updated_state.creative_hook_matrix_revision_count or 0,
             "image_revision_count": updated_state.image_revision_count or 0,
         }
     except Exception as e:
@@ -735,6 +736,7 @@ def human_approval_wrapper(state: CampaignState) -> dict:
             "research_revision_count": updated_state.research_revision_count,
             "strategy_revision_count": updated_state.strategy_revision_count,
             "copy_revision_count": updated_state.copy_revision_count,
+            "creative_hook_matrix_revision_count": updated_state.creative_hook_matrix_revision_count,
             "image_revision_count": updated_state.image_revision_count,
             "status": updated_state.status,
             "error": updated_state.error,

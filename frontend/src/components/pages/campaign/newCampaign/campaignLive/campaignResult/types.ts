@@ -26,6 +26,7 @@ export interface Campaign {
   researchRevisionCount?: number;
   strategyRevisionCount?: number;
   copyRevisionCount?: number;
+  creativeHookMatrixRevisionCount?: number;
   imageRevisionCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -35,6 +36,7 @@ export interface RevisionCounts {
   research: number;
   strategy: number;
   copywriter: number;
+  creative_hook_matrix: number;
   image_prompt: number;
 }
 
@@ -42,6 +44,7 @@ export interface AgentScores {
   research: number | null;
   strategy: number | null;
   copywriter: number | null;
+  creative_hook_matrix: number | null;
   image_prompt: number | null;
 }
 

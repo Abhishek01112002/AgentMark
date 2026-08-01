@@ -239,7 +239,7 @@ def test_7_human_reject_copywriter():
 
 def test_8_human_reject_creative_hooks():
     """8. Human Reject (Creative Hooks) -> Creative Hook Matrix -> Image -> Reviewer -> HITL."""
-    _test_human_rejection_target("creative_hook_matrix", "creative_hook_matrix_output")
+    _test_human_rejection_target("creative_hook_matrix", "creative_hook_matrix_revision_count")
 
 
 

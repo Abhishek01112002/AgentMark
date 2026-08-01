@@ -546,9 +546,13 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     brand_dna = surgical_ctx.get("brand_dna", None)
 
     canonical_intel_parts = []
-    if brand_dna and isinstance(brand_dna, dict) and brand_dna.get("extracted_hero_text"):
+    
+    from utils.brand_dna_context import build_brand_dna_context
+    dna_context = build_brand_dna_context(brand_dna, purpose="copywriter", max_tokens=1500)
+    if dna_context.text:
+        source_url = brand_dna.get("source_url", brand_name) if isinstance(brand_dna, dict) else brand_name
         canonical_intel_parts.append(
-            f"<official_brand_dna>\nSource: {brand_dna.get('source_url', brand_name)}\nValue Prop: {brand_dna.get('extracted_hero_text')}\n</official_brand_dna>"
+            f"<official_brand_dna>\nSource: {source_url}\n{dna_context.text}\n</official_brand_dna>"
         )
     if customer_voice_insights and isinstance(customer_voice_insights, list):
         canonical_intel_parts.append(
@@ -586,6 +590,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         "   - GOOGLE ADS: Include punchy search-intent headlines (<30 chars) with high-conversion CTAs.\n"
         "   - EMAIL: Subject line MUST be curiosity/pain driven and under 50 characters.\n"
         f"6. STAGE-APPROPRIATE CTA: Use this specific CTA direction: \"{goal_keywords}\".\n"
+        "7. CONCRETE FACTS OVER LIFESTYLE FLUFF: Ground messaging in real products, pricing tiers, features, and specs from <official_brand_dna> whenever available. Do NOT write generic fluffy claims. Ensure pricing and currency symbols match the target market/audience (e.g., INR for India-based personas/audience, USD for US-based).\n"
         + "="*80 + "\n\n"
         + canonical_intel_str
     )

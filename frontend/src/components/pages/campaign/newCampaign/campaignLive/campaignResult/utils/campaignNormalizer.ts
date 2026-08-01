@@ -55,7 +55,7 @@ export const normalizeCampaign = (
 
   const review: NormalizedReviewOutput | null = parsedReview
     ? {
-        overall_score: parsedReview.overall?.quality_score ?? parsedReview.overall_score ?? raw.reviewScore ?? null,
+        overall_score: parsedReview.overall_quality_score ?? parsedReview.overall?.quality_score ?? parsedReview.overall_score ?? raw.reviewScore ?? null,
         agent_scores: {
           research: getScore(parsedReview.research_review, 'research'),
           strategy: getScore(parsedReview.strategy_review, 'strategy'),
@@ -125,6 +125,7 @@ export const normalizeCampaign = (
       research: raw.researchRevisionCount || 0,
       strategy: raw.strategyRevisionCount || 0,
       copywriter: raw.copyRevisionCount || 0,
+      creative_hook_matrix: raw.creativeHookMatrixRevisionCount || 0,
       image_prompt: raw.imageRevisionCount || 0,
     },
     

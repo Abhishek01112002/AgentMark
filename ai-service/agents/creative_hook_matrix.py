@@ -170,6 +170,10 @@ def creative_hook_matrix_agent(state: CampaignState) -> CampaignState:
         research_output = _parse_json(state.research_output)
         strategy_output = _parse_json(state.strategy_output)
         copy_output = _parse_json(state.copy_output)
+        
+        from utils.brand_dna_context import build_brand_dna_context
+        brand_dna = getattr(state, "brand_dna", None) or research_output.get("brand_dna", None)
+        dna_context = build_brand_dna_context(brand_dna, purpose="creative_hook_matrix", max_tokens=1500)
 
         prompt = load_prompt(
             "creative_hook_matrix",
@@ -179,6 +183,7 @@ def creative_hook_matrix_agent(state: CampaignState) -> CampaignState:
             primary_goal=state.primary_goal,
             target_audience=state.target_audience,
             brand_voice=state.brand_voice,
+            brand_dna=f"<official_brand_dna>\n{dna_context.text}\n</official_brand_dna>" if dna_context.text else "",
             brief=state.brief or "",
             client_memory_context=state.client_memory_context or "",
             research_output=json.dumps(research_output, separators=(",", ":"), ensure_ascii=False),

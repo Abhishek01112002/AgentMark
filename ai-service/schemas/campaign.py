@@ -135,6 +135,8 @@ class CopyVariantRequest(BaseModel):
     channel: str
     target_audience: str
     brand_voice: str
+    brand_name: Optional[str] = None
+    industry: Optional[str] = None
     brief: Optional[str] = None
     steering_note: Optional[str] = None
     strategy_data: Optional[str] = None

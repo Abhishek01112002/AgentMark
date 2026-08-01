@@ -293,6 +293,48 @@ Returns the current status, quality scores, and version history for a campaign.
 
 ---
 
+### `request_targeted_revision`
+
+Re-runs a specific upstream agent (`copywriter`, `strategy`, `research`, `creative_hook_matrix`, `image_prompt`) with targeted feedback.
+
+---
+
+### `submit_human_approval`
+
+Submits human approval decision (`approved` or `rejected`) at the HITL gate.
+
+---
+
+### `update_client_memory` & `clear_client_memory`
+
+Update or reset brand guidelines, target audience context, and strategic takeaways in the Memory Hub.
+
+---
+
+### `export_campaign_pdf` & `export_campaign_json`
+
+Export full campaign strategy and schedule as downloadable PDF or structured JSON payload.
+
+---
+
+### `get_publishing_schedule` & `verify_channel_credentials`
+
+Retrieve 4-week content publishing timeline and test connected channel credentials.
+
+---
+
+### `generate_image_asset`
+
+Directly generate visual image assets from prompts using Gemini or DALL-E.
+
+---
+
+### `get_campaign_analytics`, `synthesize_brand_memory_intelligence`, `compare_campaign_performance_vectors`
+
+Fetch performance metrics, synthesize historical brand intelligence, and analyze comparative performance vectors against baseline top-performing campaigns.
+
+---
+
 ## Example Conversation Flow
 
 ```

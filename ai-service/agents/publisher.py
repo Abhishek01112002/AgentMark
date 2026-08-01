@@ -653,6 +653,9 @@ def publisher_agent(state: CampaignState) -> CampaignState:
 
     additional_context = getattr(state, "client_memory_context", None) or "None (No additional context)"
 
+    from utils.brand_dna_context import build_brand_dna_context
+    dna_context = build_brand_dna_context(strategy_data.get("research_foundation", {}).get("brand_dna"), purpose="publisher", max_tokens=1500)
+
     # Load publisher prompt and format with all campaign data
     prompt = load_prompt(
         "publisher",
@@ -677,7 +680,7 @@ def publisher_agent(state: CampaignState) -> CampaignState:
         key_messages=json.dumps(key_messages, separators=(',', ':')),
         customer_voice_insights=json.dumps(strategy_data.get("research_foundation", {}).get("customer_voice_insights", []), separators=(',', ':')),
         proven_ad_hooks=json.dumps(strategy_data.get("research_foundation", {}).get("proven_ad_hooks", []), separators=(',', ':')),
-        brand_dna=json.dumps(strategy_data.get("research_foundation", {}).get("brand_dna", {}), separators=(',', ':')) if strategy_data.get("research_foundation", {}).get("brand_dna") else "{}",
+        brand_dna=dna_context.text or "{}",
         # Copy data
         copy_summary=json.dumps(copy_summary, separators=(',', ':')),
         # Image data

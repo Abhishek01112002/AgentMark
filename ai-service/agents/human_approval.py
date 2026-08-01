@@ -121,6 +121,9 @@ def human_approval_node(state: CampaignState) -> CampaignState:
             logger.info(f"   - Research:  {review_data.get('research_review', {}).get('score', 'N/A')}/100")
             logger.info(f"   - Strategy:  {review_data.get('strategy_review', {}).get('score', 'N/A')}/100")
             logger.info(f"   - Copy:      {review_data.get('copy_review', {}).get('score', 'N/A')}/100")
+            hook_rev = review_data.get('creative_hook_matrix_review')
+            if hook_rev and isinstance(hook_rev, dict):
+                logger.info(f"   - Hooks:     {hook_rev.get('score', 'N/A')}/100")
             logger.info(f"   - Image:     {review_data.get('image_review', {}).get('score', 'N/A')}/100")
         except Exception as e:
             logger.error(f"Silent error swallowed: {e}", exc_info=True)

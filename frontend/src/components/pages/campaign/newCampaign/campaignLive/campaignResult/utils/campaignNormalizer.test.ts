@@ -55,6 +55,7 @@ describe('Campaign Normalizer Utility (normalizeCampaign)', () => {
     expect(normalized?.creativeHooks?.hooks).toHaveLength(2);
     expect(normalized?.review?.agent_scores?.creative_hook_matrix).toBe(92);
     expect(normalized?.review?.agent_scores?.research).toBe(90);
+    expect(normalized?.revisionCounts.creative_hook_matrix).toBe(0);
     expect(normalized?.review?.executive_summary).toBe('Exceptional creative matrix and strategic alignment.');
     expect(normalized?.review?.critical_gaps).toContain('Add specific pricing CTA to copy variant 2');
     expect(normalized?.reviewScore).toBe(88.5);

@@ -49,6 +49,7 @@ interface AgentUpdatePayload {
   research_revision_count?: number;
   strategy_revision_count?: number;
   copy_revision_count?: number;
+  creative_hook_matrix_revision_count?: number;
   image_revision_count?: number;
   outputs?: Record<string, any>;
 }
@@ -291,6 +292,7 @@ const CampaignLivePage: React.FC = () => {
     research: 0,
     strategy: 0,
     copywriter: 0,
+    creative_hook_matrix: 0,
     image_prompt: 0,
   });
   const [qualityScore, setQualityScore] = useState<number | null>(null);
@@ -298,8 +300,9 @@ const CampaignLivePage: React.FC = () => {
     research: number | null;
     strategy: number | null;
     copywriter: number | null;
+    creative_hook_matrix: number | null;
     image_prompt: number | null;
-  }>({ research: null, strategy: null, copywriter: null, image_prompt: null });
+  }>({ research: null, strategy: null, copywriter: null, creative_hook_matrix: null, image_prompt: null });
 
   const [drawerTab, setDrawerTab] = useState<'scores' | 'inspect' | 'revise'>('scores');
   const [campaignPreviewData, setCampaignPreviewData] = useState<any>(null);
@@ -418,6 +421,7 @@ const CampaignLivePage: React.FC = () => {
             research: campaign.researchRevisionCount || 0,
             strategy: campaign.strategyRevisionCount || 0,
             copywriter: campaign.copyRevisionCount || 0,
+            creative_hook_matrix: campaign.creativeHookMatrixRevisionCount || 0,
             image_prompt: campaign.imageRevisionCount || 0,
           });
           if (campaign.reviewOutput || campaign.reviewScore) {
@@ -455,13 +459,7 @@ const CampaignLivePage: React.FC = () => {
 
               // Set overall quality score (normalized out of 10)
               let calculatedOverall: number | null = null;
-              const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
-                (v): v is number => typeof v === 'number' && v > 0
-              );
-              if (validVals.length > 0) {
-                const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
-                calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
-              } else if (reviewData.overall_quality_score) {
+              if (reviewData.overall_quality_score) {
                 const os = Number(reviewData.overall_quality_score);
                 calculatedOverall = os > 10 ? os / 10 : os;
               } else if (reviewData.overall?.quality_score) {
@@ -469,6 +467,14 @@ const CampaignLivePage: React.FC = () => {
                 calculatedOverall = os > 10 ? os / 10 : os;
               } else if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
                 calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
+              } else {
+                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.creative_hook_matrix, newScores.image_prompt].filter(
+                  (v): v is number => typeof v === 'number' && v > 0
+                );
+                if (validVals.length > 0) {
+                  const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                  calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
+                }
               }
               if (calculatedOverall !== null) {
                 setQualityScore(calculatedOverall);
@@ -685,12 +691,14 @@ const CampaignLivePage: React.FC = () => {
         const research = data.research_revision_count;
         const strategy = data.strategy_revision_count;
         const copywriter = data.copy_revision_count;
+        const creative_hook_matrix = data.creative_hook_matrix_revision_count;
         const image_prompt = data.image_revision_count;
 
         setRevisionCounts((prev) => ({
           research: typeof research === 'number' ? research : prev.research,
           strategy: typeof strategy === 'number' ? strategy : prev.strategy,
           copywriter: typeof copywriter === 'number' ? copywriter : prev.copywriter,
+          creative_hook_matrix: typeof creative_hook_matrix === 'number' ? creative_hook_matrix : prev.creative_hook_matrix,
           image_prompt: typeof image_prompt === 'number' ? image_prompt : prev.image_prompt,
         }));
 
@@ -833,6 +841,7 @@ const CampaignLivePage: React.FC = () => {
             research: campaign.researchRevisionCount || 0,
             strategy: campaign.strategyRevisionCount || 0,
             copywriter: campaign.copyRevisionCount || 0,
+            creative_hook_matrix: campaign.creativeHookMatrixRevisionCount || 0,
             image_prompt: campaign.imageRevisionCount || 0,
           });
           if (campaign.reviewOutput || campaign.reviewScore) {
@@ -857,23 +866,33 @@ const CampaignLivePage: React.FC = () => {
                 research: getScore(reviewData.research_review, 'research'),
                 strategy: getScore(reviewData.strategy_review, 'strategy'),
                 copywriter: getScore(reviewData.copy_review, 'copywriter') ?? getScore(reviewData.copy_review, 'copy'),
+                creative_hook_matrix: getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix'),
                 image_prompt: getScore(reviewData.image_review, 'image_prompt') ?? getScore(reviewData.image_review, 'image'),
               };
 
-              setAgentScores(newScores);
+              setAgentScores((prev) => {
+                if (JSON.stringify(prev) !== JSON.stringify(newScores)) {
+                  return newScores;
+                }
+                return prev;
+              });
 
               let calculatedOverall: number | null = null;
-              if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
-                calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
+              if (reviewData.overall_quality_score) {
+                const os = Number(reviewData.overall_quality_score);
+                calculatedOverall = os > 10 ? os / 10 : os;
               } else if (reviewData.overall?.quality_score) {
                 const os = Number(reviewData.overall.quality_score);
                 calculatedOverall = os > 10 ? os / 10 : os;
+              } else if (typeof campaign.reviewScore === 'number' && campaign.reviewScore > 0) {
+                calculatedOverall = campaign.reviewScore > 10 ? campaign.reviewScore / 10 : campaign.reviewScore;
               } else {
-                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.image_prompt].filter(
+                const validVals = [newScores.research, newScores.strategy, newScores.copywriter, newScores.creative_hook_matrix, newScores.image_prompt].filter(
                   (v): v is number => typeof v === 'number' && v > 0
                 );
                 if (validVals.length > 0) {
-                  calculatedOverall = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                  const rawAvg = validVals.reduce((a, b) => a + b, 0) / validVals.length;
+                  calculatedOverall = rawAvg > 10 ? rawAvg / 10 : rawAvg;
                 }
               }
               if (calculatedOverall !== null) {
@@ -1604,9 +1623,14 @@ const CampaignLivePage: React.FC = () => {
                       { key: 'research', label: 'Research', icon: 'search' },
                       { key: 'strategy', label: 'Strategy', icon: 'lightbulb' },
                       { key: 'copywriter', label: 'Copywriter', icon: 'edit_note' },
+                      { key: 'creative_hook_matrix', label: 'Hook Matrix', icon: 'bolt' },
                       { key: 'image_prompt', label: 'Image Prompt', icon: 'image' },
-                    ] as const).map(({ key, label, icon }) => {
-                      const score = agentScores[key as keyof typeof agentScores];
+                    ] as Array<{ key: keyof typeof agentScores; label: string; icon: string }>).filter(({ key }) => {
+                      // Only show creative_hook_matrix row when a score actually exists
+                      if (key === 'creative_hook_matrix') return agentScores.creative_hook_matrix !== null;
+                      return true;
+                    }).map(({ key, label, icon }) => {
+                      const score = agentScores[key];
                       const pct = score !== null ? (score / 10) * 100 : 0;
                       const color = score === null ? '#5A5A6E' : score >= 8.5 ? '#6EE7B7' : score >= 7 ? '#FCD34D' : '#FCA5A5';
                       return (
@@ -1880,6 +1904,12 @@ const CampaignLivePage: React.FC = () => {
                         icon: 'edit_note',
                         downstream: creativeHookMatrixEnabled ? 'Re-runs Creative Hooks → Image → Reviewer' : 'Re-runs Image → Reviewer',
                       },
+                      ...(creativeHookMatrixEnabled ? [{
+                        key: 'creative_hook_matrix' as const,
+                        label: 'Creative Hooks',
+                        icon: 'psychology',
+                        downstream: 'Re-runs Image Prompt → Reviewer',
+                      }] : []),
                       { key: 'image_prompt', label: 'Image Prompt', icon: 'image', downstream: 'Re-runs Reviewer only' },
                     ] as const).map(({ key, label, icon, downstream }) => {
                       const count = revisionCounts[key as keyof typeof revisionCounts];
@@ -1926,9 +1956,10 @@ const CampaignLivePage: React.FC = () => {
                       Downstream Impact
                     </p>
                     <p className="text-[11px] leading-relaxed" style={{ fontFamily: 'Sora, sans-serif', color: '#8B8B9E' }}>
-                      {selectedAgent === 'research' && 'Revising Research will cascade to Strategy → Copywriter → Image Prompt → Reviewer. All downstream agents will re-run.'}
-                      {selectedAgent === 'strategy' && 'Revising Strategy will cascade to Copywriter → Image Prompt → Reviewer.'}
-                      {selectedAgent === 'copywriter' && 'Revising Copywriter will cascade to Image Prompt → Reviewer.'}
+                      {selectedAgent === 'research' && (creativeHookMatrixEnabled ? 'Revising Research will cascade to Strategy → Copywriter → Creative Hooks → Image Prompt → Reviewer. All downstream agents will re-run.' : 'Revising Research will cascade to Strategy → Copywriter → Image Prompt → Reviewer. All downstream agents will re-run.')}
+                      {selectedAgent === 'strategy' && (creativeHookMatrixEnabled ? 'Revising Strategy will cascade to Copywriter → Creative Hooks → Image Prompt → Reviewer.' : 'Revising Strategy will cascade to Copywriter → Image Prompt → Reviewer.')}
+                      {selectedAgent === 'copywriter' && (creativeHookMatrixEnabled ? 'Revising Copywriter will cascade to Creative Hooks → Image Prompt → Reviewer.' : 'Revising Copywriter will cascade to Image Prompt → Reviewer.')}
+                      {selectedAgent === 'creative_hook_matrix' && 'Revising Creative Hooks will cascade to Image Prompt → Reviewer.'}
                       {selectedAgent === 'image_prompt' && 'Only Image Prompt and the Reviewer will re-run.'}
                     </p>
                   </div>

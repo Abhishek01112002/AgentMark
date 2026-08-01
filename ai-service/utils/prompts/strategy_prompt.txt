@@ -199,6 +199,12 @@ Return valid JSON matching the StrategyOutput schema exactly.
     }}
   }},
   "competitive_differentiation": {{
+    "competitors": [
+      "Competitor 1 Name",
+      "Competitor 2 Name",
+      "Competitor 3 Name"
+    ],
+    "primary_differentiation": "Specific description of primary differentiation strategy",
     "competitive_advantage": "2-3 sentences on the single biggest advantage vs named competitors",
     "unique_value_proposition": "One memorable sentence — potential tagline quality",
     "positioning_statement": "For [audience] who [need], [brand] is the [category] that [benefit], unlike [competitor] who [weakness]"

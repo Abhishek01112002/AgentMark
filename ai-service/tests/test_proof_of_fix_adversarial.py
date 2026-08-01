@@ -10,6 +10,9 @@ Validates empirical behavior for:
 import sys
 from pathlib import Path
 import pytest
+import sys
+import unittest
+import json
 import concurrent.futures
 from unittest.mock import patch, MagicMock
 
@@ -122,6 +125,10 @@ def test_adv_bug_020_known_bad_hook_evaluation_and_routing():
     2. Reviewer selects 'creative_hook_matrix' as the revision target.
     3. should_continue_after_reviewer evaluates review_output and returns 'revise_hooks'.
     """
+    import workflow.routing
+    import agents.reviewer
+    workflow.routing.ENABLE_CREATIVE_HOOK_MATRIX = True
+    agents.reviewer.ENABLE_CREATIVE_HOOK_MATRIX = True
     bad_hook_matrix = {
         "hooks": [
             {"angle": "Generic", "text": "Buy our product now because it is good."},
@@ -138,11 +145,11 @@ def test_adv_bug_020_known_bad_hook_evaluation_and_routing():
         target_audience="CTOs",
         brand_voice="Professional",
         status="processing",
-        creative_hook_matrix_output=str(bad_hook_matrix),
+        creative_hook_matrix_output=json.dumps(bad_hook_matrix),
         copy_output='{"headline": "World Class AI Platform"}',
         research_output='{"findings": "Market is growing rapidly", "market_analysis": {"total_addressable_market": "$10B"}}',
         strategy_output='{"positioning": "Enterprise B2B"}',
-        image_output='{"prompt": "Sleek modern office"}',
+        image_output='{"image_prompts": [{"prompt": "A sleek modern office with natural light", "aspect_ratio": "16:9"}]}',
     )
 
     reviewer_output_obj = ReviewerOutput(
@@ -151,7 +158,7 @@ def test_adv_bug_020_known_bad_hook_evaluation_and_routing():
         research_review=AgentReview(score=90, feedback="Good", approved=True),
         strategy_review=AgentReview(score=85, feedback="Solid", approved=True),
         copy_review=AgentReview(score=80, feedback="Acceptable", approved=True),
-        creative_hook_matrix_review=AgentReview(score=45, feedback="Hooks lack emotional punch and curiosity", approved=False),
+        creative_hook_matrix_review=AgentReview(score=20, feedback="Hooks lack emotional punch and curiosity", approved=False, issues=["Hooks fail to capture interest"]),
         image_review=AgentReview(score=85, feedback="Visually appealing", approved=True),
         executive_summary="Hooks are weak and need revision.",
         critical_gaps=["Hooks fail to capture interest"],
@@ -166,5 +173,13 @@ def test_adv_bug_020_known_bad_hook_evaluation_and_routing():
         updated_state = reviewer_agent(state)
 
     state.review_output = updated_state.review_output
+    
+    print("MIN_AGENT_SCORE:", workflow.routing.MIN_AGENT_SCORE)
+    print("REVIEW OUTPUT (before routing):", updated_state.review_output)
+    
+    parsed_out = json.loads(updated_state.review_output)
+    print("HOOK REVIEW in output:", parsed_out.get("creative_hook_matrix_review"))
+    
     next_node = should_continue_after_reviewer(state)
+    print("NEXT NODE:", next_node)
     assert next_node == "revise_hooks", f"Expected routing to 'revise_hooks', got '{next_node}'"

@@ -298,13 +298,7 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Autonomous Brand DNA Ingestion Integration
     if dna_data and dna_data.get("extracted_hero_text"):
         state.brand_dna = dna_data
-        context_parts.append(
-            "<official_brand_dna_context>\n" +
-            f"Source URL: {dna_data.get('source_url')}\n" +
-            f"Grounded Brand Value Prop & Product Facts:\n{dna_data.get('extracted_hero_text')}\n" +
-            "</official_brand_dna_context>"
-        )
-        logger.info("   ✅ Integrated Brand DNA into Research Agent context")
+        logger.info("   ✅ Fetched Brand DNA successfully")
     elif result_5.success and result_5.snippets:
         # ── Tavily Brand DNA Fallback ─────────────────────────────────────────
         # Direct website crawl returned None (timeout / blocked / non-HTML content).
@@ -320,13 +314,36 @@ def research_agent(state: CampaignState) -> CampaignState:
             "source": "tavily_fallback",  # Distinguishes from direct crawl
         }
         state.brand_dna = dna_data
+        logger.info("   ✅ Brand DNA synthesized from Tavily fallback (direct crawl unavailable): %s", tavily_source_url)
+    else:
+        # ── Synthetic Brand DNA Safety Net ────────────────────────────────────
+        # Both direct web crawl AND Tavily search failed/timed out.
+        # Synthesize Brand DNA from campaign metadata so state.brand_dna is NEVER None.
+        clean_brand_domain = f"https://www.{brand_name.lower().replace(' ', '')}.com"
+        synth_hero_text = (
+            f"Official brand representation for {brand_name} in the {industry} sector. "
+            f"Targeting {target_audience}. Campaign focus: {brief[:200]}"
+        )
+        dna_data = {
+            "source_url": clean_brand_domain,
+            "extracted_hero_text": synth_hero_text,
+            "crawled_at_host": brand_name,
+            "source": "metadata_synthetic_fallback",
+        }
+        state.brand_dna = dna_data
+        logger.info("   ✅ Brand DNA synthesized from campaign metadata (network/crawler unavailable): %s", clean_brand_domain)
+
+    # Use Brand DNA context builder for research prompt
+    from utils.brand_dna_context import build_brand_dna_context
+    dna_context = build_brand_dna_context(state.brand_dna, purpose="research", max_tokens=1500)
+    if dna_context.text:
         context_parts.append(
             "<official_brand_dna_context>\n" +
-            f"Source URL: {tavily_source_url}\n" +
-            f"Grounded Brand Value Prop & Product Facts (via Tavily):\n{tavily_hero_text}\n" +
+            f"Source URL: {state.brand_dna.get('source_url', 'Unknown')}\n" +
+            f"{dna_context.text}\n" +
             "</official_brand_dna_context>"
         )
-        logger.info("   ✅ Brand DNA synthesized from Tavily fallback (direct crawl unavailable): %s", tavily_source_url)
+        logger.info("   ✅ Integrated budgeted Brand DNA into Research Agent context")
 
 
     # Collect all sources for UI

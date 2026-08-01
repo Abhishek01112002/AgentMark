@@ -59,8 +59,8 @@ def build_research_summary(research_raw: Any) -> ResearchSummary:
 
     return ResearchSummary(
         status="VALIDATED",
-        total_addressable_market=str(market.get("total_addressable_market") or "N/A")[:30],
-        growth_rate=str(market.get("growth_rate") or "N/A")[:30],
+        total_addressable_market=str(market.get("total_addressable_market") or "N/A")[:300],
+        growth_rate=str(market.get("growth_rate") or "N/A")[:100],
         market_trends=[str(t)[:60] for t in (market.get("market_trends") or [])[:3]],
         top_competitors=top_competitors,
         differentiation_opportunity=str(competitors.get("differentiation_opportunity") or "N/A")[:100],

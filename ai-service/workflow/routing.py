@@ -56,6 +56,7 @@ def _log_routing(func_name: str, state, decision: str) -> str:
         f"research={_get_attr(state, 'research_revision_count', 0) or 0}, "
         f"strategy={_get_attr(state, 'strategy_revision_count', 0) or 0}, "
         f"copy={_get_attr(state, 'copy_revision_count', 0) or 0}, "
+        f"hook_matrix={_get_attr(state, 'creative_hook_matrix_revision_count', 0) or 0}, "
         f"image={_get_attr(state, 'image_revision_count', 0) or 0}"
     )
     log_msg = (
@@ -182,11 +183,20 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
 
         for agent_key, is_appr, score, rev_count, review_obj, route_target, log_label in agent_priority_checks:
             if not is_appr or score < MIN_AGENT_SCORE:
-                if rev_count < MAX_REVISIONS:
+                if rev_count <= MAX_REVISIONS:
                     target_name = "copywriter" if agent_key in ("copy", "copywriter") else ("image_prompt" if agent_key in ("image", "image_prompt") else agent_key)
                     _set_attr(state, "human_revision_target", target_name)
                     _set_attr(state, "status", f"{agent_key}_revision_required")
-                    logger.info(f"\n🔄 Routing to {log_label} for revision (will be attempt {rev_count + 1}/{MAX_REVISIONS})")
+                    
+                    # Layer 2 FAANG Fix: Inject reviewer critique as feedback so the agent actually knows what to fix!
+                    issues_list = review_obj.get("issues", [])
+                    if issues_list:
+                        issues_str = "\n".join(f"- {i}" for i in issues_list)
+                        _set_attr(state, "human_feedback", f"AI Reviewer Critique (Must Fix):\n{issues_str}")
+                    else:
+                        _set_attr(state, "human_feedback", "AI Reviewer requested a revision to improve quality.")
+                        
+                    logger.info(f"\n🔄 Routing to {log_label} for revision (attempt {rev_count}/{MAX_REVISIONS})")
                     logger.info(f"   Target: {_get_attr(state, 'human_revision_target')} | Status: {_get_attr(state, 'status')}")
                     logger.info(f"   Score: {score}/100")
                     logger.info(f"   Issues: {review_obj.get('issues', [])}")
@@ -315,6 +325,11 @@ def route_revisions(state: CampaignState) -> list[str]:
         if (state.copy_revision_count or 0) < MAX_REVISIONS:
             agents_to_revise.append("copywriter")
     
+    hook_review = review_data.get("creative_hook_matrix_review", {}) or review_data.get("hook_review", {})
+    if hook_review and hook_review.get("score", 100) < MIN_AGENT_SCORE:
+        if (state.creative_hook_matrix_revision_count or 0) < MAX_REVISIONS:
+            agents_to_revise.append("creative_hook_matrix")
+    
     if review_data.get("image_review", {}).get("score", 100) < MIN_AGENT_SCORE:
         if (state.image_revision_count or 0) < MAX_REVISIONS:
             agents_to_revise.append("image_prompt")
@@ -335,6 +350,7 @@ def get_revision_summary(state: CampaignState) -> dict:
         "research": state.research_revision_count or 0,
         "strategy": state.strategy_revision_count or 0,
         "copy": state.copy_revision_count or 0,
+        "creative_hook_matrix": state.creative_hook_matrix_revision_count or 0,
         "image": state.image_revision_count or 0,
         "max_revisions": MAX_REVISIONS
     }
@@ -351,6 +367,7 @@ def has_hit_max_revisions(state: CampaignState) -> bool:
         (state.research_revision_count or 0) >= MAX_REVISIONS,
         (state.strategy_revision_count or 0) >= MAX_REVISIONS,
         (state.copy_revision_count or 0) >= MAX_REVISIONS,
+        (state.creative_hook_matrix_revision_count or 0) >= MAX_REVISIONS,
         (state.image_revision_count or 0) >= MAX_REVISIONS
     ])
 

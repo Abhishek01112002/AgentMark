@@ -45,8 +45,8 @@ const SupportContent: React.FC = () => {
       answer: 'Campaign copy and quality are audited by the Independent Evaluator against a threshold score of MIN_AGENT_SCORE = 75:\n• Score ≥ 75 & Policy Pass: AI approves copy and routes it directly to the Human Approval Gate (HITL).\n• Score < 75 or Policy Failure: Routes back to the specific failing agent for auto-revision (up to MAX_REVISIONS = 3 per agent).\n• Exhausted Revisions: If an agent reaches 3 revisions without passing, the workflow automatically escalates to Human Approval for manual review.\n• Mandatory HITL: 100% of campaigns require human approval prior to publishing; no automatic publishing occurs.',
     },
     {
-      question: 'What is the Brand Vault and how do Context Contracts work?',
-      answer: 'The Brand Vault is an append-only event-sourced repository of verified enterprise brand facts. Materialized snapshots generate lightweight Context Contracts (<250 tokens) containing brand guidelines, target personas, primary CTAs, and forbidden terms. Downstream agents consume these strict contracts to guarantee zero brand drift.',
+      question: 'What is the Brand Vault and how do Context Contracts & Brand DNA work?',
+      answer: 'The Brand Vault is an append-only event-sourced repository of verified enterprise brand facts. Materialized snapshots generate lightweight Context Contracts (<250 tokens) and purpose-specific Brand DNA context slices (build_brand_dna_context) containing brand guidelines, target personas, pricing tiers, and forbidden terms. Downstream agents consume these strict contracts, while the Reviewer agent audits copy to flag unverified claims and eliminate brand drift.',
     },
     {
       question: 'How does Hybrid RRF Retrieval optimize knowledge search?',

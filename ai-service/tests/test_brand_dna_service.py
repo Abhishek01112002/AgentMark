@@ -128,8 +128,10 @@ class TestBrandDNAServiceFunctional:
         sample_html = """
         <html>
             <body>
+                <main>
                 <h1>Stripe Payments</h1>
-                <p>Financial infrastructure for the internet. Millions of businesses use Stripe to accept payments online.</p>
+                <p>Financial infrastructure for the internet. Millions of businesses use Stripe to accept payments online. We provide the most powerful and easiest-to-use APIs for internet businesses.</p>
+                </main>
             </body>
         </html>
         """
@@ -151,7 +153,7 @@ class TestBrandDNAServiceFunctional:
         asyncio.run(_run())
 
     def test_fetch_brand_website_dna_sync_wrapper(self):
-        sample_html = "<html><body><h1>Shopify Platform</h1><p>Build your online store with Shopify today.</p></body></html>"
+        sample_html = "<html><body><main><h1>Shopify Platform</h1><p>Build your online store with Shopify today. We provide the best e-commerce solution for businesses of all sizes to sell online, in-store, and everywhere in between.</p></main></body></html>"
 
         mock_response = MagicMock()
         mock_response.status_code = 200

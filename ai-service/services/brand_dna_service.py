@@ -19,6 +19,9 @@ import urllib.parse
 from typing import Any, Dict, Optional
 import httpx
 from bs4 import BeautifulSoup
+import hashlib
+import json
+from utils.llm_cache import make_key, get as cache_get, set as cache_set
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +106,7 @@ def clean_html_content_safe(raw_html: str) -> str:
     """
     Extract clean, high-signal text from raw HTML using BeautifulSoup (ReDoS Safe).
     Strips noise elements (script, style, nav, footer, header, cookie banners, modals, buttons).
+    Uses semantic extraction (main, article, section) and deduplicates lines.
     """
     if not raw_html:
         return ""
@@ -115,18 +119,36 @@ def clean_html_content_safe(raw_html: str) -> str:
             element.decompose()
 
         # Strip cookie banners, privacy notices, modals, popups, and GDPR elements by class/id
+        noise_keywords = ("cookie", "privacy", "banner", "modal", "popup", "consent", "gdpr", "cookie-notice", "accept-cookies", "legal", "investors", "careers", "terms", "case-studies", "blog")
         for element in soup.find_all(True):
             if element.name and element.parent:
                 element_id = str(element.get("id", "")).lower()
                 element_cls = " ".join(element.get("class", [])) if isinstance(element.get("class"), list) else str(element.get("class", ""))
                 element_cls = element_cls.lower()
-                if any(noise in element_id or noise in element_cls for noise in ("cookie", "privacy", "banner", "modal", "popup", "consent", "gdpr", "cookie-notice", "accept-cookies")):
+                if any(noise in element_id or noise in element_cls for noise in noise_keywords):
                     element.decompose()
 
-        # Extract text with newline spacing
-        text = soup.get_text(separator="\n", strip=True)
-        lines = [line.strip() for line in text.splitlines() if line.strip() and len(line.strip()) > 3]
-        return "\n".join(lines)
+        # Semantic extraction: prioritize <main>, <article>, <section>, <h1-h3>
+        high_value_tags = soup.find_all(["main", "article", "section", "h1", "h2", "h3"])
+        
+        if high_value_tags:
+            text_blocks = []
+            for tag in high_value_tags:
+                text_blocks.append(tag.get_text(separator="\n", strip=True))
+            text = "\n".join(text_blocks)
+        else:
+            text = soup.get_text(separator="\n", strip=True)
+
+        # Deduplicate lines while preserving order
+        seen_lines = set()
+        unique_lines = []
+        for line in text.splitlines():
+            line_clean = line.strip()
+            if len(line_clean) > 3 and line_clean not in seen_lines:
+                seen_lines.add(line_clean)
+                unique_lines.append(line_clean)
+                
+        return "\n".join(unique_lines)
     except Exception as exc:
         logger.warning("HTML parsing fallback error: %s", exc)
         return ""
@@ -218,18 +240,77 @@ async def fetch_brand_website_dna_async(
 
         try:
             from utils.token_budget import TokenBudgetManager
-            clean_text = TokenBudgetManager.slice_context_to_budget(clean_text, 1000)
+            clean_text = TokenBudgetManager.slice_context_to_budget(clean_text, 2500)
         except Exception:
-            clean_text = clean_text[:3500]
+            clean_text = clean_text[:8000]
 
         if not clean_text or len(clean_text.strip()) < 50:
             return None
 
-        return {
+        # Caching logic
+        content_hash = hashlib.md5(f"{curr_url}:{clean_text}".encode()).hexdigest()
+        cache_key = make_key("BrandDNA", hash=content_hash)
+        cached_result = cache_get(cache_key)
+        
+        if cached_result:
+            logger.info("📦 [BRAND DNA] Cache hit for %s", curr_url)
+            return cached_result
+            
+        # LLM Summarization
+        llm_result = None
+        confidence_score = "LOW"
+        try:
+            from llm import get_llm_client
+            from schemas.agent_outputs import BrandDnaOutput
+            
+            prompt = f"""
+            You are a Brand Intelligence engine. Extract facts from the following website content for {brand_name}.
+            Rules:
+            1. Extract the core value proposition.
+            2. List meaningful product features and audience facts (max 6). Return only what exists.
+            3. Do NOT invent information.
+            4. Do NOT use marketing fluff like "World-class", "Revolutionary", "Global leader", etc.
+            
+            Website Content:
+            {clean_text}
+            """
+            llm = get_llm_client()
+            def run_llm():
+                return llm.generate_structured(prompt, BrandDnaOutput, temperature=0.0, max_tokens=1500)
+                
+            llm_output = await asyncio.to_thread(run_llm)
+            if llm_output:
+                # Derived confidence: LLM success + sufficient length
+                if len(clean_text) > 1000 and len(llm_output.facts) >= 2:
+                    confidence_score = "HIGH"
+                elif len(clean_text) > 500:
+                    confidence_score = "MEDIUM"
+                
+                llm_output.confidence = confidence_score
+                llm_result = llm_output.model_dump()
+        except Exception as e:
+            logger.warning("⚠️ [BRAND DNA] LLM extraction failed, using fallback: %s", e)
+            
+        final_result = {
             "source_url": curr_url,
-            "extracted_hero_text": clean_text[:1500],
+            "extracted_hero_text": clean_text[:1500], # Legacy fallback field
             "crawled_at_host": urllib.parse.urlparse(curr_url).netloc,
         }
+        
+        if llm_result:
+            final_result["structured_dna"] = llm_result
+        else:
+            final_result["structured_dna"] = {
+                "core_value_proposition": clean_text[:200] + "...",
+                "brand_voice": "Unknown",
+                "facts": [],
+                "products": [],
+                "target_audience": [],
+                "confidence": "LOW"
+            }
+            
+        cache_set(cache_key, final_result)
+        return final_result
 
     except Exception as exc:
         logger.warning("⚠️ [BRAND DNA ENGINE] Non-blocking crawl fallback for '%s': %s", target_url, exc)

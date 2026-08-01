@@ -333,10 +333,76 @@ const ResearchContent: React.FC<ResearchContentProps> = ({ data, campaign }) => 
                 SSRF Guarded • 5s Timeout Engine • 0% Hallucination
               </span>
             </div>
-            {brandDnaData.extracted_hero_text && (
-              <div className="mt-3 text-sm text-[#E4E1E9] bg-[#000000]/40 rounded-lg p-4 border border-white/5 leading-relaxed">
-                <span className="text-[#4edea3] font-semibold mr-2">Grounded Value Proposition:</span>
-                &ldquo;{brandDnaData.extracted_hero_text}&rdquo;
+            {brandDnaData.structured_dna ? (
+              <div className="mt-4 space-y-4">
+                {brandDnaData.structured_dna.confidence && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#8B8B9E]">Extraction Confidence:</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                      brandDnaData.structured_dna.confidence === 'HIGH' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
+                      brandDnaData.structured_dna.confidence === 'MEDIUM' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                      'bg-red-500/10 text-red-400 border border-red-500/20'
+                    }`}>
+                      {brandDnaData.structured_dna.confidence}
+                    </span>
+                  </div>
+                )}
+                
+                {brandDnaData.structured_dna.core_value_proposition && (
+                  <div className="text-sm text-[#E4E1E9] bg-[#000000]/40 rounded-lg p-4 border border-white/5 leading-relaxed">
+                    <span className="text-[#4edea3] font-semibold mr-2 block mb-1">Core Value Proposition</span>
+                    {brandDnaData.structured_dna.core_value_proposition}
+                  </div>
+                )}
+
+                {(brandDnaData.structured_dna.facts?.length > 0 || brandDnaData.structured_dna.products?.length > 0 || brandDnaData.structured_dna.target_audience?.length > 0) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {brandDnaData.structured_dna.facts?.length > 0 && (
+                      <div className="bg-[#111118]/60 rounded-lg p-3 border border-white/5">
+                        <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider block mb-2">Key Facts</span>
+                        <ul className="space-y-1.5">
+                          {brandDnaData.structured_dna.facts.map((fact: string, idx: number) => (
+                            <li key={idx} className="text-xs text-[#C8C8DC] flex items-start gap-2">
+                              <span className="text-[#4edea3] mt-0.5">•</span>
+                              <span>{fact}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-3">
+                      {brandDnaData.structured_dna.products?.length > 0 && (
+                        <div className="bg-[#111118]/60 rounded-lg p-3 border border-white/5">
+                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider block mb-2">Products / Features</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {brandDnaData.structured_dna.products.map((prod: string, idx: number) => (
+                              <span key={idx} className="px-2 py-1 bg-[#4edea3]/10 text-[#4edea3] text-[10px] rounded-md border border-[#4edea3]/20">{prod}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {brandDnaData.structured_dna.target_audience?.length > 0 && (
+                        <div className="bg-[#111118]/60 rounded-lg p-3 border border-white/5">
+                          <span className="text-xs font-semibold text-[#8B8B9E] uppercase tracking-wider block mb-2">Target Audience</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {brandDnaData.structured_dna.target_audience.map((aud: string, idx: number) => (
+                              <span key={idx} className="px-2 py-1 bg-[#8B8B9E]/10 text-[#C8C8DC] text-[10px] rounded-md border border-white/5">{aud}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : brandDnaData.extracted_hero_text && (
+              <div className="mt-4 text-sm text-[#E4E1E9] bg-[#000000]/40 rounded-lg p-4 border border-white/5 leading-relaxed">
+                <span className="text-[#4edea3] font-semibold mr-2 block mb-1">Fallback Extraction (Raw Content):</span>
+                <div className="max-h-48 overflow-y-auto pr-2 custom-scrollbar text-xs opacity-80 whitespace-pre-line">
+                  {brandDnaData.extracted_hero_text}
+                </div>
               </div>
             )}
           </div>

@@ -25,7 +25,11 @@ const ReviewContent: React.FC<ReviewContentProps> = ({ data, reviewScore }) => {
   const parentScore = (typeof reviewScore === 'number' && reviewScore > 0)
     ? (reviewScore <= 10 ? reviewScore * 10 : reviewScore)
     : null;
-  const rawScore = parentScore ?? calculatedAvg ?? overall?.quality_score ?? data?.overall_quality_score ?? data?.score ?? 82;
+  const directOverall = data?.overall_quality_score ?? overall?.quality_score ?? data?.quality_score ?? data?.score;
+  const directOverallNorm = typeof directOverall === 'number' && directOverall > 0
+    ? (directOverall <= 10 ? directOverall * 10 : directOverall)
+    : null;
+  const rawScore = parentScore ?? directOverallNorm ?? calculatedAvg ?? 82;
   const normVal = Number(rawScore) > 10 ? Number(rawScore) : Number(rawScore) * 10;
   const displayScore = normVal.toFixed(1);
   const displayScale = '/100';

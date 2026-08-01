@@ -260,9 +260,21 @@ async def generate_campaign_impl(
                 )
 
         elif status in ("failed", "error", "cancelled"):
+            error_details = status_data or {}
+            if "campaign_details" in locals() and isinstance(campaign_details, dict):
+                error_details = campaign_details
+            else:
+                try:
+                    fetched = await client.get_campaign(campaign_id)
+                    if isinstance(fetched, dict):
+                        error_details = fetched
+                except Exception:
+                    pass
             error_msg = (
-                campaign_details.get("aiError")
-                or campaign_details.get("error")
+                error_details.get("aiError")
+                or error_details.get("error")
+                or status_data.get("aiError")
+                or status_data.get("error")
                 or "Unknown error occurred in the AI pipeline"
             )
             logger.error(

@@ -343,6 +343,9 @@ def strategy_agent(state: CampaignState) -> CampaignState:
 
     # Load strategy prompt and format with data
     from utils.prompt_loader import load_split_prompt
+    from utils.brand_dna_context import build_brand_dna_context
+    dna_context = build_brand_dna_context(brand_dna, purpose="strategy", max_tokens=1500)
+    
     system_prompt, prompt = load_split_prompt(
         "strategy",
         campaign_name=campaign_name,
@@ -361,7 +364,7 @@ def strategy_agent(state: CampaignState) -> CampaignState:
         customer_voice_insights=json.dumps(customer_voice_insights, indent=2),
         competitor_vulnerabilities=json.dumps(competitor_vulnerabilities, indent=2),
         proven_ad_hooks=json.dumps(proven_ad_hooks, indent=2),
-        brand_dna=json.dumps(brand_dna, indent=2) if brand_dna else "{}",
+        brand_dna=dna_context.text or "{}",
         market_opportunities=json.dumps(market_opportunities, indent=2),
         recommended_approach=recommended_approach,
         human_feedback_section=human_feedback_section

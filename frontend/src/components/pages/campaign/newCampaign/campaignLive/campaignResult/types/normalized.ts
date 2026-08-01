@@ -73,6 +73,7 @@ export interface NormalizedCampaign {
     research: number;
     strategy: number;
     copywriter: number;
+    creative_hook_matrix: number;
     image_prompt: number;
   };
   

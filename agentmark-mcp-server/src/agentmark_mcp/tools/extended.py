@@ -33,7 +33,7 @@ async def request_targeted_revision_impl(
     target_agent: str,
     feedback: str,
 ) -> Dict[str, Any]:
-    VALID_AGENTS = {"copywriter", "strategy", "research", "reviewer", "manager"}
+    VALID_AGENTS = {"copywriter", "strategy", "research", "reviewer", "manager", "creative_hook_matrix", "image_prompt"}
     if target_agent.lower() not in VALID_AGENTS:
         raise ValueError(
             "Invalid target_agent '%s'. Must be one of: %s"

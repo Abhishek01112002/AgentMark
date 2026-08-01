@@ -519,11 +519,35 @@ async def generate_copy_variant_route(payload: CopyVariantRequest):
     _require_explicit_provider_keys(payload.llm_config, context="copy variant generation")
     set_llm_config(payload.llm_config)
     
+    brand_name = payload.brand_name or ""
+    industry = payload.industry or ""
+
+    if not brand_name and payload.strategy_data:
+        try:
+            strat_json = json.loads(payload.strategy_data)
+            if isinstance(strat_json, dict):
+                brand_name = strat_json.get("brand_name") or strat_json.get("brand") or ""
+                industry = industry or strat_json.get("industry") or ""
+        except Exception:
+            pass
+
+    if not brand_name and payload.brief:
+        try:
+            brief_json = json.loads(payload.brief)
+            if isinstance(brief_json, dict):
+                brand_name = brief_json.get("brand_name") or brief_json.get("brand") or ""
+                industry = industry or brief_json.get("industry") or ""
+        except Exception:
+            pass
+
+    brand_name = brand_name or "Brand"
+    industry = industry or "other"
+
     state = CampaignState(
         campaign_id=payload.campaign_id,
         campaign_name="Variant Generation",
-        brand_name="Brand",
-        industry="other",
+        brand_name=brand_name,
+        industry=industry,
         primary_goal="awareness",
         target_audience=payload.target_audience,
         brand_voice=payload.brand_voice,

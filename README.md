@@ -1,6 +1,6 @@
 # AgentMark — Enterprise Multi-Agent AI Marketing Platform
 
-> **AI-powered campaign orchestration:** from market research and strategy to copywriting, visual prompting, synthetic focus group simulation, human-in-the-loop review, and multi-channel publishing — all in one automated pipeline.
+> **AI-powered campaign orchestration:** from market research and Brand DNA context building to strategy, copywriting, viral hook generation, visual prompting, synthetic focus group simulation, human-in-the-loop review, and multi-channel publishing — all in one automated pipeline.
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)](https://www.python.org/)
@@ -513,15 +513,16 @@ The MCP server reads two variables (set in the Claude Desktop config `env` block
 
 | Feature | Description |
 |---|---|
-| **7-Agent Pipeline** | Manager → Research → Strategy → Copywriter → Image Prompt → Reviewer → Publisher |
+| **8-Agent Pipeline** | Manager → Research → Strategy → Copywriter → Creative Hook Matrix → Image Prompt → Reviewer → Publisher |
+| **Brand DNA Consumption Engine** | Purpose-specific, token-budgeted Brand DNA context builder with grounded claim checking |
 | **Real-Time Progress** | Redis Pub/Sub → Socket.IO → Live agent status panel in UI |
 | **Human-in-the-Loop (HITL)** | Approval gate after Reviewer agent; supports per-agent revision targeting |
 | **Synthetic Focus Groups** | Parallel AI persona agents score copy, list objections, suggest rewrites |
-| **Copy Variants** | Generate alternative copy per channel with Redis-backed distributed locking |
+| **Copy Variants** | On-demand alternative copy per channel with dynamic brand extraction & steering |
 | **Memory Hub** | Stores brand voice, revision patterns, approval rates across campaigns |
-| **MCP Integration** | Claude Desktop / Cursor can orchestrate campaigns via natural language |
+| **MCP Integration** | FastMCP server exposing 18 tools to Claude Desktop, Cursor, and Windsurf |
 | **Developer API Keys** | Long-lived programmatic keys (`am_<hex>`) stored as SHA-256 hashes |
-| **Multi-LLM Support** | Gemini, GPT-4o, Groq; configurable per campaign |
+| **Multi-LLM Support** | Gemini, GPT-4o, Groq; configurable per campaign with failover |
 | **ImageKit Integration** | Visual asset upload and storage |
 
 ---
@@ -537,7 +538,7 @@ Campaign Created
 └──────┬──────┘
        ▼
 ┌─────────────┐
-│  Research   │  — Fetches market data via Tavily web search
+│  Research   │  — Fetches market data via Tavily & scrapes Brand DNA
 └──────┬──────┘
        ▼
 ┌─────────────┐
@@ -549,8 +550,7 @@ Campaign Created
 └──────┬──────────────────┘
        ▼
 ┌──────────────────────────────────────────┐
-│  Creative Hook Matrix (feature-flagged)  │  — Generates viral angle hooks per channel
-│  enabled via ENABLE_CREATIVE_HOOK_MATRIX │  (falls back silently when disabled)
+│          Creative Hook Matrix            │  — Generates viral angle hooks per channel
 └──────┬───────────────────────────────────┘
        ▼
 ┌─────────────┐
@@ -558,11 +558,11 @@ Campaign Created
 └──────┬──────┘
        ▼
 ┌─────────────┐
-│  Reviewer   │  — Scores outputs (0–100), checks tone & compliance
+│  Reviewer   │  — Scores outputs (0–100), checks tone, Brand DNA claims & compliance
 └──────┬──────┘
        ▼
 ┌──────────────────┐
-│ Human Approval   │  — Optional HITL gate; revision can target specific agents
+│ Human Approval   │  — Mandatory HITL gate; revision can target specific upstream agents
 │ (awaiting_human_ │
 │  _approval)      │
 └──────┬───────────┘
@@ -576,16 +576,28 @@ Campaign Created
 
 ## MCP Integration
 
-The MCP Server exposes three primary tools to AI assistants:
+The AgentMark MCP Server exposes 18 tools to AI assistants:
 
 | Tool | Description |
 |---|---|
-| `generate_campaign` | Run the full 7-agent pipeline from a natural language prompt |
+| `generate_campaign` | Run the full multi-agent pipeline from a natural language prompt |
 | `run_focus_group` | Simulate audience persona reactions to campaign copy |
 | `publish_to_channel` | Approve campaign and trigger the Publisher agent |
 | `create_project` | Create a new project workspace and return its ID |
 | `revise_copy_with_feedback` | Re-run copywriter with feedback notes and auto-run focus group |
 | `get_campaign_status` | Check campaign status, quality scores, and version history |
+| `request_targeted_revision` | Target specific upstream agent for re-execution |
+| `submit_human_approval` | Submit approved or rejected decision at HITL gate |
+| `update_client_memory` | Update brand voice or guidelines in Memory Hub |
+| `clear_client_memory` | Reset Memory Hub context for a project |
+| `export_campaign_pdf` | Export campaign strategy, copy, and calendar to PDF |
+| `export_campaign_json` | Export raw creative assets as JSON payload |
+| `get_publishing_schedule` | Retrieve 4-week publishing calendar and readiness |
+| `verify_channel_credentials` | Test social media credentials for publishing |
+| `generate_image_asset` | Generate visual image asset from prompt |
+| `get_campaign_analytics` | Fetch projected reach, CTR, and conversion ROI metrics |
+| `synthesize_brand_memory_intelligence` | Synthesize brand memory patterns across past campaigns |
+| `compare_campaign_performance_vectors` | Compare performance vectors against baseline campaigns |
 
 **Example conversation in Claude Desktop:**
 ```
@@ -593,7 +605,7 @@ You: Generate a campaign for our SaaS CRM product targeting B2B sales managers.
      Industry: SaaS, Goal: lead_gen, Voice: bold and data-driven
 
 [AgentMark] [Manager] Analyzing brief...
-[AgentMark] [Research] Gathering market intelligence...
+[AgentMark] [Research] Gathering market intelligence & Brand DNA...
 [AgentMark] [Strategy] Building campaign framework...
 [AgentMark] Complete! Review Score: 84/100
 

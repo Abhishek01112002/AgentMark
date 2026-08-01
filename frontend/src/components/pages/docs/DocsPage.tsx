@@ -597,7 +597,17 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Card 2: Hybrid RRF Retrieval */}
+          {/* Card 2: Brand DNA Consumption Engine */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-teal-500/30 space-y-2 shadow-md">
+            <div className="flex items-center gap-2 text-teal-400 font-bold text-sm">
+              <Sparkles size={18} /> Brand DNA Consumption Engine (Plan v2)
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Purpose-specific token-budgeted Brand DNA context builder using `build_brand_dna_context`. Extracts structured brand facts and voice directives per agent role while enforcing grounded claim validation in Reviewer audits.
+            </p>
+          </div>
+
+          {/* Card 3: Hybrid RRF Retrieval */}
           <div className="p-5 rounded-2xl bg-[#12121a] border border-indigo-500/30 space-y-2 shadow-md">
             <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
               <Search size={18} /> Hybrid RRF Retrieval Engine
@@ -607,7 +617,7 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Card 3: 4-Tier Layered Policy Engine */}
+          {/* Card 4: 4-Tier Layered Policy Engine */}
           <div className="p-5 rounded-2xl bg-[#12121a] border border-purple-500/30 space-y-2 shadow-md">
             <div className="flex items-center gap-2 text-purple-400 font-bold text-sm">
               <Zap size={18} /> 4-Tier Layered Policy Engine
@@ -617,8 +627,8 @@ const sections: DocSection[] = [
             </p>
           </div>
 
-          {/* Card 4: Independent Evaluator & Score Routing */}
-          <div className="p-5 rounded-2xl bg-[#12121a] border border-amber-500/30 space-y-2 shadow-md">
+          {/* Card 5: Independent Evaluator & Score Routing */}
+          <div className="p-5 rounded-2xl bg-[#12121a] border border-amber-500/30 space-y-2 shadow-md col-span-1 md:col-span-2">
             <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
               <Brain size={18} /> Independent Evaluator Score Routing
             </div>

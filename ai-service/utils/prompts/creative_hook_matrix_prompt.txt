@@ -66,6 +66,7 @@ Target Audience: {target_audience}
 Brand Voice: {brand_voice}
 Brief: {brief}
 Client Memory Context: {client_memory_context}
+{brand_dna}
 
 RESEARCH OUTPUT
 {research_output}
