@@ -456,13 +456,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
 
     # Build creative hook summary for the prompt (compact to save tokens)
     if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
-        hooks_list = hook_data.get("hooks", hook_data.get("matrix", hook_data.get("hook_matrix", [])))
-        hook_categories = [h.get("category", "unknown") for h in hooks_list if isinstance(h, dict)]
-        hook_summary_for_prompt = (
-            f"{len(hooks_list)} hooks generated. "
-            f"Categories: {', '.join(hook_categories[:10])}. "
-            f"Sample headline: {hooks_list[0].get('headline', 'N/A')[:80] if hooks_list else 'N/A'}"
-        )
+        hook_summary_for_prompt = json.dumps(hook_data, separators=(',', ':'))
     else:
         hook_summary_for_prompt = "Not enabled (ENABLE_CREATIVE_HOOK_MATRIX=false) — skip this section."
 
@@ -542,9 +536,18 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     strategy_review = review_analysis.strategy_review
     copy_review = review_analysis.copy_review
     image_review = review_analysis.image_review
-    # Creative hooks review — only present when flag is enabled AND LLM returned it
     hook_review: Optional[AgentReview] = getattr(review_analysis, "creative_hook_matrix_review", None)
-    if not ENABLE_CREATIVE_HOOK_MATRIX or hook_data is None:
+    if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
+        if not hook_review:
+            obj_score = _compute_objective_score(hook_data, "creative_hook_matrix")
+            hook_review = AgentReview(
+                score=obj_score,
+                approved=obj_score >= MIN_AGENT_SCORE,
+                feedback="Creative hook matrix generated successfully.",
+                issues=[],
+                action_items=[]
+            )
+    else:
         hook_review = None  # Always None when feature is off or no output to review
     overall = review_analysis.overall
 
@@ -670,13 +673,23 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     else:
         review_output["creative_hook_matrix_review"] = None
     review_output["status"] = "approved" if (all_approved and meets_overall_threshold) else "revision_required"
-    # Backward-compatible flat fields (backend consumers use these)
     review_output["overall_quality_score"] = overall_score
     review_output["individual_threshold_met"] = all_approved
     review_output["overall_threshold_met"] = meets_overall_threshold
     review_output["can_publish"] = all_approved and meets_overall_threshold
     review_output["reviewed_at"] = datetime.now().isoformat()
     review_output["reviewer"] = "Reviewer Agent (LLM-Powered)"
+    review_output["agent_scores"] = {
+        "research": research_score,
+        "strategy": strategy_score,
+        "copywriter": copy_score,
+        "copy": copy_score,
+        "image_prompt": image_score,
+        "image": image_score,
+    }
+    if hook_review and ENABLE_CREATIVE_HOOK_MATRIX:
+        review_output["agent_scores"]["creative_hook_matrix"] = hook_score
+        review_output["agent_scores"]["hooks"] = hook_score
 
     review_output_json = json.dumps(review_output, indent=2)
 

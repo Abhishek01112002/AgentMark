@@ -210,3 +210,63 @@ class PreValidator:
                 "is_grounded_100x": len(missing) == 0
             }
         )
+
+    @staticmethod
+    def validate_visual_intelligence_compliance(image_prompts: List[Dict[str, Any]]) -> ValidationResult:
+        """
+        Deterministic Python validation (0ms, 0 tokens) for Visual Intelligence Engine rules:
+        - Banned anti-slop phrase check
+        - Lens physics / camera spec presence
+        - Safety tail presence ('no text, no words...')
+        """
+        if not isinstance(image_prompts, list) or len(image_prompts) == 0:
+            return ValidationResult(is_valid=False, issues=["image_prompts list is empty or invalid"])
+
+        banned_phrases = [
+            "capturing the essence", "vibrant tapestry", "seamlessly blends",
+            "modern professional setting", "innovative solution", "tapestry of"
+        ]
+
+        issues = []
+        slop_count = 0
+        missing_optics_count = 0
+        missing_safety_tail_count = 0
+
+        for idx, item in enumerate(image_prompts):
+            p_text = ""
+            cam_spec = ""
+            if isinstance(item, dict):
+                p_text = str(item.get("prompt") or "").lower()
+                cam_spec = str(item.get("camera_specs") or "").lower()
+            elif hasattr(item, "prompt"):
+                p_text = str(getattr(item, "prompt", "")).lower()
+                cam_spec = str(getattr(item, "camera_specs", "")).lower()
+
+            for phrase in banned_phrases:
+                if phrase in p_text:
+                    issues.append(f"Prompt #{idx+1} contains banned anti-slop phrase: '{phrase}'")
+                    slop_count += 1
+
+            if not cam_spec or cam_spec in ("n/a", "none", "false", "null", "undefined"):
+                issues.append(f"Prompt #{idx+1} lacks valid camera/lens optics specification")
+                missing_optics_count += 1
+
+            if "no text" not in p_text:
+                issues.append(f"Prompt #{idx+1} lacks mandatory safety tail ('no text...')")
+                missing_safety_tail_count += 1
+
+        is_valid = len(issues) == 0
+        compliance_pct = round(((len(image_prompts) * 3 - (slop_count + missing_optics_count + missing_safety_tail_count)) / (len(image_prompts) * 3)) * 100, 1) if image_prompts else 100.0
+
+        return ValidationResult(
+            is_valid=is_valid,
+            issues=issues,
+            metadata={
+                "compliance_pct": max(0.0, compliance_pct),
+                "slop_occurrences": slop_count,
+                "missing_optics_count": missing_optics_count,
+                "missing_safety_tail_count": missing_safety_tail_count,
+                "total_prompts_checked": len(image_prompts)
+            }
+        )
+

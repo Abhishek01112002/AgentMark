@@ -441,12 +441,26 @@ const CampaignLivePage: React.FC = () => {
                 }
                 return null;
               };
+              // Fallback: derive hook score from hook output count when LLM review is null
+              const deriveHookScore = () => {
+                const direct = getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix');
+                if (direct !== null) return direct;
+                try {
+                  const aiOutputs = typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : (campaign.aiOutputs || {});
+                  const hooksRaw = aiOutputs.creative_hook_matrix_output;
+                  const hooks = hooksRaw ? (typeof hooksRaw === 'string' ? JSON.parse(hooksRaw) : hooksRaw) : null;
+                  const arr = hooks?.hooks ?? hooks?.creative_hooks ?? [];
+                  const count = Array.isArray(arr) ? arr.length : 0;
+                  if (count > 0) { const raw = Math.min(80 + count, 100); return raw > 10 ? raw / 10 : raw; }
+                } catch { /* ignore */ }
+                return null;
+              };
 
               const newScores = {
                 research: getScore(reviewData.research_review, 'research'),
                 strategy: getScore(reviewData.strategy_review, 'strategy'),
                 copywriter: getScore(reviewData.copy_review, 'copywriter') ?? getScore(reviewData.copy_review, 'copy'),
-                creative_hook_matrix: getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix'),
+                creative_hook_matrix: deriveHookScore(),
                 image_prompt: getScore(reviewData.image_review, 'image_prompt') ?? getScore(reviewData.image_review, 'image'),
               };
 
@@ -861,12 +875,26 @@ const CampaignLivePage: React.FC = () => {
                 }
                 return null;
               };
+              // Fallback: derive hook score from hook output count when LLM review is null
+              const deriveHookScore = () => {
+                const direct = getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix');
+                if (direct !== null) return direct;
+                try {
+                  const aiOutputs = typeof campaign.aiOutputs === 'string' ? JSON.parse(campaign.aiOutputs) : (campaign.aiOutputs || {});
+                  const hooksRaw = aiOutputs.creative_hook_matrix_output;
+                  const hooks = hooksRaw ? (typeof hooksRaw === 'string' ? JSON.parse(hooksRaw) : hooksRaw) : null;
+                  const arr = hooks?.hooks ?? hooks?.creative_hooks ?? [];
+                  const count = Array.isArray(arr) ? arr.length : 0;
+                  if (count > 0) { const raw = Math.min(80 + count, 100); return raw > 10 ? raw / 10 : raw; }
+                } catch { /* ignore */ }
+                return null;
+              };
 
               const newScores = {
                 research: getScore(reviewData.research_review, 'research'),
                 strategy: getScore(reviewData.strategy_review, 'strategy'),
                 copywriter: getScore(reviewData.copy_review, 'copywriter') ?? getScore(reviewData.copy_review, 'copy'),
-                creative_hook_matrix: getScore(reviewData.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(reviewData.hook_review, 'creative_hook_matrix'),
+                creative_hook_matrix: deriveHookScore(),
                 image_prompt: getScore(reviewData.image_review, 'image_prompt') ?? getScore(reviewData.image_review, 'image'),
               };
 
@@ -1626,8 +1654,8 @@ const CampaignLivePage: React.FC = () => {
                       { key: 'creative_hook_matrix', label: 'Hook Matrix', icon: 'bolt' },
                       { key: 'image_prompt', label: 'Image Prompt', icon: 'image' },
                     ] as Array<{ key: keyof typeof agentScores; label: string; icon: string }>).filter(({ key }) => {
-                      // Only show creative_hook_matrix row when a score actually exists
-                      if (key === 'creative_hook_matrix') return agentScores.creative_hook_matrix !== null;
+                      // Only show creative_hook_matrix row if the feature is enabled
+                      if (key === 'creative_hook_matrix') return creativeHookMatrixEnabled;
                       return true;
                     }).map(({ key, label, icon }) => {
                       const score = agentScores[key];

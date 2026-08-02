@@ -70,7 +70,7 @@ class NormalizedCampaignContext(BaseModel, frozen=True):
     brand: BrandMetadata = Field(default_factory=BrandMetadata)
     research: NormalizedResearch = Field(default_factory=NormalizedResearch)
     strategy: NormalizedStrategy = Field(default_factory=NormalizedStrategy)
-    copy: NormalizedCopy = Field(default_factory=NormalizedCopy)
+    copy_data: NormalizedCopy = Field(default_factory=NormalizedCopy)
     image: NormalizedImage = Field(default_factory=NormalizedImage)
 
 

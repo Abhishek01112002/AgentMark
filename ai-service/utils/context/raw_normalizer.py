@@ -176,6 +176,6 @@ class RawNormalizer:
             brand=normalize_brand_metadata(state),
             research=normalize_research(state.research_output),
             strategy=normalize_strategy(state.strategy_output),
-            copy=normalize_copy(state.copy_output),
+            copy_data=normalize_copy(state.copy_output),
             image=normalize_image(state.image_output),
         )

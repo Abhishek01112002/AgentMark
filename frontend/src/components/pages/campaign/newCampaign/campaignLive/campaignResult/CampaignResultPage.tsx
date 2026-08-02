@@ -124,7 +124,7 @@ const CampaignResultPageContent: React.FC = () => {
       case 'images':
         return <VisualsContent data={getOutputField('image_output') || getOutputField('imageOutput')} campaignId={campaignId} />;
       case 'review':
-        return <ReviewContent data={getOutputField('review_output') || getOutputField('reviewOutput')} reviewScore={campaign.reviewScore} />;
+        return <ReviewContent data={getOutputField('review_output') || getOutputField('reviewOutput')} reviewScore={campaign.reviewScore} campaignOutputs={{ creative_hook_matrix_output: getOutputField('creative_hook_matrix_output') || getOutputField('creativeHookMatrixOutput') }} />;
       case 'published':
         return <PublisherContent data={getOutputField('publisher_output') || getOutputField('publisherOutput')} campaignName={campaign.name} campaign={campaign} />;
       case 'focus-group': {

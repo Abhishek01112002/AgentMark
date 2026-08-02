@@ -1458,6 +1458,59 @@ def test_image_prompt_agent_integration():
     print("\n✅ PASS: Full integration test successful")
 
 
+def test_visual_intelligence_pre_validator():
+    """Test PreValidator.validate_visual_intelligence_compliance() static method."""
+    from utils.pre_validator import PreValidator
+
+    # Valid prompts
+    valid_prompts = [
+        {
+            "prompt": "A 35-year-old female CTO in an executive office setting, shallow depth of field, 85mm lens, Rembrandt lighting, no text, no words, no letters",
+            "camera_specs": "85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100"
+        }
+    ]
+    res_valid = PreValidator.validate_visual_intelligence_compliance(valid_prompts)
+    assert res_valid.is_valid is True, f"Valid prompt should pass compliance: {res_valid.issues}"
+    assert res_valid.metadata["compliance_pct"] == 100.0
+
+    # Invalid prompt with anti-slop phrase and missing optics
+    slop_prompts = [
+        {
+            "prompt": "Capturing the essence of a vibrant tapestry in a modern professional setting",
+            "camera_specs": "N/A"
+        }
+    ]
+    res_invalid = PreValidator.validate_visual_intelligence_compliance(slop_prompts)
+    assert res_invalid.is_valid is False, "Slop prompt should fail compliance"
+    assert res_invalid.metadata["slop_occurrences"] >= 1
+    assert res_invalid.metadata["missing_optics_count"] >= 1
+    assert res_invalid.metadata["missing_safety_tail_count"] >= 1
+    print("✅ PASS: PreValidator.validate_visual_intelligence_compliance tests passed")
+
+
+def test_schema_optional_fields():
+    """Test optional Visual Intelligence Engine fields on ImagePrompt and VisualDirection."""
+    from schemas.agent_outputs import ImagePrompt, VisualDirection
+
+    prompt_obj = ImagePrompt(
+        deliverable_name="Test Banner",
+        prompt="A 28-year-old engineer working on a laptop, 85mm lens, soft lighting, no text",
+        optics_rig="85mm f/1.4 prime lens",
+        lighting_rig="Rembrandt key light 45°",
+        visual_intelligence_score=0.95
+    )
+    assert prompt_obj.optics_rig == "85mm f/1.4 prime lens"
+    assert prompt_obj.lighting_rig == "Rembrandt key light 45°"
+    assert prompt_obj.visual_intelligence_score == 0.95
+
+    vd_obj = VisualDirection(
+        overall_style="Editorial documentary",
+        color_bindings={"#0F1729": "laptop housing"}
+    )
+    assert vd_obj.color_bindings == {"#0F1729": "laptop housing"}
+    print("✅ PASS: ImagePrompt & VisualDirection optional fields verified")
+
+
 # ==================== RUN ALL TESTS ====================
 
 if __name__ == "__main__":
@@ -1505,6 +1558,8 @@ if __name__ == "__main__":
         test_no_error_field_set_on_success,
         test_text_overlay_does_not_use_body_copy,
         test_different_deliverable_types_get_different_prompts,
+        test_visual_intelligence_pre_validator,
+        test_schema_optional_fields,
         test_image_prompt_agent_integration,
     ]
 

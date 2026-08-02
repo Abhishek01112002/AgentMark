@@ -59,6 +59,46 @@ COPY CONTEXT (for text overlay alignment):
 {copy_overlay_context}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REAL VISUAL INTELLIGENCE ENGINE (CORE PHYSICS & ANTI-SLOP RULES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION 0A — ANTI-AI-SLOP PROMPT NORMALIZATION
+ABSOLUTELY BANNED AI-SLOP PHRASES (Automatic Rejection by Visual Quality Engine):
+✗ "capturing the essence of", "vibrant tapestry", "seamlessly blends", "modern professional setting", "innovative solution", "tapestry of", "testament to"
+REQUIRED ENGINE TRANSLATIONS:
+- Instead of "capturing the essence of X": describe the exact physical micro-action of the person interacting with X.
+- Instead of "seamlessly blends": describe the exact optical depth-of-field transition between foreground and background.
+- Instead of "modern professional setting": name the exact architectural room type, ceiling height, window glazing, and desk material.
+- Instead of "vibrant tapestry": specify the exact 3 hex-code color values bound to specific physical objects in the scene.
+
+SECTION 0B — REAL OPTICS & CAMERA BEHAVIOR MODELING
+- Camera & Sensor Rig Physics: Specify camera system character. Hasselblad H6D-100c = medium-format clinical precision with painterly color depth; Sony A7R V = intimate documentary warmth; Leica M11 = decisive moment street realism.
+- Lens Compression & Depth Physics:
+  * 35mm f/1.4 → Wide environmental context; subject occupies 30-40% frame; minor optical barrel expansion.
+  * 50mm f/1.2 → Human eye natural perspective; subject occupies 40-50% frame; 1:1 natural depth dropoff.
+  * 85mm f/1.4 → Portrait facial truth; zero geometric distortion; razor-sharp iris focus with creamy background bokeh.
+  * 135mm / 200mm f/2.0 → Telephoto compression; pulls background 3x closer to subject; erases background noise.
+
+SECTION 0C — LIGHTING PHYSICS ENGINE
+- Physical Light Behavior: Light obeys the inverse-square law (falloff = 1/d²). Doubling light-to-subject distance drops background illumination by 75%, casting rich dark falloff.
+- Color Temperature Physics:
+  * 2700K Warm Tungsten (desk lamps, golden hour sunset, amber practicals)
+  * 4000K Neutral Studio Flash (commercial softboxes, key lights)
+  * 5600K Daylight White (north-facing windows, high noon)
+  * 7500K Cool Overcast (rainy windows, blue-hour twilight, monitor glow)
+- Key Lighting Systems: Rembrandt 45° key with 4:1 fill ratio; Butterfly overhead beauty key; Split 8:1 chiaroscuro; Diffused north-window wraparound.
+
+SECTION 0D — BRAND-AWARE COLOR ENGINEERING
+- Hex-Code Material Surface Binding: NEVER just list colors in isolation. Every primary, secondary, and accent color MUST be bound to a specific physical material surface in the prompt text.
+  * Example: "Deep midnight navy #0F1729 bound to the anodized aluminum laptop housing and shadow depths; Electric indigo #4F46E5 accent glowing from screen reflections; Glacier white #F8FAFC on crisp cotton shirt collars."
+
+SECTION 0E — DYNAMIC VISUAL INTELLIGENCE RESOLUTION
+- Aspect Ratio & Compositional Eye-Entry Dynamics:
+  * 16:9 Banner → 3-plane depth (foreground texture -> midground subject -> background horizon). Negative space in left or right third.
+  * 1:1 Social Feed → Symmetrical or rule-of-thirds balance; subject fills 55-65% frame; eye-level connection.
+  * 9:16 Story/Reels → Vertical portrait; subject in upper-third; bottom 35% reserved for overlay without visual clutter.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VISUAL DIRECTION ENGINE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -100,7 +140,16 @@ Before writing any prompt, establish a unified visual language for the entire ca
 THE 10-LAYER PROMPT ARCHITECTURE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Every prompt MUST follow this exact 10-layer structure. This is non-negotiable. This is what separates a $50 generic image from a $50,000 campaign asset.
+Every prompt assembles these 10 content layers into a single fluid scene description. The ENTRY POINT varies — never start the same way twice. Choose the entry point that best serves this specific deliverable's emotional job:
+
+  ENTRY POINT OPTIONS — choose one per prompt, vary across deliverables:
+  → ENVIRONMENT FIRST: Open with the space, then reveal the person inside it
+  → EMOTION FIRST: Open with the feeling in the air, then who is feeling it
+  → CONFLICT FIRST: Open with the tension visible in the scene, then the person holding it
+  → PRODUCT INTERACTION FIRST: Open with what is being used, then who is using it and why
+  → CAMERA OBSERVATION FIRST: Open with what the camera catches, as if by accident
+
+  The sequence of layers within the prompt flows naturally from whichever entry point is chosen. Layers do not need to be stated in order 1→10 — they must all be present, but the rhythm should feel like human briefing, not a form.
 
 LAYER 1 — THE FROZEN MOMENT & HUMAN CASTING ENGINE (30% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -108,42 +157,53 @@ This is the MOST CRITICAL layer. The human character MUST NEVER be generic. Ever
 
 NO DEMOGRAPHIC SHOULD BECOME THE DEFAULT. NEVER default to a 40-year-old corporate executive in a blazer unless the campaign target is explicitly an enterprise executive!
 
-MANDATORY 10-DIMENSION CHARACTER CASTING SYSTEM:
-Every human depicted MUST incorporate ALL 10 of these character dimensions:
+CHARACTER CASTING SYSTEM — CONVERSION-FIRST:
+Every human depicted must serve a marketing function. Include ONLY the attributes that change: emotion, trust, aspiration, social identity, purchase intent. Omit decorative biography that contributes nothing to conversion.
 
-1. AUDIENCE-DERIVED CASTING (CRITICAL — MANDATORY BINDING TO {target_audience}):
-   The character's age, profession, lifestyle, wardrobe style, environment, body language, and accessories MUST be derived directly from the campaign's target audience ({target_audience}):
-   
-   - Target = Gen-Z Students / Youth → Cast 19–22 years old, streetwear / casual layered fashion, campus / café / urban setting, natural unstyled hair, carrying backpack / phone / ear-buds, candid social or study moment. NEVER place in a corporate boardroom!
-   - Target = Enterprise Executives / CFOs / CTOs → Cast 42–52 years old, tailored minimalist executive wardrobe, 32nd-floor corner office or modern tech studio, authoritative body language, premium accessories. NEVER place in a college dorm!
-   - Target = Fitness / Wellness Enthusiasts → Cast athletic build, functional moisture-wicking sportswear, subtle skin glisten / sweat, dynamic weight distribution, high-energy environment.
-   - Target = Young Parents / Families → Cast 30–40 years old, warm lived-in home / park setting, practical quality casual wardrobe, authentic unposed family interaction.
-   - Target = Luxury Buyers → Cast 28–45 years old, high-fashion styling, bespoke fabrics (silk, cashmere, structured wool), architectural high-end setting, understated elegance.
+CONVERSION RELEVANCE FILTER — For every physical attribute you write, ask: "Does this detail change how the audience feels about buying?" If no → cut it.
+✗ CUT: exact hair texture when it doesn't signal social identity
+✗ CUT: precise earring description unless it signals lifestyle
+✗ CUT: beard length unless it signals character archetype
+✓ KEEP: posture that signals confidence, fatigue, or relief
+✓ KEEP: clothing that signals tribe / aspiration / relatability
+✓ KEEP: expression that mirrors the audience's current emotional state
+
+1. AUDIENCE-DERIVED CASTING (MANDATORY — bind to {target_audience}):
+   Age, profession, lifestyle, wardrobe, environment, and body language MUST match the target audience:
+   - Gen-Z / Youth → 19–22, streetwear, campus / café / transit, phone-native posture
+   - Enterprise Executives → 42–52, tailored minimal wardrobe, high-stakes environment, premium accessories
+   - Fitness / Wellness → athletic build, functional sportswear, visible effort or recovery
+   - Young Parents → 30–40, warm lived-in home, practical wardrobe, unposed family moment
+   - Luxury Buyers → 28–45, bespoke fabrics, architectural setting, effortless composure
 
 2. DEMOGRAPHIC SPECIFICITY:
-   Always state precise age + ethnicity/heritage + build + defining physical feature.
-   ABSOLUTELY FORBIDDEN generic phrases:
-   ✗ "a young woman", "a businessman", "a professional", "a person", "a model", "an executive"
-   REQUIRED specific casting:
-   ✓ "A 21-year-old Korean-American female sophomore with shoulder-length dark hair..."
-   ✓ "A 46-year-old Latino chief financial officer with graying temples and sharp jawline..."
+   State precise age + heritage + one defining physical trait that supports the emotional story.
+   ✗ "a young woman", "a businessman", "a professional", "a person"
+   ✓ "A 21-year-old Korean-American sophomore" — age + heritage enough; only add more if it earns conversion
+   ✓ "A 46-year-old Latino CFO with graying temples" — temples signal experience/authority
 
-3. FACIAL MICRO-EXPRESSION & GAZE:
-   Describe exact eye shape/tension, eyebrow position, mouth/lip posture, jaw tension, and gaze direction. Expression must authentically match the emotional beat of the scene.
-   - "eyes narrowed in quiet intense focus, eyebrows slightly furrowed over the bridge of the nose, mouth set in a subtle determined line, gaze fixed on the code terminal 15 degrees off-camera"
+3. EXPRESSION & GAZE (conversion-critical):
+   The face must mirror the audience's current emotional state OR the aspired-to state.
+   - Before state: tension in jaw, eyes searching, slight forward lean
+   - Decision moment: eyebrows relaxed mid-descent, lips parting slightly, gaze sharpening
+   - After state: quiet exhale visible in shoulder drop, eyes carrying private satisfaction
 
-4. HAIR & GROOMING:
-   Specify exact hairstyle, hair texture, hair color, grooming, and facial hair (if applicable).
-   - "soft curtain bangs framing her face, dark chestnut hair loosely clipped up with stray tendrils"
-   - "close-cropped textured fade with a neatly trimmed 3-day stubble along the jawline"
+4. WARDROBE AS SOCIAL SIGNAL:
+   Wardrobe signals tribe membership and aspiration — not description.
+   ✗ "business attire", "casual clothes", "dressed professionally"
+   ✓ "an oversized washed-vintage sage hoodie" — signals relaxed creative, Gen-Z authenticity
+   ✓ "an unbuttoned navy merino cardigan over ivory silk blouse" — signals considered luxury, quiet confidence
 
-5. WARDROBE PSYCHOLOGY:
-   Wardrobe must communicate the character's persona and life story. Specify fabric texture, fit, garment colors, layering, and key accessories.
-   ABSOLUTELY FORBIDDEN vague wardrobe:
-   ✗ "wearing casual clothes", "wearing business attire", "dressed professionally"
-   REQUIRED specific wardrobe:
-   ✓ "an oversized washed-vintage charcoal hoodie over a crisp white crew-neck tee, silver chain necklace, worn canvas backpack strap across one shoulder"
-   ✓ "an unbuttoned navy merino wool cardigan over an ivory silk blouse, vintage minimalist gold wrist-watch"
+5. HUMAN IMPERFECTION (TRUST AMPLIFIER):
+   Perfect people kill conversion. Real people build trust. Include at least ONE imperfection per subject:
+   - slightly wrinkled shirt from a long meeting
+   - smudged notebook ink on the side of one finger
+   - coffee ring on the desk they haven't noticed yet
+   - phone screen lighting up with a notification they're ignoring
+   - natural asymmetric posture — one shoulder lower, weight shifted
+   - real fatigue in the eyes that doesn't diminish competence
+   - half-open backpack on the floor beside the chair
+   RULE: Imperfections must feel like life, never like neglect.
 
 6. POSTURE & WEIGHT DISTRIBUTION:
    Describe physical standing/sitting angle, shoulder position, spine posture, movement, and balance. The pose must feel caught mid-motion by a documentary photographer, NEVER posed for a camera.
@@ -157,44 +217,108 @@ Every human depicted MUST incorporate ALL 10 of these character dimensions:
    - Fingers wrapped around the leather strap of a vintage camera, thumb resting on the shutter release button
    - Both hands mid-gesture explaining an idea, fingers slightly splayed, palms open at waist height
 
-8. ENVIRONMENTAL AUTHENTICITY:
-   The surroundings must naturally belong to the target audience persona. Match furniture, lighting, objects, and architectural language to the character's real world.
+6. POSTURE & WEIGHT DISTRIBUTION:
+   The pose must feel caught mid-motion by a documentary photographer, NEVER posed.
+   - slouched into a worn chair, body angled toward window light
+   - mid-pivot, caught between two decisions
+   - leaning across a surface, weight fully committed to the moment
+
+7. HAND MECHANICS (MANDATORY PHYSICAL TASK):
+   Hands MUST have a precise purposeful task — NEVER idle.
+
+   MICRO-BEHAVIOR LIBRARY — use any, never repeat across prompts:
+   - finger hovering one centimeter above the Enter key, held in suspension before a send
+   - thumb rotating a ring counterclockwise, a habit that predates the current decision
+   - pen tapping once against a printed paragraph before being set down with finality
+   - adjusting glasses upward by the bridge mid-sentence, buying one second of thinking time
+   - hand resting flat on a closed notebook, palm warm against the cover
+   - pinching a printed sticky note at one corner, halfway between desk and trash
+   - both palms pressed briefly against a table surface before pushing back and standing
+   - index finger scrolling a trackpad, slowing almost imperceptibly at something worth rereading
+   - cup held at lip level, not drinking, staring past it at a decision that hasn't been made
+   - hand mid-reach for a phone that hasn't buzzed yet
+   - rotating a product packaging 90 degrees, reading the ingredient list for a second time
+   - knuckle resting gently against one cheek, elbow on desk — the posture of waiting for an answer
+   - exhaling through closed lips, shoulders dropping one centimeter — work just finished
+   - small involuntary smile appearing in the left corner of the mouth before the rest of the face catches up
+   - catching a colleague's eye across a room and holding the gaze half a second longer than necessary
+   - pulling a sticky note from the monitor frame and pressing it to a notebook
+   - lifting a second monitor cable, comparing the ports before plugging in the correct one
+   - catching their own reflection in a dark screen for a quarter second before the display wakes
+
+8. REAL ENVIRONMENT LIBRARY:
+   The surroundings must belong to the character's actual world. NEVER default to Pinterest interiors.
+   Choose from real, specific, imperfect spaces:
+   - busy retail back office: shelving units of overstock, handheld scanner on a folding table, strip lighting
+   - small accounting practice: two monitors, a stack of client folders, motivational calendar from a vendor
+   - corner table in a real café: slightly sticky laminate surface, stained paper menu holder, ambient coffee noise
+   - clinic reception: low-pile carpet tiles, a fish tank, a "we're running 10 minutes behind" handwritten sign
+   - shipping warehouse side office: forklift visible through a window, whiteboard of delivery schedules
+   - family dining table converted to workspace: a child's artwork under a laptop, cereal bowl moved aside
+   - messy startup office: mismatched chairs, a camping table as overflow desk, half a bike in the corner
+   - airport lounge during a layover: gate number visible through glass, rolling carry-on under the seat
+   - hotel room during a business trip: bed already made, luggage open on the rack, laptop on the desk
+   - boutique shop after close: half-dressed mannequin, tissue paper on the floor, stockroom door ajar
+   - salon between clients: one chair occupied, another spinning empty, product bottles on a lit mirror shelf
+   - construction trailer office: laminated safety posters, site plans rolled and stacked, mud on the threshold
+   - garage workshop with a folding office corner: branded workwear, a laptop incongruous among tools
+   - photographer's studio between shoots: equipment cases open, reflector leaning against a wall, gaffer tape roll
 
 9. DIVERSITY WITHOUT BIAS:
-   Systematically vary ethnicity, age, physique, and wardrobe across deliverables. Never repeat the same demographic archetype twice in a campaign!
+   Systematically vary ethnicity, age, physique, and wardrobe across deliverables. Never repeat the same demographic archetype twice in a campaign.
 
 10. CINEMATIC NATURALISM:
-    The output image must look like documentary photojournalism, premium editorial campaign photography (Kinfolk, Vogue, Bloomberg Businessweek, Wired), or real commercial hero assets — NEVER generic AI stock photography!
+    Output must feel like documentary photojournalism or premium editorial — NEVER AI stock photography.
 
-REQUIRED OPENING SENTENCE PATTERN FOR LAYER 1:
-✓ "A [exact age]-year-old [ethnicity/heritage] [persona/role] ([defining physical/hair feature]) is caught at the exact micro-second of [specific physical micro-action] — [facial micro-expression], [exact hand mechanic task], [what their posture and wardrobe reveal]"
+OBSERVATIONAL CAMERA LANGUAGE — The camera witnesses, never poses:
+✗ BANNED PASSIVE DESCRIPTION PATTERNS:
+  "standing confidently while..."
+  "looking professional as..."
+  "posing in a..."
+  "displaying a confident expression"
 
-EXAMPLES OF WORLD-CLASS AUDIENCE-MATCHED CASTING:
+✓ CAMERA OBSERVATION PATTERNS — the camera catches something:
+  "caught looking over her shoulder at the notification that just arrived"
+  "the camera finds him at the exact moment the decision finishes crossing his face"
+  "caught mid-pivot, weight not yet shifted, the choice still forming"
+  "the lens catches the quarter-second after — shoulders dropping, exhale visible"
+  "caught reaching for the cup she forgot she already finished"
+  "the camera holds on his hand, still hovering, before the click"
 
-Example 1 (Target: Gen-Z College Students):
-"A 20-year-old Afro-Latina college sophomore in an oversized vintage wash sage-green hoodie and silver hoop earrings, curly dark hair tied in a messy high bun with tendrils framing her face, is caught at the exact micro-second of burst laughter while leaning across a sunlit oak library table — her right hand holds a half-eaten matcha latte ceramic cup while her left index finger points at a shared laptop screen displaying a finished group presentation, her eyes crinkled with genuine unposed joy"
+EXAMPLES — ENTRY POINT VARIETY:
 
-Example 2 (Target: Enterprise CFOs / Executives):
-"A 48-year-old South Asian male Chief Financial Officer in a tailored unbuttoned charcoal Italian wool blazer over a crisp white open-collar shirt, subtle silver hair at temples and sharp groomed jawline, is caught at the suspended micro-second of decision — leaning forward against a dark walnut conference table at twilight, right hand resting flat over a printed Q3 financial audit while his left thumb and index finger adjust his thin titanium reading glasses, eyes narrowed in deep analytical focus"
+Example 1 — ENVIRONMENT ENTRY (Target: Gen-Z):
+"A corner table at an independent café with a slightly sticky laminate surface and a paper menu holder — and at it, a 20-year-old Afro-Latina sophomore in an oversized sage hoodie, caught at the exact micro-second of unguarded laughter, right hand still holding a half-empty matcha cup, pointing at a laptop screen showing a finished presentation. The camera finds the joy before she's aware of it."
 
-Example 3 (Target: Young Parents):
-"A 32-year-old Caucasian father in a soft sun-faded waffle-knit cream henley with rolled sleeves, short messy sandy-brown hair, is caught mid-giggle while crouching on a hardwood living room floor — his hands steadying a 3-year-old toddler taking shaky steps toward a wooden toy, his expression a radiant mix of pride and exhaustion, morning sunlight filtering through sheer white curtains behind him"
+Example 2 — EMOTION ENTRY (Target: Enterprise CFOs):
+"The particular stillness of a decision not yet made — and inside it, a 48-year-old South Asian CFO at a walnut conference table at twilight, one hand flat over a printed Q3 audit, the other adjusting titanium reading glasses as his eyes narrow over the single line that changes everything."
 
-Example 4 (Target: Gym & Fitness Enthusiasts):
-"A 27-year-old Black female track athlete with tight cornrows pulled into a low ponytail, wearing a matte black compression top with light sweat glistened across her collarbone, is caught at the exact second after completing her final rep — resting both hands on her knees, head lowered as her chest heaves, eyes closed in intense victorious satisfaction, warm gym spotlight highlighting muscle definition in her shoulders"
+Example 3 — CAMERA OBSERVATION ENTRY (Target: Young Parents):
+"The camera catches him a half-second before he knows it's a good moment: a 32-year-old father on a hardwood floor, sun-faded henley, steadying a toddler mid-step toward a wooden toy — the pride and exhaustion written in equal measure across his face, morning light through sheer curtains behind him."
 
-Example 5 (Target: Luxury Fashion Buyers):
-"A 36-year-old East Asian female creative director with a sleek obsidian bob cut, wearing a structured ivory double-breasted silk trench coat, is caught mid-stride crossing a wet cobblestone courtyard at dusk — right hand holding a minimalist matte black leather clutch while her left hand gathers the collar against a light drizzle, her expression carrying the quiet, effortless confidence of old-world elegance"
+Example 4 — CONFLICT ENTRY (Target: Fitness Enthusiasts):
+"The set is done. A 27-year-old Black female track athlete, compression top glistened with effort, both hands resting on her knees, head dropped, eyes closed — the camera witnesses the exact second of victorious exhaustion before the recovery begins."
+
+Example 5 — PRODUCT INTERACTION ENTRY (Target: Luxury Buyers):
+"The coat gathers against a light drizzle — her left hand pulling the ivory silk collar close, right hand holding a matte leather clutch, mid-stride across wet cobblestones at dusk. A 36-year-old East Asian creative director caught by the camera between destinations, carrying old-world composure as effortlessly as she carries the bag."
 
 LAYER 2 — THE WORLD (15% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 The environment must be a CHARACTER in the story, not a backdrop.
 
 RULES:
-- Name the SPECIFIC type of space (not "modern office" but "32nd-floor corner office with floor-to-ceiling glass overlooking the financial district at twilight")
-- Include at least ONE telling environmental detail that reveals character (a half-finished espresso, a dog-eared legal pad, a child's drawing pinned to a monitor)
-- Specify time of day through light quality, not by stating "morning" or "evening"
-- Include foreground element, midground subject, background depth — three planes minimum
+- Name the SPECIFIC type of real space — see Environment Library in Layer 1, dimension 8. NEVER: "modern office", "coworking space", "minimal workspace", "clean professional environment"
+- Include at least ONE telling environmental detail that reveals character: a half-finished espresso, a dog-eared legal pad, a child's drawing pinned to a monitor, a vendor swag mug, a coat hanging at an angle
+- Time of day expressed through LIGHT QUALITY only — never state "morning" or "evening"
+- Three depth planes minimum: foreground texture anchor, midground subject, background environment
+
+VISUAL STORY ARC — Every image must communicate a story moment, even in a single frame:
+  BEFORE STATE: tension, searching, overwhelmed — visual cues of the problem
+  DECISION MOMENT: the pivot — caught between two states, something changing in the face or posture
+  TRANSFORMATION: the instant of resolution — the nod, the exhale, the click, the realization
+  RESULT STATE: quiet aftermath — satisfaction, relief, confidence earned rather than performed
+
+For each prompt, identify which story beat this deliverable serves and make that beat visually legible.
 
 LAYER 3 — ATMOSPHERIC TEXTURE (10% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -236,27 +360,28 @@ luxury / premium:
 casual / authentic:
 → "Natural available light only — golden hour sunlight streaming through a window at a low angle, casting long warm shadows across surfaces. Unmanipulated, honest, the way light actually falls in real spaces. No reflectors, no softboxes, no artificial anything. The imperfect light distribution IS the authenticity signal. Dust motes or atmospheric haze catching the light adds dimensional truth."
 
-LAYER 6 — LENS PHYSICS & PERSPECTIVE (8% of prompt weight)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Describe the VISUAL EFFECT of optics, not equipment names. Universal across all generators.
+CHANNEL-SPECIFIC VISUAL LANGUAGE — Each platform has a distinct visual grammar:
 
 Hero / flagship assets (email banner, landing page hero, youtube thumbnail, whitepaper cover):
 → "Medium telephoto compression effect — the background appears pulled closer to the subject, creating intimate environmental context. Shallow depth of field with subject's eyes in razor-sharp focus, everything behind the subject dissolving into a creamy, luminous bokeh. Subject positioned according to the rule of thirds, left-third, with intentional negative space on the right for text overlay. Foreground element slightly soft, adding depth layers."
 
-Social posts — intimate (instagram post, facebook post, linkedin post):
-→ "Medium portrait perspective, subject fills 55-65% of the frame. Shallow depth of field creates a soft, warm background separation. Tight, personal framing that creates the feeling of a one-on-one conversation. Background elements recognizable but soft, providing context without competition. Eye-level camera height for authentic connection."
+LinkedIn / B2B social (linkedin post, whitepaper, case study):
+→ LENS: 50-85mm, eye-level. ENERGY: authority, peer-to-peer respect, earned competence. CAMERA DISTANCE: medium portrait — professional but not cold. SUBJECT INTERACTION: caught thinking, reviewing, reacting — NOT presenting or posing. No product-display poses. VISUAL HIERARCHY: expression and environment carry the frame equally.
+
+Instagram / consumer social (instagram post, facebook post):
+→ LENS: 35-50mm, slightly above eye-level. ENERGY: warm, scroll-stopping, aspirational-but-reachable. CAMERA DISTANCE: subject fills 55-65% of frame. SUBJECT INTERACTION: genuine unposed moment — laughter, concentration, discovery. VISUAL HIERARCHY: warmth and human expression dominate all else.
 
 Story formats (instagram story, tiktok cover, facebook story):
 → "Vertical portrait orientation with subject in the upper third of frame. Medium close-up framing, intimate and personal. Background compressed and softened to an abstract color wash that maintains mood without detail. Composition designed for vertical scrolling — the eye enters from the top and travels down naturally."
 
 Wide establishing shots (webinar banner, blog header, google display ad):
-→ "Wide environmental perspective with dramatic foreground element anchoring the lower third. Three distinct depth planes visible — foreground texture, midground subject, background environment. Atmospheric perspective adds haze and color shift to distant elements, creating natural depth. Full-width panoramic composition designed for horizontal banner formats."
+→ LENS: Wide environmental perspective, three depth planes — foreground texture, midground subject, background environment. ENERGY: unhurried, institutional, authoritative. SUBJECT INTERACTION: subject engaged with environment, not camera. HIERARCHY: environment establishes stakes, subject resolves them.
 
 Product / ecommerce & Demos (product showcase, product demos, comparison guides, feature showcases):
-→ "Macro-influenced perspective, product/subject fills 65-75% of frame with pin-sharp detail on surface texture and material quality. Extreme shallow depth of field dissolves background into soft bokeh. Every surface imperfection, reflection, and material characteristic is rendered with obsessive clarity."
+→ LENS: Macro-influenced, product fills 65-75% of frame. ENERGY: precise, appetite-inducing, tactile. PRODUCT PARTICIPATION: product must be IN USE — laptop already open to real UI, phone held mid-scroll, package partially opened, product participating in a real moment. NEVER product displayed. SUBJECT INTERACTION: hands engaged with product naturally, not presenting it to camera.
 
 Testimonials & Case Studies (student testimonials, customer stories, case studies, interviews):
-→ "Medium portrait perspective, 85mm telephoto compression, shallow depth of field with subject's eyes in razor-sharp focus, soft creamy background blur separating the subject from the authentic background environment while maintaining intimate visual connection."
+→ LENS: 85mm telephoto, subject's eyes razor-sharp, background contextually soft. ENERGY: intimate, vulnerable, trustworthy. SUBJECT INTERACTION: subject looking slightly off-camera — toward the interviewer, toward a memory — never at lens. Gaze carrying the weight of experience being recalled.
 
 LAYER 7 — COLOR SCIENCE (7% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -287,11 +412,17 @@ Design the frame for purpose.
 - If text overlay will be added: "Intentional clean negative space in the [lower third / upper right / left third] of the frame — uncluttered background area with subtle gradient, designed to accommodate headline and CTA text overlay without competing with the subject"
 - If no text overlay: "Full compositional use of the frame. Subject and environment fill the space with purpose. No dead areas, but clear visual hierarchy guides the eye from primary subject → secondary detail → environmental context"
 
-LAYER 9 — QUALITY ANCHORS (3% of prompt weight)
+LAYER 9 — ADAPTIVE QUALITY SIGNAL (3% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Always include these exact phrases to anchor generation quality:
+Select ONE to THREE quality descriptors that fit this specific image's character. NEVER append identical endings across prompts.
 
-"Award-winning advertising photography, Cannes Lions Grand Prix quality, campaign-hero-grade production value, hyper-realistic rendering, obsessively detailed, commercial production lighting, editorial magazine quality"
+CINEMATIC / HERO ASSETS: "campaign-hero-grade commercial photography, precision editorial quality, photorealistic rendering"
+DOCUMENTARY / AUTHENTIC: "photojournalistic truth, Magnum Photos editorial standard, unmanipulated realism"
+LUXURY / FASHION: "fashion-week editorial precision, obsessively crafted surface detail, restrained luxury production"
+INTIMATE / SOCIAL: "shot-on-35mm warmth, analog grain, personal documentary"
+BOLD / DRAMATIC: "high-contrast commercial production, Wired magazine cover energy, maximum visual impact"
+
+Do NOT use all of these at once. Use only the 1-3 most contextually appropriate for this specific prompt.
 
 LAYER 10 — SAFETY TAIL (2% of prompt weight)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -463,23 +594,19 @@ Respond ONLY with valid JSON matching this structure. No markdown, no explanatio
 FINAL QUALITY GATE — VERIFY ALL BEFORE RESPONDING
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-□ Exactly {deliverables_count} prompt objects in image_prompts array
-□ Every "prompt" field is 500-1000 characters of dense visual storytelling
-□ Every "prompt" starts with a SPECIFIC PERSON + FROZEN MICRO-MOMENT (Layer 1)
-□ Every "prompt" includes environmental detail (Layer 2), atmospheric texture (Layer 3), material detail (Layer 4)
-□ Every "prompt" includes lighting design (Layer 5) and lens perspective (Layer 6)
-□ Every "prompt" includes color science (Layer 7) and composition intent (Layer 8)
-□ Every "prompt" includes quality anchors (Layer 9) and safety tail (Layer 10)
-□ Zero occurrences of: "visualization of", "concept of", "representation of", "abstract" (as a concept)
-□ Zero [CONTEXT] blocks, headers, labels, or markdown in any prompt field
-□ Every "prompt" ends with: "no text, no words, no letters, no typography, no logos, no watermarks, no labels, no captions, no signatures, no stamps, clean uncluttered composition"
-□ visual_direction.overall_style is specific and ownable, not generic
-□ visual_direction.mood is visceral and emotional, not corporate
-□ Every prompt depicts a COMPLETELY DIFFERENT scene (different person, location, moment, emotion)
-□ Aspect ratios match deliverable types
-□ Text overlays use copy context where available
-□ Color palette is consistent with brand voice "{brand_voice}" × industry "{industry}"
-□ At least one visual metaphor per prompt connects to a pain point, motivation, or market trend from research
-□ "rationale" explains WHY this visual serves the strategy, not just WHAT it shows
+INTERNAL QUALITY GATE — verify silently before output:
+□ {deliverables_count} prompt objects, each 500-1000 chars, dense and specific
+□ Entry point varies across prompts — no two begin the same way
+□ Every prompt uses observational camera language — camera witnesses, never describes
+□ Every subject includes at least one human imperfection
+□ All environments are real, specific, imperfect spaces — zero Pinterest interiors
+□ Products participate naturally in scenes — never displayed or presented
+□ Quality signal is contextually chosen — not identical across prompts
+□ Zero banned AI-slop phrases. Zero [CONTEXT] blocks or layer headers in output
+□ Every prompt ends with the safety tail
+□ No two prompts share person type, location, emotional beat, or composition approach
+□ Aspect ratio and channel visual language match deliverable type
+□ Color palette bound to physical surfaces per brand voice × industry
+□ rationale explains strategic WHY, not visual WHAT
 
 {human_feedback_section}

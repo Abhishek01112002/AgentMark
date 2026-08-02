@@ -38,6 +38,12 @@ RESEARCH INSTRUCTIONS — BE EXHAUSTIVE:
    - Pinpoint the single most powerful differentiation angle for {brand_name}
    - Mention recent competitor campaigns, moves, or launches if known
 
+3. BRAND SPECIFICS & FACTS (CRITICAL FOR COPYWRITER)
+   - You MUST extract concrete facts about {brand_name} to ground the copy in reality.
+   - Find exact pricing tiers, named features, integration names, or technical specs.
+   - Find exact trust signals (e.g., "30-day money-back guarantee", "cancel anytime", "rated 4.9 on Trustpilot").
+   - If you cannot find them, infer highly realistic examples based on the category (but mark them as inferred).
+
 3. AUDIENCE INSIGHTS
    - Identify 4-5 specific, emotionally-resonant pain points (go beyond surface-level — what keeps them up at night?)
    - List 4-5 core motivations — both rational (save time/money) and emotional (status, belonging, confidence)
@@ -112,6 +118,11 @@ Respond ONLY with valid JSON in this exact structure (no markdown, no explanatio
   "proven_ad_hooks": [
     "High-converting ad hook 1",
     "High-converting ad hook 2"
+  ],
+  "brand_specific_facts": [
+    "Concrete brand fact 1 (e.g., exact pricing, named feature, return policy)",
+    "Concrete brand fact 2 (e.g., exact pricing, named feature, return policy)",
+    "Concrete brand fact 3 (e.g., exact pricing, named feature, return policy)"
   ],
   "market_opportunities": [
     "HIGH IMPACT: Specific opportunity 1 — what competitors are missing",

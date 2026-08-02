@@ -1058,9 +1058,10 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
   const resultCtx = useCampaignResultContext();
   if (!recommendations || recommendations.length === 0) return null;
 
+  // Inject a single recommendation (per-channel)
   const handleApplyToRevision = (rec: ActionableRecommendation) => {
     if (!resultCtx) return;
-    const text = `Target Channel: ${rec.target_channel}\nDetected Friction: ${rec.friction_identified}\nSuggested Revision: "${rec.suggested_revision.replace(/^"|"$/g, '')}"`;
+    const text = `[Focus Group Revision — ${rec.target_channel}]\nDetected Friction: ${rec.friction_identified}\nSuggested Revision: "${rec.suggested_revision.replace(/^"|"$/g, '')}"`;
     resultCtx.setRevisionFeedback(text);
 
     if (resultCtx.campaign?.status === 'completed') {
@@ -1072,20 +1073,74 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
     resultCtx.setSelectedAgent('copywriter');
     resultCtx.setIsMinimized(false);
     resultCtx.setDrawerTab('revise');
-    toast.success(`Applied focus group recommendation to Revision Panel! Click 'Request Revision' to submit.`);
+    toast.success(`Applied ${rec.target_channel} recommendation to Revision Panel.`);
+  };
+
+  // Inject ALL recommendations at once — one structured block for the copywriter agent
+  const handleApplyAllToRevision = () => {
+    if (!resultCtx) return;
+
+    const header = `[FOCUS GROUP — BULK COPY REVISION REQUEST]\nThe synthetic focus group identified ${recommendations.length} friction points. Please revise the copy for ALL channels below in a single pass to maximise audience resonance and conversion rates.\n\n`;
+
+    const body = recommendations
+      .map((rec, i) =>
+        `--- ${i + 1}. ${rec.target_channel.toUpperCase()} ---\n` +
+        `Friction: ${rec.friction_identified}\n` +
+        `Revise to: "${rec.suggested_revision.replace(/^"|"$/g, '')}"`
+      )
+      .join('\n\n');
+
+    const footer = `\n\nApply all of the above revisions holistically. Maintain brand voice and channel tone while eliminating each identified friction point.`;
+
+    resultCtx.setRevisionFeedback(header + body + footer);
+
+    if (resultCtx.campaign?.status === 'completed') {
+      toast('Campaign is already approved! Opening Create Variant for bulk revision...', { icon: <Sparkles className="w-5 h-5 text-[#818CF8]" /> });
+      resultCtx.setShowVariantModal(true);
+      return;
+    }
+
+    resultCtx.setSelectedAgent('copywriter');
+    resultCtx.setIsMinimized(false);
+    resultCtx.setDrawerTab('revise');
+    toast.success(`All ${recommendations.length} focus group recommendations injected! Click 'Request Revision' to apply all at once.`, { duration: 4000 });
   };
 
   return (
     <div className="card-elevate bg-[#111118] border border-[#2A2A38] rounded-xl p-6 flex flex-col gap-6 relative overflow-hidden shadow-lg">
       {primaryAccent}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          </div>
+          <div>
+            <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">Actionable Copy Optimization Directives</h3>
+            <p className="m-0 text-xs text-[#8B8B9E] font-sora mt-0.5">High-impact revisions to increase conversion resonance &amp; eliminate objections</p>
+          </div>
         </div>
-        <div>
-          <h3 className="m-0 text-base font-semibold text-[#F1F1F3] font-sora">Actionable Copy Optimization Directives</h3>
-          <p className="m-0 text-xs text-[#8B8B9E] font-sora mt-0.5">High-impact revisions to increase conversion resonance &amp; eliminate objections</p>
-        </div>
+        {/* ── BULK INJECT BUTTON ── */}
+        <button
+          onClick={handleApplyAllToRevision}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm font-sora transition-all cursor-pointer active:scale-[0.97] shadow-lg"
+          style={{
+            background: 'linear-gradient(135deg, #6366F1, #818CF8)',
+            color: '#fff',
+            boxShadow: '0 0 18px rgba(99,102,241,0.35)',
+          }}
+          title={`Inject all ${recommendations.length} focus group recommendations into the Revision Panel at once`}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span>Inject All {recommendations.length} Recommendations</span>
+        </button>
+      </div>
+
+      {/* ── Bulk-inject explanation strip ── */}
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl border" style={{ background: 'rgba(99,102,241,0.05)', borderColor: 'rgba(99,102,241,0.2)' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818CF8" strokeWidth="2" className="mt-0.5 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p className="m-0 text-xs text-[#8B8B9E] font-sora">
+          <span className="text-[#818CF8] font-semibold">Inject All</span> sends every channel's friction fix to the Revision Panel in one structured block — the Copywriter Agent revises all channels in a single pass for maximum focus group improvement.
+        </p>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -1104,11 +1159,11 @@ const Recommendations: React.FC<RecommendationsProps> = ({ recommendations }) =>
               </div>
               <button
                 onClick={() => handleApplyToRevision(rec)}
-                className="px-3 py-1.5 rounded-lg bg-[#6366F1]/15 hover:bg-[#6366F1]/25 border border-[#6366F1]/40 text-[#818CF8] hover:text-white text-xs font-semibold font-sora transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.97]"
-                title="Populate Inspector Panel's Revision box with this exact focus group recommendation"
+                className="px-2.5 py-1 rounded-lg bg-[#1A1A28] hover:bg-[#2A2A38] border border-[#2A2A38] hover:border-[#6366F1]/40 text-[#8B8B9E] hover:text-[#818CF8] text-[11px] font-medium font-sora transition-all flex items-center gap-1.5 cursor-pointer active:scale-[0.97]"
+                title="Inject only this channel's recommendation into the Revision Panel"
               >
-                <span>Auto-Inject to Revision Panel</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                <span>This channel only</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
               </button>
             </div>
 

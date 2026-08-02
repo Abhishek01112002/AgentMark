@@ -153,8 +153,8 @@ def research_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which field(s) need changing.\n"
             "  2. ONLY modify what the user explicitly asked for. Nothing else.\n"
-            "  3. ALL other fields MUST be copied exactly, word-for-word, from EXISTING RESEARCH above. Do not alter a single character of the unchanged fields.\n"
-            "  4. Do NOT regenerate, expand, or improve unchanged fields.\n"
+            "  3. DO NOT output any fields that you are not changing. Exclude them entirely from your JSON output (Sparse JSON Patch).\n"
+            "  4. Only output the specific fields that need to be updated based on the feedback.\n"
             f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_research_section
@@ -422,7 +422,7 @@ def research_agent(state: CampaignState) -> CampaignState:
         try:
             from utils.delta_merger import deep_merge_dicts
             previous_dict = json.loads(state.research_output)
-            merged_dict = deep_merge_dicts(previous_dict, research_data.model_dump(exclude_none=True))
+            merged_dict = deep_merge_dicts(previous_dict, research_data.model_dump(exclude_unset=True))
             research_data = ResearchOutput(**merged_dict)
             logger.info("   ✅ Semantic Delta Patch merged cleanly over previous research_output")
         except Exception as exc:

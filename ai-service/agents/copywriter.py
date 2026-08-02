@@ -300,7 +300,8 @@ def _extract_surgical_copy_context(strategy: dict, state: CampaignState) -> dict
 
     pain_points = aud_insights.get("pain_points", [])[:4]
     motivations = aud_insights.get("motivations", [])[:4]
-    buyer_objections = aud_insights.get("buyer_objections", []) or aud_insights.get("objections", [])
+    buyer_objections = aud_insights.get("trust_barriers", []) or aud_insights.get("buyer_objections", [])
+    brand_specific_facts = research.get("brand_specific_facts", [])
     market_trends = market_analysis.get("market_trends", [])[:4]
 
     customer_voice_insights = research.get("customer_voice_insights", [])[:4]
@@ -325,6 +326,7 @@ def _extract_surgical_copy_context(strategy: dict, state: CampaignState) -> dict
         "competitor_vulnerabilities": competitor_vulnerabilities,
         "proven_ad_hooks": proven_ad_hooks,
         "brand_dna": brand_dna,
+        "brand_specific_facts": brand_specific_facts,
     }
 
 
@@ -502,9 +504,8 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which field(s)/channel(s) need changing.\n"
             "  2. ONLY modify the specific field(s) the user mentioned. Nothing else.\n"
-            "  3. ALL other channels and fields MUST be copied character-for-character, word-for-word, from EXISTING COPY above. Do not alter a single character of the unchanged channels.\n"
-            "  4. Do NOT regenerate, rewrite, or improve unchanged channels — copy them exactly.\n"
-            "  5. Do NOT add or remove any channels — keep the same set as EXISTING COPY.\n"
+            "  3. DO NOT output any channels or fields that you are not changing. Exclude them entirely from your JSON output (Sparse JSON Patch).\n"
+            "  4. Only output the specific channels and fields that need to be updated based on the feedback.\n"
             f"User Feedback: \"{feedback_text}\"\n"
             + "="*80
             + existing_copy_section
@@ -565,6 +566,12 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
     if proven_ad_hooks and isinstance(proven_ad_hooks, list):
         canonical_intel_parts.append(
             f"<proven_ad_hooks_patterns>\n" + "\n".join(f"- {h}" for h in proven_ad_hooks[:4]) + "\n</proven_ad_hooks_patterns>"
+        )
+    
+    brand_specific_facts = surgical_ctx.get("brand_specific_facts", [])
+    if brand_specific_facts and isinstance(brand_specific_facts, list):
+        canonical_intel_parts.append(
+            f"<brand_specific_facts verbatim=\"true\">\n" + "\n".join(f"- {f}" for f in brand_specific_facts[:6]) + "\n</brand_specific_facts>"
         )
 
     canonical_intel_str = "\n\n".join(canonical_intel_parts) if canonical_intel_parts else "No specific customer voice or ad hook evidence available. Do not fabricate quotes or unverified claims."
@@ -811,7 +818,7 @@ def copywriter_agent(state: CampaignState) -> CampaignState:
         try:
             from utils.delta_merger import deep_merge_dicts
             previous_dict = json.loads(state.copy_output)
-            merged_dict = deep_merge_dicts(previous_dict, copy_output.model_dump(exclude_none=True))
+            merged_dict = deep_merge_dicts(previous_dict, copy_output.model_dump(exclude_unset=True))
             copy_output = CopywriterOutput(**merged_dict)
             logger.info("   ✅ Semantic Delta Patch merged cleanly over previous copy_output")
         except Exception as exc:

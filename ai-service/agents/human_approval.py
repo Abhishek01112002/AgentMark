@@ -148,6 +148,10 @@ def human_approval_node(state: CampaignState) -> CampaignState:
         deliverables_ready.append("Campaign Copy & Messaging")
     else:
         deliverables_failed.append("Campaign Copy & Messaging")
+        
+    if getattr(state, "creative_hook_matrix_output", None):
+        deliverables_ready.append("Creative Hook Matrix")
+
     
     if state.image_output:
         deliverables_ready.append("Visual Direction & Image Prompts")

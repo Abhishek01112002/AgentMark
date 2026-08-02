@@ -497,7 +497,8 @@ async def get_campaign_status(
     client = get_client()
     client.set_active_tool("get_campaign_status")
     try:
-        return await get_campaign_status_impl(
+        impl = _get_impl("revision", "get_campaign_status_impl")
+        return await impl(
             client=client,
             campaign_id=campaign_id.strip(),
         )

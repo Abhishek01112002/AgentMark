@@ -156,11 +156,11 @@ async def generate_campaign_impl(
     if on_progress:
         on_progress(progress_message)
 
-    # 4. Poll until completion, timeout, or unrecoverable failure
     elapsed_secs: float = 0.0
     consecutive_failures: int = 0
     last_milestone_emitted: Optional[str] = None
     attempt: int = 0
+    campaign_details: Optional[Dict[str, Any]] = None
 
     while elapsed_secs < CAMPAIGN_TIMEOUT_SECS:
         # Determine adaptive sleep duration based on elapsed runtime

@@ -43,13 +43,13 @@ def run_langgraph_campaign():
     print("-"*80)
     
     initial_state = CampaignState(
-        campaign_name="Black Friday Mega Sale 2024",
-        brand_name="TechGadgets Pro",
-        industry="ecommerce",
-        primary_goal="sales",
-        target_audience="Tech enthusiasts aged 25-45, gadget lovers, early adopters with disposable income",
-        brand_voice="bold",
-        brief="Marketing campaign for TechGadgets Pro targeting Tech enthusiasts with a bold brand voice. Focus on driving sales through exclusive Black Friday deals."
+        campaign_name="Canva Pro for Teams Q4",
+        brand_name="Canva",
+        industry="SaaS",
+        primary_goal="lead_gen",
+        target_audience="Marketing managers, small business owners, and creative directors looking to scale asset production without hiring more designers",
+        brand_voice="empowering",
+        brief="Campaign to drive adoption of Canva Pro for Teams among mid-market agencies and marketing teams. Emphasize brand kits, collaboration features, and magic resize to save time."
     )
     
     print(f"✅ Campaign: {initial_state.campaign_name}")
@@ -93,7 +93,8 @@ def run_langgraph_campaign():
     print("-"*80)
     
     # Invoke the workflow - LangGraph handles everything!
-    final_state = workflow.invoke(initial_state)
+    config = {"configurable": {"thread_id": "test_run_canva"}}
+    final_state = workflow.invoke(initial_state, config=config)
     
     # ========== STEP 4: DISPLAY RESULTS ==========
     print("\n" + "="*80)
@@ -125,11 +126,6 @@ def run_langgraph_campaign():
     print(f"   ✅ Research:   {'✓' if state_dict.get('research_output') else '✗'} ({len(state_dict.get('research_output', '')) if state_dict.get('research_output') else 0} chars)")
     print(f"   ✅ Strategy:   {'✓' if state_dict.get('strategy_output') else '✗'} ({len(state_dict.get('strategy_output', '')) if state_dict.get('strategy_output') else 0} chars)")
     print(f"   ✅ Copy:       {'✓' if state_dict.get('copy_output') else '✗'} ({len(state_dict.get('copy_output', '')) if state_dict.get('copy_output') else 0} chars)")
-    
-    hook_output = state_dict.get('creative_hook_matrix_output')
-    if hook_output:
-        print(f"   ✅ Hooks:      {'✓'} ({len(str(hook_output))} chars)")
-        
     print(f"   ✅ Image:      {'✓' if state_dict.get('image_output') else '✗'} ({len(state_dict.get('image_output', '')) if state_dict.get('image_output') else 0} chars)")
     print(f"   ✅ Review:     {'✓' if state_dict.get('review_output') else '✗'} ({len(state_dict.get('review_output', '')) if state_dict.get('review_output') else 0} chars)")
     print(f"   ✅ Publisher:  {'✓' if state_dict.get('publisher_output') else '✗'} ({len(state_dict.get('publisher_output', '')) if state_dict.get('publisher_output') else 0} chars)")
@@ -156,11 +152,6 @@ def run_langgraph_campaign():
             print(f"   Research:  {research_score}/100")
             print(f"   Strategy:  {strategy_score}/100")
             print(f"   Copy:      {copy_score}/100")
-            
-            hook_rev = review_data.get('creative_hook_matrix_review')
-            if hook_rev and isinstance(hook_rev, dict):
-                print(f"   Hooks:     {hook_rev.get('score', 0)}/100")
-                
             print(f"   Image:     {image_score}/100")
             
         except (json.JSONDecodeError, TypeError) as e:

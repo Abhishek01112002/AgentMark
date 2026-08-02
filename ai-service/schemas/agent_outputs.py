@@ -314,6 +314,8 @@ class MarketAnalysis(BaseModel):
     total_addressable_market: str = Field(default="", description="Total addressable market size")
     growth_rate: str = Field(default="", description="Market growth rate")
     market_trends: List[str] = Field(default_factory=list, description="Current market trends")
+    macro_factors: str = Field(default="", description="Macro factors shaping this market")
+    seasonality: str = Field(default="", description="Seasonal or cyclical patterns")
 
 class CompetitorAnalysis(BaseModel):
     top_competitors: List[str] = Field(default_factory=list, description="List of top competitors")
@@ -323,6 +325,8 @@ class AudienceInsights(BaseModel):
     pain_points: List[str] = Field(default_factory=list, description="Customer pain points")
     motivations: List[str] = Field(default_factory=list, description="Customer motivations")
     preferred_channels: List[str] = Field(default_factory=list, description="Preferred communication channels")
+    purchase_journey: str = Field(default="", description="Customer purchase journey")
+    trust_barriers: List[str] = Field(default_factory=list, description="Trust barriers or buyer objections")
     language_style: str = Field(default="Professional, data-driven, concise, focusing on outcomes and efficiency.", description="Communication style and tone preferences")
 
 
@@ -334,6 +338,7 @@ class ResearchOutput(BaseModel):
     competitor_vulnerabilities: List[str] = Field(default_factory=list, description="Competitor weaknesses and counter-positioning angles")
     proven_ad_hooks: List[str] = Field(default_factory=list, description="High-converting visual angles and ad creative hooks")
     market_opportunities: List[str] = Field(default_factory=list, description="Market growth opportunities")
+    brand_specific_facts: List[str] = Field(default_factory=list, description="Concrete brand facts: pricing, specific feature names, integration lists, or policies")
     recommended_approach: str = Field(default="", description="Recommended strategic approach")
     brand_dna: Optional[dict] = Field(default=None, description="Grounded website messaging and brand intelligence")
     literas_sources: list[dict] = Field(default_factory=list, description="LiteRAG web search sources")
@@ -418,6 +423,7 @@ class ResearchFoundation(BaseModel):
     customer_voice_insights: List[str] = Field(default_factory=list, description="Real customer quotes and buyer complaints")
     competitor_vulnerabilities: List[str] = Field(default_factory=list, description="Competitor weaknesses and counter-positioning angles")
     proven_ad_hooks: List[str] = Field(default_factory=list, description="High-converting visual angles and ad creative hooks")
+    brand_specific_facts: List[str] = Field(default_factory=list, description="Concrete brand facts: pricing, specific feature names, integration lists, or policies")
     brand_dna: Optional[dict] = Field(default=None, description="Grounded website messaging and brand intelligence")
     market_opportunities: List[str] = Field(default_factory=list)
     recommended_approach: str = Field(default="")
@@ -614,6 +620,9 @@ class ImagePrompt(BaseModel):
     style: str = Field(default="modern professional", description="Precise artistic direction (e.g., 'editorial documentary realism with commercial lighting precision' not just 'professional photography')")
     color_palette: str = Field(default="", description="Deliverable-specific colors with hex codes and emotional role (e.g., 'deep midnight navy #0F1729 anchoring shadows, electric indigo #4F46E5 accent on screen reflections')")
     text_overlay: Optional[TextOverlay] = Field(default=None, description="Suggested text overlay details — headline from copy context, CTA, and placement zone")
+    optics_rig: Optional[str] = Field(default=None, description="Resolved camera body, sensor, and optical lens specs (e.g. '85mm f/1.4 prime lens, Hasselblad H6D-100c, ISO 100')")
+    lighting_rig: Optional[str] = Field(default=None, description="Resolved physical lighting design (e.g. 'Rembrandt key light at 45° with 4:1 fill ratio and warm tungsten practicals')")
+    visual_intelligence_score: Optional[float] = Field(default=None, description="Deterministic visual quality score (0.0-1.0) evaluating 10-layer compliance")
 
     @field_validator("camera_specs", mode="before")
     @classmethod
@@ -633,6 +642,7 @@ class VisualDirection(BaseModel):
     color_palette: List[str] = Field(default_factory=list, description="4-5 specific colors with hex codes and emotional roles (e.g., 'Deep midnight navy #0F1729 — institutional trust and depth')")
     mood: str = Field(default="professional and inspiring", description="Visceral emotional atmosphere in one sentence — not 'professional' but 'the quiet electricity of a room where something important is about to be decided'")
     key_visual_themes: List[str] = Field(default_factory=list, description="3-4 specific visual motifs, not abstract concepts (e.g., 'Warm light through rain-beaded glass' not 'Innovation')")
+    color_bindings: Optional[Dict[str, str]] = Field(default=None, description="Hex-code to surface/material bindings for brand color engineering")
 
 class ImagePromptOutput(BaseModel):
     visual_direction: VisualDirection = Field(default_factory=VisualDirection)

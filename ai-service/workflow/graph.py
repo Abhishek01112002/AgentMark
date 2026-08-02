@@ -475,6 +475,11 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
     if state.error or state.status == "error":
         _log_node_execution("creative_hook_matrix", state, skipped=True)
         return {}
+        
+    if not ENABLE_CREATIVE_HOOK_MATRIX:
+        # If disabled but node is executed, just skip and do nothing
+        _log_node_execution("creative_hook_matrix", state, skipped=True)
+        return {}
 
     is_targeted_for_revision = (state.human_revision_target == "creative_hook_matrix") or (state.status == "creative_hook_matrix_revision_required")
 
@@ -853,8 +858,7 @@ def create_campaign_graph():
     graph.add_node("research", research_node)
     graph.add_node("strategy", strategy_node)
     graph.add_node("copywriter", copywriter_node)
-    if ENABLE_CREATIVE_HOOK_MATRIX:
-        graph.add_node("creative_hook_matrix", creative_hook_matrix_node)
+    graph.add_node("creative_hook_matrix", creative_hook_matrix_node)
     graph.add_node("image_prompt", image_prompt_node)
     graph.add_node("reviewer", reviewer_node)
     graph.add_node("human_approval", human_approval_wrapper)
@@ -893,18 +897,17 @@ def create_campaign_graph():
         check_cancellation,
         {
             "cancelled": "cancelled_node",
-            "continue": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "image_prompt"
+            "continue": "creative_hook_matrix"
         }
     )
-    if ENABLE_CREATIVE_HOOK_MATRIX:
-        graph.add_conditional_edges(
-            "creative_hook_matrix",
-            check_cancellation,
-            {
-                "cancelled": "cancelled_node",
-                "continue": "image_prompt"
-            }
-        )
+    graph.add_conditional_edges(
+        "creative_hook_matrix",
+        check_cancellation,
+        {
+            "cancelled": "cancelled_node",
+            "continue": "image_prompt"
+        }
+    )
     graph.add_conditional_edges(
         "image_prompt",
         check_cancellation,
@@ -924,7 +927,7 @@ def create_campaign_graph():
             "revise_research": "research",       # If research needs revision → back to research
             "revise_strategy": "strategy",       # If strategy needs revision → back to strategy
             "revise_copy": "copywriter",         # If copy needs revision → back to copywriter
-            "revise_hooks": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "copywriter",
+            "revise_hooks": "creative_hook_matrix",
             "revise_image": "image_prompt",      # If image needs revision → back to image_prompt
             "end": END,                           # If max revisions reached → END
             "cancelled": "cancelled_node"        # If campaign cancelled
@@ -941,7 +944,7 @@ def create_campaign_graph():
             "revise_research": "research",       # If human wants research revision → back to research
             "revise_strategy": "strategy",       # If human wants strategy revision → back to strategy
             "revise_copy": "copywriter",         # If human wants copy revision → back to copywriter
-            "revise_hooks": "creative_hook_matrix" if ENABLE_CREATIVE_HOOK_MATRIX else "copywriter",
+            "revise_hooks": "creative_hook_matrix",
             "revise_image": "image_prompt",      # If human wants image revision → back to image_prompt
             "end": END,                          # If awaiting human approval → END
             "cancelled": "cancelled_node"        # If campaign cancelled

@@ -46,6 +46,9 @@ PROVEN AD HOOKS & VISUAL ANGLES:
 OFFICIAL BRAND DNA CONTEXT:
 {brand_dna}
 
+BRAND SPECIFIC FACTS (Crucial for Copywriter):
+{brand_specific_facts}
+
 MARKET OPPORTUNITIES:
 {market_opportunities}
 
@@ -54,17 +57,31 @@ RECOMMENDED APPROACH:
 
 STRATEGY DEVELOPMENT INSTRUCTIONS — BE THOROUGH AND SPECIFIC:
 
+⚠️  MANDATORY PRE-STRATEGY AUDIT — COMPLETE THIS BEFORE WRITING ANY POSITIONING:
+
+0. BRAND REPUTATION AUDIT (Non-Negotiable First Step)
+   Before writing a single line of strategy, scan the CUSTOMER VOICE & REDDIT PAIN POINTS and AUDIENCE INSIGHTS (trust_barriers) for:
+   a) Any NEGATIVE brand perceptions, complaints, or fears that are ALREADY ASSOCIATED WITH {brand_name}.
+      Examples: "burnout," "too rigid," "overpriced," "poor support," "toxic culture," "scam."
+   b) Any SELF-DEFEATING ANGLES — positioning ideas that feel true to the brand but would actually ACTIVATE or AMPLIFY those exact fears.
+      Example: If customers already complain "Allen ruined my mental health," then a "Discipline-first, no excuses" campaign angle is self-defeating — it confirms their fear, not counters it.
+   c) Your positioning and key messages MUST neutralize or address these negatives — NEVER reinforce them.
+   RULE: If your proposed positioning angle maps directly onto a pre-existing customer complaint, REJECT IT and choose a different angle.
+
 1. POSITIONING (The North Star)
    - Create a razor-sharp, differentiated positioning statement (1-2 powerful sentences)
    - It must directly counter the top competitor's angle and leverage the white-space opportunity
    - Must be memorable, ownable, and emotionally resonant for the target audience
    - Avoid generic buzzwords — be specific to {brand_name}'s actual advantage
+   - CRITICAL: Cross-check against your Brand Reputation Audit from Step 0. If this positioning amplifies a pre-existing fear or complaint, rewrite it.
 
 2. KEY MESSAGES (4-6 messages)
    - Each message must address a specific audience pain point OR motivation from research
    - Each must be a complete, compelling sentence — not a vague theme word
    - Order them: lead with the strongest emotional hook, end with the rational proof point
    - Each message should work as a standalone ad headline
+   - ANTI-AMPLIFICATION CHECK: Review each message against trust_barriers from research. If any message would feel threatening, shaming, or dismissive to a skeptic in the audience, rewrite it.
+   - SEGMENT COVERAGE: Ensure at least one message specifically addresses the most vulnerable or churned audience segment (e.g., repeaters, failed candidates, price-sensitive parents) — these are highest-intent buyers.
 
 3. CONTENT PILLARS (4-6 pillars)
    - Each pillar must be a named content theme (e.g., "The Science of Recovery" not just "Education")
@@ -220,6 +237,7 @@ Return valid JSON matching the StrategyOutput schema exactly.
     "competitor_vulnerabilities": {competitor_vulnerabilities},
     "proven_ad_hooks": {proven_ad_hooks},
     "brand_dna": {brand_dna},
+    "brand_specific_facts": {brand_specific_facts},
     "market_opportunities": {market_opportunities},
     "recommended_approach": "{recommended_approach}"
   }},

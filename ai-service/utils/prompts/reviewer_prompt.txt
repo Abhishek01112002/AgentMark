@@ -184,32 +184,33 @@ Field 1 — inferred_goal (12.5 pts):
 Field 2 — email (12.5 pts):
   - subject: Under 60 chars, compelling, personalized. Deduct 3 if missing or too long.
   - headline: Must anchor on positioning or key message. Deduct 3 if missing.
-  - body: Must be 100+ chars, address primary pain point, mention {brand_name}. Deduct 4 if too short or generic.
-  - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 2.5 if fewer than 2.
+  - body: Must be 100+ chars, address primary pain point WITH a specific named detail (feature, price, proof point, stat). Deduct 4 if too short OR if copy is generic enough to apply to a competitor by swapping only the brand name.
+  - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Primary CTA must specify what the user receives ("Start free 30-day trial" not "Get started"). Deduct 2.5 if fewer than 2 or CTA is generic.
+  - Bonus deduction: -3 if no audience segment objection is resolved with a factual answer anywhere in the email body.
 
 Field 3 — linkedin (12.5 pts):
-  - headline: Under 100 chars, thought-leadership hook. Deduct 4 if missing.
-  - body: 100+ chars, professional, references market data. Deduct 4 if too short.
+  - headline: Under 100 chars, thought-leadership hook that is brand-specific. Deduct 4 if missing or generic.
+  - body: 100+ chars, professional, references at least one specific fact, stat, or named feature. Deduct 4 if too short or if body is generic lifestyle prose.
   - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
 
 Field 4 — social channels (instagram, facebook, twitter, tiktok, youtube) (12.5 pts):
   - If any of these social channels are active in "{channels}", check their fields:
     - headline: Under 140 chars. Deduct 4 if missing or too long.
-    - body: Concise, visual language, mentions {brand_name}. Deduct 4 if missing.
+    - body: Concise, visual language, mentions {brand_name}, includes at least one trust signal (user count, free trial term, rating, or specific feature). Deduct 4 if missing or purely generic.
     - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
   - If no social channels are in "{channels}", this field should be graded as 12.5 (no deduction).
 
 Field 5 — ads channels (google_ads) (12.5 pts):
   - If google_ads is active in "{channels}", check:
     - headline: Under 60 chars, benefit-first. Deduct 4 if missing or too long.
-    - body: 100+ chars, benefit-first or problem-solution. Deduct 4 if too short.
+    - body: 100+ chars, benefit-first or problem-solution with a specific named detail. Deduct 4 if too short.
     - ctas: Must be a CTAs object with at least primary and secondary CTA strings. Deduct 4.5 if missing.
   - If google_ads is NOT in "{channels}", this field should be graded as 12.5 (no deduction).
 
 Field 6 — messaging_framework (12.5 pts):
   - brand_promise: Must contain {brand_name} and positioning. Deduct 3 if missing.
   - message_hierarchy: Must have level_1, level_2, level_3. Deduct 3 if incomplete.
-  - segment_messaging: Must have one entry per audience segment. Deduct 3 if missing.
+  - segment_messaging: Must have one entry per audience segment with segment-specific language (not generic brand voice). Deduct 3 if missing or if all segments have identical tone.
   - channel_messaging + voice_guidelines: Must exist. Deduct 3.5 if missing.
 
 Field 7 — strategic_alignment (12.5 pts):
@@ -219,18 +220,20 @@ Field 7 — strategic_alignment (12.5 pts):
 Field 8 — copy_readiness (12.5 pts):
   - The readiness flags for all manager-defined channels ({channels}) must be true. The flags for any other unselected channels must be false or null. Deduct proportionally if a requested channel is marked false.
 
-Copy Quality Standards (apply across all fields):
-  - Does copy sound like {brand_voice}? (professional/friendly/bold/luxury/casual/authoritative)
-  - Does each channel feel native to that platform?
-  - Does copy address research pain points specifically?
-  - Are CTAs goal-aligned with {primary_goal}?
+Copy Quality Standards (apply across all fields — these CAN override channel scores downward):
+  - SPECIFICITY TEST: Does each copy asset contain at least one named feature, plan, pricing detail, or verifiable fact specific to {brand_name}? If copy passes the "competitor swap test" (could apply to competitor by changing only the brand name), deduct 5 pts from total copy score.
+  - OBJECTION RESOLUTION: Does at least one long-form channel (Email, LinkedIn, Facebook) resolve a primary audience segment objection with a factual answer? If not, deduct 5 pts from total copy score.
+  - TRUST SIGNALS: If the brand is emerging/less-known, does every channel include at least one trust signal (trial terms, review count, cancellation/return policy)? Missing trust signals for unknown brands: deduct 3 pts.
+  - PLATFORM NATIVE: Does each channel feel native to that platform's content style?
+  - BRAND VOICE: Does copy sound like {brand_voice}? Voice must be felt in rhythm and word choice, not just stated.
+  - CTA QUALITY: Do CTAs name what the user receives, not just what they do?
 
 Scoring Guidance for Copy:
-  - 95-100: Exceptional — standout creative, voice mastery, or memorable hooks beyond the spec
-  - 90-94:  Solid — all 8 fields complete, voice-consistent, platform-native, pain-point-specific
-  - 75-89:  Minor gaps in 1-2 channels or framework sections
-  - 60-74:  Multiple channels weak or CTAs misaligned — revision needed
-  - Below 60: Missing channels, generic copy, or major voice inconsistency
+  - 95-100: Exceptional — standout creative with brand-specific proof, full objection resolution, memorable hooks; passes specificity and swap tests
+  - 90-94:  Solid — all 8 fields complete, at least one named fact per long-form channel, primary objection resolved, voice-consistent
+  - 75-89:  Minor gaps — 1-2 channels slightly generic or missing trust signals; objection resolved in email only
+  - 60-74:  Multiple channels generic or CTAs too vague; no objection resolution; fails specificity test
+  - Below 60: Generic copy that could apply to any competitor, no trust signals, missing channels, or major voice inconsistency
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 IMAGE PROMPT AGENT REVIEW CRITERIA (2 fields, 100 points total)
@@ -239,23 +242,23 @@ IMAGE PROMPT AGENT REVIEW CRITERIA (2 fields, 100 points total)
 Field 1 — visual_direction (50 points):
   - Must be 100+ characters. Deduct 25 if under 100 chars.
   - Must mention {brand_name} and the industry ({industry}). Deduct 10 if not.
-  - Must describe visual style, color palette, and photography approach. Deduct 15 if absent.
+  - Must describe visual style, color palette with hex codes, and photography approach. Deduct 15 if absent.
 
 Field 2 — image_prompts (50 points, distributed across all prompts):
-  Each prompt object must have all 5 sub-fields:
+  Each prompt object must satisfy:
   - deliverable_name: Must name a specific asset (not generic). Deduct proportionally if missing.
-  - prompt: Must be 80+ chars, follow Subject+Context+Lighting+Style+Color+Quality structure,
-    end with "no text, no words, no letters". Deduct proportionally if under 80 chars or missing.
+  - prompt: Must be 80+ chars, follow 10-layer visual architecture, start with specific person/micro-moment, contain ZERO banned AI-slop phrases ('capturing the essence', 'vibrant tapestry', 'seamlessly blends'), and end with "no text, no words, no letters". Deduct proportionally if under 80 chars, contains slop, or missing safety tail.
+  - camera_specs: Must specify non-trivial photographic optics, lens, and camera body details (never 'N/A', 'none', or 'false'). Deduct 5 pts per prompt missing valid optics.
   - rationale: Must be 50+ chars explaining the strategic reasoning. Deduct proportionally if under 50 chars or missing.
   - visual_elements: Must be a list with 3+ specific visual elements. Deduct proportionally if fewer than 3.
   - style_keywords: Must be a list with 4+ specific style keywords. Deduct proportionally if fewer than 4.
 
 Scoring Guidance for Image:
-  - 95-100: Exceptional — inventive visual metaphors or cinematic quality beyond the spec
-  - 90-94:  Solid — visual_direction comprehensive, all prompts production-ready with all 5 sub-fields
+  - 95-100: Exceptional — inventive visual metaphors, real optics physics, anti-slop compliance, or cinematic quality beyond the spec
+  - 90-94:  Solid — visual_direction comprehensive, all prompts production-ready with real optics and 10-layer precision
   - 75-89:  Minor gaps in 1-2 prompts or slight direction weakness
-  - 60-74:  Multiple prompts missing sub-fields or prompts too short — revision needed
-  - Below 60: Missing critical fields, prompts not DALL-E ready, or no visual direction
+  - 60-74:  Multiple prompts missing sub-fields, camera specs missing, or prompts too short — revision needed
+  - Below 60: Missing critical fields, prompts contain AI slop, not DALL-E ready, or no visual direction
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CREATIVE HOOK MATRIX AGENT REVIEW CRITERIA (Conditional — SKIP if output shows "Not enabled")
@@ -397,7 +400,17 @@ Respond ONLY with valid JSON matching the ReviewerOutput schema exactly:
       "Specific fix"
     ]
   }},
-  "creative_hook_matrix_review": null,
+  "creative_hook_matrix_review": {{
+    "score": <hook_score>,
+    "approved": true,
+    "feedback": "Brief summary of creative hook matrix quality",
+    "issues": [
+      "Specific issue if any"
+    ],
+    "action_items": [
+      "Specific fix if any"
+    ]
+  }},
   "overall": {{
     "quality_score": <overall_score>,
     "summary": "One paragraph summary of the overall campaign quality, noting strengths and key areas for improvement",
@@ -413,18 +426,8 @@ Respond ONLY with valid JSON matching the ReviewerOutput schema exactly:
   }}
 }}
 
-When creative_hook_matrix_output is ACTIVE (not "Not enabled"), replace the null creative_hook_matrix_review with:
-  "creative_hook_matrix_review": {{
-    "score": <hook_score>,
-    "approved": true,
-    "feedback": "Brief summary of creative hook matrix quality",
-    "issues": [
-      "Specific issue if any"
-    ],
-    "action_items": [
-      "Specific fix if any"
-    ]
-  }}
+IMPORTANT:
+- If creative_hook_matrix_output is "Not enabled", you MUST set "creative_hook_matrix_review": null. Otherwise, provide the full review object for it.
 
 IMPORTANT:
 - status must be "approved" or "revision_required"
@@ -450,9 +453,20 @@ Score Distribution Reality:
 - 75-79: ACCEPTABLE but mediocre. Fields present but lack depth. Research uses generic trends. Copy lacks brand personality. Strategy is formulaic.
 - Below 75: Revision needed. Missing fields, significant quality gaps, or cross-agent misalignment.
 
-ANTI-INFLATION RULES:
+ANTI-INFLATION RULES & FAANG-LEVEL PROTOCOLS:
 1. If research trends are generic (e.g., "digital transformation", "sustainability") rather than industry-specific, cap research at 85.
 2. If copy uses generic marketing phrases without brand-specific personality, cap copy at 85.
 3. If strategy doesn't reference specific research findings, cap strategy at 82.
 4. If image prompts lack lens/perspective language or contain abstract concepts, cap image at 85.
 5. Start each agent at 75 and ADD points for quality, rather than starting at 100 and subtracting.
+
+FAANG PROTOCOL 1 (COGNITIVE SCRATCHPAD):
+Since you must return valid JSON, you MUST use the "feedback" string field inside each AgentReview object as your "Cognitive Scratchpad" (Chain-of-Thought). Before you calculate the score, write your raw analysis in the feedback field (e.g., "Quote: 'X'. This passes/fails the specificity test because Y. Deduction: -5 pts."). Only after reasoning in the feedback field, output the final integer score.
+
+FAANG PROTOCOL 2 (CROSS-AGENT CONTRADICTION DETECTION):
+The Strategy agent defines `competitive_differentiation`. You MUST cross-examine the Copywriter's output against this. If the Copywriter hallucinates a feature, claim, or promise (e.g., "24/7 support") that is NOT present in the upstream Strategy or Research, DEDUCT 20 POINTS from the copy score for "Hallucinated Claim" and flag it in the issues list.
+
+FAANG PROTOCOL 3 (STRICT FEW-SHOT ANTI-PATTERNS):
+Do not let generic text pass. Use these examples to calibrate your scoring:
+- BAD (Deduct points): "Our advanced platform helps you manage tasks efficiently." (Fails Swap Test: Could apply to Asana, Jira, or Trello. Generic fluff).
+- GOOD (Pass): "Cut your bug tracking time by 40% with our automated Jira 2-way sync." (Passes: Specific feature, named integration, quantifiable metric).

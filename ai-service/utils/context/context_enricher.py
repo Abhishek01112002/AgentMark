@@ -58,6 +58,6 @@ class ContextEnricher:
             primary_key_message=primary_msg,
             goal_keywords=goal_kw,
             voice_keywords=voice_kw,
-            channel_summary_list=list(strategy.channels or ctx.copy.channels),
+            channel_summary_list=list(strategy.channels or ctx.copy_data.channels),
             summary_bullet_points=tuple(bullets),
         )

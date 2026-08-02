@@ -76,15 +76,19 @@ async def compose_dynamic_personas(
         client = get_llm_client(temperature=0.2)
 
     prompt = (
-        "You are an Enterprise ICP & Buyer Psychology Architect.\n"
+        "You are an Elite Psychometric & Buyer Behavior Architect.\n"
         "Generate a panel of 3-4 distinct target personas representing the buying committee or consumer decision makers "
         "for the following campaign context:\n\n"
         f"Campaign Brief: {campaign_brief}\n"
         f"Industry: {industry}\n"
         f"Target Audience: {target_audience}\n"
         f"Product Category: {product_category}\n\n"
-        "For each persona, include explicit buying barriers, trust triggers, cognitive profile, company size, and buying stage.\n"
-        "Ensure buying committee roles reflect distinct perspectives (e.g. Security/Compliance, Finance/ROI, Engineering/Usability).\n"
+        "FAANG-LEVEL PSYCHOMETRIC REQUIREMENTS:\n"
+        "1. Context-Aware Cognitive Bias: Assign a specific, irrational cognitive bias to each persona that maps to this specific industry/audience (e.g., Cybersecurity = Loss Aversion, Authority Bias; Fashion = Halo Effect, Bandwagon Effect).\n"
+        "2. Psychometric OCEAN Profile: Define their psychological state (e.g., High Neuroticism, Low Agreeableness).\n"
+        "3. Attention Span (Information Foraging): At least ONE persona MUST be a 'Skimmer' (3 sec attention span, ignores body text). Others can be 'Deep-Diver' (high intent, reads everything).\n"
+        "For each persona, include explicit buying barriers, trust triggers, cognitive profile, company size, buying stage, psychometric_ocean_profile, dominant_cognitive_bias, and attention_span.\n"
+        "Ensure buying committee roles reflect distinct perspectives.\n"
         "Return structured JSON matching the GeneratedPersonaListContainer schema."
     )
 

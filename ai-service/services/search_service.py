@@ -226,7 +226,7 @@ def search_web(
             # ── Cache successful result in Redis ──────────────────────────────
             if redis_client:
                 try:
-                    redis_client.setex(cache_key, SEARCH_CACHE_TTL, result.model_dump_json())
+                    redis_client.set(cache_key, result.model_dump_json(), ex=SEARCH_CACHE_TTL)
                     logger.debug("Tavily result cached | key=%s | ttl=%ds", cache_key[:20], SEARCH_CACHE_TTL)
                 except Exception as exc:
                     logger.warning("Tavily Redis cache write failed (non-fatal): %s", exc)

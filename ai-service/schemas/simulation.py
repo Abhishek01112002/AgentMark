@@ -72,6 +72,9 @@ class PersonaProfile(BaseModel):
         max_length=1500, 
         description="Behavioral instructions for LLM simulation roleplay"
     )
+    psychometric_ocean_profile: str | None = Field(default=None, description="OCEAN traits (e.g. High Neuroticism, Low Agreeableness)")
+    dominant_cognitive_bias: str | None = Field(default=None, description="E.g., Loss Aversion, Status Quo Bias, Bandwagon Effect")
+    attention_span: str | None = Field(default=None, description="'Skimmer' (3 sec) or 'Deep-Diver' (high intent)")
     company_size: str | None = Field(default=None, description="Target company size segment")
     buying_stage: str | None = Field(default=None, description="Stage in purchase decision process")
     risk_tolerance: str | None = Field(default=None, description="Risk tolerance level")
@@ -111,6 +114,18 @@ class PersonaCritique(BaseModel):
         ..., 
         max_length=50,
         description="Reference to the persona ID"
+    )
+    visceral_reaction: str = Field(
+        default="Skepticism", 
+        description="Anxiety | Relief | Boredom | Intrigue | Skepticism"
+    )
+    internal_monologue: str = Field(
+        default="", 
+        description="What is this person literally thinking to themselves in the first 3 seconds?"
+    )
+    perceived_friction: str = Field(
+        default="", 
+        description="How much effort does this person think it will take to click/buy/sign up?"
     )
     rubric: PersonaRubric = Field(
         default_factory=PersonaRubric,

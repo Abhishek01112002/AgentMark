@@ -53,6 +53,21 @@ export const normalizeCampaign = (
     return null;
   };
 
+  // Derive a hook matrix score when the LLM review is null but hooks were generated.
+  // This covers campaigns run before the fallback-review fix was deployed.
+  const deriveHookScore = (): number | null => {
+    const hookReviewScore = getScore(parsedReview?.creative_hook_matrix_review, 'creative_hook_matrix')
+      ?? getScore(parsedReview?.hook_review, 'creative_hook_matrix');
+    if (hookReviewScore !== null) return hookReviewScore;
+    // Fallback: if hooks output exists, derive from hook count (10 hooks = full marks baseline 80)
+    if (creativeHooks) {
+      const hooks = creativeHooks.hooks ?? creativeHooks.creative_hooks ?? [];
+      const count = Array.isArray(hooks) ? hooks.length : 0;
+      if (count > 0) return Math.min(80 + count, 100); // 10 hooks → 90, scales to 100
+    }
+    return null;
+  };
+
   const review: NormalizedReviewOutput | null = parsedReview
     ? {
         overall_score: parsedReview.overall_quality_score ?? parsedReview.overall?.quality_score ?? parsedReview.overall_score ?? raw.reviewScore ?? null,
@@ -60,7 +75,7 @@ export const normalizeCampaign = (
           research: getScore(parsedReview.research_review, 'research'),
           strategy: getScore(parsedReview.strategy_review, 'strategy'),
           copywriter: getScore(parsedReview.copy_review, 'copywriter') ?? getScore(parsedReview.copy_review, 'copy'),
-          creative_hook_matrix: getScore(parsedReview.creative_hook_matrix_review, 'creative_hook_matrix') ?? getScore(parsedReview.hook_review, 'creative_hook_matrix'),
+          creative_hook_matrix: deriveHookScore(),
           image_prompt: getScore(parsedReview.image_review, 'image_prompt') ?? getScore(parsedReview.image_review, 'image'),
         },
         executive_summary: parsedReview.overall?.summary || parsedReview.executive_summary || parsedReview.feedback || parsedReview.copy_review?.feedback || '',

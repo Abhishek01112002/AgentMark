@@ -64,7 +64,7 @@ from utils.prompt_loader import load_prompt
 from utils.error_handler import safe_llm_call
 from utils.llm_cache import make_key, get as cache_get, set as cache_set
 from schemas import ImagePromptOutput, normalize_channel_list
-from schemas.agent_outputs import _ImagePromptBatch, VisualDirection
+from schemas.agent_outputs import _ImagePromptBatch, VisualDirection, ImagePrompt
 
 
 # ==================== UTILITY FUNCTIONS ====================
@@ -382,9 +382,8 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
             "CRITICAL REVISION RULES — MUST FOLLOW:\n"
             "  1. READ the user feedback carefully and identify ONLY which image(s)/field(s) need changing.\n"
             "  2. ONLY modify the specific image prompt(s) or visual direction the user mentioned.\n"
-            "  3. ALL other image prompts MUST be copied exactly, word-for-word, from EXISTING IMAGE PROMPTS above. Do not alter a single character of the unchanged deliverables.\n"
-            "  4. Do NOT regenerate, restyle, or rewrite unchanged prompts.\n"
-            "  5. Keep exactly the same number of image prompts as in EXISTING IMAGE PROMPTS.\n"
+            "  3. DO NOT output any image prompts that you are not changing. Exclude them entirely from your JSON output (Sparse JSON Patch).\n"
+            "  4. Only output the specific image prompts or fields that need to be updated based on the feedback.\n"
             "\n"
             "DALL-E 3 CAPABILITY RULES — INTERPRET USER FEEDBACK CORRECTLY:\n"
             "  DALL-E 3 is a diffusion model — it CANNOT reliably render readable text. It will produce garbled, unreadable glyphs.\n"
@@ -580,7 +579,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
         try:
             from utils.delta_merger import deep_merge_dicts
             previous_dict = json.loads(state.image_output)
-            merged_dict = deep_merge_dicts(previous_dict, image_output.model_dump(exclude_none=True))
+            merged_dict = deep_merge_dicts(previous_dict, image_output.model_dump(exclude_unset=True))
             image_output = ImagePromptOutput(**merged_dict)
             logger.info("   ✅ Semantic Delta Patch merged cleanly over previous image_output")
         except Exception as exc:
@@ -619,6 +618,11 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
                         setattr(p_obj, "prompt", padded_text)
             from utils.telemetry import get_telemetry_tracker
             get_telemetry_tracker().record_pre_validation_repair("image_prompt", f"Padded {len(short_info)} short prompts")
+
+        intel_res = PreValidator.validate_visual_intelligence_compliance(
+            image_prompts=[p.model_dump() if hasattr(p, "model_dump") else p for p in image_output.image_prompts]
+        )
+        logger.info(f"   [PRE-VALIDATION] Visual Intelligence compliance: {intel_res.metadata.get('compliance_pct')}% (is_valid={intel_res.is_valid})")
     except Exception as exc:
         logger.warning(f"   ⚠️ Image prompt pre-validation non-blocking error: {exc}")
 
@@ -723,6 +727,18 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
                 f"⚠️  [{name}] Missing 'no text' safety instruction — "
                 "image generator may render garbled text."
             )
+
+        # Check 6: Banned AI-slop phrase check
+        banned_phrases = [
+            "capturing the essence", "vibrant tapestry", "seamlessly blends",
+            "modern professional setting", "innovative solution", "tapestry of"
+        ]
+        for phrase in banned_phrases:
+            if phrase in text.lower():
+                issues.append(
+                    f"⚠️  [{name}] Banned anti-slop phrase detected: '{phrase}' — "
+                    "replace with concrete physical scene description."
+                )
 
         return issues
 
