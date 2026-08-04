@@ -68,8 +68,9 @@ export const normalizeCampaign = (
     return null;
   };
 
-  const review: NormalizedReviewOutput | null = parsedReview
+  const review: any = parsedReview
     ? {
+        ...parsedReview,
         overall_score: parsedReview.overall_quality_score ?? parsedReview.overall?.quality_score ?? parsedReview.overall_score ?? raw.reviewScore ?? null,
         agent_scores: {
           research: getScore(parsedReview.research_review, 'research'),

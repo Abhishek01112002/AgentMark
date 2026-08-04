@@ -77,7 +77,7 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
     Routes to human approval if AI approved, otherwise routes to revision.
     """
     logger.info("\n" + "="*80)
-    logger.info("🔀 ROUTING DECISION AFTER REVIEWER (AI)")
+    logger.info(" ROUTING DECISION AFTER REVIEWER (AI)")
     logger.info("="*80)
 
     cid = _get_attr(state, "campaign_id")
@@ -98,12 +98,12 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
 
     # 3. Workflow AI complete check (terminal for AI orchestration)
     if status_val == "review_complete":
-        logger.info("✅ Review complete in state — routing to Human Approval (HITL)")
+        logger.info(" Review complete in state — routing to Human Approval (HITL)")
         return _log_routing("should_continue_after_reviewer", state, "human_approval")
         
     # 4. Human already approved check
     if approval_val == "approved":
-        logger.info("✅ Human already approved, routing directly to human_approval node")
+        logger.info(" Human already approved, routing directly to human_approval node")
         return _log_routing("should_continue_after_reviewer", state, "human_approval")
 
     # Check if review output exists
@@ -123,7 +123,7 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
     
     # If AI approved, go to human approval
     if status == "approved":
-        logger.info("✅ AI APPROVED - Routing to Human Approval (HITL)")
+        logger.info(" AI APPROVED - Routing to Human Approval (HITL)")
         return "human_approval"
     
     # If revision required, check which agents need work
@@ -209,7 +209,7 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
         return _log_routing("should_continue_after_reviewer", state, "human_approval")
 
     # Default: proceed to human approval
-    logger.info("✅ No blocking issues - Routing to Human Approval")
+    logger.info(" No blocking issues - Routing to Human Approval")
     return _log_routing("should_continue_after_reviewer", state, "human_approval")
 
 
@@ -218,7 +218,7 @@ def route_after_human_approval(state: CampaignState | dict) -> str:
     Decision function called after human_approval node.
     """
     logger.info("\n" + "="*80)
-    logger.info("🔀 ROUTING DECISION AFTER HUMAN APPROVAL")
+    logger.info(" ROUTING DECISION AFTER HUMAN APPROVAL")
     logger.info("="*80)
 
     cid = _get_attr(state, "campaign_id")
@@ -248,10 +248,10 @@ def route_after_human_approval(state: CampaignState | dict) -> str:
         logger.info("   After human approves, call workflow.invoke(state) again")
         return _log_routing("route_after_human_approval", state, "end")
     
-    logger.info(f"👤 Human Decision: {human_status}")
+    logger.info(f" Human Decision: {human_status}")
     
     if human_status == "approved":
-        logger.info("✅ HUMAN APPROVED - Routing DIRECTLY to Publisher (skip reviewer)")
+        logger.info(" HUMAN APPROVED - Routing DIRECTLY to Publisher (skip reviewer)")
         fb = _get_attr(state, "human_feedback")
         if fb:
             logger.info(f"   Human Feedback: {fb}")
@@ -283,7 +283,7 @@ def route_after_human_approval(state: CampaignState | dict) -> str:
 
     
     # Default: proceed to publish
-    logger.info("✅ No specific action - Routing to Publisher")
+    logger.info(" No specific action - Routing to Publisher")
     return _log_routing("route_after_human_approval", state, "publish")
 
 

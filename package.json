@@ -3,12 +3,8 @@
   "version": "1.0.0",
   "description": "AgentMark — AI Marketing OS",
   "private": true,
-  "scripts": {
-    "test:e2e": "npx --prefix backend ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" e2e/orchestrator/e2e-runner.ts",
-    "test:provider-smoke": "npx --prefix backend ts-node -O \"{\\\"module\\\":\\\"commonjs\\\"}\" e2e/orchestrator/e2e-runner.ts --smoke"
-  },
+  "scripts": {},
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
     "@types/node": "^22.7.5",
     "@types/pg": "^8.11.10",
     "axios": "^1.6.2",

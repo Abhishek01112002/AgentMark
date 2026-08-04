@@ -59,6 +59,8 @@ Verify: `curl http://127.0.0.1:5002/health` → `{"status":"ok","service":"Agent
 | `COPYWRITER_MODEL` | No | Model used by Copywriter Agent |
 | `MAX_CONCURRENT_CAMPAIGNS` | No | Max parallel workflow executions (default: `4`) |
 | `ENABLE_CREATIVE_HOOK_MATRIX` | No | Set to `true` to enable the Creative Hook Matrix agent step (default: `false`) |
+| `LOG_LEVEL` | No | `INFO` for development, **`ERROR` for production**. Python's `logging` module silently drops lower-level calls at zero CPU/disk cost. (default: `INFO`) |
+| `SENTRY_DSN` | No | Sentry DSN for free crash tracking ($0/month, FastAPI integration). Leave empty in development. Get it from [sentry.io](https://sentry.io/signup/). |
 
 > At least one LLM provider key (`GEMINI_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY`) must be set. Users can also provide keys per-campaign via the web app settings.
 
@@ -113,7 +115,9 @@ ai-service/
 │   └── search_service.py             # Tavily web search abstraction
 │
 ├── utils/
-│   └── redis_publisher.py            # publish_agent_event() — Redis Pub/Sub publisher
+│   ├── logger.py                     # Structured logger — reads LOG_LEVEL env var + Sentry init
+│   ├── redis_publisher.py            # publish_agent_event() — Redis Pub/Sub publisher
+│   └── ...                           # Additional utilities
 │
 ├── config/
 │   └── settings.py                   # Environment variable loading
@@ -252,3 +256,50 @@ The backend applies Redis-based distributed locking (`lock:variant:<campaignId>:
 | POST | `/campaigns/test-key` | Validate a provider API key |
 | POST | `/focus-group/simulate` | Run full persona simulation |
 | POST | `/focus-group/interview` | Ask panel a custom question |
+
+---
+
+## Observability & Logging
+
+The AI Service uses a **zero-cost structured logging architecture**. See the [root README Observability section](../README.md#observability--logging-zero-cost-strategy) for the full strategy.
+
+### Logger Usage
+
+All new code should use the named logger instead of `print()` or raw `logging` calls:
+
+```python
+from utils.logger import get_logger
+logger = get_logger(__name__)  # Best practice: use module name
+
+# Routine information (only visible in development when LOG_LEVEL=INFO)
+logger.info("🚀 Campaign workflow started for campaign_id=%s", campaign_id)
+logger.warning("[ResearchAgent] Tavily returned 0 results, using cached data")
+
+# Errors (always visible, forwarded to Sentry in production)
+logger.error("[CopywriterAgent] LLM API call failed: %s", str(e))
+```
+
+### How LOG_LEVEL Works
+
+| `LOG_LEVEL` | `logger.debug` | `logger.info` | `logger.warning` | `logger.error` |
+|---|---|---|---|---|
+| `DEBUG` | ✅ printed | ✅ printed | ✅ printed | ✅ printed |
+| `INFO` | ❌ silent | ✅ printed | ✅ printed | ✅ printed |
+| `ERROR` | ❌ silent | ❌ silent | ❌ silent | ✅ printed |
+
+In production, set `LOG_LEVEL=ERROR` in `ai-service/.env`. Python's `logging` module is optimised for this — it discards lower-level calls at zero CPU/string-formatting overhead.
+
+### File Logging
+
+- **Development only:** `logs/ai_service.log` is written when `ENV != production`.
+- **Production:** File handler is disabled. All output goes to `stdout` only (captured by Docker, PM2, or systemd for free).
+- **Cleanup:** Use `scripts/setup_logrotate.sh` to auto-delete logs older than 3 days on Linux servers.
+
+### Sentry (Crash Tracking)
+
+`utils/logger.py` initialises the `sentry-sdk[fastapi]` integration only when `SENTRY_DSN` is set. It is a complete no-op otherwise. In production, it automatically captures:
+- Uncaught FastAPI/Uvicorn exceptions
+- Asyncio task crashes
+- Any call to `logger.error()` or above that escalates to an exception
+
+Routine `logger.info()` calls are **never** sent to Sentry — only real crashes and errors.

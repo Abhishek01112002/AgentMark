@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 import crypto from 'crypto';
 import { AuthRequest } from './auth.middleware';
 import { verifyToken } from '../utils/jwt';
@@ -149,7 +150,7 @@ export const mcpLoggerMiddleware = async (
               io.to(`user:${activeUserId}`).emit('mcp_activity', activity);
             }
           } catch (err) {
-            console.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
+            logger.error('[McpLogger] Failed to save or broadcast MCP activity:', err);
           }
         });
       }

@@ -1,5 +1,11 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import logger from './utils/logger';
+
+// Sentry MUST be initialised before any other imports that could throw.
+// No-op when SENTRY_DSN env var is not set (safe for local dev).
+import { initSentry, sentryErrorHandler } from './utils/sentry';
+initSentry();
 
 if (!process.env.INTERNAL_SERVICE_SECRET) {
   throw new Error('INTERNAL_SERVICE_SECRET environment variable must be set');
@@ -78,6 +84,9 @@ app.use('/api/focus-group', focusGroupRoutes);
 app.use('/api/developer', developerRoutes);
 app.use('/api/brand-vault', brandVaultRoutes);
 
+// Sentry error handler MUST come before custom errorHandler to capture 5xx errors
+// @ts-ignore
+app.use(sentryErrorHandler);
 app.use(errorHandler);
 
 // ── HTTP Server + Socket.io ───────────────────────────────────────────────────
@@ -139,12 +148,12 @@ io.use(async (socket, next) => {
 
 io.on('connection', (socket) => {
   const user = socket.data.user as AuthenticatedUser;
-  console.log(`[Socket.io] Client connected: ${socket.id} (user: ${user?.userId}, method: ${user?.authMethod})`);
+  logger.info(`[Socket.io] Client connected: ${socket.id} (user: ${user?.userId}, method: ${user?.authMethod})`);
 
   if (user?.userId) {
     const userRoom = `user:${user.userId}`;
     void socket.join(userRoom);
-    console.log(`[Socket.io] Socket ${socket.id} securely joined user room: ${userRoom}`);
+    logger.info(`[Socket.io] Socket ${socket.id} securely joined user room: ${userRoom}`);
   }
 
   /**
@@ -176,9 +185,9 @@ io.on('connection', (socket) => {
 
       const room = `campaign:${campaign.id}`;
       void socket.join(room);
-      console.log(`[Socket.io] ${socket.id} joined room: ${room} | user=${authUser.userId}`);
+      logger.info(`[Socket.io] ${socket.id} joined room: ${room} | user=${authUser.userId}`);
     } catch (err: any) {
-      console.error(`[Socket.io] Error joining campaign room:`, err);
+      logger.error(`[Socket.io] Error joining campaign room:`, err);
       socket.emit('auth_error', { message: 'Failed to join campaign room' });
     }
   });
@@ -187,11 +196,11 @@ io.on('connection', (socket) => {
   socket.on('leave_campaign', (campaignId: string) => {
     const room = `campaign:${campaignId}`;
     void socket.leave(room);
-    console.log(`[Socket.io] ${socket.id} left room: ${room}`);
+    logger.info(`[Socket.io] ${socket.id} left room: ${room}`);
   });
 
   socket.on('disconnect', () => {
-    console.log(`[Socket.io] Client disconnected: ${socket.id}`);
+    logger.info(`[Socket.io] Client disconnected: ${socket.id}`);
   });
 });
 
@@ -201,28 +210,67 @@ const ensureAvatarColumn = async () => {
   try {
     await prisma.$executeRawUnsafe('ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatarUrl" TEXT');
   } catch (error) {
-    console.warn('Unable to ensure users.avatarUrl column exists:', error);
+    logger.warn('Unable to ensure users.avatarUrl column exists:', error);
+  }
+};
+
+// ── Database startup readiness ─────────────────────────────────────────────
+// Prisma connects lazily but startServer() immediately runs DDL via
+// ensureAvatarColumn(). We probe the database first so failures are
+// surfaced with clear retry logs rather than a cryptic Prisma error.
+
+const DB_STARTUP_MAX_RETRIES = parseInt(
+  process.env.DB_STARTUP_MAX_RETRIES ?? '10',
+  10
+);
+const DB_STARTUP_RETRY_DELAY_MS = parseInt(
+  process.env.DB_STARTUP_RETRY_DELAY_MS ?? '2000',
+  10
+);
+
+const waitForDatabase = async (): Promise<void> => {
+  for (let attempt = 1; attempt <= DB_STARTUP_MAX_RETRIES; attempt++) {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      logger.info(`[DB] PostgreSQL ready (attempt ${attempt}/${DB_STARTUP_MAX_RETRIES})`);
+      return;
+    } catch (err: any) {
+      if (attempt === DB_STARTUP_MAX_RETRIES) {
+        logger.error(
+          `[DB] PostgreSQL unavailable after ${DB_STARTUP_MAX_RETRIES} attempts. ` +
+          `Last error: ${err.message}. Exiting.`
+        );
+        process.exit(1);
+      }
+      logger.warn(
+        `[DB] PostgreSQL not ready (attempt ${attempt}/${DB_STARTUP_MAX_RETRIES}): ` +
+        `${err.message}. Retrying in ${DB_STARTUP_RETRY_DELAY_MS}ms…`
+      );
+      await new Promise((resolve) => setTimeout(resolve, DB_STARTUP_RETRY_DELAY_MS));
+    }
   }
 };
 
 const startServer = async () => {
+  await waitForDatabase();
   await ensureAvatarColumn();
+
 
   // Create duplicate Redis connections for Socket.io adapter pub/sub
   const pubClient = redis.duplicate({ lazyConnect: true });
   const subClient = redis.duplicate({ lazyConnect: true });
 
-  pubClient.on('error', (err) => console.error('[Redis Socket.io Adapter Pub Client Error]', err));
-  subClient.on('error', (err) => console.error('[Redis Socket.io Adapter Sub Client Error]', err));
+  pubClient.on('error', (err) => logger.error('[Redis Socket.io Adapter Pub Client Error]', err));
+  subClient.on('error', (err) => logger.error('[Redis Socket.io Adapter Sub Client Error]', err));
 
   try {
     if (pubClient.status === 'wait') await pubClient.connect();
     if (subClient.status === 'wait') await subClient.connect();
     io.adapter(createAdapter(pubClient, subClient));
-    console.log('[Redis PubSub] Successfully attached Redis adapter to Socket.io');
+    logger.info('[Redis PubSub] Successfully attached Redis adapter to Socket.io');
   } catch (err: any) {
-    console.warn(`[Redis PubSub] Redis adapter initialization failed (non-fatal): ${err.message}`);
-    console.warn('[Redis PubSub] Real-time multi-node synchronization will not function.');
+    logger.warn(`[Redis PubSub] Redis adapter initialization failed (non-fatal): ${err.message}`);
+    logger.warn('[Redis PubSub] Real-time multi-node synchronization will not function.');
   }
 
   // Initialize Redis Pub/Sub subscriber (passes the socket.io instance).
@@ -230,12 +278,12 @@ const startServer = async () => {
   try {
     await initRedisSubscriber(io);
   } catch (err: any) {
-    console.warn(`[Redis Subscriber] Failed to connect (non-fatal) | err=${err.message}`);
-    console.warn('[Redis Subscriber] Campaign live updates will not work until Redis is available.');
+    logger.warn(`[Redis Subscriber] Failed to connect (non-fatal) | err=${err.message}`);
+    logger.warn('[Redis Subscriber] Campaign live updates will not work until Redis is available.');
   }
 
   httpServer.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    logger.info(`Server running on http://localhost:${PORT}`);
   });
 };
 
@@ -246,25 +294,25 @@ if (process.env.NODE_ENV !== 'test') {
 // ── Graceful Shutdown ─────────────────────────────────────────────────────────
 
 const gracefulShutdown = async (signal: string) => {
-  console.log(`\n[${signal}] Received. Starting graceful shutdown...`);
+  logger.info(`\n[${signal}] Received. Starting graceful shutdown...`);
   
   // Close HTTP server first (stops accepting new connections)
   httpServer.close(async () => {
-    console.log('[Server] HTTP server closed.');
+    logger.info('[Server] HTTP server closed.');
     
     // Shut down Redis Subscriber
     await shutdownRedisSubscriber();
     
     // Disconnect Prisma
     await prisma.$disconnect();
-    console.log('[Server] Prisma disconnected.');
+    logger.info('[Server] Prisma disconnected.');
     
     process.exit(0);
   });
   
   // Force exit after 10s if graceful shutdown hangs
   setTimeout(() => {
-    console.error('[Server] Graceful shutdown timed out. Forcing exit.');
+    logger.error('[Server] Graceful shutdown timed out. Forcing exit.');
     process.exit(1);
   }, 10000);
 };
@@ -275,11 +323,11 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 // ── Global Process Safety Nets ────────────────────────────────────────────────
 
 process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason?.stack || reason);
+  logger.error('💥 Unhandled Rejection at:', promise, 'reason:', reason?.stack || reason);
 });
 
 process.on('uncaughtException', (error: Error) => {
-  console.error('💥 Uncaught Exception:', error.stack || error.message);
+  logger.error('💥 Uncaught Exception:', error.stack || error.message);
   // In case of uncaught exception, try to exit gracefully
   void gracefulShutdown('UNCAUGHT_EXCEPTION');
 });

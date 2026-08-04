@@ -1,4 +1,5 @@
 import prisma from '../../db';
+import logger from '../../utils/logger';
 import { notificationService } from '../notifications/notification.service';
 import { redis } from '../../utils/redis';
 
@@ -16,7 +17,7 @@ export const projectService = {
         message: `Project "${project.name}" is ready for campaigns.`,
       });
     } catch (err) {
-      console.error('[ProjectService] Failed to create project-created notification:', err);
+      logger.error('[ProjectService] Failed to create project-created notification:', err);
     }
 
     return project;
@@ -57,7 +58,7 @@ export const projectService = {
         );
       } catch (err) {
         // Status sync is non-critical — never fail the read because of a write error
-        console.error('[ProjectService] Non-fatal: failed to sync project statuses:', err);
+        logger.error('[ProjectService] Non-fatal: failed to sync project statuses:', err);
       }
     }
 
@@ -108,7 +109,7 @@ export const projectService = {
           message: `Project "${project.name}" was renamed to "${data.name}".`,
         });
       } catch (err) {
-        console.error('[ProjectService] Failed to create project-renamed notification:', err);
+        logger.error('[ProjectService] Failed to create project-renamed notification:', err);
       }
     }
 
@@ -131,11 +132,11 @@ export const projectService = {
         });
         for (const c of activeCampaigns) {
           await redis.set(`cancel:${c.id}`, "true", "EX", 3600);
-          console.log(`[Project Service] Set cancellation flag in Redis for running campaign ${c.id}`);
+          logger.info(`[Project Service] Set cancellation flag in Redis for running campaign ${c.id}`);
         }
       }
     } catch (err: any) {
-      console.error("[Project Service] Failed to set cancellation flags for project campaigns:", err?.message || err);
+      logger.error("[Project Service] Failed to set cancellation flags for project campaigns:", err?.message || err);
     }
 
     // Run deletions in a transaction to prevent partial-deletion orphan data
@@ -153,7 +154,7 @@ export const projectService = {
         message: `Project "${project.name}" was removed from your workspace.`,
       });
     } catch (err) {
-      console.error('[ProjectService] Failed to create project-deleted notification:', err);
+      logger.error('[ProjectService] Failed to create project-deleted notification:', err);
     }
 
     return project;

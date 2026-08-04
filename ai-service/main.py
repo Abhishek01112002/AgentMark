@@ -4,6 +4,9 @@ AgentMark AI Service - FastAPI Server
 Multi-Agent Marketing Campaign Orchestration with LangGraph
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import utils.logger  # noqa: F401
 import logging
 import os
@@ -22,7 +25,6 @@ if hasattr(sys.stderr, 'reconfigure'):
     except Exception:
         pass
 
-from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,7 +35,6 @@ from api.dependencies import verify_internal_secret
 from workflow.graph import create_campaign_graph
 from version import __version__
 
-load_dotenv()
 logger = logging.getLogger("agentmark.main")
 
 
@@ -107,5 +108,7 @@ if __name__ == "__main__":
         "main:app",
         host=host,
         port=port,
-        log_level="info",
+        # Respect LOG_LEVEL env var — in production (LOG_LEVEL=ERROR) uvicorn
+        # suppresses all access logs, keeping stdout clean and disk-cost at $0
+        log_level=os.getenv("LOG_LEVEL", "info").lower(),
     )

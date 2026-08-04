@@ -30,6 +30,7 @@ import crypto from 'crypto';
 import { verifyToken } from '../utils/jwt';
 import prisma from '../db';
 import { userLastMcpActivity } from './mcp-logger.middleware';
+import logger from '../utils/logger';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -89,7 +90,7 @@ export async function authenticateToken(token: string): Promise<AuthenticatedUse
           data: { lastUsedAt: new Date() },
         })
         .catch((err: Error) => {
-          console.error('[auth] Failed to update API key lastUsedAt | err=%s', err.message);
+          logger.error('[auth] Failed to update API key lastUsedAt | err=%s', err.message);
         });
 
       return {
@@ -98,7 +99,7 @@ export async function authenticateToken(token: string): Promise<AuthenticatedUse
       };
     }
   } catch (error: any) {
-    console.error('[auth] API key lookup failed | err=%s', error?.message);
+    logger.error('[auth] API key lookup failed | err=%s', error?.message);
   }
 
   return null;

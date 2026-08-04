@@ -1,0 +1,97 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agentmark-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: agentmark
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: agentmark-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: agentmark-db-migrate
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+    command: ["npx", "prisma", "migrate", "deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: agentmark-backend
+    environment:
+      PORT: 5003
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+      REDIS_URL: redis://redis:6379
+      AI_SERVICE_URL: http://ai-service:5002
+      CLAUDE_DESKTOP_DISABLED: "true"
+    ports:
+      - "5003:5003"
+    volumes:
+      # Mount only source folders to avoid node_modules native-binding conflicts on Windows hosts
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+    command: ["npm", "run", "dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: agentmark-ai-service
+    environment:
+      PORT: 5002
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "5002:5002"
+    volumes:
+      # Mount source folders to enable Uvicorn hot-reload
+      - ./ai-service/app:/app/app
+      - ./ai-service/templates:/app/templates
+      - ./ai-service/main.py:/app/main.py
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5002", "--reload"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:

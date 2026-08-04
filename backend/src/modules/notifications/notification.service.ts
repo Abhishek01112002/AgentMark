@@ -1,4 +1,5 @@
 import prisma from '../../db';
+import logger from '../../utils/logger';
 
 type NotificationType = 'success' | 'warning' | 'error' | 'info';
 
@@ -47,7 +48,7 @@ export const notificationService = {
         where: { userId, isRead: false },
       });
     } catch (err: any) {
-      console.error('[NotificationService] unreadCount DB error:', err?.message || err);
+      logger.error('[NotificationService] unreadCount DB error:', err?.message || err);
       return 0;
     }
   },
@@ -64,7 +65,7 @@ export const notificationService = {
       const notification = await prisma.notification.findUnique({ where: { id } });
       return notification as NotificationRow | null;
     } catch (err: any) {
-      console.error('[NotificationService] markAsRead DB error:', err?.message || err);
+      logger.error('[NotificationService] markAsRead DB error:', err?.message || err);
       return null;
     }
   },

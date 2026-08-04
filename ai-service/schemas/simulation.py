@@ -137,6 +137,14 @@ class PersonaCritique(BaseModel):
         le=100, 
         description="Score from 0 to 100 on alignment with needs"
     )
+    resonating_elements: List[str] = Field(
+        default_factory=list,
+        description="Specific elements, quotes, or themes in the copy that built trust or resonated strongly"
+    )
+    friction_points: List[str] = Field(
+        default_factory=list,
+        description="Specific elements that caused hesitation, confusion, or doubt"
+    )
     objection: str = Field(
         ..., 
         min_length=10, 
@@ -260,6 +268,7 @@ class FocusGroupReport(BaseModel):
     model_config = SIMULATION_CONFIG
 
     overall_score: int = Field(..., ge=0, le=100, description="Negativity-biased overall score (0-100)")
+    polarization_index: float = Field(default=0.0, description="Standard deviation of persona scores. High index (>15) indicates highly polarizing copy.")
     persona_critiques: List[PersonaCritique] = Field(..., min_length=1, description="List of individual persona critiques")
     actionable_recommendations: List[ActionableRecommendation] = Field(..., description="List of actionable recommendations")
     personas: List[PersonaProfile] = Field(default_factory=list, description="List of persona profiles used")

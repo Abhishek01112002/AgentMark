@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import logger from './logger';
 
 // Shared ioredis client instance for general commands (SET, GET, DEL, etc.)
 export const redis = new Redis({
@@ -11,9 +12,9 @@ export const redis = new Redis({
 });
 
 redis.on('error', (err) => {
-  console.error('[Redis Client] Connection error:', err.message);
+  logger.error('[Redis Client] Connection error:', err.message);
 });
 
 redis.on('connect', () => {
-  console.log('[Redis Client] Connection established');
+  logger.info('[Redis Client] Connection established');
 });

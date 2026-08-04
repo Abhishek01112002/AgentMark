@@ -59,7 +59,9 @@ Copy `.env.example` to `.env` and set the following:
 | `REDIS_HOST` | Yes | Redis host (default: `localhost`) |
 | `REDIS_PORT` | Yes | Redis port (default: `6379`) |
 | `FRONTEND_URL` | Yes | Allowed CORS origin for Socket.IO (e.g., `http://localhost:5173`) |
-| `EMOS_BRAND_VAULT_ENABLED` | Conditional | Set to `true` to enable EMOS Phase 1–5 Brand Vault and Retrieval endpoints |
+| `EMOS_BRAND_VAULT_ENABLED` | Conditional | Set to `true` to enable EMOS Phase 1–5 Brand Vault endpoints |
+| `LOG_LEVEL` | No | `INFO` for development, **`ERROR` for production**. Suppresses 99% of logs at runtime with zero disk/CPU cost. (default: `INFO`) |
+| `SENTRY_DSN` | No | Sentry DSN for free crash tracking ($0/month). Leave empty in development. Get it from [sentry.io](https://sentry.io/signup/). |
 
 > **Generate secrets:** `openssl rand -hex 32`
 
@@ -92,6 +94,8 @@ src/
 │   └── projects/                     # Project CRUD + memory status
 │
 └── utils/
+    ├── logger.ts                     # Structured logger — reads LOG_LEVEL env var. Use instead of console.*
+    ├── sentry.ts                     # Free crash tracking via Sentry (no-op when SENTRY_DSN is not set)
     ├── ai-client.ts                  # HTTP client for AI Service (10-min timeout)
     ├── redis-subscriber.ts           # Redis psubscribe('campaign:*') → Socket.IO bridge
     ├── jwt.ts                        # JWT sign/verify helpers
@@ -179,3 +183,43 @@ Two Redis connections are maintained:
 Socket.IO rooms:
 - `campaign:{id}` — campaign-specific progress events
 - `user:{id}` — user-specific notifications (MCP activity, etc.)
+
+---
+
+## Observability & Logging
+
+The backend uses a **zero-cost structured logging architecture**. See the [root README Observability section](../README.md#observability--logging-zero-cost-strategy) for the full strategy.
+
+### Logger Usage
+
+All `console.*` calls have been replaced with the structured logger. Use `logger` everywhere in new code:
+
+```typescript
+import logger from '../utils/logger';
+
+// Routine information (only visible in development when LOG_LEVEL=INFO)
+logger.info('[CampaignService] Campaign %s created successfully', campaignId);
+logger.warn('[RedisSubscriber] Reconnecting in %dms', delay);
+
+// Errors (always visible, forwarded to Sentry in production)
+logger.error('[AI Client] Workflow failed for campaign %s: %s', id, err.message);
+```
+
+### How LOG_LEVEL Works
+
+| `LOG_LEVEL` | `logger.debug` | `logger.info` | `logger.warn` | `logger.error` |
+|---|---|---|---|---|
+| `DEBUG` | ✅ printed | ✅ printed | ✅ printed | ✅ printed |
+| `INFO` | ❌ silent | ✅ printed | ✅ printed | ✅ printed |
+| `ERROR` | ❌ silent | ❌ silent | ❌ silent | ✅ printed |
+
+In production, set `LOG_LEVEL=ERROR` in `backend/.env` to suppress 99% of logs with zero code changes.
+
+### Sentry (Crash Tracking)
+
+`utils/sentry.ts` initialises Sentry only when `SENTRY_DSN` is set. It is a complete no-op in development. In production, it automatically captures:
+- Uncaught exceptions (`process.on('uncaughtException')`)
+- Unhandled promise rejections
+- Express HTTP 500 errors (via `sentryErrorHandler` middleware registered in `index.ts`)
+
+Routine logs are **never** sent to Sentry — only real crashes.

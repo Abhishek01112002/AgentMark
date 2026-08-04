@@ -1,4 +1,5 @@
 import { Response, NextFunction, Request } from 'express';
+import logger from '../../utils/logger';
 import crypto from 'crypto';
 import fs from 'fs/promises';
 import os from 'os';
@@ -152,41 +153,41 @@ async function runAIWorkflowBackground(
     if (attempt > 0) {
       const cancelled = await checkCancellation(dbCampaignId);
       if (cancelled) {
-        console.log(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user — aborting retry`);
+        logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user — aborting retry`);
         return;
       }
       const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
-      console.log(`[${requestId || 'no-req-id'}] Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      logger.info(`[${requestId || 'no-req-id'}] Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
       await sleep(delayMs);
 
       const cancelledAgain = await checkCancellation(dbCampaignId);
       if (cancelledAgain) {
-        console.log(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
+        logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
         return;
       }
     }
 
     try {
       if (attempt === 0) {
-        console.log(`[${requestId || 'no-req-id'}] AI workflow started in background | campaign=${dbCampaignId}`);
+        logger.info(`[${requestId || 'no-req-id'}] AI workflow started in background | campaign=${dbCampaignId}`);
       } else {
-        console.log(`[${requestId || 'no-req-id'}] AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
+        logger.info(`[${requestId || 'no-req-id'}] AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
       }
 
       await aiServiceClient.createCampaign(payload, requestId);
-      console.log(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
+      logger.info(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
       return;
     } catch (err: any) {
       lastError = err;
       const errorMessage = err.message ?? 'Unknown error';
-      console.error(`AI workflow error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
+      logger.error(`AI workflow error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
 
       if (!isRetryableError(err)) {
-        console.log(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
+        logger.info(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
         try {
           await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', errorMessage);
         } catch (dbErr: any) {
-          console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+          logger.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
         }
         await emitCampaignFailed(dbCampaignId, errorMessage, io);
         return;
@@ -209,11 +210,11 @@ async function runAIWorkflowBackground(
   }
 
   const finalError = lastError?.message ?? 'AI service is unavailable. Please try again.';
-  console.error(`AI workflow permanent failure | campaign=${dbCampaignId} | error=${finalError}`);
+  logger.error(`AI workflow permanent failure | campaign=${dbCampaignId} | error=${finalError}`);
   try {
     await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', finalError);
   } catch (dbErr: any) {
-    console.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+    logger.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
   }
   await emitCampaignFailed(dbCampaignId, finalError, io);
 }
@@ -269,7 +270,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
 
     // ── Step 1: Create DB record (status: "processing") ──────────────────────
     const campaign = await campaignService.create(projectId, { ...campaignData, brandName });
-    console.log(`[${requestId}] Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
+    logger.info(`[${requestId}] Campaign created in DB: ${campaign.id} | Status: ${campaign.status}`);
 
     // Immediately create a lightweight user notification in the background.
     void notificationService.create(project.userId, {
@@ -315,7 +316,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
       }, io, requestId);
     } else {
       // io not yet set (shouldn't happen in production — Redis init runs before any request)
-      console.warn(`[Campaign] Socket.io not initialised — background runner will not emit socket events | campaign=${campaign.id}`);
+      logger.warn(`[Campaign] Socket.io not initialised — background runner will not emit socket events | campaign=${campaign.id}`);
     }
 
     } catch (error) {
@@ -325,7 +326,7 @@ export const createCampaign = async (req: AuthRequest, res: Response, next: Next
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors, requestId: errRequestId });
       }
-      console.error(`[${errRequestId}] Campaign creation error:`, error);
+      logger.error(`[${errRequestId}] Campaign creation error:`, error);
       next(error);
     }
   };
@@ -709,7 +710,7 @@ async function runApprovalBackground(
   try {
     const io = getIO();
     if (!io) {
-      console.warn(`[Campaign] Socket.io not initialised — cannot emit events for campaign approval background | campaign=${campaignId}`);
+      logger.warn(`[Campaign] Socket.io not initialised — cannot emit events for campaign approval background | campaign=${campaignId}`);
       return;
     }
 
@@ -755,7 +756,7 @@ async function runApprovalBackground(
       image_revision_count: context.imageRevisionCount,
     }, io);
   } catch (err: any) {
-    console.error(`Campaign approval background error | campaign=${campaignId} | error=${err.message}`);
+    logger.error(`Campaign approval background error | campaign=${campaignId} | error=${err.message}`);
   }
 }
 
@@ -1184,7 +1185,7 @@ export const generateCopyVariant = async (req: AuthRequest, res: Response, next:
       });
     } catch (err: any) {
       await redis.del(lockKey);
-      console.error(`Error in generateCopyVariant for campaign ${id} / channel ${channel}:`, err);
+      logger.error(`Error in generateCopyVariant for campaign ${id} / channel ${channel}:`, err);
       return res.status(500).json({ error: `Failed to generate copy variant: ${err.message || 'AI service error'}` });
     }
   } catch (error: any) {
@@ -1810,7 +1811,7 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
       },
     });
 
-    console.log(`[CampaignRetry] Campaign ${id} status reset to processing for retry.`);
+    logger.info(`[CampaignRetry] Campaign ${id} status reset to processing for retry.`);
 
     // Respond 200 immediately
     res.json({
@@ -1874,7 +1875,7 @@ export const retryCampaign = async (req: AuthRequest, res: Response, next: NextF
         image_revision_count: campaign.imageRevisionCount ?? 0,
       }, io);
     } else {
-      console.warn(`[CampaignRetry] Socket.io not initialised — retry background runner will not emit socket events | campaign=${campaign.id}`);
+      logger.warn(`[CampaignRetry] Socket.io not initialised — retry background runner will not emit socket events | campaign=${campaign.id}`);
     }
   } catch (err) {
     next(err);

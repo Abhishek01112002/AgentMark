@@ -1,4 +1,5 @@
 import { Router, Response, NextFunction } from 'express';
+import logger from '../../utils/logger';
 import { authMiddleware, AuthRequest } from '../../middlewares/auth.middleware';
 import axios from 'axios';
 import prisma from '../../db';
@@ -63,7 +64,7 @@ router.post('/simulate', async (req: AuthRequest, res, next) => {
       req.body,
       {
         headers: getHeaders(),
-        timeout: 90000, // Fix #14: increased from 45s to 90s to cover retry scenarios
+        timeout: 300000, // Increased to 300s (5m) for heavy multi-agent focus group simulations and failovers
       }
     );
 
@@ -134,7 +135,7 @@ router.post('/simulate', async (req: AuthRequest, res, next) => {
             where: { id: campaignId },
             data: { aiOutputs: updatedOutputs },
           });
-          console.log(`[FocusGroupProxy] Successfully persisted focus group report under hash ${hashKey} to DB for campaign: ${campaignId}`);
+          logger.info(`[FocusGroupProxy] Successfully persisted focus group report under hash ${hashKey} to DB for campaign: ${campaignId}`);
 
           // Emit real-time socket events so the frontend updates instantly
           const io = getIO();
@@ -155,7 +156,7 @@ router.post('/simulate', async (req: AuthRequest, res, next) => {
           }
         }
       } catch (dbErr: any) {
-        console.error('[FocusGroupProxy] Failed to save simulation report to DB:', dbErr.message);
+        logger.error('[FocusGroupProxy] Failed to save simulation report to DB:', dbErr.message);
       }
     }
 
@@ -165,7 +166,7 @@ router.post('/simulate', async (req: AuthRequest, res, next) => {
     }
     res.json(response.data);
   } catch (err: any) {
-    console.error('[FocusGroupProxy] Simulation request failed:', err.message);
+    logger.error('[FocusGroupProxy] Simulation request failed:', err.message);
     if (err.response) {
       res.status(err.response.status).json(err.response.data);
     } else {
@@ -208,7 +209,7 @@ router.post('/interview', async (req: AuthRequest, res, next) => {
       req.body,
       {
         headers: getHeaders(),
-        timeout: 35000, // 35 seconds timeout
+        timeout: 60000, // Increased to 60s for interviews
       }
     );
 
@@ -241,16 +242,16 @@ router.post('/interview', async (req: AuthRequest, res, next) => {
               },
             },
           });
-          console.log(`[FocusGroupProxy] Persisted interview Q&A to DB for campaign: ${campaignId}`);
+          logger.info(`[FocusGroupProxy] Persisted interview Q&A to DB for campaign: ${campaignId}`);
         }
       } catch (dbErr: any) {
-        console.error('[FocusGroupProxy] Failed to save interview to DB:', dbErr.message);
+        logger.error('[FocusGroupProxy] Failed to save interview to DB:', dbErr.message);
       }
     }
 
     res.json(response.data);
   } catch (err: any) {
-    console.error('[FocusGroupProxy] Interview request failed:', err.message);
+    logger.error('[FocusGroupProxy] Interview request failed:', err.message);
     if (err.response) {
       res.status(err.response.status).json(err.response.data);
     } else {
@@ -311,7 +312,7 @@ router.get('/personas', async (req: AuthRequest, res: Response, next: NextFuncti
           personasList = JSON.parse(rawData);
         }
       } catch (err: any) {
-        console.error('[FocusGroupRoutes] Failed to read default_personas.json:', err.message);
+        logger.error('[FocusGroupRoutes] Failed to read default_personas.json:', err.message);
       }
     }
 

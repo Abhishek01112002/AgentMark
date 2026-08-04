@@ -5,6 +5,7 @@
  */
 
 import axios from 'axios';
+import logger from './logger';
 import type { Server } from 'socket.io';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
@@ -108,7 +109,7 @@ export const aiServiceClient = {
         const status = error.response.status || 500;
         const detail = error.response.data?.detail;
         const msg = formatAiServiceError(detail, status, `AI service HTTP ${status}`);
-        console.error(`AI service error: ${msg}`);
+        logger.error(`AI service error: ${msg}`);
         const err = new Error(msg);
         (err as any).status = status;
         (err as any).response = error.response;
@@ -131,7 +132,7 @@ export const aiServiceClient = {
       );
       return response.data.enhanced_prompt;
     } catch (error: any) {
-      console.error('Enhance prompt API error:', error.message);
+      logger.error('Enhance prompt API error:', error.message);
       return prompt;
     }
   },
@@ -175,7 +176,7 @@ export async function runAIWorkflowBackground(
 ): Promise<void> {
   try {
     const response = await aiServiceClient.runCampaign(payload);
-    console.log(`[AI Client Background] Workflow complete for campaign ${campaignId} with status: ${response.status}`);
+    logger.info(`[AI Client Background] Workflow complete for campaign ${campaignId} with status: ${response.status}`);
 
     if (response.status === 'awaiting_human_approval' || response.status === 'completed') {
       const existing = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { aiOutputs: true } });
@@ -202,7 +203,7 @@ export async function runAIWorkflowBackground(
     }
   } catch (err: any) {
     const errMessage = err.message || 'AI service unavailable';
-    console.error(`[AI Client Background] Error running workflow for ${campaignId}: ${errMessage}`);
+    logger.error(`[AI Client Background] Error running workflow for ${campaignId}: ${errMessage}`);
     io.to(`campaign:${campaignId}`).emit('campaign_failed', {
       campaign_id: campaignId,
       status: 'failed',

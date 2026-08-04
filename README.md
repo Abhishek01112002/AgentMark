@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)](https://www.python.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-4169E1?logo=postgresql)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7%2B-DC382D?logo=redis)](https://redis.io/)
+[![Sentry](https://img.shields.io/badge/Error%20Tracking-Sentry-362D59?logo=sentry)](https://sentry.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -23,10 +24,11 @@
    - [Step 3 — Frontend](#step-3--frontend-port-5173)
    - [Step 4 — MCP Server](#step-4--mcp-server-optional)
 7. [Environment Variables Reference](#environment-variables-reference)
-8. [Key Features & EMOS Subsystems](#key-features--emos-subsystems)
-9. [Agent Pipeline](#agent-pipeline)
-10. [MCP Integration](#mcp-integration)
-11. [License](#license)
+8. [Observability & Logging (Zero-Cost Strategy)](#observability--logging-zero-cost-strategy)
+9. [Key Features & EMOS Subsystems](#key-features--emos-subsystems)
+10. [Agent Pipeline](#agent-pipeline)
+11. [MCP Integration](#mcp-integration)
+12. [License](#license)
 
 ---
 
@@ -430,9 +432,23 @@ VITE_SOCKET_URL=http://localhost:5003
 
 | Variable | Required | Description |
 |---|---|---|
-| `VITE_API_URL` | Yes | Base URL of the Express backend |
-| `VITE_SOCKET_URL` | Yes | Socket.IO server URL (usually same as API URL) |
-| `VITE_EMOS_BRAND_VAULT_ENABLED` | No | Set to `true` to enable Brand Vault UI features (default: `false`) |
+| `PORT` | No | HTTP port (default: `5003`) |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | **Strong random string** — signs/verifies JWTs. Min 64 chars. |
+| `NODE_ENV` | Yes | Set to `production` for deployments |
+| `AI_SERVICE_URL` | Yes | URL of the Python AI Service (default: `http://127.0.0.1:5002`) |
+| `INTERNAL_SERVICE_SECRET` | Yes | Shared secret for backend ↔ AI service auth. Must match `ai-service/.env`. |
+| `GEMINI_API_KEY` | No | System-level Gemini key |
+| `GROQ_API_KEY` | No | System-level Groq key |
+| `TAVILY_API_KEY` | No | System-level Tavily key |
+| `IMAGEKIT_URL_ENDPOINT` | No | ImageKit CDN endpoint |
+| `IMAGEKIT_PUBLIC_KEY` | No | ImageKit public key |
+| `IMAGEKIT_PRIVATE_KEY` | No | ImageKit private key (server-side only) |
+| `REDIS_HOST` | Yes | Redis host (default: `localhost`) |
+| `REDIS_PORT` | Yes | Redis port (default: `6379`) |
+| `FRONTEND_URL` | Yes | Allowed CORS origin for Socket.IO |
+| `LOG_LEVEL` | No | Logging verbosity. `INFO` for development, **`ERROR` for production** (default: `INFO`). See [Observability](#observability--logging-zero-cost-strategy). |
+| `SENTRY_DSN` | No | Sentry DSN for free crash tracking. Leave empty in development. See [Observability](#observability--logging-zero-cost-strategy). |
 
 ---
 
@@ -618,6 +634,128 @@ See [`agentmark-mcp-server/README.md`](agentmark-mcp-server/README.md) for full 
 
 ---
 
-## License
+## Observability & Logging (Zero-Cost Strategy)
+
+AgentMark implements a **$0/month logging architecture** designed for early-stage startups. No paid log-ingestor (Datadog, CloudWatch, Papertrail, Logtail) is used anywhere in the codebase.
+
+### How It Works
+
+All services use a structured logger that reads the `LOG_LEVEL` environment variable at startup. Based on that single setting, it decides what to print and what to silently discard.
+
+| Environment | `LOG_LEVEL` | Effect |
+|---|---|---|
+| **Development** (your laptop) | `INFO` | All logs visible in terminal — great for debugging |
+| **Production** (live server) | `ERROR` | Only real crashes are printed. All `info`, `debug` calls are silently dropped at zero CPU/disk cost. |
+
+### Architecture
+
+```
+                    ┌─────────────────────────────────────┐
+                    │        Application Code             │
+                    │  logger.info("Campaign started")    │ ← Still in code, never deleted
+                    │  logger.error("DB connection failed")│
+                    └──────────────┬──────────────────────┘
+                                   │
+                         LOG_LEVEL env var
+                                   │
+              ┌────────────────────┼───────────────────────┐
+              │                                            │
+    LOG_LEVEL=INFO (Dev)                      LOG_LEVEL=ERROR (Prod)
+              │                                            │
+    ┌─────────▼──────────┐               ┌────────────────▼──────┐
+    │ All logs printed   │               │ Only errors printed   │
+    │ to stdout/terminal │               │ to stdout             │
+    └────────────────────┘               │ Cost: $0.00           │
+                                         └───────────────────────┘
+                                                    │
+                                         If LOG_LEVEL=ERROR and
+                                         SENTRY_DSN is set:
+                                                    │
+                                         ┌──────────▼──────────┐
+                                         │  Sentry (Free Tier) │
+                                         │  5,000 errors/month │
+                                         │  Email alerts on    │
+                                         │  real crashes only  │
+                                         └─────────────────────┘
+```
+
+### Step 1 — Set LOG_LEVEL in Production
+
+On your production server, add this to `backend/.env` and `ai-service/.env`:
+
+```env
+LOG_LEVEL=ERROR
+```
+
+That's it. No code changes. No commenting out logs. The logger handles everything.
+
+---
+
+### Step 2 — Set Up Free Crash Tracking (Sentry)
+
+Sentry ensures you still get alerted if the server crashes, even when routine logs are off.
+
+**Free Plan:** [sentry.io/signup](https://sentry.io/signup/) — $0/month, 5,000 errors/month, no credit card required.
+
+**Setup (one-time, ~5 minutes):**
+
+1. Go to [sentry.io/signup](https://sentry.io/signup/) and create a free account.
+2. Click **Create Project** → Select **Node.js** (for backend) → Name it `agentmark-backend`.
+3. Copy the DSN link (looks like: `https://abc123@o456.ingest.sentry.io/789`).
+4. Add it to your production `backend/.env`:
+
+```env
+SENTRY_DSN=https://your-dsn-here@sentry.io/project-id
+```
+
+5. Restart the backend server.
+
+**For the AI Service (Python):** Create a second Sentry project, select **Python/FastAPI**, copy that DSN, and add it to `ai-service/.env` with the same key: `SENTRY_DSN=...`
+
+> **How Sentry is configured in this codebase:** Only real crashes (uncaught exceptions, HTTP 500 errors) are sent to Sentry. Routine `logger.info()` calls are never forwarded. Performance tracing is disabled (`traces_sample_rate=0`) to preserve the free error quota.
+
+---
+
+### Step 3 — Auto-Delete Log Files (logrotate)
+
+On Linux/VPS/EC2 servers, if any file logging is active (development/staging only — production uses stdout), install logrotate to auto-clean old files:
+
+```bash
+# Run the provided setup script (Linux/macOS only)
+bash scripts/setup_logrotate.sh
+```
+
+This configures logrotate to compress and delete logs older than **3 days** automatically. Disk cost: $0.
+
+---
+
+### How to Use the Logger in Code
+
+**Backend (Node.js/TypeScript):**
+```typescript
+import logger from '../utils/logger';
+
+logger.info('Server started on port %d', port);   // visible in dev, silent in prod
+logger.error('Database connection failed', err);  // always visible + Sentry alert
+```
+
+**AI Service (Python):**
+```python
+from utils.logger import get_logger
+logger = get_logger(__name__)
+
+logger.info("Campaign workflow started")     # visible in dev, silent in prod
+logger.error("LLM API call failed: %s", e)  # always visible + Sentry alert
+```
+
+### Cost Summary
+
+| Component | Service Used | Monthly Cost |
+|---|---|---|
+| Routine log suppression | `LOG_LEVEL=ERROR` env var | **$0.00** |
+| Crash tracking & alerts | Sentry Developer (Free) Plan | **$0.00** |
+| Log file cleanup | Linux `logrotate` (built-in) | **$0.00** |
+| Log delivery | stdout → Docker/PM2 (built-in) | **$0.00** |
+| **Total** | | **$0.00/month** |
 
 Developed by **Novateches Software Pvt Ltd**. All Rights Reserved.

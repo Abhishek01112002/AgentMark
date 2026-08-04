@@ -51,8 +51,9 @@ def is_ip_private_or_reserved(ip_str: str) -> bool:
             or ip_obj.is_unspecified
         )
     except ValueError:
-        return True  # Fail-closed if IP resolution returns malformed string
-
+        # If it's not a valid IP string (e.g. a domain name like 'netflix.com'),
+        # it is NOT a private IP. Return False so the DNS resolver can check it.
+        return False
 
 def validate_url_ip_resolution(url: str) -> Optional[str]:
     """

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import logger from '../utils/logger';
 
 export const errorHandler = (
   err: any,
@@ -12,7 +13,7 @@ export const errorHandler = (
     return next(err);
   }
 
-  console.error('Error:', err);
+  logger.error('Unhandled error:', err);
   const status = err.status || 500;
   const isSafeError = err.status && err.status < 500;
 

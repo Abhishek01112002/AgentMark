@@ -1,0 +1,15 @@
+__pycache__
+.pytest_cache
+.venv
+.env
+.env.*
+!.env.example
+*.pyc
+.git
+.gitignore
+.vscode
+.idea
+tests
+.ruff_cache
+logs
+agentmark.db

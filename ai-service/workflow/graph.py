@@ -117,7 +117,6 @@ def _log_node_execution(node_name: str, state: CampaignState, skipped: bool = Fa
         f"  - revision_counts: {rev_counts}\n"
     )
     logger.info(log_msg)
-    print(log_msg, flush=True)
 
 
 def _get_revision_counts_extra(state: CampaignState) -> dict:
@@ -168,7 +167,7 @@ def manager_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Manager agent error ({type(e).__name__})"
-        logger.error("💥 Manager Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Manager Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "manager", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -184,7 +183,7 @@ def research_node(state: CampaignState) -> dict:
     - Audience insights
     """
     logger.info("\n" + "="*80)
-    logger.info("🔍 LANGGRAPH: EXECUTING RESEARCH NODE")
+    logger.info(" LANGGRAPH: EXECUTING RESEARCH NODE")
     logger.info("="*80)
     
     if state.error or state.status == "error":
@@ -260,7 +259,7 @@ def research_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Research agent error ({type(e).__name__})"
-        logger.error("💥 Research Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Research Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "research", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -352,7 +351,7 @@ def strategy_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Strategy agent error ({type(e).__name__})"
-        logger.error("💥 Strategy Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Strategy Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "strategy", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -454,7 +453,7 @@ def copywriter_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Copywriter agent error ({type(e).__name__})"
-        logger.error("💥 Copywriter Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Copywriter Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "copywriter", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -543,7 +542,7 @@ def creative_hook_matrix_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Creative Hook Matrix agent error ({type(e).__name__})"
-        logger.error("💥 Creative Hook Matrix Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Creative Hook Matrix Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "creative_hook_matrix", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
 
         # creative_hook_matrix is non-blocking: generate diagnostic fallback hook matrix
@@ -635,7 +634,7 @@ def image_prompt_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Image Prompt agent error ({type(e).__name__})"
-        logger.error("💥 Image Prompt Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Image Prompt Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "image_prompt", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -651,7 +650,7 @@ def reviewer_node(state: CampaignState) -> dict:
     - Decides approve/revise
     """
     logger.info("\n" + "="*80)
-    logger.info("🔍 LANGGRAPH: EXECUTING REVIEWER NODE")
+    logger.info(" LANGGRAPH: EXECUTING REVIEWER NODE")
     logger.info("="*80)
     
     if state.error or state.status == "error":
@@ -700,7 +699,7 @@ def reviewer_node(state: CampaignState) -> dict:
         }
     except Exception as e:
         err_msg = str(e).strip() or f"Reviewer agent error ({type(e).__name__})"
-        logger.error("💥 Reviewer Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
+        logger.error(" Reviewer Node Error | campaign_id=%s | error_type=%s | error=%s", state.campaign_id, type(e).__name__, err_msg, exc_info=True)
         publish_agent_event(state.campaign_id, "reviewer", "failed", error=err_msg, extra=_get_revision_counts_extra(state))
         return {
             "error": err_msg,
@@ -957,7 +956,7 @@ def create_campaign_graph():
     graph.add_edge("cancelled_node", END)         # cancelled_node → END
     
     # 7. Compile the graph
-    logger.info("✅ Graph with HITL compiled successfully with checkpointer!")
+    logger.info(" Graph with HITL compiled successfully with checkpointer!")
     try:
         compiled_graph = graph.compile(
             checkpointer=checkpointer

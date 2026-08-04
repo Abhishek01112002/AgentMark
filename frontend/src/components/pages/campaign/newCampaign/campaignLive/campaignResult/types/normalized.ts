@@ -26,6 +26,7 @@ export interface NormalizedReviewOutput {
   critical_gaps?: string[];
   recommendations?: string[];
   feedback?: string;
+  [key: string]: any;
 }
 
 export interface NormalizedCreativeHookMatrix {

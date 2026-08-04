@@ -1,4 +1,5 @@
 import prisma from '../../db';
+import logger from '../../utils/logger';
 import { AIAgentOutputs } from './campaign.types';
 import { notificationService } from '../notifications/notification.service';
 import { saveMemorySnapshot } from './campaign-memory.service';
@@ -63,9 +64,9 @@ export const campaignService = {
       try {
         await redis.del(`cancel:${campaignId}`);
       } catch (err) {
-        console.error(`Failed to delete Redis cancel flag for ${campaignId}:`, err);
+        logger.error(`Failed to delete Redis cancel flag for ${campaignId}:`, err);
       }
-      console.log(`[Campaign Service] Campaign ${campaignId} hard-deleted after pipeline confirmed stop`);
+      logger.info(`[Campaign Service] Campaign ${campaignId} hard-deleted after pipeline confirmed stop`);
       return existing as any;
     }
 
@@ -76,7 +77,7 @@ export const campaignService = {
           ? JSON.parse(existing.aiOutputs)
           : existing.aiOutputs) as Record<string, any>;
       } catch (err) {
-        console.error(`[CampaignService] Failed to parse existing aiOutputs for campaign ${campaignId}:`, err);
+        logger.error(`[CampaignService] Failed to parse existing aiOutputs for campaign ${campaignId}:`, err);
         // Fall back to empty object — new outputs will overwrite
       }
     }
@@ -146,7 +147,7 @@ export const campaignService = {
           });
         }
       } catch (err) {
-        console.error(`[CampaignService] Failed to create status-change notification for campaign ${campaignId}:`, err);
+        logger.error(`[CampaignService] Failed to create status-change notification for campaign ${campaignId}:`, err);
       }
     }
 
@@ -201,10 +202,10 @@ export const campaignService = {
     try {
       if (redis.status === 'ready' || redis.status === 'connecting') {
         await redis.set(`cancel:${id}`, "true", "EX", 3600);
-        console.log(`[Campaign Service] Set cancellation flag in Redis for campaign ${id}`);
+        logger.info(`[Campaign Service] Set cancellation flag in Redis for campaign ${id}`);
       }
     } catch (error: any) {
-      console.error("Failed to set cancellation flag in Redis:", error?.message || error);
+      logger.error("Failed to set cancellation flag in Redis:", error?.message || error);
     }
 
     if (campaign.status === 'completed' || campaign.status === 'failed') {
@@ -213,14 +214,14 @@ export const campaignService = {
         where: { campaignId: id }
       });
       await prisma.campaign.delete({ where: { id } });
-      console.log(`[Campaign Service] Campaign ${id} hard-deleted immediately (not running)`);
+      logger.info(`[Campaign Service] Campaign ${id} hard-deleted immediately (not running)`);
     } else {
       // Soft-delete to hide from dashboard, python pipeline will hard-delete on exit
       await prisma.campaign.update({
         where: { id },
         data: { status: 'deleted' }
       });
-      console.log(`[Campaign Service] Campaign ${id} marked 'deleted' for pipeline cancellation`);
+      logger.info(`[Campaign Service] Campaign ${id} marked 'deleted' for pipeline cancellation`);
     }
 
     const project = await prisma.project.findUnique({ where: { id: projectId } });
@@ -233,7 +234,7 @@ export const campaignService = {
           message: `Campaign "${campaign.name}" was removed.`,
         });
       } catch (err) {
-        console.error(`[CampaignService] Failed to create campaign-deleted notification for campaign ${id}:`, err);
+        logger.error(`[CampaignService] Failed to create campaign-deleted notification for campaign ${id}:`, err);
       }
     }
     return campaign;

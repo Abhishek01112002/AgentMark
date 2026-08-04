@@ -149,7 +149,7 @@ async def revise_copy_with_feedback_impl(
 
             if on_progress:
                 on_progress(
-                    f"[AgentMark] [Revision] ✅ Copywriter revision complete! "
+                    f"[AgentMark] [Revision]  Copywriter revision complete! "
                     f"Channels revised: {', '.join(channels_revised)}. "
                     f"Now running Focus Group on new copy..."
                 )
@@ -182,18 +182,18 @@ async def revise_copy_with_feedback_impl(
         )
     except Exception as exc:
         logger.error("Auto focus group failed after revision: %s", exc)
-        focus_group_result = f"⚠️ Focus group simulation failed after revision: {exc}"
+        focus_group_result = f" Focus group simulation failed after revision: {exc}"
 
     # ── 5. Build combined result ───────────────────────────────────────────────
     result_parts = [
-        "# ✅ Copy Revision Complete\n",
+        "#  Copy Revision Complete\n",
         f"**Campaign ID:** `{campaign_id}`\n",
         f"**Feedback Applied:** {feedback[:300]}{'...' if len(feedback) > 300 else ''}\n",
         "\n---\n",
-        "## 🔄 Automatic Focus Group Re-run Results\n",
+        "##  Automatic Focus Group Re-run Results\n",
         focus_group_result,
         "\n---\n",
-        "## 📋 Next Steps\n",
+        "##  Next Steps\n",
         "- Review the focus group scores above — did the revised copy improve?\n",
         "- If satisfied, call `publish_to_channel` to approve and publish.\n",
         "- If more revision needed, call `revise_copy_with_feedback` again with new feedback.\n",
@@ -271,10 +271,10 @@ async def revise_image_prompts_impl(
             image_prompts = image_data.get("image_prompts") or []
             
             lines = [
-                "# ✅ Image Prompt Revision Complete\n\n",
+                "#  Image Prompt Revision Complete\n\n",
                 f"**Campaign ID:** `{campaign_id}`\n",
                 f"**Feedback Applied:** {feedback[:300]}{'...' if len(feedback) > 300 else ''}\n\n",
-                "## 🎨 Revised Image Prompts & Visual Directions\n\n"
+                "##  Revised Image Prompts & Visual Directions\n\n"
             ]
             
             visual_dir = image_data.get("visual_direction") or {}
@@ -294,7 +294,7 @@ async def revise_image_prompts_impl(
                     lines.append(f"**Text Overlay:** \"{_sanitize_md(headline)}\" (CTA: `{_sanitize_md(cta)}`)\n")
                 lines.append("\n")
 
-            lines.append("## 📋 Next Steps\n")
+            lines.append("##  Next Steps\n")
             lines.append("- Review the updated visual prompts above.\n")
             lines.append("- If satisfied, call `publish_to_channel` to approve and publish.\n")
             lines.append(f"- View full results on your dashboard: `/campaign/{campaign_id}/result`\n")
@@ -350,12 +350,12 @@ async def get_campaign_status_impl(
 
     # Build status emoji
     status_emoji = {
-        "completed": "✅",
-        "processing": "⏳",
-        "awaiting_human_approval": "🔔",
-        "failed": "❌",
-        "draft": "📝",
-    }.get(status, "❓")
+        "completed": "",
+        "processing": "",
+        "awaiting_human_approval": "",
+        "failed": "",
+        "draft": "",
+    }.get(status, "")
 
     lines = [
         f"# {status_emoji} Campaign Status Report\n",
@@ -372,7 +372,7 @@ async def get_campaign_status_impl(
     ]
 
     if copy_versions:
-        lines.append("## 📜 Copy Version History\n\n")
+        lines.append("##  Copy Version History\n\n")
         lines.append("| Version | Timestamp | Copy Score | FG Score | Feedback Used |\n")
         lines.append("|---|---|---|---|---|\n")
         for v in copy_versions:
@@ -394,7 +394,7 @@ async def get_campaign_status_impl(
 
     image_prompts = image_data.get("image_prompts") or []
     if image_prompts:
-        lines.append("## 🎨 Generated Image Prompts & Visual Directions\n\n")
+        lines.append("##  Generated Image Prompts & Visual Directions\n\n")
         visual_dir = image_data.get("visual_direction") or {}
         raw_mood = visual_dir.get("mood")
         # Guard: mood may be a non-string truthy value (dict, list) if schema is malformed
@@ -420,7 +420,7 @@ async def get_campaign_status_impl(
         except Exception: copy_data = {}
     channel_copies = copy_data.get("channel_copies") or copy_data.get("channels") or {}
     if channel_copies and isinstance(channel_copies, dict):
-        lines.append("## ✍️ Generated Creative Copy\n\n")
+        lines.append("##  Generated Creative Copy\n\n")
         for ch, details in channel_copies.items():
             if isinstance(details, dict):
                 hl = details.get("headline") or details.get("subject") or ""
@@ -432,15 +432,15 @@ async def get_campaign_status_impl(
     # Action recommendation
     if status == "awaiting_human_approval":
         lines.append(
-            "\n> **🔔 Action Required:** Campaign is waiting for your approval.\n"
+            "\n> ** Action Required:** Campaign is waiting for your approval.\n"
             "> - Run `run_focus_group` to test the copy first, OR\n"
             "> - Run `revise_copy_with_feedback` if you want changes, OR\n"
             "> - Run `publish_to_channel` to approve and publish.\n"
         )
     elif status == "completed":
-        lines.append("\n> **✅ Campaign complete.** All outputs are available above.\n")
+        lines.append("\n> ** Campaign complete.** All outputs are available above.\n")
     elif status == "processing":
-        lines.append("\n> **⏳ Campaign is still processing.** Check back in a few minutes.\n")
+        lines.append("\n> ** Campaign is still processing.** Check back in a few minutes.\n")
 
     return "".join(lines)
 
@@ -461,7 +461,7 @@ async def revise_creative_hook_matrix_impl(
         campaign = await client.get_campaign(campaign_id)
         current_revs = campaign.get("creativeHookMatrixRevisionCount", 0)
         if current_revs >= 5:
-            return "❌ Maximum revision limit (5) reached for Creative Hook Matrix."
+            return " Maximum revision limit (5) reached for Creative Hook Matrix."
     except Exception as exc:
         logger.warning("Failed to pre-check revision count: %s", exc)
         
@@ -484,11 +484,11 @@ async def revise_creative_hook_matrix_impl(
     except Exception as exc:
         logger.error("Failed to trigger creative hook revision: %s", exc)
         if "400" in str(exc) or "maximum" in str(exc).lower():
-            return "❌ Maximum revisions reached or invalid state for Creative Hook Matrix revision."
+            return " Maximum revisions reached or invalid state for Creative Hook Matrix revision."
         raise RuntimeError("Failed to trigger creative hook revision: %s" % exc) from exc
         
     if not wait_for_completion:
-        return f"✅ Creative Hook Matrix revision triggered in background for campaign {campaign_id}."
+        return f" Creative Hook Matrix revision triggered in background for campaign {campaign_id}."
         
     # Poll for completion
     max_attempts = max(1, REVISION_TIMEOUT_SECS // POLL_INTERVAL_SECS)
@@ -518,7 +518,7 @@ async def revise_creative_hook_matrix_impl(
         status = campaign_after.get("status", "processing").lower()
         if status in ("awaiting_human_approval", "completed"):
             if on_progress:
-                on_progress("[AgentMark] [Revision] ✅ Creative Hook Matrix revision complete!")
+                on_progress("[AgentMark] [Revision]  Creative Hook Matrix revision complete!")
                 
             ai_outputs_after = _parse_ai_outputs(campaign_after)
             matrix_after = ai_outputs_after.get("creative_hook_matrix_output")

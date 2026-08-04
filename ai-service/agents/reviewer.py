@@ -7,17 +7,17 @@ Role: Quality Assurance Manager - Reviews ALL agent outputs and sends back
 INPUT (From All Upstream Agents):
 
   FROM state (direct access):
-    ✅ research_output: JSON string from Research Agent (5 fields)
-    ✅ strategy_output: JSON string from Strategy Agent (13 fields)
-    ✅ copy_output: JSON string from Copywriter Agent (8 fields)
-    ✅ image_output: JSON string from Image Prompt Agent (2 fields)
+     research_output: JSON string from Research Agent (5 fields)
+     strategy_output: JSON string from Strategy Agent (13 fields)
+     copy_output: JSON string from Copywriter Agent (8 fields)
+     image_output: JSON string from Image Prompt Agent (2 fields)
 
   FROM state (campaign metadata):
-    ✅ campaign_name: Campaign identifier
-    ✅ brand_name: Brand being reviewed
-    ✅ brand_voice: Expected tone (for copy validation)
-    ✅ industry: Industry context (for research validation)
-    ✅ primary_goal: Campaign goal (for strategy/copy alignment)
+     campaign_name: Campaign identifier
+     brand_name: Brand being reviewed
+     brand_voice: Expected tone (for copy validation)
+     industry: Industry context (for research validation)
+     primary_goal: Campaign goal (for strategy/copy alignment)
 
 WHAT REVIEWER VALIDATES (28 total fields):
   Research  (5 fields): market_analysis, competitor_analysis, audience_insights,
@@ -283,7 +283,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     """
 
     logger.info("\n" + "=" * 80)
-    logger.info("🔍 REVIEWER AGENT ACTIVATED")
+    logger.info(" REVIEWER AGENT ACTIVATED")
     logger.info("=" * 80)
 
     # ========== STEP 1: READ ALL AGENT OUTPUTS ==========
@@ -295,28 +295,28 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         try:
             research_data = json.loads(state.research_output)
         except Exception as e:
-            logger.warning(f"⚠️ Failed to parse research_output: {e}")
+            logger.warning(f" Failed to parse research_output: {e}")
 
     strategy_data = {}
     if state.strategy_output:
         try:
             strategy_data = json.loads(state.strategy_output)
         except Exception as e:
-            logger.warning(f"⚠️ Failed to parse strategy_output: {e}")
+            logger.warning(f" Failed to parse strategy_output: {e}")
 
     copy_data = {}
     if state.copy_output:
         try:
             copy_data = json.loads(state.copy_output)
         except Exception as e:
-            logger.warning(f"⚠️ Failed to parse copy_output: {e}")
+            logger.warning(f" Failed to parse copy_output: {e}")
 
     image_data = {}
     if state.image_output:
         try:
             image_data = json.loads(state.image_output)
         except Exception as e:
-            logger.warning(f"⚠️ Failed to parse image_output: {e}")
+            logger.warning(f" Failed to parse image_output: {e}")
 
     # Creative Hook Matrix — only read if feature flag is enabled AND output exists
     hook_data: Optional[dict] = None
@@ -328,15 +328,15 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             try:
                 hook_data = json.loads(hook_output_raw)
             except Exception as e:
-                logger.warning(f"⚠️ Failed to parse creative_hook_matrix_output: {e}")
+                logger.warning(f" Failed to parse creative_hook_matrix_output: {e}")
 
-    logger.info(f"✓ Research Output: parsed ({len(state.research_output)} chars)")
-    logger.info(f"✓ Strategy Output: parsed ({len(state.strategy_output)} chars)")
-    logger.info(f"✓ Copy Output:     parsed ({len(state.copy_output)} chars)")
-    logger.info(f"✓ Image Output:    parsed ({len(state.image_output)} chars)")
+    logger.info(f" Research Output: parsed ({len(state.research_output)} chars)")
+    logger.info(f" Strategy Output: parsed ({len(state.strategy_output)} chars)")
+    logger.info(f" Copy Output:     parsed ({len(state.copy_output)} chars)")
+    logger.info(f" Image Output:    parsed ({len(state.image_output)} chars)")
     if ENABLE_CREATIVE_HOOK_MATRIX:
         hook_chars = len(str(hook_output_raw)) if hook_output_raw else 0
-        logger.info(f"✓ Hook Matrix:     {'parsed' if hook_data else 'not available'} ({hook_chars} chars)")
+        logger.info(f" Hook Matrix:     {'parsed' if hook_data else 'not available'} ({hook_chars} chars)")
 
     # ========== STEP 2: READ CAMPAIGN METADATA ==========
     logger.info("\n[STEP 2] Reading campaign metadata from state...")
@@ -361,12 +361,12 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         channels_list = getattr(state, "channels", []) or []
     channels = ', '.join(channels_list) if isinstance(channels_list, list) else str(channels_list)
 
-    logger.info(f"✓ Campaign:     {campaign_name}")
-    logger.info(f"✓ Brand:        {brand_name}")
-    logger.info(f"✓ Industry:     {industry}")
-    logger.info(f"✓ Goal:         {primary_goal}")
-    logger.info(f"✓ Brand Voice:  {brand_voice}")
-    logger.info(f"✓ Channels:     {channels}")
+    logger.info(f" Campaign:     {campaign_name}")
+    logger.info(f" Brand:        {brand_name}")
+    logger.info(f" Industry:     {industry}")
+    logger.info(f" Goal:         {primary_goal}")
+    logger.info(f" Brand Voice:  {brand_voice}")
+    logger.info(f" Channels:     {channels}")
 
     # ========== STEP 3: READ REVISION COUNTS ==========
     logger.info("\n[STEP 3] Checking revision history...")
@@ -378,12 +378,12 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     image_revision_count = getattr(state, "image_revision_count", 0) or 0
     creative_hook_matrix_revision_count = getattr(state, "creative_hook_matrix_revision_count", 0) or 0
 
-    logger.info(f"✓ Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
-    logger.info(f"✓ Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
-    logger.info(f"✓ Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
+    logger.info(f" Research revisions:  {research_revision_count}/{MAX_REVISIONS}")
+    logger.info(f" Strategy revisions:  {strategy_revision_count}/{MAX_REVISIONS}")
+    logger.info(f" Copy revisions:      {copy_revision_count}/{MAX_REVISIONS}")
     if ENABLE_CREATIVE_HOOK_MATRIX:
-        logger.info(f"✓ Hook revisions:      {creative_hook_matrix_revision_count}/{MAX_REVISIONS}")
-    logger.info(f"✓ Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
+        logger.info(f" Hook revisions:      {creative_hook_matrix_revision_count}/{MAX_REVISIONS}")
+    logger.info(f" Image revisions:     {image_revision_count}/{MAX_REVISIONS}")
 
     # ========== STEP 4: EXTRACT KEY FIELDS FOR DISPLAY ==========
     logger.info("\n[STEP 4] Summarizing outputs for LLM review...")
@@ -393,12 +393,12 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     market = research_data.get("market_analysis", {})
     competitors = research_data.get("competitor_analysis", {})
     audience = research_data.get("audience_insights", {})
-    logger.info(f"✓ Research — TAM: {market.get('total_addressable_market', 'N/A')} | "
+    logger.info(f" Research — TAM: {market.get('total_addressable_market', 'N/A')} | "
           f"Competitors: {len(competitors.get('top_competitors', []))} | "
           f"Pain Points: {len(audience.get('pain_points', []))}")
 
     # Strategy summary
-    logger.info(f"✓ Strategy — Positioning: {str(strategy_data.get('positioning', 'N/A'))[:50]}... | "
+    logger.info(f" Strategy — Positioning: {str(strategy_data.get('positioning', 'N/A'))[:50]}... | "
           f"Goal: {strategy_data.get('inferred_goal', 'N/A')} | "
           f"Segments: {len(strategy_data.get('audience_segments', []))}")
 
@@ -408,23 +408,23 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         k for k, v in copies_dict.items()
         if v is not None
     ]
-    logger.info(f"✓ Copy — Channels: {', '.join(copy_channels)} | "
+    logger.info(f" Copy — Channels: {', '.join(copy_channels)} | "
           f"Goal: {copy_data.get('inferred_goal', 'N/A')}")
 
     # Image summary
     image_prompts = image_data.get("image_prompts", [])
-    logger.info(f"✓ Image — Prompts: {len(image_prompts)} | "
+    logger.info(f" Image — Prompts: {len(image_prompts)} | "
           f"Direction: {str(image_data.get('visual_direction', 'N/A'))[:50]}...")
 
     # Hook summary (only log when feature flag enabled)
     if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
         hooks_list = hook_data.get("hooks", hook_data.get("matrix", hook_data.get("hook_matrix", [])))
-        logger.info(f"✓ Hooks — Count: {len(hooks_list)} hook archetypes generated")
+        logger.info(f" Hooks — Count: {len(hooks_list)} hook archetypes generated")
 
     # ========== STEP 5: REVIEW WITH LLM ==========
     logger.info("\n[STEP 5] Sending structured agent summary evidence (all 28 schema fields) to LLM for quality analysis...")
     logger.info("-" * 80)
-    logger.info("🔍 AI Quality Analyst reviewing campaign outputs...")
+    logger.info(" AI Quality Analyst reviewing campaign outputs...")
 
     # Initialize LLM client
     llm = get_llm_client()
@@ -452,7 +452,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         pre_val_copy = PreValidator.validate_channel_coverage(copy_dict, channels)
         logger.info(f"   [PRE-VALIDATION] Reviewer pre-screened copy channels: coverage={pre_val_copy.metadata.get('coverage_pct')}%")
     except Exception as exc:
-        logger.warning(f"   ⚠️ Reviewer pre-validation non-blocking error: {exc}")
+        logger.warning(f"    Reviewer pre-validation non-blocking error: {exc}")
 
     # Build creative hook summary for the prompt (compact to save tokens)
     if ENABLE_CREATIVE_HOOK_MATRIX and hook_data:
@@ -502,7 +502,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     cache_key = make_key("Reviewer", prompt=prompt, temperature=0.5, max_tokens=8192)
     cached = cache_get(cache_key) if "PYTEST_CURRENT_TEST" not in os.environ else None
     if cached is not None:
-        logger.info("📦 Cache hit — using cached Reviewer response")
+        logger.info(" Cache hit — using cached Reviewer response")
         review_analysis = ReviewerOutput.model_validate(cached)
     else:
         review_analysis, state = safe_llm_call(
@@ -514,7 +514,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             cache_set(cache_key, review_analysis.model_dump())
     
     if review_analysis is None:
-        logger.info("   ⚠️ Reviewer LLM unavailable — using objective fallback review")
+        logger.info("    Reviewer LLM unavailable — using objective fallback review")
         review_analysis = _fallback_review_analysis(
             research_data,
             strategy_data,
@@ -522,10 +522,10 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             image_data,
             hook_data=hook_data,
         )
-        # ✅ Clear error flag so downstream routing/publisher doesn't skip
+        #  Clear error flag so downstream routing/publisher doesn't skip
         state.error = None
         state.status = "review_complete"
-        logger.info("   ✅ Fallback review ready — error flag cleared, pipeline will continue")
+        logger.info("    Fallback review ready — error flag cleared, pipeline will continue")
 
     # ========== STEP 6: EXTRACT SCORES AND DECISIONS ==========
     logger.info("\n[STEP 6] Processing quality scores and decisions...")
@@ -615,23 +615,23 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         hook_review.approved = hook_approved
 
     # ========== STEP 7: DISPLAY QUALITY SCORES ==========
-    logger.info("✅ Quality analysis complete!")
+    logger.info(" Quality analysis complete!")
 
-    logger.info("\n📊 Individual Agent Scores:")
-    logger.info(f"   Research:  {research_score}/100  {'✅' if research_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info("\n Individual Agent Scores:")
+    logger.info(f"   Research:  {research_score}/100  {'' if research_score >= MIN_AGENT_SCORE else ''}  "
           f"({'Approved' if research_approved else 'Issues Found'})")
-    logger.info(f"   Strategy:  {strategy_score}/100  {'✅' if strategy_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Strategy:  {strategy_score}/100  {'' if strategy_score >= MIN_AGENT_SCORE else ''}  "
           f"({'Approved' if strategy_approved else 'Issues Found'})")
-    logger.info(f"   Copy:      {copy_score}/100  {'✅' if copy_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Copy:      {copy_score}/100  {'' if copy_score >= MIN_AGENT_SCORE else ''}  "
           f"({'Approved' if copy_approved else 'Issues Found'})")
     if hook_review and hook_score is not None:
-        logger.info(f"   Hooks:     {hook_score}/100  {'✅' if hook_score >= MIN_AGENT_SCORE else '❌'}  "
+        logger.info(f"   Hooks:     {hook_score}/100  {'' if hook_score >= MIN_AGENT_SCORE else ''}  "
               f"({'Approved' if hook_approved else 'Issues Found'})")
-    logger.info(f"   Image:     {image_score}/100  {'✅' if image_score >= MIN_AGENT_SCORE else '❌'}  "
+    logger.info(f"   Image:     {image_score}/100  {'' if image_score >= MIN_AGENT_SCORE else ''}  "
           f"({'Approved' if image_approved else 'Issues Found'})")
-    logger.info(f"\n📈 Overall Quality Score: {overall_score}/100 "
+    logger.info(f"\n Overall Quality Score: {overall_score}/100 "
           f"(Threshold: {MIN_QUALITY_SCORE}) "
-          f"{'✅' if overall_score >= MIN_QUALITY_SCORE else '❌'}")
+          f"{'' if overall_score >= MIN_QUALITY_SCORE else ''}")
 
     # Print issues per agent
     agents_to_log = [
@@ -645,7 +645,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     for agent_name, agent_review in agents_to_log:
         issues = agent_review.issues
         if issues:
-            logger.info(f"\n   ⚠️  {agent_name} Issues:")
+            logger.info(f"\n     {agent_name} Issues:")
             for issue in issues[:3]:
                 logger.info(f"      • {issue}")
             if len(issues) > 3:
@@ -700,8 +700,8 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
     state.review_output = review_output_json
 
     if all_approved and meets_overall_threshold:
-        # ✅ ALL APPROVED
-        logger.info("✅ ALL OUTPUTS APPROVED - Ready for Publication")
+        #  ALL APPROVED
+        logger.info(" ALL OUTPUTS APPROVED - Ready for Publication")
         logger.info(f"   All agents meet individual threshold (≥{MIN_AGENT_SCORE})")
         logger.info(f"   Overall quality: {overall_score}/100 (≥{MIN_QUALITY_SCORE})")
 
@@ -712,7 +712,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         state.human_revision_target = None
 
     else:
-        # ⚠️ REVISION REQUIRED
+        #  REVISION REQUIRED
         # Determine which agent to send back (priority: research → strategy → copy → hooks → image)
         revision_target = _determine_revision_target(
             research_review, strategy_review, copy_review, image_review,
@@ -723,7 +723,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
         )
 
         if not revision_target:
-            logger.info(f"\n⚠️  All unapproved agents have reached MAX_REVISIONS ({MAX_REVISIONS})")
+            logger.info(f"\n  All unapproved agents have reached MAX_REVISIONS ({MAX_REVISIONS})")
             logger.info("   Proceeding to human approval with current quality")
 
             state.status = "review_complete"
@@ -738,7 +738,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
             current_count = getattr(state, revision_count_attr, 0) or 0
             if current_count >= MAX_REVISIONS:
                 # Max revisions reached — force approve and proceed
-                logger.info(f"\n⚠️  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
+                logger.info(f"\n  Max revisions ({MAX_REVISIONS}) reached for {revision_target['agent_name']}")
                 logger.info("   Proceeding to publisher despite quality issues")
 
                 state.status = "review_complete"
@@ -752,7 +752,7 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
                 new_count = current_count + 1
                 setattr(state, revision_count_attr, new_count)
 
-                logger.info(f"\n⚠️  REVISION REQUIRED: {revision_target['agent_name']}")
+                logger.info(f"\n  REVISION REQUIRED: {revision_target['agent_name']}")
                 logger.info(f"   Reason: {revision_target['reason']}")
                 logger.info(f"   Issues: {len(revision_target['issues'])}")
                 logger.info(f"   Revision #{new_count}/{MAX_REVISIONS}")
@@ -794,20 +794,20 @@ def reviewer_agent(state: CampaignState) -> CampaignState:
                 }
                 state.human_revision_target = target_map.get(agent_key, agent_key)
 
-    logger.info("\n✅ State updated:")
+    logger.info("\n State updated:")
     logger.info(f"   status:    {state.status}")
     logger.info(f"   next_step: {state.next_step}")
 
     # Production Safeguard: Ensure human_revision_target is None when review_complete
     if state.status == "review_complete" and state.human_revision_target is not None:
         logger.warning(
-            "⚠️ WARNING: review_complete set while human_revision_target is still populated (%s) - clearing target",
+            " WARNING: review_complete set while human_revision_target is still populated (%s) - clearing target",
             state.human_revision_target
         )
         state.human_revision_target = None
 
     logger.info("\n" + "=" * 80)
-    logger.info("✅ REVIEWER AGENT COMPLETE")
+    logger.info(" REVIEWER AGENT COMPLETE")
     logger.info("=" * 80)
 
     return state
@@ -1143,7 +1143,7 @@ def _determine_revision_target(
 
 if __name__ == "__main__":
     logger.info("\n" + "=" * 80)
-    logger.info("⚠️  This is the agent module file.")
+    logger.info("  This is the agent module file.")
     logger.info("    To test the Reviewer Agent, run: python examples/run_reviewer.py")
     logger.info("    To customize input, edit: examples/inputs/campaign_input.json")
     logger.info("=" * 80)

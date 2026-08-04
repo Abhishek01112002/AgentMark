@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import Redis from 'ioredis';
+import logger from '../utils/logger';
 
 const isTest = process.env.NODE_ENV === 'test';
 
@@ -12,8 +13,8 @@ const redisClient = isTest ? null : new Redis({
   retryStrategy: (times) => Math.min(times * 1000, 5000),
 });
 
-redisClient?.on('connect', () => console.log('[RateLimiter] Redis connected'));
-redisClient?.on('error', (err) => console.error('[RateLimiter] Redis error:', err.message));
+redisClient?.on('connect', () => logger.info('[RateLimiter] Redis connected'));
+redisClient?.on('error', (err) => logger.error('[RateLimiter] Redis error:', err.message));
 
 const sendCommand = async (...args: string[]): Promise<any> => {
   if (!redisClient) {

@@ -17,6 +17,7 @@
  */
 
 import { Response, NextFunction } from 'express';
+import logger from '../../utils/logger';
 import { userLastMcpActivity } from '../../middlewares/mcp-logger.middleware';
 import { AuthRequest } from '../../middlewares/auth.middleware';
 import prisma from '../../db';
@@ -37,6 +38,10 @@ import {
   ConnectionState,
   setUserSelection,
 } from '../../utils/claude-config';
+import {
+  getRuntimeCapabilities,
+  HOST_CAPABILITY_UNAVAILABLE_RESPONSE,
+} from '../../utils/runtime-capabilities';
 
 /**
  * Kill any stale agentmark-mcp-server Python subprocesses still running with old API keys.
@@ -62,7 +67,7 @@ function killStaleMcpProcesses(): void {
         for (const pid of pids) {
           try {
             execSync(`taskkill /PID ${pid} /F`, { timeout: 3000 });
-            console.log(`[MCP] Killed stale agentmark-mcp-server process PID ${pid}`);
+            logger.info(`[MCP] Killed stale agentmark-mcp-server process PID ${pid}`);
           } catch {
             // Process may have already exited
           }
@@ -283,6 +288,11 @@ export const getClaudeStatus = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
     
     // Check in-memory cache first to avoid continuous disk IO checks
@@ -320,6 +330,11 @@ export const pingClaude = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
     
     // Clear status cache so we read fresh disk & DB state
@@ -371,6 +386,11 @@ export const verifyClaudeConnection = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
     statusCache.delete(userId);
 
@@ -399,6 +419,11 @@ export const setClaudeSelection = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const { selectedId } = req.body;
     if (!selectedId) {
       res.status(400).json({ error: 'selectedId is required' });
@@ -418,6 +443,11 @@ export const connectClaude = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
 
     // Kill any stale MCP subprocesses running with old API keys before writing new config.
@@ -516,6 +546,11 @@ export const regenerateClaudeKey = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
     const resolution = await resolveActiveClaudeConfig();
     const configPath = resolution.configPath || 'Unknown';
@@ -566,6 +601,11 @@ export const disconnectClaude = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!getRuntimeCapabilities().claudeDesktopManagement) {
+      res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+      return;
+    }
+
     const userId = req.userId!;
     const resolution = await resolveActiveClaudeConfig();
     const configPath = resolution.configPath || 'Unknown';
@@ -639,6 +679,13 @@ export const connectClaudeFlow = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  // Capability check BEFORE SSE headers are written, so we can still send a
+  // normal JSON 501 response instead of a partially-opened event stream.
+  if (!getRuntimeCapabilities().claudeDesktopManagement) {
+    res.status(501).json(HOST_CAPABILITY_UNAVAILABLE_RESPONSE);
+    return;
+  }
+
   const userId = req.userId!;
   
   // Set headers for Server-Sent Events (SSE)

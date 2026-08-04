@@ -1,4 +1,5 @@
 import prisma from '../../db';
+import logger from '../../utils/logger';
 import type { CampaignMemorySnapshot } from '@prisma/client';
 
 interface MemoryContext {
@@ -34,7 +35,7 @@ export async function getClientMemory(projectId: string): Promise<MemoryContext 
     return { formattedText: `PAST CAMPAIGN HISTORY (most recent ${pastSnapshots.length}):\n${formatted}` };
 
   } catch (error) {
-    console.error("Campaign memory lookup failed:", error);
+    logger.error("Campaign memory lookup failed:", error);
     return null;
   }
 }
@@ -81,7 +82,7 @@ export async function recordHumanRejection(campaignId: string, projectId: string
       });
     }
   } catch (error) {
-    console.error("Failed to record human rejection:", error);
+    logger.error("Failed to record human rejection:", error);
   }
 }
 
@@ -133,6 +134,6 @@ export async function saveMemorySnapshot(campaignId: string, projectId: string) 
       update: data,
     });
   } catch (error) {
-    console.error("Memory snapshot save failed:", error);
+    logger.error("Memory snapshot save failed:", error);
   }
 }

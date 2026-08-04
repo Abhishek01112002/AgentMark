@@ -11,6 +11,7 @@
  */
 
 import Redis from 'ioredis';
+import logger from './logger';
 import crypto from 'crypto';
 import type { Server } from 'socket.io';
 import { campaignService } from '../modules/campaigns/campaign.service';
@@ -30,7 +31,7 @@ async function safePrismaUpdate(campaignId: string, updateData: any) {
     if (err && err.message && (err.message.includes('Unknown argument') || err.message.includes('creativeHookMatrixRevisionCount'))) {
       const match = err.message.match(/Unknown argument `([^`]+)`/);
       const unknownField = match ? match[1] : 'creativeHookMatrixRevisionCount';
-      console.warn(`[Redis Subscriber] Intercepted un-generated Prisma column '${unknownField}'. Stripping field and executing self-healing DB update...`);
+      logger.warn(`[Redis Subscriber] Intercepted un-generated Prisma column '${unknownField}'. Stripping field and executing self-healing DB update...`);
       delete updateData[unknownField];
       return await prisma.campaign.update({
         where: { id: campaignId },
@@ -80,7 +81,7 @@ class PromiseQueue {
             return;
           } catch (err: any) {
             lastError = err;
-            console.error(`[PromiseQueue] Task error (attempt ${attempts}/${maxAttempts}):`, err.message || err);
+            logger.error(`[PromiseQueue] Task error (attempt ${attempts}/${maxAttempts}):`, err.message || err);
             if (attempts < maxAttempts) {
               const backoffMs = Math.pow(2, attempts) * 300 + Math.floor(Math.random() * 200);
               await new Promise((r) => setTimeout(r, backoffMs));
@@ -133,7 +134,7 @@ const subscriber = new Redis({
   lazyConnect: true,
   retryStrategy: (times) => {
     const delay = Math.min(times * 1000, 10000); // Max 10s between retries
-    console.log(`[Redis Subscriber] Reconnecting in ${delay}ms (attempt ${times})`);
+    logger.info(`[Redis Subscriber] Reconnecting in ${delay}ms (attempt ${times})`);
     return delay;
   },
   connectTimeout: 10000, // 10s
@@ -141,15 +142,15 @@ const subscriber = new Redis({
 });
 
 subscriber.on('error', (err) => {
-  console.error('[Redis Subscriber] Connection error:', err.message);
+  logger.error('[Redis Subscriber] Connection error:', err.message);
 });
 
 subscriber.on('reconnecting', () => {
-  console.log('[Redis Subscriber] Reconnecting to Redis...');
+  logger.info('[Redis Subscriber] Reconnecting to Redis...');
 });
 
 subscriber.on('ready', () => {
-  console.log('[Redis Subscriber] Connected to Redis successfully');
+  logger.info('[Redis Subscriber] Connected to Redis successfully');
 });
 
 // ── Initialization ────────────────────────────────────────────────────────────
@@ -165,7 +166,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
 
   // Subscribe to all campaign channels (pattern match)
   await subscriber.psubscribe('campaign:*');
-  console.log('[Redis Subscriber] Subscribed to pattern: campaign:*');
+  logger.info('[Redis Subscriber] Subscribed to pattern: campaign:*');
 
   subscriber.on('pmessage', async (_pattern: string, _channel: string, message: string) => {
     try {
@@ -174,18 +175,18 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
       try {
         data = JSON.parse(message) as AgentUpdatePayload;
       } catch {
-        console.error('[Redis Subscriber] Failed to parse message:', message);
+        logger.error('[Redis Subscriber] Failed to parse message:', message);
         return;
       }
 
       if (!data || typeof data !== 'object') {
-        console.error('[Redis Subscriber] Message is not a valid object:', message);
+        logger.error('[Redis Subscriber] Message is not a valid object:', message);
         return;
       }
 
       const { campaign_id, status, outputs, timestamp, agent } = data;
       if (!campaign_id) {
-        console.error('[Redis Subscriber] Missing campaign_id in message:', message);
+        logger.error('[Redis Subscriber] Missing campaign_id in message:', message);
         return;
       }
 
@@ -201,7 +202,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
           },
         });
       } catch (err) {
-        console.error(`[Redis Subscriber] Failed to load campaign record for event:`, err);
+        logger.error(`[Redis Subscriber] Failed to load campaign record for event:`, err);
         return;
       }
 
@@ -210,7 +211,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
       }
 
       if (isDuplicateEvent(campaign_id, agent, status, timestamp)) {
-        console.log(`[Redis Subscriber] Discarding duplicate event: ${campaign_id}:${agent}:${status}:${timestamp}`);
+        logger.info(`[Redis Subscriber] Discarding duplicate event: ${campaign_id}:${agent}:${status}:${timestamp}`);
         return;
       }
 
@@ -311,13 +312,13 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
               outputs: currentOutputs,
             });
           }).catch(async (err: any) => {
-            console.error(`[Redis Subscriber DB Queue] CRITICAL: Intermediate DB write failed after retries | campaign=${campaign_id} | error=${err.message}`);
+            logger.error(`[Redis Subscriber DB Queue] CRITICAL: Intermediate DB write failed after retries | campaign=${campaign_id} | error=${err.message}`);
             try {
               const dlqKey = `dlq:campaign_db_write:${campaign_id}:${Date.now()}`;
               await redis.set(dlqKey, JSON.stringify({ campaign_id, agent: data.agent, status: data.status, timestamp: data.timestamp, error: err.message, payload: data }), 'EX', 86400 * 7);
-              console.log(`[Redis Subscriber] Saved failed DB write to Redis DLQ: ${dlqKey}`);
+              logger.info(`[Redis Subscriber] Saved failed DB write to Redis DLQ: ${dlqKey}`);
             } catch (dlqErr) {
-              console.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
+              logger.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
             }
             io.to(`campaign:${campaign_id}`).emit('agent_update', { ...data, db_persisted: false });
           });
@@ -341,7 +342,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 'completed'
               );
               io.to(`campaign:${campaign_id}`).emit('campaign_complete', data);
-              console.log(`[Redis Subscriber] Campaign completed and saved to DB | id=${campaign_id}`);
+              logger.info(`[Redis Subscriber] Campaign completed and saved to DB | id=${campaign_id}`);
 
             } else if (status === 'awaiting_human_approval') {
               const campaign = await prisma.campaign.findUnique({
@@ -417,7 +418,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
 
               io.to(`campaign:${campaign_id}`).emit('human_approval_required', data);
               io.to(`campaign:${campaign_id}`).emit('awaiting_human_approval', data);
-              console.log(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);
+              logger.info(`[Redis Subscriber] Campaign awaiting human approval | id=${campaign_id}`);
 
             } else if (status === 'failed') {
               let finalOutputs = outputs;
@@ -441,16 +442,16 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
                 data.error ?? 'Unknown error'
               );
               io.to(`campaign:${campaign_id}`).emit('campaign_failed', data);
-              console.log(`[Redis Subscriber] Campaign failed | id=${campaign_id} | error=${data.error}`);
+              logger.info(`[Redis Subscriber] Campaign failed | id=${campaign_id} | error=${data.error}`);
             }
           }).catch(async (err: any) => {
-            console.error(`[Redis Subscriber DB Queue] CRITICAL: Terminal DB update failed after retries | campaign=${campaign_id} | status=${status} | error=${err.message}`);
+            logger.error(`[Redis Subscriber DB Queue] CRITICAL: Terminal DB update failed after retries | campaign=${campaign_id} | status=${status} | error=${err.message}`);
             try {
               const dlqKey = `dlq:campaign_db_write:${campaign_id}:${Date.now()}`;
               await redis.set(dlqKey, JSON.stringify({ campaign_id, status, error: err.message, payload: data }), 'EX', 86400 * 7);
-              console.log(`[Redis Subscriber] Saved terminal failed DB write to Redis DLQ: ${dlqKey}`);
+              logger.info(`[Redis Subscriber] Saved terminal failed DB write to Redis DLQ: ${dlqKey}`);
             } catch (dlqErr) {
-              console.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
+              logger.error(`[Redis Subscriber] Failed to save DB write to Redis DLQ:`, dlqErr);
             }
             // Emit terminal socket fallback so UI doesn't hang indefinitely
             if (status === 'campaign_complete') io.to(`campaign:${campaign_id}`).emit('campaign_complete', { ...data, db_persisted: false });
@@ -467,7 +468,7 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
         }
       }
     } catch (err: any) {
-      console.error('[Redis Subscriber] Unexpected error in pmessage handler:', err.message || err);
+      logger.error('[Redis Subscriber] Unexpected error in pmessage handler:', err.message || err);
     }
   });
 }
@@ -478,14 +479,14 @@ export async function initRedisSubscriber(io: Server): Promise<void> {
  */
 export async function shutdownRedisSubscriber(): Promise<void> {
   try {
-    console.log('[Redis Subscriber] Shutting down...');
+    logger.info('[Redis Subscriber] Shutting down...');
     if (subscriber.status === 'ready') {
       await subscriber.punsubscribe('campaign:*');
-      console.log('[Redis Subscriber] Unsubscribed from pattern: campaign:*');
+      logger.info('[Redis Subscriber] Unsubscribed from pattern: campaign:*');
     }
     await subscriber.quit();
-    console.log('[Redis Subscriber] Disconnected from Redis successfully');
+    logger.info('[Redis Subscriber] Disconnected from Redis successfully');
   } catch (err: any) {
-    console.error('[Redis Subscriber] Error during shutdown:', err.message);
+    logger.error('[Redis Subscriber] Error during shutdown:', err.message);
   }
 }
