@@ -308,14 +308,14 @@ const SupportContent: React.FC = () => {
                 {/* Contact Options */}
                 <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <a
-                    href="mailto:info@novateches.com"
+                    href="mailto:ahishek0111@gmail.com"
                     className="flex items-center gap-3 px-6 py-4 bg-[#111118] border border-[#2A2A38] rounded-xl transition-all hover:bg-[#1b1b20] hover:border-[#464554]"
-                    style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                    style={{ background: '#111118', borderColor: '#2A2A38' }}
                   >
-                    <Mail size={24} className="text-sky-400 filter drop-shadow-[0_0_8px_rgba(56,189,248,0.7)]" />
+                    <Mail size={16} style={{ color: '#6366F1' }} />
                     <div className="text-left">
                       <div className="text-xs mb-1" style={{ color: '#8B8B9E' }}>Email Us</div>
-                      <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>info@novateches.com</div>
+                      <div className="text-sm font-medium" style={{ color: '#F1F1F3' }}>ahishek0111@gmail.com</div>
                     </div>
                   </a>
                   <a

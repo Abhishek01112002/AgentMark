@@ -450,6 +450,4 @@ curl -X DELETE http://localhost:5003/api/developer/keys/<KEY_ID> \
 
 ---
 
-## License
-
-Developed by **Novateches Software Pvt Ltd**. All Rights Reserved.
+Authored & Maintained by **Abhishek**. Released under the **MIT License**.

@@ -42,7 +42,7 @@ export const Footer = memo(() => {
 
           {/* Right: Copyright */}
           <div className="text-xs font-mono text-[#4A4A5E] text-center md:text-right">
-            © 2025 Novateches Software Pvt Ltd. All rights reserved.
+            © 2026 AgentMark. Authored & Maintained by Abhishek. All rights reserved.
           </div>
 
         </div>

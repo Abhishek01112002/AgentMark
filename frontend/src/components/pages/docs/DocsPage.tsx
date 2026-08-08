@@ -839,14 +839,14 @@ const sections: DocSection[] = [
               </div>
               <div>
                 <strong className="text-white text-base block font-bold">Email Us</strong>
-                <span className="text-xs text-[#a5b4fc] font-mono">info@novateches.com</span>
+                <span className="text-xs text-[#a5b4fc] font-mono">ahishek0111@gmail.com</span>
               </div>
             </div>
             <p className="text-xs md:text-sm text-slate-400 leading-relaxed mb-5">
               Send our engineering team an email for detailed technical inquiries or billing assistance.
             </p>
             <a
-              href="mailto:info@novateches.com"
+              href="mailto:ahishek0111@gmail.com"
               className="mt-auto inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-xs font-bold text-indigo-300 hover:text-white transition-all cursor-pointer"
             >
               Send Email <ExternalLink size={14} />

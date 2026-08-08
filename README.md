@@ -758,4 +758,4 @@ logger.error("LLM API call failed: %s", e)  # always visible + Sentry alert
 | Log delivery | stdout → Docker/PM2 (built-in) | **$0.00** |
 | **Total** | | **$0.00/month** |
 
-Developed by **Novateches Software Pvt Ltd**. All Rights Reserved.
+Authored & Maintained by **Abhishek**. Released under the **MIT License**.
