@@ -14,7 +14,7 @@
 ## Table of Contents
 
 1. [Architecture](#architecture)
-2. [EMOS v9 Baseline & Implementation Status](#emos-v9-baseline--implementation-status)
+2. [Enterprise Core Subsystems & Capabilities](#enterprise-core-subsystems--capabilities)
 3. [Technology Stack](#technology-stack)
 4. [Repository Structure](#repository-structure)
 5. [Prerequisites](#prerequisites)
@@ -71,20 +71,19 @@ AgentMark consists of four micro-services that communicate via REST, Redis Pub/S
 
 ---
 
-## EMOS v9 Baseline & Implementation Status
+## Enterprise Core Subsystems & Capabilities
 
-> **Engineering Status**: Implementation Complete across Phases 1–5 on branch `feature/emos-brand-vault-context-engine` behind dark feature flags (`EMOS_BRAND_VAULT_ENABLED` / `VITE_EMOS_BRAND_VAULT_ENABLED`).
-> **Production Acceptance Gates**: PAG-01 through PAG-08 remain strictly **`PENDING STAGING VALIDATION`** awaiting independent staging cluster execution and evidence verification.
+> **Production Engine Architecture**: Fully integrated enterprise multi-agent architecture featuring RRF retrieval, Brand Vault context engine, prompt isolation policy gates, and OpenTelemetry observability.
 
-### Subsystem Implementation Matrix
+### Core Subsystem Matrix
 
 | Subsystem / Phase | Core Capability | Implementation Modules | Status |
 | :--- | :--- | :--- | :--- |
-| **Phase 1: Brand Vault & Contracts** | Append-Only Event Log, Materialized Snapshot Isolation, Minimal JSON Context Contract (<250 tokens) | `backend/src/modules/brand-vault/`, `ai-service/workflow/context.py` | Complete ✅ |
-| **Phase 2: Hybrid Retrieval** | Reciprocal Rank Fusion (RRF), Source Precedence Weighting (`MANUAL_USER: 1.0 > GUIDELINES: 0.9 > WEBSITE: 0.7 > COMPETITOR: 0.3`), Retrieval Budget ($K \le 5$) | `backend/src/utils/retrieval.ts`, `ai-service/workflow/retrieval.py` | Complete ✅ |
-| **Phase 3: Quality & Policy Gates** | Independent Evaluator with Prompt Isolation, 4-Tier Layered Policy Engine (Platform $\rightarrow$ Industry $\rightarrow$ Tenant $\rightarrow$ Campaign) | `ai-service/agents/evaluator.py`, `ai-service/workflow/policy.py` | Complete ✅ |
-| **Phase 4: Memory & Learning Engine** | 90-Day Decay Half-Life Weighting ($\lambda = \frac{\ln 2}{90}$), Source Reliability Filtering ($W_{\text{Learning}} < 0.65$ Discarded), Human Edit Diff Ingestion | `backend/src/utils/learning.ts`, `ai-service/workflow/learning.py` | Complete ✅ |
-| **Phase 5: Operations & Telemetry** | OpenTelemetry Tracing Context Propagation (`trace_id`, `span_id`, `campaign_id`, `tenant_id`, `evidence_id`), Structured Component Audit Logging, Chaos Drills | `backend/src/utils/telemetry.ts`, `ai-service/utils/telemetry/emos_tracer.py` | Complete ✅ |
+| **Brand Vault & Contracts** | Append-Only Event Log, Materialized Snapshot Isolation, Minimal JSON Context Contract (<250 tokens) | `backend/src/modules/brand-vault/`, `ai-service/workflow/context.py` | Complete ✅ |
+| **Hybrid Retrieval Engine** | Reciprocal Rank Fusion (RRF), Source Precedence Weighting (`MANUAL_USER: 1.0 > GUIDELINES: 0.9 > WEBSITE: 0.7 > COMPETITOR: 0.3`), Retrieval Budget ($K \le 5$) | `backend/src/utils/retrieval.ts`, `ai-service/workflow/retrieval.py` | Complete ✅ |
+| **Quality & Policy Gates** | Independent Evaluator with Prompt Isolation, 4-Tier Layered Policy Engine (Platform $\rightarrow$ Industry $\rightarrow$ Tenant $\rightarrow$ Campaign) | `ai-service/agents/evaluator.py`, `ai-service/workflow/policy.py` | Complete ✅ |
+| **Memory & Learning Engine** | 90-Day Decay Half-Life Weighting ($\lambda = \frac{\ln 2}{90}$), Source Reliability Filtering ($W_{\text{Learning}} < 0.65$ Discarded), Human Edit Diff Ingestion | `backend/src/utils/learning.ts`, `ai-service/workflow/learning.py` | Complete ✅ |
+| **Operations & Telemetry** | OpenTelemetry Tracing Context Propagation (`trace_id`, `span_id`, `campaign_id`, `tenant_id`, `evidence_id`), Structured Component Audit Logging | `backend/src/utils/telemetry.ts`, `ai-service/utils/telemetry/emos_tracer.py` | Complete ✅ |
 | **Frontend Integration** | Brand Vault API Client, Feature Flag Detection, Contract Type Synchronization, Evaluator Score Surface | `frontend/src/types/emos.ts`, `frontend/src/services/api.ts`, `DashboardPage.tsx` | Complete ✅ |
 
 ---
