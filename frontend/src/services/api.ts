@@ -35,7 +35,15 @@ api.interceptors.request.use(
     const llmConfig = llmSettingsService.get(userId);
     const payload = llmSettingsService.toHeaderPayload(llmConfig);
     const hasKeys = Object.values(payload).some((v) => v && v !== null);
-    if (hasKeys) {
+    // Only attach LLM config to requests that actually invoke AI models.
+    // Sending API keys on GETs, notification polls, project fetches, etc.
+    // unnecessarily exposes them in access logs, proxies, and error-tracking breadcrumbs.
+    const requestUrl = config.url ?? '';
+    const needsLlmConfig =
+      hasKeys &&
+      (requestUrl.includes('/campaigns') || requestUrl.includes('/focus-group')) &&
+      (config.method === 'post' || config.method === 'put');
+    if (needsLlmConfig) {
       config.headers['x-llm-config'] = JSON.stringify(payload);
     }
 

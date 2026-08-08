@@ -103,6 +103,59 @@ def validate_url_ip_resolution(url: str) -> Optional[str]:
     return url
 
 
+async def validate_url_ip_resolution_async(url: str) -> "Optional[str]":
+    """
+    Async variant of validate_url_ip_resolution for use inside coroutines.
+    The synchronous socket.getaddrinfo() system call is offloaded to a thread-pool
+    worker via asyncio.to_thread so the event loop is not blocked during DNS
+    resolution (which can take 100–1000 ms on slow resolvers or cold caches).
+    The synchronous validate_url_ip_resolution() is preserved for callers that
+    run in non-async contexts (e.g. the sync wrapper fetch_brand_website_dna).
+    """
+    if not url or not isinstance(url, str):
+        return None
+
+    url = url.strip()
+    try:
+        parsed = urllib.parse.urlparse(url)
+    except Exception:
+        return None
+
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return None
+
+    hostname = parsed.hostname.strip("[]")  # Strip brackets for IPv6 literals
+
+    # Direct IP check is synchronous and CPU-only — safe on the event loop thread.
+    if is_ip_private_or_reserved(hostname):
+        logger.warning("\U0001f6e1\ufe0f [SSRF GUARD] Blocked direct private IP attempt: %s", hostname)
+        return None
+
+    # DNS resolution is a blocking I/O call — offload it to avoid stalling the loop.
+    try:
+        addr_info = await asyncio.to_thread(
+            socket.getaddrinfo, hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )
+        resolved_ips = {info[4][0] for info in addr_info}
+
+        for resolved_ip in resolved_ips:
+            if is_ip_private_or_reserved(resolved_ip):
+                logger.warning(
+                    "\U0001f6e1\ufe0f [SSRF GUARD] Blocked DNS Rebinding attempt! Host '%s' resolved to internal IP '%s'",
+                    hostname,
+                    resolved_ip,
+                )
+                return None
+    except socket.gaierror as err:
+        logger.debug("DNS resolution failed for '%s': %s", hostname, err)
+        return None
+    except Exception as exc:
+        logger.warning("Unexpected error during async DNS validation for '%s': %s", hostname, exc)
+        return None
+
+    return url
+
+
 def clean_html_content_safe(raw_html: str) -> str:
     """
     Extract clean, high-signal text from raw HTML using BeautifulSoup (ReDoS Safe).
@@ -165,7 +218,7 @@ async def fetch_brand_website_dna_async(
     Returns structured Brand DNA or None if offline/blocked.
     """
     target_url = None
-    if brand_url and validate_url_ip_resolution(brand_url):
+    if brand_url and await validate_url_ip_resolution_async(brand_url):
         target_url = brand_url.strip()
 
     # Search fallback if brand_url not provided
@@ -175,13 +228,13 @@ async def fetch_brand_website_dna_async(
             search_res = await asyncio.to_thread(search_web, f"official website {brand_name}")
             if search_res and getattr(search_res, "sources", None):
                 for source in search_res.sources:
-                    if validate_url_ip_resolution(source.url):
+                    if await validate_url_ip_resolution_async(source.url):
                         target_url = source.url
                         break
         except Exception as exc:
             logger.warning("Brand DNA search resolution error: %s", exc)
 
-    if not target_url or not validate_url_ip_resolution(target_url):
+    if not target_url or not await validate_url_ip_resolution_async(target_url):
         logger.info("ℹ️ [BRAND DNA] Skipped: No validated public URL for brand '%s'", brand_name)
         return None
 
@@ -208,7 +261,7 @@ async def fetch_brand_website_dna_async(
 
             for _ in range(max_redirects + 1):
                 # Validate current URL target BEFORE making request
-                if not validate_url_ip_resolution(curr_url):
+                if not await validate_url_ip_resolution_async(curr_url):
                     logger.warning("🛡️ [SSRF GUARD] Redirect target blocked: %s", curr_url)
                     return None
 

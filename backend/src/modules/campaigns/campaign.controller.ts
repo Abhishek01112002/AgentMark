@@ -1923,19 +1923,18 @@ export const exportCampaignPdf = async (req: AuthRequest, res: Response, next: N
       `Executive Summary: ${publisher.executive_summary || 'N/A'}`,
       `Publishing Decision: ${publisher.publishing_decision || 'N/A'}`,
     ];
-    const exportDir = path.join(os.tmpdir(), 'agentmark-exports');
-    await fs.mkdir(exportDir, { recursive: true });
-    const fileName = `${sanitizeExportName(campaign.name)}-${campaign.id}.pdf`;
-    const filePath = path.join(exportDir, fileName);
-    await fs.writeFile(filePath, buildMinimalPdf(campaign.name, lines));
 
-    res.json({
-      success: true,
-      campaignId: campaign.id,
-      fileName,
-      filePath,
-      downloadUrl: filePath,
-    });
+    // Build PDF in memory and stream directly to the client.
+    // Writing to os.tmpdir() and returning a filesystem path as 'downloadUrl'
+    // produces a path browsers cannot navigate to — there is no static file route
+    // to serve it. Streaming the buffer is correct and avoids leaking temp files.
+    const pdfBuffer = buildMinimalPdf(campaign.name, lines);
+    const fileName = `${sanitizeExportName(campaign.name)}-${campaign.id}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', String(pdfBuffer.length));
+    res.send(pdfBuffer);
   } catch (error) {
     next(error);
   }
@@ -2027,8 +2026,18 @@ export const compareCampaigns = async (req: AuthRequest, res: Response, next: Ne
       });
     }
 
-    const targetScore = target.reviewScore ?? 75.0;
-    const baselineScore = baseline?.reviewScore ?? 85.0;
+    const targetScore = target.reviewScore;
+    const baselineScore = baseline?.reviewScore ?? null;
+
+    // Reject the comparison if the target has no real review score.
+    // Substituting invented fallback values (e.g. 75 vs 85) produces a delta
+    // and insights that look authoritative but are entirely fabricated.
+    if (targetScore === null || targetScore === undefined) {
+      return res.status(422).json({
+        error: 'Target campaign does not have a review score yet. Only completed campaigns with scores can be compared.',
+        campaignStatus: target.status,
+      });
+    }
 
     res.json({
       success: true,
@@ -2045,9 +2054,11 @@ export const compareCampaigns = async (req: AuthRequest, res: Response, next: Ne
           reviewScore: baselineScore,
           status: baseline.status,
         } : null,
-        scoreDelta: Number((targetScore - baselineScore).toFixed(2)),
+        scoreDelta: baselineScore !== null ? Number((targetScore - baselineScore).toFixed(2)) : null,
         insights: [
-          `Target review score is ${targetScore >= baselineScore ? 'higher' : 'lower'} than baseline (${targetScore} vs ${baselineScore}).`,
+          baselineScore !== null
+            ? `Target review score is ${targetScore >= baselineScore ? 'higher' : 'lower'} than baseline (${targetScore} vs ${baselineScore}).`
+            : `Target review score: ${targetScore}. No baseline score is available for comparison.`,
           `Target primary goal: "${target.primaryGoal}". Baseline goal: "${baseline?.primaryGoal || 'N/A'}".`,
           `Recommendation: Adapt high-converting CTA structure from baseline into target campaign copy.`,
         ],
@@ -2077,20 +2088,22 @@ export const verifyChannelCredentials = async (req: AuthRequest, res: Response, 
       return res.status(404).json({ error: 'Campaign not found' });
     }
 
+    // No actual OAuth tokens or platform credentials are stored for any channel.
+    // Returning UNCONFIGURED for all channels so callers are not misled into
+    // treating any channel as ready to publish when no verification has occurred.
     const channelReports = requestedChannels.map((channel: string) => {
       const ch = String(channel).toLowerCase();
-      const isVerified = ['instagram', 'facebook', 'linkedin', 'twitter', 'email', 'sendgrid'].includes(ch);
       return {
         channel: ch,
-        status: isVerified ? 'VERIFIED' : 'UNCONFIGURED',
-        readyToPublish: isVerified,
-        lastVerifiedAt: new Date().toISOString(),
+        status: 'UNCONFIGURED',
+        readyToPublish: false,
+        lastVerifiedAt: null,
       };
     });
 
     res.json({
       success: true,
-      status: 'Verified',
+      status: 'Unconfigured',
       campaignId: campaign.id,
       campaignName: campaign.name,
       channels: channelReports,

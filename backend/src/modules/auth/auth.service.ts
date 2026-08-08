@@ -68,33 +68,19 @@ export const authService = {
   },
 
   async updateProfile(userId: string, data: { name?: string; avatarUrl?: string | null }) {
-    const updateData: Record<string, unknown> = {};
+    const updateData: { name?: string; avatarUrl?: string | null } = {};
     if (typeof data.name === 'string') updateData.name = data.name;
     if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
 
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
-
-    if (updateData.name !== undefined) {
-      values.push(updateData.name);
-      setClauses.push(`"name" = $${values.length}`);
-    }
-
-    if (updateData.avatarUrl !== undefined) {
-      values.push(updateData.avatarUrl);
-      setClauses.push(`"avatarUrl" = $${values.length}`);
-    }
-
-    if (setClauses.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return this.getUserById(userId);
     }
 
-    values.push(userId);
-    const rows = await prisma.$queryRawUnsafe<UserRow[]>(
-      `UPDATE users SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING id, email, name, "createdAt", "avatarUrl"`,
-      ...values
-    );
+    await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
 
-    return rows[0] || null;
+    return this.getUserById(userId);
   },
 };

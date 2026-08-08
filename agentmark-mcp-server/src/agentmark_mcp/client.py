@@ -660,7 +660,81 @@ class AgentMarkClient:
         return await self.post(f"/api/projects/{project_id}/memory/clear", {})
 
     async def export_campaign_pdf(self, campaign_id: str) -> Dict[str, Any]:
-        return await self.get(f"/api/campaigns/{campaign_id}/export/pdf")
+        """
+        Download the campaign PDF (binary) and save it to the local temp directory.
+
+        The backend now returns Content-Type: application/pdf with a binary body.
+        Using self.get() → response.json() on that body raises JSONDecodeError.
+        We handle the binary response here and return a dict with a local file
+        path so that tools/extended.py and server.py need no changes.
+        """
+        import os
+        import tempfile
+
+        headers = self._build_headers()
+        try:
+            logger.info("GET %s/api/campaigns/%s/export/pdf", self.base_url, campaign_id)
+            response = await self.client.get(
+                f"/api/campaigns/{campaign_id}/export/pdf",
+                headers=headers,
+            )
+
+            if response.status_code in (429, 502, 503, 504):
+                raise TransientAPIError(
+                    "Transient status %d on PDF export for campaign %s: %s"
+                    % (response.status_code, campaign_id, response.text[:200])
+                )
+
+            response.raise_for_status()
+
+            # Extract filename from Content-Disposition if the server provided one.
+            file_name = f"campaign-{campaign_id}.pdf"
+            content_disposition = response.headers.get("content-disposition", "")
+            if "filename=" in content_disposition:
+                try:
+                    file_name = (
+                        content_disposition.split("filename=")[-1]
+                        .strip()
+                        .strip('"')
+                        .strip("'")
+                    )
+                except Exception:
+                    pass
+
+            local_path = os.path.join(tempfile.gettempdir(), file_name)
+            with open(local_path, "wb") as fh:
+                fh.write(response.content)
+
+            logger.info(
+                "Campaign PDF saved | campaign=%s | path=%s | bytes=%d",
+                campaign_id,
+                local_path,
+                len(response.content),
+            )
+            return {
+                "success": True,
+                "downloadUrl": local_path,
+                "fileName": file_name,
+                "campaignId": campaign_id,
+            }
+
+        except httpx.HTTPStatusError as exc:
+            logger.error(
+                "HTTP %d on PDF export | campaign=%s | body=%s",
+                exc.response.status_code,
+                campaign_id,
+                exc.response.text[:400],
+            )
+            raise RuntimeError(
+                "AgentMark API returned %d on PDF export for campaign '%s': %s"
+                % (exc.response.status_code, campaign_id, exc.response.text[:400])
+            ) from exc
+
+        except httpx.RequestError as exc:
+            raise TransientAPIError(
+                "Request error on PDF export for campaign '%s': %s" % (campaign_id, exc)
+            ) from exc
+
 
     async def export_campaign_json(self, campaign_id: str) -> Dict[str, Any]:
         return await self.get(f"/api/campaigns/{campaign_id}/export/json")
