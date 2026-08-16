@@ -42,23 +42,26 @@ import { mcpLoggerMiddleware } from './middlewares/mcp-logger.middleware';
 export const app = express();
 const PORT = process.env.PORT || 5003;
 
-// Helmet secures Express by setting various HTTP headers
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost',
-  'http://127.0.0.1',
-  'http://localhost:80',
-  'http://localhost:8080',
-  'http://localhost:3000',
-];
-if (process.env.FRONTEND_URL) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
-}
+const isProduction = process.env.NODE_ENV === 'production';
+const frontendUrl = process.env.FRONTEND_URL;
+
+export const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // Allow non-browser requests or same-origin
+  if (frontendUrl && (origin === frontendUrl || origin === frontendUrl.replace(/\/$/, ''))) {
+    return true;
+  }
+  // In development/test, allow all localhost variants
+  if (!isProduction) {
+    if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+      return true;
+    }
+  }
+  return false;
+};
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -74,7 +77,7 @@ app.use(express.json({ limit: '1mb' }));
 
 app.use(mcpLoggerMiddleware);
 
-app.get('/health', async (req, res) => {
+const handleHealthCheck = async (req: express.Request, res: express.Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     const { redis } = await import('./utils/redis');
@@ -90,7 +93,10 @@ app.get('/health', async (req, res) => {
   } catch (err: any) {
     res.status(503).json({ status: 'degraded', error: err.message || 'Service Degraded' });
   }
-});
+};
+
+app.get('/health', handleHealthCheck);
+app.get('/api/health', handleHealthCheck);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
@@ -114,7 +120,13 @@ const httpServer = http.createServer(app);
 
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by Socket.io CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },

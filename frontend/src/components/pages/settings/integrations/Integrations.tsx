@@ -304,7 +304,7 @@ export const Integrations: React.FC = () => {
     setStepStates({ detect: 'idle', backup: 'idle', key: 'idle', terminate: 'idle', merge: 'idle', relaunch: 'idle' });
     setDiagnostic(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location ? `${window.location.protocol}//${window.location.hostname}:5003` : 'http://localhost:5003');
     const token = localStorage.getItem('token');
 
     try {
@@ -405,7 +405,7 @@ export const Integrations: React.FC = () => {
     }
   };
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+  const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location ? `${window.location.protocol}//${window.location.hostname}:5003` : 'http://localhost:5003');
   const configJsonString = JSON.stringify({
     mcpServers: {
       agentmark: {

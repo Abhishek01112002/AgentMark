@@ -19,7 +19,7 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
   const steps = [
     {
       label: 'Open Integrations Settings',
-      desc: isLocal ? 'Verify that AgentMark server is running locally on port 5001.' : 'Verify AgentMark Cloud instance is active.',
+      desc: isLocal ? 'Verify that AgentMark server is running locally on port 5003.' : 'Verify AgentMark Cloud instance is active.',
       done: true,
     },
     {
@@ -44,7 +44,7 @@ export const OnboardingPanel: React.FC<OnboardingPanelProps> = ({ isLocal, statu
   const faqs = [
     {
       q: 'Claude cannot find the AgentMark tools',
-      a: 'Ensure you completely Quit Claude from your OS system tray (not just closing the window) and restart it. Also, verify the local backend server is running on port 5001.',
+      a: 'Ensure you completely Quit Claude from your OS system tray (not just closing the window) and restart it. Also, verify the local backend server is running on port 5003.',
     },
     {
       q: 'Write permissions or locked file error',

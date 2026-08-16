@@ -25,7 +25,7 @@ SERVICE_HOST = os.getenv("SERVICE_HOST", os.getenv("HOST", "0.0.0.0"))
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
 # Backend Service URL
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5001")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5003")
 
 # WebSocket Configuration
 WS_URL = os.getenv("WS_URL", "ws://localhost:5002")

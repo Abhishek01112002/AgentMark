@@ -5,15 +5,15 @@ services:
     image: postgres:16-alpine
     container_name: agentmark-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: agentmark
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-agentmark}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
       target: builder
     container_name: agentmark-db-migrate
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agentmark}?schema=public
     command: ["npx", "prisma", "migrate", "deploy"]
     depends_on:
       postgres:
@@ -51,15 +51,18 @@ services:
       dockerfile: Dockerfile
     container_name: agentmark-backend
     environment:
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 5003
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-agentmark}?schema=public
       REDIS_URL: redis://redis:6379
       REDIS_HOST: redis
       REDIS_PORT: 6379
       AI_SERVICE_URL: http://ai-service:5002
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       CLAUDE_DESKTOP_DISABLED: "true"
-      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
-      JWT_SECRET: "dummy_jwt_secret_for_docker"
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-service-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "5003:5003"
     depends_on:
@@ -76,9 +79,17 @@ services:
       dockerfile: Dockerfile
     container_name: agentmark-ai-service
     environment:
+      ENV: ${ENV:-development}
       PORT: 5002
       REDIS_URL: redis://redis:6379
-      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-service-secret-change-in-production}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "5002:5002"
     depends_on:

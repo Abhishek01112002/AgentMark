@@ -5,13 +5,13 @@ services:
     image: postgres:16-alpine
     container_name: agentmark-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: agentmark
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-agentmark}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
       target: builder
     container_name: agentmark-db-migrate
     environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable must be set}@postgres:5432/${POSTGRES_DB:-agentmark}?schema=public
     command: ["npx", "prisma", "migrate", "deploy"]
     depends_on:
       postgres:
@@ -52,14 +52,17 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5003
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD environment variable must be set}@postgres:5432/${POSTGRES_DB:-agentmark}?schema=public
       REDIS_URL: redis://redis:6379
       REDIS_HOST: redis
       REDIS_PORT: 6379
       AI_SERVICE_URL: http://ai-service:5002
+      FRONTEND_URL: ${FRONTEND_URL:?FRONTEND_URL environment variable must be set}
       CLAUDE_DESKTOP_DISABLED: "true"
-      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
-      JWT_SECRET: "dummy_jwt_secret_for_docker"
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET environment variable must be set}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET environment variable must be set}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-error}
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,7 +71,7 @@ services:
       db-migrate:
         condition: service_completed_successfully
     restart: unless-stopped
-    # Use a tmpfs mount for temporary exports to ensure the container can run read-only root if desired
+    # Use a tmpfs mount for temporary exports to ensure container can run read-only root if desired
     tmpfs:
       - /tmp
 
@@ -79,9 +82,18 @@ services:
     container_name: agentmark-ai-service
     init: true
     environment:
+      ENV: production
       PORT: 5002
       REDIS_URL: redis://redis:6379
-      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?INTERNAL_SERVICE_SECRET environment variable must be set}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      LOG_LEVEL: ${LOG_LEVEL:-error}
     depends_on:
       redis:
         condition: service_healthy
