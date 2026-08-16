@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS "provider_credentials" (
     "platform" TEXT NOT NULL,
     "encryptedMetadata" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "provider_credentials_pkey" PRIMARY KEY ("id")
 );
