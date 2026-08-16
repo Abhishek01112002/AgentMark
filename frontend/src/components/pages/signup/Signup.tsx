@@ -35,7 +35,7 @@ const SignUp = () => {
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (formData.password.length < 8) {
       return;
     }
 

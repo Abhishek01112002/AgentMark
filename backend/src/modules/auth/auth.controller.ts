@@ -27,7 +27,7 @@ export const signup = async (req: Request, res: Response) => {
     res.status(201).json({ message: 'User created successfully', ...result });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.errors[0]?.message || 'Validation error' });
     }
     res.status(400).json({ error: (error as Error).message });
   }
@@ -40,7 +40,7 @@ export const login = async (req: Request, res: Response) => {
     res.json({ message: 'Login successful', ...result });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json({ error: error.errors[0]?.message || 'Validation error' });
     }
     res.status(401).json({ error: (error as Error).message });
   }
