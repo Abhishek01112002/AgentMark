@@ -49,21 +49,19 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: builder
     container_name: agentmark-backend
     environment:
       PORT: 5003
       DATABASE_URL: postgresql://postgres:password@postgres:5432/agentmark?schema=public
       REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       AI_SERVICE_URL: http://ai-service:5002
       CLAUDE_DESKTOP_DISABLED: "true"
+      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
+      JWT_SECRET: "dummy_jwt_secret_for_docker"
     ports:
       - "5003:5003"
-    volumes:
-      # Mount only source folders to avoid node_modules native-binding conflicts on Windows hosts
-      - ./backend/src:/app/src
-      - ./backend/prisma:/app/prisma
-    command: ["npm", "run", "dev"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -80,17 +78,24 @@ services:
     environment:
       PORT: 5002
       REDIS_URL: redis://redis:6379
+      INTERNAL_SERVICE_SECRET: "dummy_secret_for_docker"
     ports:
       - "5002:5002"
-    volumes:
-      # Mount source folders to enable Uvicorn hot-reload
-      - ./ai-service/app:/app/app
-      - ./ai-service/templates:/app/templates
-      - ./ai-service/main.py:/app/main.py
-    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5002", "--reload"]
     depends_on:
       redis:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agentmark-frontend
+    ports:
+      - "5173:80"
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_started
 
 volumes:
   pgdata:
