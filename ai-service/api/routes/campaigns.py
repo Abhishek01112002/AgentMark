@@ -465,6 +465,10 @@ async def test_key_route(payload: TestKeyRequest):
     Test an API key by making a minimal LLM call.
     """
     try:
+        clean_key = (payload.api_key or "").strip().strip("'").strip('"')
+        if not clean_key:
+            return TestKeyResponse(success=False, message="API key is empty")
+
         if payload.provider.lower() == "tavily":
             from services.search_service import search_web
             result = await run_in_threadpool(
@@ -472,13 +476,13 @@ async def test_key_route(payload: TestKeyRequest):
                 "AgentMark marketing automation market trends",
                 None,
                 1,
-                payload.api_key,
+                clean_key,
             )
             if result.success:
                 return TestKeyResponse(success=True, message="Tavily API key is valid")
             return TestKeyResponse(success=False, message=result.error_message or "Tavily search failed")
 
-        config = {f"{payload.provider.lower()}_api_key": payload.api_key}
+        config = {f"{payload.provider.lower()}_api_key": clean_key}
         ctx = contextvars.copy_context()
 
         def _test_key_worker():
@@ -494,19 +498,20 @@ async def test_key_route(payload: TestKeyRequest):
             return TestKeyResponse(success=True, message="API key is valid")
         return TestKeyResponse(success=False, message="API returned empty response")
     except Exception as e:
+        logger.warning("Key test failed for provider %s: %s", payload.provider, str(e))
         error_msg = str(e).lower()
         if "bad credentials" in error_msg or ("github" in error_msg and "401" in error_msg):
             return TestKeyResponse(
                 success=False,
                 message="GitHub PAT invalid/expired (401 Bad Credentials). Check token string or accept terms at github.com/marketplace/models."
             )
-        if "invalid" in error_msg or "unauthorized" in error_msg or "not found" in error_msg or "401" in error_msg or "key" in error_msg:
+        if "quota" in error_msg or "rate" in error_msg or "429" in error_msg or "tokens per minute" in error_msg:
+            return TestKeyResponse(success=False, message="Groq rate limit exceeded (TPM/RPM). Please try again in 1 minute.")
+        if "invalid" in error_msg or "unauthorized" in error_msg or "401" in error_msg or "authentication" in error_msg or "incorrect api key" in error_msg:
             return TestKeyResponse(success=False, message="Invalid API key")
-        if "denied" in error_msg or "403" in error_msg:
+        if "denied" in error_msg or "403" in error_msg or "permission" in error_msg:
             return TestKeyResponse(success=False, message="Access denied — check API key permissions")
-        if "quota" in error_msg or "rate" in error_msg or "429" in error_msg:
-            return TestKeyResponse(success=False, message="Rate limited — try again later")
-        return TestKeyResponse(success=False, message=f"Connection failed: {str(e)[:80]}")
+        return TestKeyResponse(success=False, message=f"Verification failed: {str(e)[:100]}")
     finally:
         set_llm_config(None)
 
