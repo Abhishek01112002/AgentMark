@@ -23,6 +23,16 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
+CANDIDATE_MODELS = [
+    "groq/compound-mini",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
+    "llama-3.1-8b-instant",
+    "llama-3.3-70b-versatile",
+]
+
+
 class GroqClient(BaseLLMClient):
     """Groq API client with fail-fast provider-pool semantics."""
 
@@ -32,10 +42,32 @@ class GroqClient(BaseLLMClient):
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found")
 
-        self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        self.model = model or os.getenv("GROQ_MODEL", "groq/compound-mini")
 
         timeout_val = float(os.getenv("LLM_HTTP_TIMEOUT", "15.0"))
         self.client = Groq(api_key=self.api_key, max_retries=0, timeout=timeout_val)
+
+    def _create_completion(self, **kwargs):
+        models_to_try = [self.model] + [m for m in CANDIDATE_MODELS if m != self.model]
+        last_exc = None
+        for m in models_to_try:
+            try:
+                cur_kwargs = dict(kwargs)
+                cur_kwargs["model"] = m
+                response = self.client.chat.completions.create(**cur_kwargs)
+                if self.model != m:
+                    logger.info("Groq switched model from %s to working model %s", self.model, m)
+                    self.model = m
+                return response
+            except Exception as e:
+                err_str = str(e).lower()
+                if "does not exist" in err_str or "not found" in err_str or "access to it" in err_str or "404" in err_str:
+                    logger.warning("Groq model %s unavailable (%s), trying fallback model...", m, str(e)[:100])
+                    last_exc = e
+                    continue
+                raise e
+        if last_exc:
+            raise last_exc
 
     def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 4096, seed: int | None = None) -> str:
         try:
@@ -45,7 +77,6 @@ class GroqClient(BaseLLMClient):
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
             kwargs = {
-                "model": self.model,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": max_tokens,
@@ -53,12 +84,12 @@ class GroqClient(BaseLLMClient):
             if seed is not None:
                 kwargs["seed"] = seed
             try:
-                response = self.client.chat.completions.create(**kwargs)
+                response = self._create_completion(**kwargs)
             except Exception as e:
                 if "max_tokens" in str(e).lower() or "maximum" in str(e).lower():
-                    logger.warning("Groq max_tokens=%d rejected by model %s, falling back to 2048...", max_tokens, self.model)
+                    logger.warning("Groq max_tokens=%d rejected, falling back to 2048...", max_tokens)
                     kwargs["max_tokens"] = min(max_tokens, 2048)
-                    response = self.client.chat.completions.create(**kwargs)
+                    response = self._create_completion(**kwargs)
                 else:
                     raise e
 
@@ -89,9 +120,6 @@ IMPORTANT:
 - Follow the exact field names and types specified"""
 
         from utils.token_budget import TokenBudgetManager
-        # Groq llama-3.3-70b supports 128k context window — raised from 8000 to 16000 to
-        # prevent silent truncation of research instructions (TAM, market analysis) when
-        # LiteRAG context (5 Tavily searches + Brand DNA) is injected into the prompt.
         MAX_INPUT_BUDGET = 16000
         sys_tok = TokenBudgetManager.count_tokens(system_prompt or "")
         if sys_tok + TokenBudgetManager.count_tokens(enhanced_prompt) > MAX_INPUT_BUDGET:
@@ -108,8 +136,7 @@ IMPORTANT:
         try:
             self._wait_for_rate_limit()
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model,
+                response = self._create_completion(
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
@@ -117,18 +144,16 @@ IMPORTANT:
                 )
             except Exception as mode_exc:
                 if "max_tokens" in str(mode_exc).lower() or "maximum" in str(mode_exc).lower():
-                    logger.warning("Groq structured mode max_tokens=%d rejected, falling back to 4096...", max_tokens)
-                    response = self.client.chat.completions.create(
-                        model=self.model,
+                    logger.warning("Groq structured mode max_tokens=%d rejected, falling back to 2048...", max_tokens)
+                    response = self._create_completion(
                         messages=[{"role": "user", "content": enhanced_prompt}],
                         temperature=temperature,
-                        max_tokens=min(max_tokens, 4096),
+                        max_tokens=min(max_tokens, 2048),
                         response_format={"type": "json_object"},
                     )
-                elif "json" in str(mode_exc).lower():
+                elif "json" in str(mode_exc).lower() or "schema" in str(mode_exc).lower():
                     logger.warning("Groq json_object mode failed (%s), retrying standard generation...", mode_exc)
-                    response = self.client.chat.completions.create(
-                        model=self.model,
+                    response = self._create_completion(
                         messages=[{"role": "user", "content": enhanced_prompt}],
                         temperature=temperature,
                         max_tokens=max_tokens,

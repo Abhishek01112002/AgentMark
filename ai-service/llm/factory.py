@@ -48,9 +48,7 @@ def _create_client(provider: str, api_key: str, low_complexity: bool = False) ->
     if provider == "gemini":
         return GeminiClient(api_key=api_key)
     if provider == "groq":
-        # Use llama-3.1-8b-instant — available on Groq free tier.
-        # llama-3.3-70b-versatile requires premium access.
-        groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+        groq_model = os.getenv("GROQ_MODEL", "groq/compound-mini")
         return GroqClient(api_key=api_key, model=groq_model)
     raise ValueError(f"Unsupported provider: {provider}")
 
