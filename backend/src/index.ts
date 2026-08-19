@@ -48,8 +48,12 @@ const frontendUrl = process.env.FRONTEND_URL;
 
 export const isOriginAllowed = (origin: string | undefined): boolean => {
   if (!origin) return true; // Allow non-browser requests or same-origin
-  if (frontendUrl && (origin === frontendUrl || origin === frontendUrl.replace(/\/$/, ''))) {
-    return true;
+  if (frontendUrl) {
+    const allowed = frontendUrl.split(',').map((u) => u.trim().replace(/\/$/, ''));
+    const cleanOrigin = origin.replace(/\/$/, '');
+    if (allowed.includes(cleanOrigin)) {
+      return true;
+    }
   }
   // In development/test, allow all localhost variants
   if (!isProduction) {
