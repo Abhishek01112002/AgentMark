@@ -32,7 +32,7 @@ class GroqClient(BaseLLMClient):
         if not self.api_key:
             raise ValueError("GROQ_API_KEY not found")
 
-        self.model = model or os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.model = model or os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
         timeout_val = float(os.getenv("LLM_HTTP_TIMEOUT", "15.0"))
         self.client = Groq(api_key=self.api_key, max_retries=0, timeout=timeout_val)

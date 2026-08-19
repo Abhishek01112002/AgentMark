@@ -3,6 +3,7 @@ LLM factory with rate-aware provider failover.
 """
 
 import logging
+import os
 import time
 from contextvars import ContextVar
 
@@ -47,9 +48,9 @@ def _create_client(provider: str, api_key: str, low_complexity: bool = False) ->
     if provider == "gemini":
         return GeminiClient(api_key=api_key)
     if provider == "groq":
-        # Hybrid Split: 8b-instant for fast low-complexity tasks (14,400 RPD quota shield),
-        # 70b-versatile for complex reasoning/strategy tasks (1,000 RPD master planner).
-        groq_model = "llama-3.1-8b-instant" if low_complexity else "llama-3.3-70b-versatile"
+        # Use llama-3.1-8b-instant — available on Groq free tier.
+        # llama-3.3-70b-versatile requires premium access.
+        groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         return GroqClient(api_key=api_key, model=groq_model)
     raise ValueError(f"Unsupported provider: {provider}")
 
