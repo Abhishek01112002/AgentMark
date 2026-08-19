@@ -37,7 +37,7 @@ class GroqClient(BaseLLMClient):
         timeout_val = float(os.getenv("LLM_HTTP_TIMEOUT", "15.0"))
         self.client = Groq(api_key=self.api_key, max_retries=0, timeout=timeout_val)
 
-    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 8192, seed: int | None = None) -> str:
+    def generate(self, prompt: str, system_prompt: str | None = None, temperature: float = 0.7, max_tokens: int = 4096, seed: int | None = None) -> str:
         try:
             self._wait_for_rate_limit()
             messages = []
@@ -56,8 +56,8 @@ class GroqClient(BaseLLMClient):
                 response = self.client.chat.completions.create(**kwargs)
             except Exception as e:
                 if "max_tokens" in str(e).lower() or "maximum" in str(e).lower():
-                    logger.warning("Groq max_tokens=%d rejected by model %s, falling back to 4096...", max_tokens, self.model)
-                    kwargs["max_tokens"] = min(max_tokens, 4096)
+                    logger.warning("Groq max_tokens=%d rejected by model %s, falling back to 2048...", max_tokens, self.model)
+                    kwargs["max_tokens"] = min(max_tokens, 2048)
                     response = self.client.chat.completions.create(**kwargs)
                 else:
                     raise e
@@ -73,7 +73,7 @@ class GroqClient(BaseLLMClient):
         response_model: Type[T],
         system_prompt: str | None = None,
         temperature: float = 0.7,
-        max_tokens: int = 8192,
+        max_tokens: int = 4096,
         seed: int | None = None,
     ) -> T:
         schema = response_model.model_json_schema()

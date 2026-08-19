@@ -489,7 +489,7 @@ async def test_key_route(payload: TestKeyRequest):
           set_llm_config(config)
           try:
             client = get_llm_client(payload.provider)
-            return client.generate("Reply with a single word: ok")
+            return client.generate("Reply with a single word: ok", max_tokens=10)
           finally:
             set_llm_config(None)
 
