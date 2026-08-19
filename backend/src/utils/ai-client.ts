@@ -93,6 +93,21 @@ const getHeaders = (requestId?: string) => ({
 });
 
 export const aiServiceClient = {
+  async warmUp(timeoutMs = 75_000): Promise<void> {
+    const start = Date.now();
+    const pollInterval = 5_000;
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 8_000 });
+        if (res.status === 200) return;
+      } catch {
+        // Service still waking — wait and retry
+      }
+      await new Promise((r) => setTimeout(r, pollInterval));
+    }
+    throw new Error(`AI service did not respond within ${timeoutMs}ms`);
+  },
+
   async runCampaign(payload: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
     try {
       const response = await axios.post<AIServiceCampaignResponse>(
@@ -211,3 +226,25 @@ export async function runAIWorkflowBackground(
     });
   }
 }
+
+/**
+ * Warm-up the AI service by polling /health until it responds 200 or the
+ * timeout expires. This handles Render free-tier cold-starts (~50 s).
+ */
+export const warmUpAIService = async (timeoutMs = 75_000): Promise<void> => {
+  const start = Date.now();
+  const pollInterval = 5_000;
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 8_000 });
+      if (res.status === 200) return;
+    } catch {
+      // Service still waking — wait and retry
+    }
+    await new Promise((r) => setTimeout(r, pollInterval));
+  }
+  throw new Error(`AI service did not respond within ${timeoutMs}ms`);
+};
+
+// Attach warmUp to the aiServiceClient object for convenience
+(aiServiceClient as any).warmUp = warmUpAIService;

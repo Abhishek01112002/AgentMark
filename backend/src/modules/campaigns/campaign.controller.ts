@@ -126,8 +126,10 @@ async function emitCampaignFailed(
   });
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAYS_MS = [5_000, 30_000, 120_000];
+const MAX_RETRIES = 4;
+// Render Free Tier cold-start takes ~50s. Retry delays are set to allow full
+// wake-up: wait 60s first (covers cold-start), then 90s, 120s, 120s.
+const RETRY_DELAYS_MS = [60_000, 90_000, 120_000, 120_000];
 const isCreativeHookMatrixEnabled = () => process.env.ENABLE_CREATIVE_HOOK_MATRIX === 'true' || process.env.ENABLE_CREATIVE_HOOK_MATRIX === '1';
 
 /**
@@ -170,6 +172,14 @@ async function runAIWorkflowBackground(
     try {
       if (attempt === 0) {
         logger.info(`[${requestId || 'no-req-id'}] AI workflow started in background | campaign=${dbCampaignId}`);
+        // Warm-up ping: if AI service is cold-starting (returns 502/503/ECONNREFUSED),
+        // wait up to 75s for it to wake before making the real campaign call.
+        try {
+          await aiServiceClient.warmUp(75_000);
+          logger.info(`[${requestId || 'no-req-id'}] AI service warm — proceeding with campaign | campaign=${dbCampaignId}`);
+        } catch (warmErr: any) {
+          logger.warn(`[${requestId || 'no-req-id'}] AI service warmup failed (${warmErr.message}) — will attempt campaign anyway | campaign=${dbCampaignId}`);
+        }
       } else {
         logger.info(`[${requestId || 'no-req-id'}] AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
       }
