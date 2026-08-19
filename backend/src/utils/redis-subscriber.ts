@@ -131,6 +131,11 @@ function isDuplicateEvent(campaignId: string, agent: string, status: string, tim
 // The subscriber must be a separate ioredis instance — a client in subscribe mode
 // cannot be shared for general commands.
 
+const isTls = Boolean(
+  process.env.REDIS_URL &&
+  (process.env.REDIS_URL.startsWith('rediss://') || process.env.REDIS_URL.includes('upstash.io'))
+);
+
 const subscriberOptions = {
   lazyConnect: true,
   retryStrategy: (times: number) => {
@@ -140,6 +145,7 @@ const subscriberOptions = {
   },
   connectTimeout: 10000, // 10s
   maxRetriesPerRequest: null,
+  ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
 };
 
 const subscriber = process.env.REDIS_URL

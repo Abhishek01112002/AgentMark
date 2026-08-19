@@ -5,10 +5,16 @@ import logger from '../utils/logger';
 
 const isTest = process.env.NODE_ENV === 'test';
 
+const isTls = Boolean(
+  process.env.REDIS_URL &&
+  (process.env.REDIS_URL.startsWith('rediss://') || process.env.REDIS_URL.includes('upstash.io'))
+);
+
 const redisOptions = {
   enableOfflineQueue: false,
   maxRetriesPerRequest: null,
   retryStrategy: (times: number) => Math.min(times * 1000, 5000),
+  ...(isTls ? { tls: { rejectUnauthorized: false } } : {}),
 };
 
 const redisClient = isTest
