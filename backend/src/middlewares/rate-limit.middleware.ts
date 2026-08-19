@@ -5,13 +5,21 @@ import logger from '../utils/logger';
 
 const isTest = process.env.NODE_ENV === 'test';
 
-const redisClient = isTest ? null : new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+const redisOptions = {
   enableOfflineQueue: false,
-  maxRetriesPerRequest: 1,
-  retryStrategy: (times) => Math.min(times * 1000, 5000),
-});
+  maxRetriesPerRequest: null,
+  retryStrategy: (times: number) => Math.min(times * 1000, 5000),
+};
+
+const redisClient = isTest
+  ? null
+  : process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, redisOptions)
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      ...redisOptions,
+    });
 
 redisClient?.on('connect', () => logger.info('[RateLimiter] Redis connected'));
 redisClient?.on('error', (err) => logger.error('[RateLimiter] Redis error:', err.message));

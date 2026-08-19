@@ -9,7 +9,7 @@ import logger from './logger';
 const sharedRedisOptions = {
   lazyConnect: false,       // Connect immediately on app startup
   enableOfflineQueue: true, // Queue commands safely during connection setup
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
   retryStrategy: (times: number) => Math.min(times * 500, 10000),
 };
 

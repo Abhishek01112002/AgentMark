@@ -139,7 +139,7 @@ const subscriberOptions = {
     return delay;
   },
   connectTimeout: 10000, // 10s
-  maxRetriesPerRequest: 3,
+  maxRetriesPerRequest: null,
 };
 
 const subscriber = process.env.REDIS_URL
