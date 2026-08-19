@@ -76,12 +76,9 @@ def _get_fg_redis_client() -> Optional[redis.Redis]:
     """Returns a shared Redis client for focus group caching, or None on failure."""
     global _fg_redis_pool
     try:
-        from config.settings import REDIS_DB, REDIS_HOST, REDIS_PORT
+        from config.settings import get_redis_pool
         if _fg_redis_pool is None:
-            _fg_redis_pool = redis.ConnectionPool(
-                host=REDIS_HOST,
-                port=REDIS_PORT,
-                db=REDIS_DB,
+            _fg_redis_pool = get_redis_pool(
                 max_connections=5,
                 decode_responses=True,
                 socket_connect_timeout=3,

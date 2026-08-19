@@ -83,9 +83,25 @@ async def add_request_id_middleware(request: Request, call_next):
     return response
 
 # CORS middleware
+#
+# In production (ENV=production), CORS_ORIGINS must be explicitly set to the
+# exact backend URL that calls this service (e.g. https://agentmark-backend.onrender.com).
+# In development (ENV unset or "development"), localhost variants are used as defaults.
+# Never use "*" — the AI service is an internal API protected by INTERNAL_SERVICE_SECRET.
+_env = os.getenv("ENV", "development")
+_cors_env = os.getenv("CORS_ORIGINS", "")
+if _cors_env:
+    _allowed_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+elif _env != "production":
+    _allowed_origins = ["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"]
+else:
+    # Production with no CORS_ORIGINS set: deny all browser origins.
+    # The AI service is called server-to-server only, so this is safe.
+    _allowed_origins = []
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://localhost:3001"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

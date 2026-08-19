@@ -8,6 +8,10 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // For Neon production: set DATABASE_URL to the pooled connection string (for app queries)
+  // and set DIRECT_URL to the non-pooled string (for prisma migrate deploy only).
+  // Uncomment the line below only when DIRECT_URL is available in the environment:
+  // directUrl = env("DIRECT_URL")
 }
 
 model User {

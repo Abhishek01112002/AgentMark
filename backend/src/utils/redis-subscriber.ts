@@ -127,19 +127,28 @@ function isDuplicateEvent(campaignId: string, agent: string, status: string, tim
 }
 
 // ── Redis subscriber client ───────────────────────────────────────────────────
+// REDIS_URL takes priority over REDIS_HOST/REDIS_PORT when set (e.g. Upstash TLS).
+// The subscriber must be a separate ioredis instance — a client in subscribe mode
+// cannot be shared for general commands.
 
-const subscriber = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+const subscriberOptions = {
   lazyConnect: true,
-  retryStrategy: (times) => {
+  retryStrategy: (times: number) => {
     const delay = Math.min(times * 1000, 10000); // Max 10s between retries
     logger.info(`[Redis Subscriber] Reconnecting in ${delay}ms (attempt ${times})`);
     return delay;
   },
   connectTimeout: 10000, // 10s
   maxRetriesPerRequest: 3,
-});
+};
+
+const subscriber = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, subscriberOptions)
+  : new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      ...subscriberOptions,
+    });
 
 subscriber.on('error', (err) => {
   logger.error('[Redis Subscriber] Connection error:', err.message);

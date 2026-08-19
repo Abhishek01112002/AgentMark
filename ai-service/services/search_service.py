@@ -11,7 +11,7 @@ import redis
 from pydantic import BaseModel, Field
 from tavily import TavilyClient
 
-from config.settings import REDIS_DB, REDIS_HOST, REDIS_PORT
+from config.settings import get_redis_pool
 
 logger = logging.getLogger(__name__)
 
@@ -85,10 +85,7 @@ def _get_client(api_key: Optional[str] = None) -> Optional[TavilyClient]:
 def _get_redis_pool() -> redis.ConnectionPool:
     global _redis_pool
     if _redis_pool is None:
-        _redis_pool = redis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
+        _redis_pool = get_redis_pool(
             max_connections=10,
             decode_responses=True,
             socket_connect_timeout=5,

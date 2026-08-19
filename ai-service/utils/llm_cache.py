@@ -10,7 +10,7 @@ import logging
 from collections import OrderedDict
 import redis
 
-from config.settings import REDIS_DB, REDIS_HOST, REDIS_PORT
+from config.settings import get_redis_pool
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,7 @@ def _get_redis():
         return _redis_client
     try:
         if _redis_pool is None:
-            _redis_pool = redis.ConnectionPool(
-                host=REDIS_HOST,
-                port=REDIS_PORT,
-                db=REDIS_DB,
+            _redis_pool = get_redis_pool(
                 max_connections=10,
                 decode_responses=True,
                 socket_connect_timeout=3,

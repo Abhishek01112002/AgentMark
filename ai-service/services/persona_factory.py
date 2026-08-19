@@ -18,7 +18,7 @@ from collections import OrderedDict
 from typing import List, Optional
 from schemas.simulation import PersonaProfile, PersonaListContainer
 from llm.factory import get_llm_client
-from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
+from config.settings import get_redis_pool
 
 logger = logging.getLogger("agentmark.simulation")
 
@@ -34,10 +34,7 @@ _pool: Optional[redis.ConnectionPool] = None
 def _get_pool() -> redis.ConnectionPool:
     global _pool
     if _pool is None:
-        _pool = redis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
+        _pool = get_redis_pool(
             max_connections=15,
             decode_responses=True,
             socket_connect_timeout=2,

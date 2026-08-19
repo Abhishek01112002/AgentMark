@@ -20,7 +20,7 @@ from typing import Optional, Any
 
 import redis
 
-from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
+from config.settings import get_redis_pool
 
 logger = logging.getLogger("agentmark.redis_publisher")
 
@@ -34,14 +34,11 @@ _client: Optional[redis.Redis] = None
 def _get_pool() -> redis.ConnectionPool:
     global _pool
     if _pool is None:
-        _pool = redis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
+        _pool = get_redis_pool(
             max_connections=10,
             decode_responses=True,
-            socket_connect_timeout=5,  # 5s connection timeout
-            socket_timeout=5,           # 5s read/write timeout
+            socket_connect_timeout=5,
+            socket_timeout=5,
             retry_on_timeout=True,
         )
     return _pool

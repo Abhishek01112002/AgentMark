@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 import redis
 
-from config.settings import REDIS_HOST, REDIS_PORT, REDIS_DB
+from config.settings import get_redis_pool
 
 logger = logging.getLogger("agentmark.cancellation")
 
@@ -14,14 +14,11 @@ _client: Optional[redis.Redis] = None
 def _get_pool() -> redis.ConnectionPool:
     global _pool
     if _pool is None:
-        _pool = redis.ConnectionPool(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
-            db=REDIS_DB,
+        _pool = get_redis_pool(
             max_connections=5,
             decode_responses=True,
-            socket_connect_timeout=2,  # 2s connect timeout
-            socket_timeout=2,          # 2s read/write timeout
+            socket_connect_timeout=2,
+            socket_timeout=2,
         )
     return _pool
 
