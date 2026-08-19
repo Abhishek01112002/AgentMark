@@ -55,6 +55,10 @@ export const isOriginAllowed = (origin: string | undefined): boolean => {
       return true;
     }
   }
+  // Automatically allow Cloudflare Pages and Workers deployment subdomains
+  if (origin.endsWith('.pages.dev') || origin.endsWith('.workers.dev')) {
+    return true;
+  }
   // In development/test, allow all localhost variants
   if (!isProduction) {
     if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
@@ -69,7 +73,7 @@ app.use(cors({
     if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(null, false);
     }
   },
   credentials: true,
