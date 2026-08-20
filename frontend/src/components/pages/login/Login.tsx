@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Mail, Lock, Eye, EyeOff, Search, FileText, Image, Play,
+  Mail, Lock, Eye, EyeOff,
   LogIn, Quote, Zap, BarChart2, Users, ArrowRight, Shield, Sparkles
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -57,13 +57,6 @@ const Login = () => {
       setIsLoading(false);
     }
   };
-
-  const steps = [
-    { label: 'Research', icon: Search, active: false },
-    { label: 'Copy', icon: FileText, active: false },
-    { label: 'Visuals', icon: Image, active: true },
-    { label: 'Publish', icon: Play, active: false },
-  ];
 
   const stats = [
     { value: '10x', label: 'Campaign Volume', icon: BarChart2 },
@@ -137,32 +130,6 @@ const Login = () => {
                     <div className="text-[8px] lg:text-[9px] xl:text-[10px] text-gray-500 leading-tight">{s.label}</div>
                   </div>
                 ))}
-              </div>
-            </div>
-
-            <div className="relative z-10 w-full bg-[#111118]/80 backdrop-blur border border-[#2A2A38] rounded-xl p-3.5 lg:p-4 xl:p-5 flex-shrink-0">
-              <div className="flex items-center justify-between mb-3 lg:mb-4">
-                <span className="text-[8px] lg:text-[9px] xl:text-[10px] font-bold text-gray-500 tracking-widest uppercase">Active Pipeline</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[8px] lg:text-[9px] xl:text-[10px] font-semibold text-emerald-500 tracking-wide">Live</span>
-                </div>
-              </div>
-              <div className="flex justify-between items-center relative px-2">
-                <div className="absolute top-4 lg:top-5 xl:top-6 left-6 lg:left-8 right-6 lg:right-8 h-[1px] bg-[#2A2A38] z-0" />
-                {steps.map((step, idx) => {
-                  const Icon = step.icon;
-                  return (
-                    <div key={idx} className="flex flex-col items-center z-10 relative">
-                      <div className={`w-8 h-8 lg:w-10 lg:h-10 xl:w-12 xl:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${step.active ? 'bg-[#161622] border-2 border-indigo-500 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.35)] ring-4 ring-indigo-500/10' : 'bg-[#111118] border border-[#2A2A38] text-gray-600'}`}>
-                        <Icon size={14} className="lg:w-4 lg:h-4" />
-                      </div>
-                      <span className={`text-[8px] lg:text-[9px] mt-1.5 lg:mt-2 font-medium ${step.active ? 'text-indigo-400' : 'text-gray-600'}`}>
-                        {step.label}
-                      </span>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </div>
