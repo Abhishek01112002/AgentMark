@@ -115,9 +115,17 @@ function DashboardContent() {
       if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL;
       if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
       if (typeof window !== 'undefined' && window.location) {
+        if (
+          window.location.hostname.includes('workers.dev') ||
+          window.location.hostname.includes('pages.dev') ||
+          window.location.hostname.includes('onrender.com') ||
+          window.location.hostname.includes('agentmark')
+        ) {
+          return 'https://agentmark-backend.onrender.com';
+        }
         return `${window.location.protocol}//${window.location.hostname}:5003`;
       }
-      return 'http://localhost:5003';
+      return 'https://agentmark-backend.onrender.com';
     };
 
     const SOCKET_URL = getSocketUrl();
