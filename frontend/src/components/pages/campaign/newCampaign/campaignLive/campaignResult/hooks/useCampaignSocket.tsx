@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
-import { UserCheck, X } from 'lucide-react';
 import api from '../../../../../../../services/api';
 import { CampaignAction } from '../reducers/campaignReducer';
 
@@ -100,38 +99,11 @@ export const useCampaignSocket = ({
 
         socket.on('human_approval_required', async () => {
           setShowHumanReview(true);
-          toast.custom(
-            (t) => (
-              <div
-                className={`${
-                  t.visible ? 'animate-enter opacity-100 translate-y-0 scale-100' : 'animate-leave opacity-0 -translate-y-2 scale-95'
-                } transition-all duration-300 ease-out max-w-md w-full bg-[#12121A]/95 backdrop-blur-xl border border-[#6366F1]/40 shadow-[0_12px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(99,102,241,0.2)] rounded-2xl pointer-events-auto flex items-center gap-3.5 p-4 text-[#F1F1F3]`}
-              >
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-[#6366F1]/20 to-[#A855F7]/10 border border-[#6366F1]/30 flex items-center justify-center text-[#818CF8]">
-                  <UserCheck className="w-5 h-5 text-[#818CF8]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#818CF8] bg-[#6366F1]/15 px-2.5 py-0.5 rounded-full border border-[#6366F1]/25">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#818CF8] animate-pulse" />
-                      Action Required
-                    </span>
-                  </div>
-                  <p className="text-sm font-semibold text-white mt-1 tracking-tight">
-                    Campaign Requires Human Review
-                  </p>
-                </div>
-                <button
-                  onClick={() => toast.dismiss(t.id)}
-                  className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
-                  aria-label="Close notification"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ),
-            { id: 'human-review-required', duration: 5000 }
-          );
+          toast('Campaign ready for review — Human approval required', {
+            icon: '📋',
+            id: 'human-review-required',
+            duration: 5000,
+          });
           try {
             const res = await api.get(`/campaigns/${campaignId}`, { signal: controller.signal });
             if (res.data?.data && mounted) {
