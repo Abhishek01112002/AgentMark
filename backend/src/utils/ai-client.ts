@@ -97,9 +97,11 @@ const formatAiServiceError = (detail: unknown, status: number, fallback: string)
   return `HTTP ${status}: ${innerMsg}`;
 };
 
+const DEFAULT_INTERNAL_SECRET = '7b3e9f2a5c8d1e4b7f0a3c6d9e2f5a8b1c4d7e0f3a6b9c2d5e8f1a4b7c0d3e6f9a2b5c8d1e4f7';
+
 const getHeaders = (requestId?: string) => ({
   'Content-Type': 'application/json',
-  ...(process.env.INTERNAL_SERVICE_SECRET ? { 'X-Internal-Secret': process.env.INTERNAL_SERVICE_SECRET } : {}),
+  'X-Internal-Secret': process.env.INTERNAL_SERVICE_SECRET || DEFAULT_INTERNAL_SECRET,
   ...(requestId ? { 'X-Request-Id': requestId } : {}),
 });
 
