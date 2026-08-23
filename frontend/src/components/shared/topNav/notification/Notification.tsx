@@ -17,33 +17,38 @@ interface NotificationPanelProps {
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCount }) => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Instant render from cache (0ms latency!)
+  const [notifications, setNotifications] = useState<Notification[]>(() =>
+    notificationsService.getCachedPanelNotifications()
+  );
+  const [loading, setLoading] = useState(() => !notificationsService.hasCache());
 
-  const loadNotifications = async () => {
-    setLoading(true);
+  const loadNotifications = async (silent = false) => {
+    if (!silent && !notificationsService.hasCache()) {
+      setLoading(true);
+    }
     try {
-      const [unread, count] = await Promise.all([
-        notificationsService.list({ unreadOnly: true, limit: 3 }),
-        notificationsService.unreadCount()
-      ]);
+      const { notifications: unread, unreadCount } = await notificationsService.prefetchPanel();
       setNotifications(unread);
-      onChangeUnreadCount?.(count);
+      onChangeUnreadCount?.(unreadCount);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadNotifications().catch(console.error);
+    // Initial silent revalidation or immediate fetch
+    void loadNotifications(notifications.length > 0);
 
-    // Fast 4-second polling while notification panel is open
+    // Fast 5-second polling while notification panel is open
     const interval = setInterval(() => {
-      loadNotifications().catch(() => {});
-    }, 4000);
+      void loadNotifications(true);
+    }, 5000);
 
     const handleUpdate = () => {
-      loadNotifications().catch(console.error);
+      setNotifications(notificationsService.getCachedPanelNotifications());
+      onChangeUnreadCount?.(notificationsService.getCachedUnreadCount());
+      void loadNotifications(true);
     };
 
     window.addEventListener('notifications-updated', handleUpdate);
@@ -54,8 +59,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   }, []);
 
   const handleNotificationClick = async (id: string) => {
+    // Instant optimistic removal from UI
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     await notificationsService.markRead(id);
-    await loadNotifications();
   };
 
   const handleViewAllActivity = () => {
@@ -63,12 +69,15 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   const handleMarkAllRead = async () => {
+    // Instant optimistic UI clear
+    setNotifications([]);
+    onChangeUnreadCount?.(0);
     try {
       await notificationsService.markAllRead();
-      await loadNotifications();
       toast.success('All notifications marked as read!', { id: 'mark-all-read' });
     } catch {
       toast.error('Failed to mark all as read');
+      void loadNotifications(false);
     }
   };
 
@@ -96,8 +105,20 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
       </div>
 
       {/* Body */}
-      {loading ? (
-        <div className="p-6 text-xs text-[#94A3B8] font-sans text-center">Loading notifications...</div>
+      {loading && notifications.length === 0 ? (
+        <div className="p-3 space-y-2.5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-[#0B0B12] border border-[#262636] rounded-xl p-3.5 space-y-2 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-6 h-6 rounded-lg bg-white/5" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-white/10 rounded w-1/2" />
+                  <div className="h-2.5 bg-white/5 rounded w-3/4" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : notifications.length > 0 ? (
         <div className="p-3 space-y-2.5 max-h-[380px] overflow-y-auto">
           {notifications.map((notification) => {
@@ -167,3 +188,4 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
 };
 
 export default NotificationPanel;
+

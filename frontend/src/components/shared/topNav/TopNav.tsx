@@ -28,7 +28,7 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
   const location = useLocation();
   const { setMobileOpen } = useSidebar();
   const [openDropdown, setOpenDropdown] = useState<'profile' | 'notification' | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(() => notificationsService.getCachedUnreadCount());
   const headerRef = useRef<HTMLDivElement>(null);
   const bellRef = useRef<HTMLButtonElement>(null);
 
@@ -39,24 +39,25 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
   };
 
   useEffect(() => {
-    const loadUnreadCount = async () => {
+    const syncNotifications = async () => {
       try {
-        const count = await notificationsService.unreadCount();
-        setUnreadCount(count);
+        const { unreadCount } = await notificationsService.prefetchPanel();
+        setUnreadCount(unreadCount);
       } catch {
-        setUnreadCount(0);
+        // keep current count if request fails
       }
     };
 
-    void loadUnreadCount();
+    void syncNotifications();
 
-    // Fast 5-second polling so notification count updates in real-time
+    // Fast 5-second polling so notification count & panel cache update in real-time
     const interval = setInterval(() => {
-      void loadUnreadCount();
+      void syncNotifications();
     }, 5000);
 
     const handleUpdate = () => {
-      void loadUnreadCount();
+      setUnreadCount(notificationsService.getCachedUnreadCount());
+      void syncNotifications();
     };
 
     window.addEventListener('notifications-updated', handleUpdate);
@@ -84,7 +85,8 @@ const TopNav: React.FC<TopNavProps> = ({ title, stats }) => {
 
   useEffect(() => {
     if (openDropdown === 'notification') {
-      void notificationsService.unreadCount().then(setUnreadCount).catch(() => setUnreadCount(0));
+      setUnreadCount(notificationsService.getCachedUnreadCount());
+      void notificationsService.prefetchPanel().then(({ unreadCount }) => setUnreadCount(unreadCount)).catch(() => {});
     }
   }, [openDropdown]);
 
