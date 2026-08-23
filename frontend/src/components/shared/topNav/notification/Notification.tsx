@@ -73,7 +73,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onChangeUnreadCou
   };
 
   return (
-    <div className="rounded-2xl border border-white/[0.12] bg-[#12121A]/95 backdrop-blur-2xl shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden w-80 sm:w-96 font-sans">
+    <div className="rounded-2xl border border-white/[0.12] bg-[#12121A]/95 backdrop-blur-2xl shadow-[0_30px_70px_rgba(0,0,0,0.8)] overflow-hidden w-[calc(100vw-32px)] max-w-sm sm:w-96 font-sans">
       {/* Header */}
       <div className="p-4 border-b border-[#262636] flex items-center justify-between bg-white/[0.02]">
         <div className="flex items-center gap-2">

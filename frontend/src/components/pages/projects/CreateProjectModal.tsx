@@ -73,7 +73,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onCrea
               <Sparkles size={13} className="text-amber-400 filter drop-shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
               Starter Templates
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => {

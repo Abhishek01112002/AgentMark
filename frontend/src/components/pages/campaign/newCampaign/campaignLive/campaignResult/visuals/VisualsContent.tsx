@@ -639,7 +639,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
 
                     {/* Original prompt box */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-wrap items-center justify-between gap-2.5">
                         <div className="flex items-center gap-2">
                           <div className="w-5 h-5 rounded-md bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-[#818CF8]">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
@@ -648,7 +648,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             Generative Prompt
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             onClick={() => handleCopyPrompt(card.prompt || '', cardId)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-sora font-semibold border transition-all cursor-pointer ${
@@ -686,7 +686,7 @@ const VisualsContent: React.FC<VisualsContentProps> = ({ data, campaignId }) => 
                             {studioDropdownOpen === cardId && (
                               <>
                                 <div className="fixed inset-0 z-40" onClick={() => setStudioDropdownOpen(null)} />
-                                <div className="absolute right-0 top-full mt-2 w-60 bg-[#12121A]/95 border border-white/[0.12] rounded-2xl shadow-2xl z-50 p-1.5 backdrop-blur-2xl animate-in fade-in slide-in-from-top-1 space-y-1">
+                                <div className="absolute right-0 top-full mt-2 w-60 max-w-[calc(100vw-48px)] bg-[#12121A]/95 border border-white/[0.12] rounded-2xl shadow-2xl z-50 p-1.5 backdrop-blur-2xl animate-in fade-in slide-in-from-top-1 space-y-1">
                                   <div className="px-3 py-2 border-b border-[#262636]">
                                     <p className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#94A3B8]">Copy &amp; Open Studio</p>
                                   </div>
