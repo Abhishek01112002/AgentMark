@@ -44,6 +44,9 @@ from agents.copywriter import copywriter_agent
 logger = logging.getLogger("agentmark.campaigns")
 router = APIRouter(prefix="/campaigns", tags=["Campaigns"])
 
+# ── Background Task Strong References (prevents GC mid-execution) ─────────────
+_background_tasks: set[asyncio.Task] = set()
+
 # ── Concurrency Semaphore ──────────────────────────────────────────────────────
 
 _campaign_semaphore: Optional[asyncio.Semaphore] = None
@@ -324,8 +327,10 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
         finally:
             semaphore.release()
 
-    # Schedule the background task — does NOT block the HTTP response
-    asyncio.create_task(_run_campaign_background())
+    # Schedule the background task with a strong reference to prevent GC mid-execution
+    task = asyncio.create_task(_run_campaign_background())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
     return CampaignAcceptedResponse(
         campaign_id=campaign_id,
