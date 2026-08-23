@@ -104,6 +104,9 @@ const handleHealthCheck = async (req: express.Request, res: express.Response) =>
   }
 };
 
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'AgentMark API Server is running', docs: '/api/docs', health: '/api/health' });
+});
 app.get('/health', handleHealthCheck);
 app.get('/api/health', handleHealthCheck);
 
