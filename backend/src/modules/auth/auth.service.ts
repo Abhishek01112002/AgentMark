@@ -1,6 +1,8 @@
 import prisma from '../../db';
 import { hashPassword, comparePassword } from '../../utils/password';
 import { generateToken } from '../../utils/jwt';
+import { encryptUserSecret, decryptUserSecret } from '../../utils/crypto';
+import logger from '../../utils/logger';
 
 type UserRow = {
   id: string;
@@ -83,4 +85,36 @@ export const authService = {
 
     return this.getUserById(userId);
   },
+
+  async getLlmSettings(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { encryptedLlmSettings: true },
+    });
+
+    if (!user || !user.encryptedLlmSettings) {
+      return null;
+    }
+
+    try {
+      const decrypted = decryptUserSecret(user.encryptedLlmSettings, userId);
+      return JSON.parse(decrypted);
+    } catch (err: any) {
+      logger.error(`[AuthService] Failed to decrypt LLM settings for user ${userId}:`, err?.message || err);
+      return null;
+    }
+  },
+
+  async updateLlmSettings(userId: string, settings: any) {
+    const plaintext = JSON.stringify(settings);
+    const encrypted = encryptUserSecret(plaintext, userId);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { encryptedLlmSettings: encrypted },
+    });
+
+    return settings;
+  },
 };
+

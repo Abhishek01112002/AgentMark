@@ -73,3 +73,45 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     res.status(400).json({ error: (error as Error).message });
   }
 };
+
+const keyEntrySchema = z.object({
+  value: z.string().max(256),
+  label: z.string().max(100).optional(),
+});
+
+const providerStateSchema = z.object({
+  keys: z.array(keyEntrySchema).max(20),
+});
+
+const llmSettingsPayloadSchema = z.object({
+  settings: z.object({
+    gemini: providerStateSchema.optional(),
+    groq: providerStateSchema.optional(),
+    openai: providerStateSchema.optional(),
+    tavily: providerStateSchema.optional(),
+    providerOrder: z.array(z.enum(['gemini', 'groq', 'openai', 'tavily'])).optional(),
+  }),
+});
+
+export const getLlmSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const settings = await authService.getLlmSettings(req.userId!);
+    res.json({ settings: settings || null });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateLlmSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { settings } = llmSettingsPayloadSchema.parse(req.body);
+    const updated = await authService.updateLlmSettings(req.userId!, settings);
+    res.json({ message: 'LLM settings encrypted and synced successfully', settings: updated });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0]?.message || 'Validation error' });
+    }
+    next(error);
+  }
+};
+

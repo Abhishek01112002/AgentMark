@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import api from '../services/api';
+import { llmSettingsService } from '../services/llm-settings.service';
 import toast from 'react-hot-toast';
 
 interface User {
@@ -47,12 +48,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (token) {
         try {
           if (storedUser) {
-            try { setUser(JSON.parse(storedUser)); } catch {}
+            try { 
+              const parsed = JSON.parse(storedUser);
+              setUser(parsed);
+              void llmSettingsService.fetchRemoteSettings(parsed.id);
+            } catch {}
           }
           const response = await api.get('/auth/me', { signal: controller.signal });
           if (response.data?.user) {
             setUser(response.data.user);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+            void llmSettingsService.fetchRemoteSettings(response.data.user.id);
           }
         } catch (error: any) {
           if (error.name === 'AbortError' || error.name === 'CanceledError' || error.code === 'ERR_CANCELED') return;
@@ -78,6 +84,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
 
+      // Auto-hydrate user's cross-device encrypted API keys
+      void llmSettingsService.fetchRemoteSettings(userData.id);
+
       toast.success('Login successful!');
     } catch (error: any) {
       const message = error.response?.data?.error || 'Login failed';
@@ -94,6 +103,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
+
+      // Auto-hydrate user's cross-device encrypted API keys
+      void llmSettingsService.fetchRemoteSettings(userData.id);
 
       toast.success('Account created successfully!');
     } catch (error: any) {

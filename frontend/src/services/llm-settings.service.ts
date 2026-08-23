@@ -98,6 +98,8 @@ function fromLegacyFormat(raw: Record<string, unknown>): LlmSettingsState {
   return state;
 }
 
+import api from './api';
+
 export const llmSettingsService = {
   get(userId?: string | null): LlmSettingsState {
     const scopedKey = getStorageKey(userId);
@@ -142,13 +144,53 @@ export const llmSettingsService = {
     });
   },
 
-  save(state: LlmSettingsState, userId?: string | null) {
-    const normalized = JSON.stringify(this.normalize(state));
-    localStorage.setItem(LEGACY_STORAGE_KEY, normalized);
+  save(state: LlmSettingsState, userId?: string | null, syncToCloud = true) {
+    const normalized = this.normalize(state);
+    const serialized = JSON.stringify(normalized);
+    localStorage.setItem(LEGACY_STORAGE_KEY, serialized);
     if (userId) {
       const key = getStorageKey(userId);
-      localStorage.setItem(key, normalized);
+      localStorage.setItem(key, serialized);
     }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('llm-settings-updated', { detail: normalized }));
+    }
+    if (syncToCloud && userId) {
+      void this.syncToRemote(normalized);
+    }
+  },
+
+  async syncToRemote(state: LlmSettingsState): Promise<void> {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    try {
+      await api.put('/auth/llm-settings', { settings: this.normalize(state) });
+    } catch (err) {
+      console.warn('[LLMSettings] Failed to sync settings to cloud:', err);
+    }
+  },
+
+  async fetchRemoteSettings(userId?: string | null): Promise<LlmSettingsState | null> {
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return null;
+    try {
+      const res = await api.get<{ settings: LlmSettingsState | null }>('/auth/llm-settings');
+      const remote = res.data?.settings;
+      if (remote && typeof remote === 'object' && Object.keys(remote).length > 0) {
+        const normalized = this.normalize(remote);
+        this.save(normalized, userId, false);
+        return normalized;
+      } else {
+        // If remote is empty but local has keys, sync local keys to remote!
+        const local = this.get(userId);
+        if (this.hasValidApiKeys(local)) {
+          void this.syncToRemote(local);
+        }
+      }
+    } catch (err) {
+      console.warn('[LLMSettings] Failed to fetch remote settings:', err);
+    }
+    return null;
   },
 
   clear(userId?: string | null) {
@@ -156,6 +198,7 @@ export const llmSettingsService = {
     const key = getStorageKey(userId);
     localStorage.removeItem(key);
   },
+
 
 
   toHeaderPayload(state: LlmSettingsState) {

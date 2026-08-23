@@ -88,4 +88,45 @@ describe('auth.service', () => {
       expect(result).toEqual(mockUser);
     });
   });
+
+  describe('getLlmSettings & updateLlmSettings', () => {
+    it('should encrypt settings on update and decrypt on get', async () => {
+      let savedEncrypted: string | null = null;
+      (prisma.user as any).findUnique = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          encryptedLlmSettings: savedEncrypted
+        });
+      });
+
+      (prisma.user as any).update = jest.fn().mockImplementation(({ data }: any) => {
+        savedEncrypted = data.encryptedLlmSettings;
+        return Promise.resolve({});
+      });
+
+      const payload = {
+        gemini: { keys: [{ value: 'AIzaSyA_test_1234567890' }] },
+        openai: { keys: [{ value: 'sk-test-secret-key-123456' }] },
+        providerOrder: ['openai', 'gemini']
+      };
+
+      const saved = await authService.updateLlmSettings('user-abc', payload);
+      expect(saved).toEqual(payload);
+      expect(savedEncrypted).toMatch(/^v1:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/);
+      // Ensure plaintext keys are NOT in the database payload
+      expect(savedEncrypted).not.toContain('AIzaSyA_test_1234567890');
+      expect(savedEncrypted).not.toContain('sk-test-secret-key-123456');
+
+      const retrieved = await authService.getLlmSettings('user-abc');
+      expect(retrieved).toEqual(payload);
+    });
+
+    it('should return null when no settings are stored', async () => {
+      (prisma.user as any).findUnique = jest.fn().mockResolvedValueOnce({
+        encryptedLlmSettings: null
+      });
+
+      const res = await authService.getLlmSettings('user-empty');
+      expect(res).toBeNull();
+    });
+  });
 });
