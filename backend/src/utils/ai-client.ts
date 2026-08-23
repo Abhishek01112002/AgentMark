@@ -8,7 +8,18 @@ import axios from 'axios';
 import logger from './logger';
 import type { Server } from 'socket.io';
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
+function getAiServiceUrl(): string {
+  const envUrl = process.env.AI_SERVICE_URL?.trim();
+  if (envUrl && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
+    return envUrl;
+  }
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.PORT) {
+    return 'https://agentmark.onrender.com';
+  }
+  return envUrl || 'http://127.0.0.1:5002';
+}
+
+const AI_SERVICE_URL = getAiServiceUrl();
 
 export interface AIServiceCampaignRequest {
   campaign_name: string;

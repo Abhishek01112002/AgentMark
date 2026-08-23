@@ -8,7 +8,11 @@ import path from 'path';
 import { getIO } from '../campaigns/campaign.controller';
 
 const router = Router();
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002';
+const AI_SERVICE_URL = (
+  process.env.AI_SERVICE_URL && !process.env.AI_SERVICE_URL.includes('127.0.0.1') && !process.env.AI_SERVICE_URL.includes('localhost')
+) ? process.env.AI_SERVICE_URL : (
+  (process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.PORT) ? 'https://agentmark.onrender.com' : (process.env.AI_SERVICE_URL || 'http://127.0.0.1:5002')
+);
 
 const getHeaders = () => {
   const headers: Record<string, string> = {
