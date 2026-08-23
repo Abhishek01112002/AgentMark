@@ -59,12 +59,13 @@ export interface AIServiceCampaignRequest {
 interface AIServiceCampaignResponse {
   campaign_id: string;
   status: string;
-  campaign_name: string;
-  brand_name: string;
+  message?: string;
+  campaign_name?: string;
+  brand_name?: string;
   error?: string;
-  awaiting_human_approval: boolean;
-  workflow_finished: boolean;
-  outputs: {
+  awaiting_human_approval?: boolean;
+  workflow_finished?: boolean;
+  outputs?: {
     manager_output?: any;
     research_output?: any;
     strategy_output?: any;
@@ -204,7 +205,12 @@ export async function runAIWorkflowBackground(
 ): Promise<void> {
   try {
     const response = await aiServiceClient.runCampaign(payload);
-    logger.info(`[AI Client Background] Workflow complete for campaign ${campaignId} with status: ${response.status}`);
+    logger.info(`[AI Client Background] AI service response for campaign ${campaignId}: ${response.status}`);
+
+    if (response.status === 'accepted') {
+      logger.info(`[AI Client Background] Campaign ${campaignId} accepted by AI service — execution running asynchronously via Redis Pub/Sub`);
+      return;
+    }
 
     if (response.status === 'awaiting_human_approval' || response.status === 'completed') {
       const existing = await prisma.campaign.findUnique({ where: { id: campaignId }, select: { aiOutputs: true } });

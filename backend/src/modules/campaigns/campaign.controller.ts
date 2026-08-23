@@ -159,7 +159,7 @@ async function runAIWorkflowBackground(
         return;
       }
       const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
-      logger.info(`[${requestId || 'no-req-id'}] Retrying campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      logger.info(`[${requestId || 'no-req-id'}] Retrying AI service dispatch for campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
       await sleep(delayMs);
 
       const cancelledAgain = await checkCancellation(dbCampaignId);
@@ -171,26 +171,54 @@ async function runAIWorkflowBackground(
 
     try {
       if (attempt === 0) {
-        logger.info(`[${requestId || 'no-req-id'}] AI workflow started in background | campaign=${dbCampaignId}`);
+        logger.info(`[${requestId || 'no-req-id'}] AI workflow dispatch started in background | campaign=${dbCampaignId}`);
         // Warm-up ping: if AI service is cold-starting (returns 502/503/ECONNREFUSED),
         // wait up to 75s for it to wake before making the real campaign call.
         try {
           await aiServiceClient.warmUp(75_000);
-          logger.info(`[${requestId || 'no-req-id'}] AI service warm — proceeding with campaign | campaign=${dbCampaignId}`);
+          logger.info(`[${requestId || 'no-req-id'}] AI service warm — dispatching campaign | campaign=${dbCampaignId}`);
         } catch (warmErr: any) {
-          logger.warn(`[${requestId || 'no-req-id'}] AI service warmup failed (${warmErr.message}) — will attempt campaign anyway | campaign=${dbCampaignId}`);
+          logger.warn(`[${requestId || 'no-req-id'}] AI service warmup failed (${warmErr.message}) — will attempt campaign dispatch anyway | campaign=${dbCampaignId}`);
         }
       } else {
-        logger.info(`[${requestId || 'no-req-id'}] AI workflow retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
+        logger.info(`[${requestId || 'no-req-id'}] AI service dispatch retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
       }
 
-      await aiServiceClient.createCampaign(payload, requestId);
-      logger.info(`AI HTTP call returned | campaign=${dbCampaignId} | DB update handled by Redis`);
+      // Fire-and-forget: AI service returns 202 Accepted immediately.
+      // All progress & terminal events stream via Redis Pub/Sub on campaign:{id}.
+      const response = await aiServiceClient.createCampaign(payload, requestId);
+      logger.info(
+        `[${requestId || 'no-req-id'}] AI service accepted job | campaign=${dbCampaignId} | status=${response?.status || 'accepted'} | completion delegated to Redis Pub/Sub`
+      );
+
+      // Arm a 10-minute safety watchdog timer in case AI service crashes without publishing terminal event
+      setTimeout(async () => {
+        try {
+          const current = await prisma.campaign.findUnique({
+            where: { id: dbCampaignId },
+            select: { status: true },
+          });
+          if (current && current.status === 'processing') {
+            logger.warn(`[Watchdog] Campaign ${dbCampaignId} still 'processing' after 10 minutes — marking as failed (timeout safety net)`);
+            await campaignService.updateWithAIOutputs(
+              dbCampaignId,
+              '',
+              {},
+              'failed',
+              'Campaign execution timed out after 10 minutes with no terminal event.'
+            );
+            await emitCampaignFailed(dbCampaignId, 'Campaign execution timed out after 10 minutes.', io);
+          }
+        } catch (err: any) {
+          logger.error(`[Watchdog] Error inspecting campaign status | campaign=${dbCampaignId} | error=${err.message}`);
+        }
+      }, 10 * 60 * 1000).unref?.();
+
       return;
     } catch (err: any) {
       lastError = err;
       const errorMessage = err.message ?? 'Unknown error';
-      logger.error(`AI workflow error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
+      logger.error(`AI service dispatch error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
 
       if (!isRetryableError(err)) {
         logger.info(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
@@ -209,7 +237,7 @@ async function runAIWorkflowBackground(
             where: { id: dbCampaignId },
             data: {
               status: 'processing',
-              aiError: `Retrying (${attempt + 1}/${MAX_RETRIES}): ${errorMessage}`,
+              aiError: `Retrying AI service connection (${attempt + 1}/${MAX_RETRIES}): ${errorMessage}`,
             },
           });
         } catch {
@@ -220,7 +248,7 @@ async function runAIWorkflowBackground(
   }
 
   const finalError = lastError?.message ?? 'AI service is unavailable. Please try again.';
-  logger.error(`AI workflow permanent failure | campaign=${dbCampaignId} | error=${finalError}`);
+  logger.error(`AI service dispatch permanent failure | campaign=${dbCampaignId} | error=${finalError}`);
   try {
     await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', finalError);
   } catch (dbErr: any) {

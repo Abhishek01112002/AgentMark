@@ -32,6 +32,7 @@ from agents.state import CampaignState
 from schemas.campaign import (
     CampaignCreateRequest,
     CampaignCreateResponse,
+    CampaignAcceptedResponse,
     AgentOutputs,
     try_parse_json,
     CopyVariantRequest,
@@ -162,35 +163,40 @@ def _run_workflow(workflow, state: CampaignState, llm_config: dict | None = None
 
 @router.post(
     "/create",
-    response_model=CampaignCreateResponse,
-    summary="Create a new marketing campaign",
+    response_model=CampaignAcceptedResponse,
+    status_code=202,
+    summary="Schedule a new marketing campaign (fire-and-forget)",
     description=(
-        "Runs the complete LangGraph multi-agent pipeline for the given input:\n\n"
+        "Schedules the LangGraph multi-agent pipeline and returns **202 Accepted** immediately.\n\n"
         "**Manager** → **Research** → **Strategy** → **Copywriter** → **Image Prompt** → **Reviewer** → **Publisher**\n\n"
-        "The workflow pauses at the Human-in-the-Loop approval gate "
-        "(`awaiting_human_approval: true`) if manual review is required. "
-        "When `workflow_finished: true` the Publisher has executed successfully.\n\n"
-        "**Redis Live Updates:** If `campaign_id` (PostgreSQL UUID) is provided in the "
-        "request body, each agent completion is published to the Redis channel "
-        "`campaign:{campaign_id}` for real-time frontend status updates."
+        "Progress and terminal events are streamed to the Express backend via Redis Pub/Sub on "
+        "`campaign:{campaign_id}`. The HTTP connection is not held open for the duration — this "
+        "allows long-running campaigns (1-3 min) to complete without being killed by a reverse-proxy "
+        "timeout (e.g. Render's ~100 s limit).\n\n"
+        "**Terminal Redis events:**\n"
+        "- `campaign_complete` — publisher finished, full outputs in payload\n"
+        "- `awaiting_human_approval` — HITL gate reached, waiting for human decision\n"
+        "- `failed` — workflow error or cancellation"
     ),
     responses={
-        200: {"description": "Workflow completed (or paused at HITL gate)"},
-        422: {"description": "Validation error — check field values and enums"},
-        500: {"description": "Unexpected error during agent execution"},
+        202: {"description": "Workflow accepted and scheduled"},
+        400: {"description": "Validation error — check field values"},
+        503: {"description": "Server is busy — try again shortly"},
     },
 )
 async def create_campaign(payload: CampaignCreateRequest, request: Request):
     """
-    Accept campaign input, invoke `workflow.invoke(state)`, return all agent outputs.
+    Accept campaign input, schedule `workflow.invoke(state)` as a background task,
+    and return 202 immediately.
 
-    The LangGraph workflow is a long-running synchronous operation (1-3 min).
-    It is executed in a thread pool to avoid blocking the async event loop.
+    The LangGraph workflow runs in `campaign_executor` (ThreadPoolExecutor).
+    On completion it publishes terminal Redis events — these are the source of
+    truth for the Express backend, not this HTTP response.
     """
     campaign_id = payload.campaign_id
 
     logger.info(
-        "Campaign run started | id=%s | brand=%s | goal=%s | industry=%s",
+        "Campaign scheduled | id=%s | brand=%s | goal=%s | industry=%s",
         campaign_id,
         payload.brand_name,
         payload.primary_goal,
@@ -240,95 +246,93 @@ async def create_campaign(payload: CampaignCreateRequest, request: Request):
     workflow = request.app.state.workflow
     semaphore = get_campaign_semaphore()
 
+    # Attempt to acquire the concurrency slot immediately (no wait).
+    # A 15-second wait is preserved for busy bursts.
     try:
         await asyncio.wait_for(semaphore.acquire(), timeout=15.0)
     except asyncio.TimeoutError:
-        logger.warning("Campaign creation request timed out waiting for semaphore slot | id=%s", campaign_id)
+        logger.warning("Campaign rejected — semaphore full | id=%s", campaign_id)
         raise HTTPException(
             status_code=503,
-            detail="Server is busy generating other campaigns. Please try again in a few minutes."
+            detail="Server is busy generating other campaigns. Please try again in a few minutes.",
         )
 
-    try:
+    # ── Background task ───────────────────────────────────────────────────────
+    # The semaphore is released inside the task's finally block, keeping it
+    # held for the entire duration of the workflow so the concurrency cap works.
+
+    async def _run_campaign_background():
         loop = asyncio.get_running_loop()
-        final_state = await loop.run_in_executor(campaign_executor, _run_workflow_isolated, workflow, state, payload.llm_config)
-    except Exception as exc:
-        logger.error("Workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
-        publish_agent_event(
-            campaign_id=campaign_id,
-            agent="system",
-            status="failed",
-            error=str(exc),
-        )
-        raise HTTPException(status_code=500, detail=f"Workflow execution failed: {exc}") from exc
-    finally:
-        semaphore.release()
+        try:
+            final_state = await loop.run_in_executor(
+                campaign_executor, _run_workflow_isolated, workflow, state, payload.llm_config
+            )
+            logger.info(
+                "Campaign workflow finished | id=%s | status=%s | finished=%s",
+                campaign_id,
+                final_state.status,
+                final_state.workflow_finished,
+            )
 
-    logger.info(
-        "Campaign run finished | id=%s | status=%s | finished=%s",
-        campaign_id,
-        final_state.status,
-        final_state.workflow_finished,
-    )
+            outputs_dict = {
+                "manager_output": try_parse_json(final_state.manager_output),
+                "research_output": try_parse_json(final_state.research_output),
+                "strategy_output": try_parse_json(final_state.strategy_output),
+                "copy_output": try_parse_json(final_state.copy_output),
+                "creative_hook_matrix_output": try_parse_json(final_state.creative_hook_matrix_output),
+                "image_output": try_parse_json(final_state.image_output),
+                "review_output": try_parse_json(final_state.review_output),
+                "publisher_output": try_parse_json(final_state.publisher_output),
+                "research_revision_count": final_state.research_revision_count or 0,
+                "strategy_revision_count": final_state.strategy_revision_count or 0,
+                "copy_revision_count": final_state.copy_revision_count or 0,
+                "creative_hook_matrix_revision_count": final_state.creative_hook_matrix_revision_count or 0,
+                "image_revision_count": final_state.image_revision_count or 0,
+            }
 
-    outputs_dict = {
-        "manager_output": try_parse_json(final_state.manager_output),
-        "research_output": try_parse_json(final_state.research_output),
-        "strategy_output": try_parse_json(final_state.strategy_output),
-        "copy_output": try_parse_json(final_state.copy_output),
-        "creative_hook_matrix_output": try_parse_json(final_state.creative_hook_matrix_output),
-        "image_output": try_parse_json(final_state.image_output),
-        "review_output": try_parse_json(final_state.review_output),
-        "publisher_output": try_parse_json(final_state.publisher_output),
-        "research_revision_count": final_state.research_revision_count or 0,
-        "strategy_revision_count": final_state.strategy_revision_count or 0,
-        "copy_revision_count": final_state.copy_revision_count or 0,
-        "creative_hook_matrix_revision_count": final_state.creative_hook_matrix_revision_count or 0,
-        "image_revision_count": final_state.image_revision_count or 0,
-    }
+            if final_state.status in ("error", "cancelled"):
+                publish_agent_event(
+                    campaign_id=campaign_id,
+                    agent="system",
+                    status="failed",
+                    error=final_state.error or "Campaign cancelled by user",
+                    extra={"outputs": outputs_dict},
+                )
+            elif final_state.awaiting_human_approval or final_state.status == "awaiting_human_approval":
+                publish_agent_event(
+                    campaign_id=campaign_id,
+                    agent="system",
+                    status="awaiting_human_approval",
+                    extra={"outputs": outputs_dict},
+                )
+            else:
+                publish_agent_event(
+                    campaign_id=campaign_id,
+                    agent="system",
+                    status="campaign_complete",
+                    extra={"outputs": outputs_dict, "workflow_finished": final_state.workflow_finished},
+                )
 
-    if final_state.status == "error" or final_state.status == "cancelled":
-        publish_agent_event(
-            campaign_id=campaign_id,
-            agent="system",
-            status="failed",
-            error=final_state.error or "Campaign cancelled by user",
-            extra={"outputs": outputs_dict},
-        )
-    elif final_state.awaiting_human_approval or final_state.status == "awaiting_human_approval":
-        publish_agent_event(
-            campaign_id=campaign_id,
-            agent="system",
-            status="awaiting_human_approval",
-            extra={"outputs": outputs_dict},
-        )
-    else:
-        publish_agent_event(
-            campaign_id=campaign_id,
-            agent="system",
-            status="campaign_complete",
-            extra={"outputs": outputs_dict, "workflow_finished": final_state.workflow_finished},
-        )
+        except Exception as exc:
+            logger.error("Campaign workflow error | id=%s | error=%s", campaign_id, exc, exc_info=True)
+            publish_agent_event(
+                campaign_id=campaign_id,
+                agent="system",
+                status="failed",
+                error=str(exc),
+            )
+        finally:
+            semaphore.release()
 
-    return CampaignCreateResponse(
+    # Schedule the background task — does NOT block the HTTP response
+    asyncio.create_task(_run_campaign_background())
+
+    return CampaignAcceptedResponse(
         campaign_id=campaign_id,
-        status=final_state.status,
-        campaign_name=final_state.campaign_name,
-        brand_name=final_state.brand_name,
-        error=final_state.error,
-        awaiting_human_approval=final_state.awaiting_human_approval,
-        workflow_finished=final_state.workflow_finished,
-        outputs=AgentOutputs(
-            manager_output=try_parse_json(final_state.manager_output),
-            research_output=try_parse_json(final_state.research_output),
-            strategy_output=try_parse_json(final_state.strategy_output),
-            copy_output=try_parse_json(final_state.copy_output),
-            creative_hook_matrix_output=try_parse_json(final_state.creative_hook_matrix_output),
-            image_output=try_parse_json(final_state.image_output),
-            review_output=try_parse_json(final_state.review_output),
-            publisher_output=try_parse_json(final_state.publisher_output),
-        ),
+        status="accepted",
+        message="Campaign workflow scheduled. Progress delivered via Redis Pub/Sub.",
     )
+
 
 
 class EnhancePromptRequest(BaseModel):

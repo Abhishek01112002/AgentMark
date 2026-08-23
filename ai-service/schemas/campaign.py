@@ -115,7 +115,7 @@ class AgentOutputs(BaseModel):
 
 
 class CampaignCreateResponse(BaseModel):
-    """Response returned after the LangGraph workflow completes."""
+    """Response returned after the LangGraph workflow completes (legacy sync path)."""
     campaign_id: str = Field(description="Unique ID for this campaign run")
     status: str = Field(description="Final workflow status")
     campaign_name: str
@@ -128,6 +128,24 @@ class CampaignCreateResponse(BaseModel):
         description="True if Publisher completed and campaign is done"
     )
     outputs: AgentOutputs = Field(description="Parsed JSON outputs for all agents")
+
+
+class CampaignAcceptedResponse(BaseModel):
+    """
+    202 Accepted response returned immediately after the workflow is scheduled.
+
+    The workflow runs asynchronously in a ThreadPoolExecutor.  All progress
+    and terminal events (campaign_complete / awaiting_human_approval / failed)
+    are delivered to the Express backend via Redis Pub/Sub on the
+    campaign:{campaign_id} channel — independent of whether this HTTP
+    connection is still alive.
+    """
+    campaign_id: str = Field(description="PostgreSQL UUID for this campaign run")
+    status: str = Field(default="accepted", description="Always 'accepted'")
+    message: str = Field(
+        default="Campaign workflow scheduled. Progress delivered via Redis Pub/Sub.",
+        description="Human-readable acceptance message",
+    )
 
 
 class CopyVariantRequest(BaseModel):
