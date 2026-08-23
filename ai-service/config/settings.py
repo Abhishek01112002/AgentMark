@@ -19,7 +19,15 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # REDIS_URL takes priority over REDIS_HOST/REDIS_PORT/REDIS_DB when set.
 # Managed providers (e.g. Upstash) supply a single TLS URL (rediss://...).
 # Local Docker Compose leaves REDIS_URL unset and uses the host/port/db fallback.
-REDIS_URL = os.getenv("REDIS_URL")
+DEFAULT_REDIS_URL = "rediss://default:gQAAAAAAAmk1AAIgcDIzNjdiYzViMTJiMzI0ZjIyOGQyOTk3YzE3MDY4NDE3Zg@intense-iguana-158005.upstash.io:6379"
+
+REDIS_URL = os.getenv("REDIS_URL") or os.getenv("UPSTASH_REDIS_URL")
+if not REDIS_URL and (os.getenv("ENV") == "production" or os.getenv("RENDER") or os.getenv("PORT")):
+    REDIS_URL = DEFAULT_REDIS_URL
+
+if REDIS_URL and "upstash.io" in REDIS_URL and REDIS_URL.startswith("redis://"):
+    REDIS_URL = "rediss://" + REDIS_URL[len("redis://"):]
+
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
@@ -34,17 +42,22 @@ def get_redis_pool(
     Create a redis.ConnectionPool from REDIS_URL (TLS) or HOST/PORT/DB.
 
     Pass extra kwargs (e.g. socket_connect_timeout, retry_on_timeout) as needed.
-    All 6 Redis clients in the AI service call this factory so TLS support is
+    All Redis clients in the AI service call this factory so TLS support is
     centralised here rather than duplicated across each module.
     """
     import redis as _redis
 
     if REDIS_URL:
+        pool_kwargs = {
+            "max_connections": max_connections,
+            "decode_responses": decode_responses,
+            **kwargs,
+        }
+        if REDIS_URL.startswith("rediss://"):
+            pool_kwargs.setdefault("ssl_cert_reqs", None)
         return _redis.ConnectionPool.from_url(
             REDIS_URL,
-            max_connections=max_connections,
-            decode_responses=decode_responses,
-            **kwargs,
+            **pool_kwargs,
         )
     return _redis.ConnectionPool(
         host=REDIS_HOST,
