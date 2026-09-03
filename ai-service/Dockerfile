@@ -33,7 +33,8 @@ USER appuser
 ENV PORT=5002
 EXPOSE 5002
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://127.0.0.1:5002/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://127.0.0.1:${PORT:-5002}/health || exit 1
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "5002"]
+# Use shell form so $PORT is expanded at runtime (Render injects its own PORT value)
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-5002}
