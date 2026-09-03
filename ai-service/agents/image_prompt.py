@@ -454,6 +454,7 @@ def image_prompt_agent(state: CampaignState) -> CampaignState:
     # Standard runs use 0.85 temperature for more creative, unique scene descriptions.
     # max_tokens is per batch — 2 prompts × ~2500 chars each = ~4000 tokens comfortably.
     revision_temperature = 0.0 if is_human_revision else 0.85
+    revision_max_tokens = 12000 if is_human_revision else 8192
     BATCH_SIZE = 2
 
     if is_human_revision:
