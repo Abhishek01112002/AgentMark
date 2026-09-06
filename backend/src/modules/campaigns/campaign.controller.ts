@@ -191,7 +191,9 @@ async function runAIWorkflowBackground(
         `[${requestId || 'no-req-id'}] AI service accepted job | campaign=${dbCampaignId} | status=${response?.status || 'accepted'} | completion delegated to Redis Pub/Sub`
       );
 
-      // Arm a 10-minute safety watchdog timer in case AI service crashes without publishing terminal event
+      // Arm a 15-minute safety watchdog timer in case AI service crashes without publishing terminal event.
+      // A 7-agent pipeline with 1 auto-revision (4 agents re-run) can take up to 13-14 minutes
+      // when rate-limited to 2 LLM providers. 15 minutes gives enough headroom.
       setTimeout(async () => {
         try {
           const current = await prisma.campaign.findUnique({
@@ -199,20 +201,20 @@ async function runAIWorkflowBackground(
             select: { status: true },
           });
           if (current && current.status === 'processing') {
-            logger.warn(`[Watchdog] Campaign ${dbCampaignId} still 'processing' after 10 minutes — marking as failed (timeout safety net)`);
+            logger.warn(`[Watchdog] Campaign ${dbCampaignId} still 'processing' after 15 minutes — marking as failed (timeout safety net)`);
             await campaignService.updateWithAIOutputs(
               dbCampaignId,
               '',
               {},
               'failed',
-              'Campaign execution timed out after 10 minutes with no terminal event.'
+              'Campaign execution timed out after 15 minutes with no terminal event.'
             );
-            await emitCampaignFailed(dbCampaignId, 'Campaign execution timed out after 10 minutes.', io);
+            await emitCampaignFailed(dbCampaignId, 'Campaign execution timed out after 15 minutes.', io);
           }
         } catch (err: any) {
           logger.error(`[Watchdog] Error inspecting campaign status | campaign=${dbCampaignId} | error=${err.message}`);
         }
-      }, 10 * 60 * 1000).unref?.();
+      }, 15 * 60 * 1000).unref?.();
 
       return;
     } catch (err: any) {
