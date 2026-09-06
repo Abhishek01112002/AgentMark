@@ -407,30 +407,24 @@ def copywriter_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "copywriter", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # Only clear downstream outputs when this agent is being revised.
-        # Unconditionally nulling them caused hook_matrix/image/review to re-run
-        # every time copywriter ran, creating the infinite agent loop.
+        # On revision: only clear review_output so Reviewer re-evaluates the new copy.
+        # Creative Hooks and Image Prompts are visual/hook assets that don't depend on
+        # copy text directly — re-running them wastes 3-4 minutes per revision cycle.
         if is_targeted_for_revision:
-            logger.info("   🧹 Revision: Clearing downstream outputs (hook_matrix, image, review)...")
-            state.creative_hook_matrix_output = None
-            state.image_output = None
+            logger.info("   🧹 Revision: Clearing only review_output (hooks & image preserved)...")
             state.review_output = None
 
         updated_state = copywriter_agent(state)
-        
+
         # Increment revision count ONLY if this agent was targeted for revision
         if is_targeted_for_revision:
             current_count = updated_state.copy_revision_count or 0
             updated_state.copy_revision_count = current_count + 1
             logger.info(f"\nCopywriter revision count: {updated_state.copy_revision_count}/3 (human/AI requested revision)")
-            # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (copywriter revision complete)")
             updated_state.human_revision_target = None
-            updated_state.creative_hook_matrix_output = None
-            updated_state.image_output = None
-            updated_state.review_output = None
+            updated_state.review_output = None  # Force reviewer to re-check
 
-        downstream_cleared = is_targeted_for_revision
         publish_agent_event(
             state.campaign_id,
             "copywriter",
@@ -444,9 +438,10 @@ def copywriter_node(state: CampaignState) -> dict:
         )
         return {
             "copy_output": updated_state.copy_output,
-            "creative_hook_matrix_output": None if downstream_cleared else getattr(updated_state, "creative_hook_matrix_output", None),
-            "image_output": None if downstream_cleared else getattr(updated_state, "image_output", None),
-            "review_output": None if downstream_cleared else getattr(updated_state, "review_output", None),
+            # Preserve hooks & image — they don't need re-running on copy revision
+            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
+            "image_output": getattr(updated_state, "image_output", None),
+            "review_output": None if is_targeted_for_revision else getattr(updated_state, "review_output", None),
             "copy_revision_count": updated_state.copy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
             "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
