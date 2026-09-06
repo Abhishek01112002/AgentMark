@@ -312,13 +312,16 @@ def strategy_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "strategy", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # If targeted for revision or running new strategy, clear all downstream outputs
-        logger.info("   🧹 Invalidation: Clearing downstream outputs (copy, hook_matrix, image, review)...")
-        state.copy_output = None
-        state.creative_hook_matrix_output = None
-        state.image_output = None
-        state.review_output = None
-        
+        # Only clear downstream outputs when this agent is actually being revised.
+        # On a first run downstream outputs are already None; unconditionally nulling
+        # them here caused copy/image/review to re-run every time strategy executed.
+        if is_targeted_for_revision:
+            logger.info("   🧹 Revision: Clearing downstream outputs (copy, hook_matrix, image, review)...")
+            state.copy_output = None
+            state.creative_hook_matrix_output = None
+            state.image_output = None
+            state.review_output = None
+
         updated_state = strategy_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -329,20 +332,19 @@ def strategy_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (strategy revision complete)")
             updated_state.human_revision_target = None
+            # Ensure downstream outputs are cleared after revision
+            updated_state.copy_output = None
+            updated_state.creative_hook_matrix_output = None
+            updated_state.image_output = None
+            updated_state.review_output = None
 
-        # Ensure downstream outputs are cleared in state return dict
-        updated_state.copy_output = None
-        updated_state.creative_hook_matrix_output = None
-        updated_state.image_output = None
-        updated_state.review_output = None
-        
         publish_agent_event(state.campaign_id, "strategy", "completed", extra={**_get_revision_counts_extra(updated_state), "outputs": {"strategy_output": _try_parse_json(updated_state.strategy_output)}})
         return {
             "strategy_output": updated_state.strategy_output,
-            "copy_output": updated_state.copy_output,
-            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None),
-            "image_output": updated_state.image_output,
-            "review_output": updated_state.review_output,
+            "copy_output": updated_state.copy_output if is_targeted_for_revision else getattr(updated_state, "copy_output", None),
+            "creative_hook_matrix_output": getattr(updated_state, "creative_hook_matrix_output", None) if is_targeted_for_revision else getattr(updated_state, "creative_hook_matrix_output", None),
+            "image_output": updated_state.image_output if is_targeted_for_revision else getattr(updated_state, "image_output", None),
+            "review_output": updated_state.review_output if is_targeted_for_revision else getattr(updated_state, "review_output", None),
             "strategy_revision_count": updated_state.strategy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
             "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
@@ -405,12 +407,15 @@ def copywriter_node(state: CampaignState) -> dict:
     publish_agent_event(state.campaign_id, "copywriter", "running", extra=_get_revision_counts_extra(state))
     
     try:
-        # Clear downstream outputs to force regeneration
-        logger.info("   🧹 Invalidation: Clearing downstream outputs (hook_matrix, image, review)...")
-        state.creative_hook_matrix_output = None
-        state.image_output = None
-        state.review_output = None
-        
+        # Only clear downstream outputs when this agent is being revised.
+        # Unconditionally nulling them caused hook_matrix/image/review to re-run
+        # every time copywriter ran, creating the infinite agent loop.
+        if is_targeted_for_revision:
+            logger.info("   🧹 Revision: Clearing downstream outputs (hook_matrix, image, review)...")
+            state.creative_hook_matrix_output = None
+            state.image_output = None
+            state.review_output = None
+
         updated_state = copywriter_agent(state)
         
         # Increment revision count ONLY if this agent was targeted for revision
@@ -421,11 +426,11 @@ def copywriter_node(state: CampaignState) -> dict:
             # Clear target after completing targeted revision
             logger.info("Clearing human_revision_target (copywriter revision complete)")
             updated_state.human_revision_target = None
+            updated_state.creative_hook_matrix_output = None
+            updated_state.image_output = None
+            updated_state.review_output = None
 
-        updated_state.creative_hook_matrix_output = None
-        updated_state.image_output = None
-        updated_state.review_output = None
-        
+        downstream_cleared = is_targeted_for_revision
         publish_agent_event(
             state.campaign_id,
             "copywriter",
@@ -434,17 +439,14 @@ def copywriter_node(state: CampaignState) -> dict:
                 **_get_revision_counts_extra(updated_state),
                 "outputs": {
                     "copy_output": _try_parse_json(updated_state.copy_output),
-                    "creative_hook_matrix_output": None,
-                    "image_output": None,
-                    "review_output": None,
                 }
             }
         )
         return {
             "copy_output": updated_state.copy_output,
-            "creative_hook_matrix_output": None,
-            "image_output": None,
-            "review_output": None,
+            "creative_hook_matrix_output": None if downstream_cleared else getattr(updated_state, "creative_hook_matrix_output", None),
+            "image_output": None if downstream_cleared else getattr(updated_state, "image_output", None),
+            "review_output": None if downstream_cleared else getattr(updated_state, "review_output", None),
             "copy_revision_count": updated_state.copy_revision_count,
             "human_revision_target": updated_state.human_revision_target,
             "campaign_intelligence_object": getattr(updated_state, "campaign_intelligence_object", None),
