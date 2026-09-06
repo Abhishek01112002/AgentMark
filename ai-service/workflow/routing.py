@@ -165,10 +165,12 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
             logger.info(f"   Hooks:     {hook_score}/100 (Revisions: {hook_revisions}/{MAX_REVISIONS})")
         logger.info(f"   Image:     {image_score}/100 (Revisions: {image_revisions}/{MAX_REVISIONS})")
         
-        # Priority 1: Research needs revision (affects everything downstream)
+        # Auto-revision priority order — only agents that are cheap to re-run.
+        # Research revision triggers ALL 5 downstream agents (~7-8 extra min) → too expensive for auto.
+        # Strategy revision triggers 4 downstream agents (~6 extra min) → too expensive for auto.
+        # Both are surfaced as human_feedback at the Human Approval step so the human can decide.
+        # Copy, hooks, and image are safe to auto-revise (1-3 agents downstream).
         agent_priority_checks = [
-            ("research", research_approved, research_score, research_revisions, research_review, "revise_research", "RESEARCH"),
-            ("strategy", strategy_approved, strategy_score, strategy_revisions, strategy_review, "revise_strategy", "STRATEGY"),
             ("copy", copy_approved, copy_score, copy_revisions, copy_review, "revise_copy", "COPYWRITER"),
         ]
 
@@ -180,6 +182,21 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
         agent_priority_checks.append(
             ("image", image_approved, image_score, image_revisions, image_review, "revise_image", "IMAGE PROMPT")
         )
+
+        # Collect research/strategy issues to surface at human approval (not auto-revise)
+        human_feedback_issues = []
+        if not research_approved or research_score < MIN_AGENT_SCORE:
+            issues = research_review.get("issues", [])
+            if issues:
+                human_feedback_issues.append(f"[Research Issues] " + "; ".join(issues))
+        if not strategy_approved or strategy_score < MIN_AGENT_SCORE:
+            issues = strategy_review.get("issues", [])
+            if issues:
+                human_feedback_issues.append(f"[Strategy Issues] " + "; ".join(issues))
+        if human_feedback_issues:
+            existing_fb = _get_attr(state, "human_feedback") or ""
+            combined = "\n".join(human_feedback_issues)
+            _set_attr(state, "human_feedback", f"{existing_fb}\n\nAI Reviewer flagged (needs human review):\n{combined}".strip())
 
         for agent_key, is_appr, score, rev_count, review_obj, route_target, log_label in agent_priority_checks:
             if not is_appr or score < MIN_AGENT_SCORE:
