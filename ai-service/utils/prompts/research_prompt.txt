@@ -31,27 +31,26 @@ RESEARCH INSTRUCTIONS — BE EXHAUSTIVE:
    - Include 1-2 macro factors (economic, regulatory, or behavioral) shaping this market right now
    - Note any seasonality or cyclical patterns relevant to this campaign timing
 
-2. COMPETITOR ANALYSIS (FAANG-GRADE STRATEGIC BENCHMARKING)
-   - Identify 4-5 verified, real-world DIRECT competitors based on strict Economic & Market Substitutability:
-   
-   A. CATCHMENT PARITY & OPERATIONAL TOPOLOGY (CRITICAL):
-      * Classify the operational topology of {brand_name}:
-        (1) Physical / Regional Catchment (e.g. Higher Education, K-12, hospitals, local businesses, physical retail, real estate, regional banking):
-            - Competitors MUST operate in the identical geographic catchment territory, economic corridor, or state/provincial market zone as stated or implied in the brand name, brief, or context.
-            - STRICT EXCLUSION: NEVER select competitors from distant states, provinces, or regions that a prospective local customer would not actively cross-shop as an accessible, direct physical alternative.
-        (2) Borderless Digital / Global (e.g. B2B SaaS, cloud infrastructure, consumer apps, digital media):
-            - Competitors must directly target the same ICP tier, company size, budget bracket, and product category globally.
+2. COMPETITOR ANALYSIS (HOLISTIC MULTI-DIMENSIONAL BENCHMARKING)
+   - Identify 4-5 verified, real-world DIRECT competitors by analyzing across 4 strategic dimensions:
 
-   B. CROSS-SHOPPING & OFFERING SUBSTITUTABILITY:
-      * A competitor is valid ONLY IF a prospective customer would actively compare both entities for the exact same budget and decision cycle.
-      * The competitor must offer direct, head-to-head substitutes for the specific flagship offerings, programs, or product lines highlighted in the campaign brief.
+   A. CATEGORY & JOB-TO-BE-DONE (JTBD) SUBSTITUTABILITY:
+      * The competitor must directly solve the same core problem or offer equivalent primary products/services (e.g. B.Tech/Pharmacy degrees for higher ed, issue tracking for dev tools, clean skincare for D2C beauty).
 
-   C. COMPETITOR AUDIT SPECIFICATIONS:
-      * Exact, verified legal/institutional name (no informal abbreviations).
-      * Market Positioning Angle: Their primary strategic pitch and value proposition.
-      * Critical Vulnerability / Moat Deficit: The precise weakness in their infrastructure, pricing, placement record, user experience, accreditation, or quality that {brand_name} can exploit.
-      * 2-3 genuine white-space opportunities currently neglected by these competitors.
-      * Unfair Differentiation Statement: The single most compelling competitive wedge for {brand_name} against this specific direct competitive set.
+   B. BUYER PERSONA & MARKET/PRICING TIER MATCH:
+      * The competitor must target the same demographic, decision-maker, and budget bracket (e.g., Value/Mid-market vs Value/Mid-market; Enterprise vs Enterprise; Luxury vs Luxury). Do NOT compare a regional accessible institution to an Ivy League university, or a $10/mo micro-tool to SAP.
+
+   C. DELIVERY MODEL & MARKET SCOPE (CONTEXT-ADAPTIVE):
+      * Adapt naturally to how consumers evaluate this specific category:
+        - Physical / Location-Bound Offerings (campuses, hospitals, local retail, physical services): Competitors must operate within the realistic catchment zone where customers actively evaluate direct alternatives.
+        - Digital / E-commerce / Global Offerings (SaaS, consumer apps, D2C e-commerce): Competitors are evaluated globally by feature parity, brand mindshare, and value proposition.
+
+   D. ACTIONABLE COMPETITIVE TEARDOWN:
+      * Exact, verified legal/institutional brand name.
+      * Market Positioning Angle: Their core pitch and value proposition.
+      * Critical Vulnerability / Moat Deficit: The specific, exploitable flaw in their offering, pricing model, infrastructure, customer support, or digital presence that {brand_name} can leverage.
+      * 2-3 genuine white-space opportunities currently overlooked by these competitors.
+      * Unfair Differentiation Statement: The single most compelling competitive edge for {brand_name} against this specific direct rival set.
 
 3. BRAND SPECIFICS & FACTS (CRITICAL FOR COPYWRITER)
    - You MUST extract concrete facts about {brand_name} to ground the copy in reality.

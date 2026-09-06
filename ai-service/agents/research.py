@@ -203,37 +203,12 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Clean audience keywords (take first 3 words to avoid query over-constraining)
     clean_audience = " ".join(target_audience.strip().split()[:3]) if target_audience else ""
 
-    # ── FAANG-Grade Dynamic Entity & Spatial Context Extraction ──
-    # 1. Clean brand root and preserve parenthetical metadata without syntax-breaking brackets
+    # ── Universal Entity-Preserving Search Query Normalization ──
+    # Clean brackets/parentheses into clean whitespace so search engines treat all tokens naturally
+    # without choking on syntax operators (e.g. "Haridwar University (HU Roorkee)" -> "Haridwar University HU Roorkee")
     import re
-    paren_matches = re.findall(r'\((.*?)\)', product_name)
-    paren_subtext = " ".join(paren_matches).strip()
-    clean_product_name = re.sub(r'\(.*?\)', '', product_name).strip()
-
-    # 2. Universal Spatial & Catchment Entity Detection (Zero Hardcoding)
-    # Extracts geographic indicators, corridors, and catchment descriptors dynamically
-    # across any global location (cities, states, corridors, regions, or countries)
-    combined_context = f"{product_name} {additional_info} {brief}"
-    spatial_entities = []
-    
-    # Prepositional location descriptors (e.g. "located in [X]", "campus in [X]", "corridor of [X]")
-    loc_matches = re.findall(
-        r'(?:located in|situated in|based in|campus in|corridor|serving|in and around|near|across)\s+([A-Z][a-zA-Z\s\-/]+?)(?=[,\.\n;]|\s+(?:education|campus|and|with|for|to)\b|$)',
-        combined_context,
-        flags=re.IGNORECASE
-    )
-    for m in loc_matches:
-        cleaned_m = re.sub(r'\s+', ' ', m).strip()
-        if 2 < len(cleaned_m) < 40 and cleaned_m not in spatial_entities:
-            spatial_entities.append(cleaned_m)
-
-    # Parenthetical proper nouns (e.g. "(HU Roorkee)", "(Austin)", "(Munich)")
-    if paren_subtext:
-        for token in paren_subtext.split():
-            if len(token) > 2 and token not in spatial_entities:
-                spatial_entities.append(token)
-
-    spatial_scope_str = (" " + " ".join(spatial_entities[:3])) if spatial_entities else ""
+    clean_product_name = re.sub(r'[\(\)\[\]\{\}]', ' ', product_name)
+    clean_product_name = " ".join(clean_product_name.split()).strip()
 
     if is_placeholder_brand or not product_name:
         logger.info(f"   ℹ️ Generic search target ('{product_name}') — running industry market trends query for '{industry}'")
@@ -245,10 +220,10 @@ def research_agent(state: CampaignState) -> CampaignState:
     else:
         ind_term = f"{industry} " if (industry and industry.lower() != 'other') else ""
         query_1 = f"{ind_term}market trends statistics {current_year}".strip()
-        query_2 = f"{clean_product_name}{spatial_scope_str} direct competitors alternatives {ind_term}market analysis".strip()
-        query_3 = f"{clean_product_name}{spatial_scope_str} {ind_term}customer pain points complaints reddit".strip()
+        query_2 = f"{clean_product_name} {ind_term}direct competitors alternatives market analysis".strip()
+        query_3 = f"{clean_product_name} {ind_term}customer pain points complaints reddit".strip()
         query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
-        query_5 = f"official website {clean_product_name}{spatial_scope_str} brand positioning value proposition".strip()
+        query_5 = f"official website {clean_product_name} brand positioning value proposition".strip()
 
     logger.info(f"   🔎 Tavily Market Query: '{query_1}'")
     logger.info(f"   🔎 Tavily Competitor Query: '{query_2}'")
