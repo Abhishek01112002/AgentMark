@@ -225,12 +225,43 @@ async def fetch_brand_website_dna_async(
     if not target_url and brand_name:
         try:
             from services.search_service import search_web
-            search_res = await asyncio.to_thread(search_web, f"official website {brand_name}")
+            search_res = await asyncio.to_thread(search_web, f'"{brand_name}" official website')
             if search_res and getattr(search_res, "sources", None):
+                # Build brand keyword set for domain relevance check
+                brand_keywords = [kw.lower() for kw in brand_name.split() if len(kw) > 3]
+
+                # Pass 1: find a result whose domain contains a brand keyword
                 for source in search_res.sources:
-                    if await validate_url_ip_resolution_async(source.url):
-                        target_url = source.url
-                        break
+                    source_url = getattr(source, "url", "") or ""
+                    if not source_url:
+                        continue
+                    try:
+                        domain = urllib.parse.urlparse(source_url).netloc.lower()
+                    except Exception:
+                        domain = ""
+                    if any(kw in domain for kw in brand_keywords):
+                        if await validate_url_ip_resolution_async(source_url):
+                            target_url = source_url
+                            logger.info("[BRAND DNA] Domain-matched source: %s", target_url)
+                            break
+
+                # Pass 2: if no domain match, try a result whose title contains the brand name
+                if not target_url:
+                    brand_lower = brand_name.lower()
+                    for source in search_res.sources:
+                        source_url = getattr(source, "url", "") or ""
+                        source_title = (getattr(source, "title", "") or "").lower()
+                        if brand_lower in source_title and source_url:
+                            if await validate_url_ip_resolution_async(source_url):
+                                target_url = source_url
+                                logger.info("[BRAND DNA] Title-matched source: %s", target_url)
+                                break
+
+                if not target_url:
+                    logger.info(
+                        "[BRAND DNA] No brand-relevant search result found for '%s' — skipping website ingestion",
+                        brand_name,
+                    )
         except Exception as exc:
             logger.warning("Brand DNA search resolution error: %s", exc)
 
