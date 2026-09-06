@@ -183,7 +183,7 @@ def should_continue_after_reviewer(state: CampaignState | dict) -> str:
 
         for agent_key, is_appr, score, rev_count, review_obj, route_target, log_label in agent_priority_checks:
             if not is_appr or score < MIN_AGENT_SCORE:
-                if rev_count <= MAX_REVISIONS:
+                if rev_count < MAX_REVISIONS:
                     target_name = "copywriter" if agent_key in ("copy", "copywriter") else ("image_prompt" if agent_key in ("image", "image_prompt") else agent_key)
                     _set_attr(state, "human_revision_target", target_name)
                     _set_attr(state, "status", f"{agent_key}_revision_required")

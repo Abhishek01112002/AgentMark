@@ -83,9 +83,9 @@ WS_URL = os.getenv("WS_URL", "ws://localhost:5002")
 ENABLE_CREATIVE_HOOK_MATRIX = os.getenv("ENABLE_CREATIVE_HOOK_MATRIX", "false").lower() in ("true", "1")
 
 # Quality and Revision Threshold Constants (Single Source of Truth)
-MAX_AUTO_REVISIONS: int = 3
-MAX_HUMAN_REVISIONS: int = 3
-MIN_AGENT_SCORE: int = 60
+MAX_AUTO_REVISIONS: int = 1   # Max AI-triggered auto-revisions per agent (1 = one retry, then go to human approval)
+MAX_HUMAN_REVISIONS: int = 3  # Max human-requested revisions
+MIN_AGENT_SCORE: int = 70     # Score below which reviewer triggers auto-revision (raised from 60 to reduce looping)
 MIN_QUALITY_SCORE: int = 70
 
 # Keys are optional now; the frontend can supply them per request.
