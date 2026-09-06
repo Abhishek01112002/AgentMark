@@ -31,12 +31,16 @@ RESEARCH INSTRUCTIONS — BE EXHAUSTIVE:
    - Include 1-2 macro factors (economic, regulatory, or behavioral) shaping this market right now
    - Note any seasonality or cyclical patterns relevant to this campaign timing
 
-2. COMPETITOR ANALYSIS
-   - Name 4-5 specific, real competitors in this space (brand names, not just "competitor A")
-   - For each competitor, briefly note their positioning angle and one key weakness
-   - Identify 2-3 clear white-space opportunities that competitors are leaving on the table
-   - Pinpoint the single most powerful differentiation angle for {brand_name}
-   - Mention recent competitor campaigns, moves, or launches if known
+2. COMPETITOR ANALYSIS (DIRECT, RELEVANT & GEOGRAPHICALLY GROUNDED)
+   - Name 4-5 specific, real, DIRECT competitors in this space (real institutional/company names).
+   - STRICT GEOGRAPHIC & REGIONAL PROXIMITY RULE:
+     * If the brand, brief, or additional context operates within a specific city, district, state, or regional corridor (e.g. Higher Education, universities, schools, physical healthcare, local businesses, real estate), you MUST identify DIRECT competitors in the EXACT SAME local catchment area or immediate state/region.
+     * For example, for an institution in Roorkee / Haridwar / Uttarakhand, prioritize institutions in the same education belt (e.g., COER University, RIT Roorkee, Motherhood University, Quantum University, DBUU, Graphic Era) rather than distant institutions from South or West India (e.g. Vignan, SRM, etc.) that local students would not consider as direct regional substitutes.
+     * Never select geographically distant competitors from far-off states unless the product is a purely digital/global SaaS product with zero regional footprint.
+   - For each competitor, specify their actual name, positioning angle, and one concrete weakness.
+   - Identify 2-3 clear white-space opportunities that these specific local/direct competitors are leaving on the table.
+   - Pinpoint the single most powerful differentiation angle for {brand_name} against these exact direct competitors.
+   - Mention recent competitor campaigns, moves, or launches if known.
 
 3. BRAND SPECIFICS & FACTS (CRITICAL FOR COPYWRITER)
    - You MUST extract concrete facts about {brand_name} to ground the copy in reality.

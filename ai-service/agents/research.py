@@ -203,20 +203,37 @@ def research_agent(state: CampaignState) -> CampaignState:
     # Clean audience keywords (take first 3 words to avoid query over-constraining)
     clean_audience = " ".join(target_audience.strip().split()[:3]) if target_audience else ""
 
+    # Clean product_name for search engines (parentheses like "(HU Roorkee)" break search syntax)
+    import re
+    paren_matches = re.findall(r'\((.*?)\)', product_name)
+    paren_text = " ".join(paren_matches).strip()
+    clean_product_name = re.sub(r'\(.*?\)', '', product_name).strip()
+
+    # Detect geographic/corridor context from additional_info, brief, and brand name
+    context_corpus = f"{product_name} {additional_info} {brief}"
+    geo_keywords = []
+    for loc in ["Roorkee", "Haridwar", "Uttarakhand", "Dehradun", "Delhi", "Noida", "Gurgaon", "Bangalore", "Mumbai", "Pune", "Hyderabad", "Chennai", "Kolkata"]:
+        if loc.lower() in context_corpus.lower() and loc not in geo_keywords:
+            geo_keywords.append(loc)
+    geo_suffix = (" " + " ".join(geo_keywords)) if geo_keywords else (" " + paren_text if paren_text else "")
+
     if is_placeholder_brand or not product_name:
         logger.info(f"   ℹ️ Generic search target ('{product_name}') — running industry market trends query for '{industry}'")
         query_1 = f"{industry} market trends growth statistics {current_year}".strip()
-        query_2 = f"{industry} top competitors market landscape analysis".strip()
+        query_2 = f"{industry} top direct competitors market landscape analysis".strip()
         query_3 = f"{industry} customer pain points complaints reddit reviews".strip()
         query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
         query_5 = f"{brand_name} official website company background value proposition".strip()
     else:
         ind_term = f"{industry} " if (industry and industry.lower() != 'other') else ""
         query_1 = f"{ind_term}market trends statistics {current_year}".strip()
-        query_2 = f"{product_name} {ind_term}top competitors market analysis".strip()
-        query_3 = f"{product_name} {ind_term}customer pain points complaints reddit".strip()
+        if "education" in industry.lower() or "university" in clean_product_name.lower() or "college" in clean_product_name.lower():
+            query_2 = f"{clean_product_name}{geo_suffix} direct competitors alternative colleges universities admissions".strip()
+        else:
+            query_2 = f"{clean_product_name}{geo_suffix} {ind_term}top direct competitors market alternatives".strip()
+        query_3 = f"{clean_product_name} {ind_term}customer pain points complaints reddit".strip()
         query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
-        query_5 = f"official website {product_name} brand positioning value proposition".strip()
+        query_5 = f"official website {clean_product_name}{geo_suffix} brand positioning value proposition".strip()
 
     logger.info(f"   🔎 Tavily Market Query: '{query_1}'")
     logger.info(f"   🔎 Tavily Competitor Query: '{query_2}'")
