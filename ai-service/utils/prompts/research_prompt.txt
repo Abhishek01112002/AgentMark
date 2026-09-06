@@ -31,16 +31,27 @@ RESEARCH INSTRUCTIONS — BE EXHAUSTIVE:
    - Include 1-2 macro factors (economic, regulatory, or behavioral) shaping this market right now
    - Note any seasonality or cyclical patterns relevant to this campaign timing
 
-2. COMPETITOR ANALYSIS (DIRECT, RELEVANT & GEOGRAPHICALLY GROUNDED)
-   - Name 4-5 specific, real, DIRECT competitors in this space (real institutional/company names).
-   - STRICT GEOGRAPHIC & REGIONAL PROXIMITY RULE:
-     * If the brand, brief, or additional context operates within a specific city, district, state, or regional corridor (e.g. Higher Education, universities, schools, physical healthcare, local businesses, real estate), you MUST identify DIRECT competitors in the EXACT SAME local catchment area or immediate state/region.
-     * For example, for an institution in Roorkee / Haridwar / Uttarakhand, prioritize institutions in the same education belt (e.g., COER University, RIT Roorkee, Motherhood University, Quantum University, DBUU, Graphic Era) rather than distant institutions from South or West India (e.g. Vignan, SRM, etc.) that local students would not consider as direct regional substitutes.
-     * Never select geographically distant competitors from far-off states unless the product is a purely digital/global SaaS product with zero regional footprint.
-   - For each competitor, specify their actual name, positioning angle, and one concrete weakness.
-   - Identify 2-3 clear white-space opportunities that these specific local/direct competitors are leaving on the table.
-   - Pinpoint the single most powerful differentiation angle for {brand_name} against these exact direct competitors.
-   - Mention recent competitor campaigns, moves, or launches if known.
+2. COMPETITOR ANALYSIS (FAANG-GRADE STRATEGIC BENCHMARKING)
+   - Identify 4-5 verified, real-world DIRECT competitors based on strict Economic & Market Substitutability:
+   
+   A. CATCHMENT PARITY & OPERATIONAL TOPOLOGY (CRITICAL):
+      * Classify the operational topology of {brand_name}:
+        (1) Physical / Regional Catchment (e.g. Higher Education, K-12, hospitals, local businesses, physical retail, real estate, regional banking):
+            - Competitors MUST operate in the identical geographic catchment territory, economic corridor, or state/provincial market zone as stated or implied in the brand name, brief, or context.
+            - STRICT EXCLUSION: NEVER select competitors from distant states, provinces, or regions that a prospective local customer would not actively cross-shop as an accessible, direct physical alternative.
+        (2) Borderless Digital / Global (e.g. B2B SaaS, cloud infrastructure, consumer apps, digital media):
+            - Competitors must directly target the same ICP tier, company size, budget bracket, and product category globally.
+
+   B. CROSS-SHOPPING & OFFERING SUBSTITUTABILITY:
+      * A competitor is valid ONLY IF a prospective customer would actively compare both entities for the exact same budget and decision cycle.
+      * The competitor must offer direct, head-to-head substitutes for the specific flagship offerings, programs, or product lines highlighted in the campaign brief.
+
+   C. COMPETITOR AUDIT SPECIFICATIONS:
+      * Exact, verified legal/institutional name (no informal abbreviations).
+      * Market Positioning Angle: Their primary strategic pitch and value proposition.
+      * Critical Vulnerability / Moat Deficit: The precise weakness in their infrastructure, pricing, placement record, user experience, accreditation, or quality that {brand_name} can exploit.
+      * 2-3 genuine white-space opportunities currently neglected by these competitors.
+      * Unfair Differentiation Statement: The single most compelling competitive wedge for {brand_name} against this specific direct competitive set.
 
 3. BRAND SPECIFICS & FACTS (CRITICAL FOR COPYWRITER)
    - You MUST extract concrete facts about {brand_name} to ground the copy in reality.
