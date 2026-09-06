@@ -220,7 +220,10 @@ def research_agent(state: CampaignState) -> CampaignState:
     else:
         ind_term = f"{industry} " if (industry and industry.lower() != 'other') else ""
         query_1 = f"{ind_term}market trends statistics {current_year}".strip()
-        query_2 = f"{clean_product_name} {ind_term}direct competitors alternatives market analysis".strip()
+        if "education" in industry.lower() or "university" in clean_product_name.lower() or "college" in clean_product_name.lower():
+            query_2 = f"{clean_product_name} peer private universities colleges direct competitors alternatives admissions".strip()
+        else:
+            query_2 = f"{clean_product_name} {ind_term}direct competitors alternatives market analysis".strip()
         query_3 = f"{clean_product_name} {ind_term}customer pain points complaints reddit".strip()
         query_4 = f"{industry} top converting ad visual hooks angles {current_year}".strip()
         query_5 = f"official website {clean_product_name} brand positioning value proposition".strip()

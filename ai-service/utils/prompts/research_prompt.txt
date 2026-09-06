@@ -37,8 +37,15 @@ RESEARCH INSTRUCTIONS — BE EXHAUSTIVE:
    A. CATEGORY & JOB-TO-BE-DONE (JTBD) SUBSTITUTABILITY:
       * The competitor must directly solve the same core problem or offer equivalent primary products/services (e.g. B.Tech/Pharmacy degrees for higher ed, issue tracking for dev tools, clean skincare for D2C beauty).
 
-   B. BUYER PERSONA & MARKET/PRICING TIER MATCH:
-      * The competitor must target the same demographic, decision-maker, and budget bracket (e.g., Value/Mid-market vs Value/Mid-market; Enterprise vs Enterprise; Luxury vs Luxury). Do NOT compare a regional accessible institution to an Ivy League university, or a $10/mo micro-tool to SAP.
+   B. INSTITUTIONAL/PRODUCT CLASS & SELECTIVITY TIER MATCH (PEER-TO-PEER PARITY):
+      * The competitor must operate in the EXACT SAME commercial, selectivity, and pricing tier.
+      * FOR PRIVATE / SELF-FINANCED INSTITUTIONS (Higher Ed, Schools, Healthcare, Commercial Services):
+        - Competitors MUST be peer private, self-financed institutions competing for paid admissions/enrollments.
+        - ABSOLUTE PROHIBITION (STRICT): NEVER compare a private, self-financed university/college against elite, tax-funded apex government institutions (e.g. in India: IITs, NITs, IIITs, IIMs, AIIMS, Central Universities; in US: Ivy League, MIT; in UK: Oxford/Cambridge). 
+        - A student evaluating private university admissions evaluates peer private universities (e.g., COER University, Quantum University, RIT Roorkee, Motherhood University, Dev Bhoomi, Graphic Era), NOT apex government IITs with 99.9 percentile entrance barriers. Ant vs Elephant comparisons are strictly forbidden.
+      * FOR COMMERCIAL PRODUCTS / SAAS:
+        - Mass-market / Affordable vs Mass-market / Affordable (Never compare a budget car to a Ferrari).
+        - SMB/Mid-Market vs SMB/Mid-Market (Never compare a $20/mo self-serve tool to custom multimillion-dollar enterprise SAP/Oracle).
 
    C. DELIVERY MODEL & MARKET SCOPE (CONTEXT-ADAPTIVE):
       * Adapt naturally to how consumers evaluate this specific category:
