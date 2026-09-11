@@ -89,3 +89,22 @@ MIN_AGENT_SCORE: int = 70     # Score below which reviewer triggers auto-revisio
 MIN_QUALITY_SCORE: int = 70
 
 # Keys are optional now; the frontend can supply them per request.
+
+# ── LLM Gateway Configuration (LiteLLM Proxy - Opt-in, default OFF) ─────────
+def _parse_bool_env(val: str | None, default: bool = False) -> bool:
+    """Safely parse boolean environment variable. Absent, empty, '0', or 'false' resolves to False."""
+    if not val:
+        return default
+    cleaned = val.strip().lower()
+    if cleaned in ("0", "false", "no", "off"):
+        return False
+    if cleaned in ("1", "true", "yes", "on"):
+        return True
+    return default
+
+LLM_GATEWAY_ENABLED: bool = _parse_bool_env(os.getenv("LLM_GATEWAY_ENABLED"), default=False)
+LLM_GATEWAY_URL: str = (os.getenv("LLM_GATEWAY_URL") or "http://localhost:4000").rstrip("/")
+LLM_GATEWAY_API_KEY: str | None = os.getenv("LLM_GATEWAY_API_KEY") or os.getenv("LITELLM_MASTER_KEY")
+LLM_GATEWAY_MODEL: str = os.getenv("LLM_GATEWAY_MODEL") or os.getenv("OPENAI_MODEL") or "gpt-4o-mini"
+LLM_GATEWAY_TIMEOUT: float = float(os.getenv("LLM_GATEWAY_TIMEOUT", "15.0"))
+LLM_GATEWAY_FALLBACK_ON_FAILURE: bool = _parse_bool_env(os.getenv("LLM_GATEWAY_FALLBACK_ON_FAILURE"), default=True)

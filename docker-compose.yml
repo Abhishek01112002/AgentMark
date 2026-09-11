@@ -90,8 +90,33 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
+      LLM_GATEWAY_ENABLED: ${LLM_GATEWAY_ENABLED:-false}
+      LLM_GATEWAY_URL: ${LLM_GATEWAY_URL:-http://litellm:4000}
+      LLM_GATEWAY_API_KEY: ${LLM_GATEWAY_API_KEY:-}
     ports:
       - "5002:5002"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  litellm:
+    image: litellm/litellm:v1.63.14-stable
+    container_name: agentmark-litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-sk-agentmark-gateway-dev}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:4000/health/readiness\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       redis:
         condition: service_healthy

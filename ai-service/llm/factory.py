@@ -18,6 +18,19 @@ from .gemini_client import GeminiClient
 from .groq_client import GroqClient
 from .openai_client import OpenAIClient
 from .provider_pool import ProviderPool as RateAwarePool
+from config.settings import (
+    LLM_GATEWAY_ENABLED,
+    LLM_GATEWAY_URL,
+    LLM_GATEWAY_API_KEY,
+    LLM_GATEWAY_MODEL,
+    LLM_GATEWAY_TIMEOUT,
+    LLM_GATEWAY_FALLBACK_ON_FAILURE,
+)
+from .gateway_client import (
+    GatewayClient,
+    GatewayUnavailableError,
+    get_cached_gateway_readiness,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -227,13 +240,59 @@ def get_llm_client(provider: str = None, low_complexity: bool = False) -> BaseLL
             if pool is None:
                 pool = RateAwarePool(config, custom_order=["groq", "gemini", "openai"])
                 _PER_REQUEST_LOW_COMPLEXITY_POOL.set(pool)
-            return SmartClient(pool, low_complexity=True)
-        
-        pool = _PER_REQUEST_RATE_POOL.get()
-        if pool is None:
-            pool = RateAwarePool(config)
-            _PER_REQUEST_RATE_POOL.set(pool)
-        return SmartClient(pool)
+            direct_client = SmartClient(pool, low_complexity=True)
+        else:
+            pool = _PER_REQUEST_RATE_POOL.get()
+            if pool is None:
+                pool = RateAwarePool(config)
+                _PER_REQUEST_RATE_POOL.set(pool)
+            direct_client = SmartClient(pool)
+
+        # ── Optional LiteLLM Gateway Routing (Strictly Default OFF) ──────────
+        # When LLM_GATEWAY_ENABLED is false/absent, return direct_client immediately.
+        # Zero network probe to LiteLLM, zero change to existing direct behavior.
+        gateway_enabled_val = config.get("llm_gateway_enabled")
+        if gateway_enabled_val is None:
+            gateway_enabled = LLM_GATEWAY_ENABLED
+        else:
+            gateway_enabled = str(gateway_enabled_val).strip().lower() in ("true", "1", "yes", "on")
+
+        if not gateway_enabled:
+            return direct_client
+
+        # Gateway mode explicitly enabled: verify cached readiness
+        gateway_url = config.get("llm_gateway_url") or LLM_GATEWAY_URL
+        api_key = config.get("llm_gateway_api_key") or LLM_GATEWAY_API_KEY
+        model = config.get("llm_gateway_model") or LLM_GATEWAY_MODEL
+        timeout = float(config.get("llm_gateway_timeout") or LLM_GATEWAY_TIMEOUT)
+        fallback_val = config.get("llm_gateway_fallback_on_failure")
+        if fallback_val is None:
+            fallback_on_failure = LLM_GATEWAY_FALLBACK_ON_FAILURE
+        else:
+            fallback_on_failure = str(fallback_val).strip().lower() in ("true", "1", "yes", "on")
+
+        is_ready = get_cached_gateway_readiness(gateway_url)
+        if is_ready:
+            return GatewayClient(
+                gateway_url=gateway_url,
+                api_key=api_key,
+                model=model,
+                timeout=timeout,
+                fallback_client=direct_client,
+                fallback_on_failure=fallback_on_failure,
+            )
+
+        if fallback_on_failure:
+            logger.warning(
+                "LiteLLM Gateway is enabled but failed readiness check at %s "
+                "— safely falling back to direct SmartClient",
+                gateway_url,
+            )
+            return direct_client
+
+        raise GatewayUnavailableError(
+            f"LiteLLM Gateway is enabled but unreachable at {gateway_url} and fallback is disabled."
+        )
 
     provider = provider.lower()
     if provider == "openai":

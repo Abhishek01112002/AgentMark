@@ -26,7 +26,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-q"
+addopts = "-q -p no:langsmith_plugin"
 markers = [
     "unit: fast offline tests safe for every run",
     "integration: local integration tests that may exercise multiple modules",

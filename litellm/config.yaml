@@ -1,0 +1,39 @@
+# LiteLLM Proxy Configuration for AgentMark
+# Note: All provider credentials reference container environment variables. Zero hardcoded secrets.
+
+model_list:
+  # Primary OpenAI model used across AgentMark agents
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: "os.environ/OPENAI_API_KEY"
+
+  # Google Gemini models (verified against active Google Studio API)
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: "os.environ/GEMINI_API_KEY"
+
+  - model_name: gemini-3.1-flash-lite
+    litellm_params:
+      model: gemini/gemini-3.1-flash-lite
+      api_key: "os.environ/GEMINI_API_KEY"
+
+  # Groq models (verified against active Groq API endpoints)
+  - model_name: groq-compound-mini
+    litellm_params:
+      model: groq/groq/compound-mini
+      api_key: "os.environ/GROQ_API_KEY"
+
+  - model_name: groq-gpt-oss-120b
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: "os.environ/GROQ_API_KEY"
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  telemetry: false
+
+general_settings:
+  master_key: "os.environ/LITELLM_MASTER_KEY"
