@@ -77,26 +77,146 @@ interface AIServiceCampaignResponse {
   };
 }
 
-const formatAiServiceError = (detail: unknown, status: number, fallback: string) => {
-  let innerMsg = fallback;
-  if (typeof detail === 'string') {
-    innerMsg = detail;
-  } else if (Array.isArray(detail)) {
-    innerMsg = detail
-      .map((item) => {
-        if (typeof item === 'string') return item;
-        if (item && typeof item === 'object' && 'msg' in item) {
-          const locStr = Array.isArray((item as any).loc) ? (item as any).loc.join('.') : '';
-          return `${locStr ? locStr + ': ' : ''}${(item as any).msg}`;
-        }
-        return JSON.stringify(item);
-      })
-      .join(' | ');
-  } else if (detail && typeof detail === 'object') {
-    innerMsg = JSON.stringify(detail);
+export interface AiServiceDiagnostics {
+  status: number;
+  server: string | null;
+  cfRay: string | null;
+  rndrId: string | null;
+  contentType: string | null;
+  retryAfterRaw: string | null;
+  retryAfterMs: number | null;
+  hasDetail: boolean;
+  hasError: boolean;
+  hasMessage: boolean;
+  bodySnippet: string | null;
+}
+
+export function parseRetryAfter(header: unknown): number | null {
+  if (header === null || header === undefined) return null;
+  const raw = String(header).trim();
+  if (!raw) return null;
+
+  const seconds = Number(raw);
+  if (!isNaN(seconds) && isFinite(seconds)) {
+    return Math.max(0, Math.round(seconds * 1000));
   }
-  return `HTTP ${status}: ${innerMsg}`;
-};
+
+  const parsedDate = Date.parse(raw);
+  if (!isNaN(parsedDate)) {
+    return Math.max(0, parsedDate - Date.now());
+  }
+
+  return null;
+}
+
+function getHeaderCaseInsensitive(headers: Record<string, any> | undefined, name: string): string | null {
+  if (!headers || typeof headers !== 'object') return null;
+  const lower = name.toLowerCase();
+  for (const key of Object.keys(headers)) {
+    if (key.toLowerCase() === lower && headers[key] != null) {
+      return String(headers[key]).trim();
+    }
+  }
+  return null;
+}
+
+export function extractAiServiceDiagnostics(error: any): AiServiceDiagnostics {
+  const response = error?.response;
+  const headers = response?.headers || {};
+  const status = Number(response?.status || error?.status || 500);
+
+  const server = getHeaderCaseInsensitive(headers, 'server');
+  const cfRay = getHeaderCaseInsensitive(headers, 'cf-ray');
+  const rndrId = getHeaderCaseInsensitive(headers, 'rndr-id');
+  const contentType = getHeaderCaseInsensitive(headers, 'content-type');
+  const retryAfterRaw = getHeaderCaseInsensitive(headers, 'retry-after');
+  const retryAfterMs = parseRetryAfter(retryAfterRaw);
+
+  const data = response?.data;
+  const hasDetail = Boolean(data && typeof data === 'object' && 'detail' in data && (data as any).detail != null);
+  const hasError = Boolean(data && typeof data === 'object' && 'error' in data && (data as any).error != null);
+  const hasMessage = Boolean(data && typeof data === 'object' && 'message' in data && (data as any).message != null);
+
+  let bodySnippet: string | null = null;
+  if (typeof data === 'string') {
+    const cleaned = data.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+    bodySnippet = cleaned.length > 180 ? `${cleaned.substring(0, 177)}...` : (cleaned || null);
+  } else if (data && typeof data === 'object') {
+    if (typeof (data as any).error === 'string') {
+      bodySnippet = (data as any).error.substring(0, 180).trim();
+    } else if (typeof (data as any).message === 'string') {
+      bodySnippet = (data as any).message.substring(0, 180).trim();
+    }
+  }
+
+  return {
+    status,
+    server,
+    cfRay,
+    rndrId,
+    contentType,
+    retryAfterRaw,
+    retryAfterMs,
+    hasDetail,
+    hasError,
+    hasMessage,
+    bodySnippet,
+  };
+}
+
+export function formatAiServiceError(
+  data: unknown,
+  status: number,
+  diagnostics?: AiServiceDiagnostics
+): string {
+  // Case 1: FastAPI structured error with detail
+  if (data && typeof data === 'object' && 'detail' in (data as any) && (data as any).detail != null) {
+    const detail = (data as any).detail;
+    if (typeof detail === 'string' && detail.trim()) {
+      return `AI service application error (HTTP ${status}): ${detail.trim()}`;
+    }
+    if (Array.isArray(detail)) {
+      const formatted = detail
+        .map((item) => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object' && 'msg' in item) {
+            const locStr = Array.isArray((item as any).loc) ? (item as any).loc.join('.') : '';
+            return `${locStr ? locStr + ': ' : ''}${(item as any).msg}`;
+          }
+          return JSON.stringify(item);
+        })
+        .join(' | ');
+      return `AI service validation error (HTTP ${status}): ${formatted}`;
+    }
+  }
+
+  // Case 2: Structured error/message
+  if (data && typeof data === 'object') {
+    if ('error' in (data as any) && typeof (data as any).error === 'string' && (data as any).error.trim()) {
+      return `AI service application error (HTTP ${status}): ${(data as any).error.trim()}`;
+    }
+    if ('message' in (data as any) && typeof (data as any).message === 'string' && (data as any).message.trim()) {
+      return `AI service application error (HTTP ${status}): ${(data as any).message.trim()}`;
+    }
+  }
+
+  // Case 3: Gateway / Edge error (no detail property)
+  // Derive proven issuer strictly from headers (no speculative claims)
+  let issuer = 'upstream gateway';
+  if (diagnostics?.cfRay) {
+    issuer = 'Cloudflare edge proxy';
+  } else if (diagnostics?.rndrId || (diagnostics?.server && diagnostics.server.toLowerCase().includes('render'))) {
+    issuer = 'Render edge proxy';
+  } else if (diagnostics?.server) {
+    issuer = `${diagnostics.server} proxy`;
+  }
+
+  const snippet = diagnostics?.bodySnippet || (status === 429 ? 'Too Many Requests' : 'Service Unavailable');
+  if (status === 429) {
+    return `Upstream gateway rate limit (HTTP 429 via ${issuer}): ${snippet}`;
+  }
+  return `Upstream gateway error (HTTP ${status} via ${issuer}): ${snippet}`;
+}
 
 const DEFAULT_INTERNAL_SECRET = '7b3e9f2a5c8d1e4b7f0a3c6d9e2f5a8b1c4d7e0f3a6b9c2d5e8f1a4b7c0d3e6f9a2b5c8d1e4f7';
 
@@ -135,12 +255,15 @@ export const aiServiceClient = {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        const status = error.response.status || 500;
-        const detail = error.response.data?.detail;
-        const msg = formatAiServiceError(detail, status, `AI service HTTP ${status}`);
-        logger.error(`AI service error: ${msg}`);
+        const diagnostics = extractAiServiceDiagnostics(error);
+        const msg = formatAiServiceError(error.response.data, diagnostics.status, diagnostics);
+        logger.error(
+          `AI service dispatch failure | status=${diagnostics.status} | server=${diagnostics.server || 'none'} | cfRay=${diagnostics.cfRay || 'none'} | rndrId=${diagnostics.rndrId || 'none'} | retryAfterMs=${diagnostics.retryAfterMs ?? 'none'} | msg=${msg}`
+        );
         const err = new Error(msg);
-        (err as any).status = status;
+        (err as any).status = diagnostics.status;
+        (err as any).retryAfterMs = diagnostics.retryAfterMs;
+        (err as any).diagnostics = diagnostics;
         (err as any).response = error.response;
         throw err;
       }

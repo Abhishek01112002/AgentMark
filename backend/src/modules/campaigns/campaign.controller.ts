@@ -10,7 +10,7 @@ import { AuthRequest } from '../../middlewares/auth.middleware';
 import { campaignService } from './campaign.service';
 import { getClientMemory, recordHumanRejection } from './campaign-memory.service';
 import { notificationService } from '../notifications/notification.service';
-import { aiServiceClient } from '../../utils/ai-client';
+import { aiServiceClient, parseRetryAfter } from '../../utils/ai-client';
 import type { AIServiceCampaignRequest } from '../../utils/ai-client';
 import prisma from '../../db';
 import { redis } from '../../utils/redis';
@@ -79,20 +79,36 @@ const formatFriendlyError = (message: string) => {
   return 'We could not generate this campaign right now. Please try again.';
 };
 
-const RETRYABLE_ERROR_PATTERNS = [
+export const RETRYABLE_ERROR_PATTERNS = [
   'timeout', 'timed out', 'econnrefused', 'econnreset', 'enotfound',
-  'eai_again', 'etimedout', 'network', 'ai service',
-  'unavailable', 'service unavailable', 'too many requests',
-  'rate limit', 'rate_limit', 'quota', 'resource_exhausted', 'resource exhausted',
-  'throttled', '429', '500', '502', '503', '504',
+  'eai_again', 'etimedout', 'network',
+  'unavailable', 'service unavailable',
+  '500', '502', '503', '504',
 ];
 
-function isRetryableError(error: any): boolean {
+export function isHttp429(error: any): boolean {
   if (!error) return false;
+  const status = Number(error.response?.status || error.status || error.statusCode);
+  if (status === 429) return true;
+  const msg = String(error.message || error).toLowerCase();
+  return (
+    msg.includes('http 429') ||
+    msg.includes('status code 429') ||
+    msg.includes('rate limit (http 429') ||
+    msg.includes('too many requests')
+  );
+}
 
-  const status = error.response?.status || error.status || error.statusCode;
-  if (status === 429 || (status >= 500 && status < 600)) {
+export function isRetryableError(error: any): boolean {
+  if (!error) return false;
+  if (isHttp429(error)) return false;
+
+  const status = Number(error.response?.status || error.status || error.statusCode);
+  if (status >= 500 && status < 600) {
     return true;
+  }
+  if (status >= 400 && status < 500) {
+    return false;
   }
 
   const msg = String(error.message || error).toLowerCase();
@@ -126,51 +142,48 @@ async function emitCampaignFailed(
   });
 }
 
-const MAX_RETRIES = 4;
+export const MAX_RETRIES = 4;
 // Render Free Tier cold-start takes ~50s. Retry delays are set to allow full
 // wake-up: wait 60s first (covers cold-start), then 90s, 120s, 120s.
-const RETRY_DELAYS_MS = [60_000, 90_000, 120_000, 120_000];
+export const RETRY_DELAYS_MS = [60_000, 90_000, 120_000, 120_000];
+
+export const MAX_429_RETRIES = 1;
+export const DEFAULT_429_RETRY_DELAY_MS = 5_000;
+export const MAX_429_RETRY_DELAY_MS = 10_000;
 const isCreativeHookMatrixEnabled = () => process.env.ENABLE_CREATIVE_HOOK_MATRIX === 'true' || process.env.ENABLE_CREATIVE_HOOK_MATRIX === '1';
 
 /**
- * Background AI workflow runner with exponential backoff retry.
+ * Background AI workflow runner with dedicated 429 rate limit & 5xx retry handling.
  *
- * Called after the 201 response has already been sent. On transient failures
- * (network errors, AI service 5xx, timeouts) the workflow is retried up to
- * MAX_RETRIES times with increasing delays. The Redis cancellation flag
- * (set on campaign delete) is checked before each retry attempt.
- *
- * Non-retryable errors (validation failures, API key errors) are reported
- * immediately without retry.
+ * Called after the 201 response has already been sent.
+ * - HTTP 429 Rate Limits: Never uses the 60s/90s/120s/120s schedule.
+ *   Allows at most 1 retry (after honoring Retry-After if <= 10s, or 5s default).
+ *   If Retry-After > 10s or max 429 retries exceeded, fails fast.
+ * - Transient 5xx / Network Errors: Retried up to MAX_RETRIES (4) times
+ *   with [60s, 90s, 120s, 120s] schedule to handle cold starts.
+ * - Non-retryable errors: Reported immediately without retry.
  */
-async function runAIWorkflowBackground(
+export async function runAIWorkflowBackground(
   dbCampaignId: string,
   payload: AIServiceCampaignRequest,
   io: SocketIOServer,
   requestId?: string
 ): Promise<void> {
   let lastError: Error | null = null;
+  let attempt5xx = 0;
+  let rateLimitRetries = 0;
+  let isFirstAttempt = true;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const cancelled = await checkCancellation(dbCampaignId);
-      if (cancelled) {
-        logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user — aborting retry`);
-        return;
-      }
-      const delayMs = RETRY_DELAYS_MS[attempt - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
-      logger.info(`[${requestId || 'no-req-id'}] Retrying AI service dispatch for campaign ${dbCampaignId} in ${delayMs}ms (attempt ${attempt}/${MAX_RETRIES})`);
-      await sleep(delayMs);
-
-      const cancelledAgain = await checkCancellation(dbCampaignId);
-      if (cancelledAgain) {
-        logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
-        return;
-      }
+  while (true) {
+    const cancelled = await checkCancellation(dbCampaignId);
+    if (cancelled) {
+      logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user — aborting`);
+      return;
     }
 
     try {
-      if (attempt === 0) {
+      if (isFirstAttempt) {
+        isFirstAttempt = false;
         logger.info(`[${requestId || 'no-req-id'}] AI workflow dispatch started in background | campaign=${dbCampaignId}`);
         // Warm-up ping: if AI service is cold-starting (returns 502/503/ECONNREFUSED),
         // wait up to 75s for it to wake before making the real campaign call.
@@ -181,7 +194,9 @@ async function runAIWorkflowBackground(
           logger.warn(`[${requestId || 'no-req-id'}] AI service warmup failed (${warmErr.message}) — will attempt campaign dispatch anyway | campaign=${dbCampaignId}`);
         }
       } else {
-        logger.info(`[${requestId || 'no-req-id'}] AI service dispatch retry attempt ${attempt}/${MAX_RETRIES} | campaign=${dbCampaignId}`);
+        logger.info(
+          `[${requestId || 'no-req-id'}] AI service dispatch attempt | campaign=${dbCampaignId} | 5xx_attempt=${attempt5xx}/${MAX_RETRIES} | 429_retries=${rateLimitRetries}/${MAX_429_RETRIES}`
+        );
       }
 
       // Fire-and-forget: AI service returns 202 Accepted immediately.
@@ -220,31 +235,104 @@ async function runAIWorkflowBackground(
     } catch (err: any) {
       lastError = err;
       const errorMessage = err.message ?? 'Unknown error';
-      logger.error(`AI service dispatch error (attempt ${attempt}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`);
 
-      if (!isRetryableError(err)) {
-        logger.info(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
-        try {
-          await campaignService.updateWithAIOutputs(dbCampaignId, '', {}, 'failed', errorMessage);
-        } catch (dbErr: any) {
-          logger.error(`Failed to mark campaign as failed in DB | campaign=${dbCampaignId} | dbErr=${dbErr.message}`);
+      // ── Dedicated HTTP 429 Rate Limit Handling ───────────────────────────
+      if (isHttp429(err)) {
+        logger.warn(
+          `[${requestId || 'no-req-id'}] HTTP 429 rate limit encountered | campaign=${dbCampaignId} | retries=${rateLimitRetries}/${MAX_429_RETRIES} | error=${errorMessage}`
+        );
+
+        if (rateLimitRetries >= MAX_429_RETRIES) {
+          logger.info(
+            `[${requestId || 'no-req-id'}] Max 429 retries (${MAX_429_RETRIES}) reached for campaign ${dbCampaignId} — failing fast`
+          );
+          break;
         }
-        await emitCampaignFailed(dbCampaignId, errorMessage, io);
-        return;
-      }
 
-      if (attempt < MAX_RETRIES) {
+        const rawRetryAfterMs = err.retryAfterMs ?? parseRetryAfter(err.response?.headers?.['retry-after']);
+        let delayMs = DEFAULT_429_RETRY_DELAY_MS;
+
+        if (typeof rawRetryAfterMs === 'number' && !isNaN(rawRetryAfterMs)) {
+          if (rawRetryAfterMs <= MAX_429_RETRY_DELAY_MS) {
+            delayMs = rawRetryAfterMs;
+            logger.info(
+              `[${requestId || 'no-req-id'}] Honoring Retry-After header: ${rawRetryAfterMs}ms for campaign ${dbCampaignId}`
+            );
+          } else {
+            logger.warn(
+              `[${requestId || 'no-req-id'}] Retry-After header (${rawRetryAfterMs}ms) exceeds maximum allowed threshold (${MAX_429_RETRY_DELAY_MS}ms) — failing fast without retry for campaign ${dbCampaignId}`
+            );
+            break;
+          }
+        } else {
+          logger.info(
+            `[${requestId || 'no-req-id'}] No valid Retry-After header present; applying default short retry of ${delayMs}ms for campaign ${dbCampaignId}`
+          );
+        }
+
+        rateLimitRetries++;
         try {
           await prisma.campaign.update({
             where: { id: dbCampaignId },
             data: {
               status: 'processing',
-              aiError: `Retrying AI service connection (${attempt + 1}/${MAX_RETRIES}): ${errorMessage}`,
+              aiError: `Rate limit encountered, retrying in ${Math.round(delayMs / 1000)}s (attempt ${rateLimitRetries}/${MAX_429_RETRIES}): ${errorMessage}`,
             },
           });
         } catch {
           // Best-effort status update
         }
+
+        await sleep(delayMs);
+
+        const cancelledDuringSleep = await checkCancellation(dbCampaignId);
+        if (cancelledDuringSleep) {
+          logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during rate-limit backoff — aborting retry`);
+          return;
+        }
+
+        continue;
+      }
+
+      // ── Generic Retryable Handling (5xx, network drops, timeouts) ────────
+      if (!isRetryableError(err)) {
+        logger.info(`Non-retryable error for campaign ${dbCampaignId}: ${errorMessage}`);
+        break;
+      }
+
+      logger.error(
+        `AI service dispatch error (attempt ${attempt5xx + 1}/${MAX_RETRIES}) | campaign=${dbCampaignId} | error=${errorMessage}`
+      );
+
+      if (attempt5xx >= MAX_RETRIES) {
+        logger.info(`Max 5xx retries (${MAX_RETRIES}) reached for campaign ${dbCampaignId} — aborting`);
+        break;
+      }
+
+      const delayMs = RETRY_DELAYS_MS[attempt5xx] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+      attempt5xx++;
+
+      try {
+        await prisma.campaign.update({
+          where: { id: dbCampaignId },
+          data: {
+            status: 'processing',
+            aiError: `Retrying AI service connection (${attempt5xx}/${MAX_RETRIES}): ${errorMessage}`,
+          },
+        });
+      } catch {
+        // Best-effort status update
+      }
+
+      logger.info(
+        `[${requestId || 'no-req-id'}] Retrying AI service dispatch for campaign ${dbCampaignId} in ${delayMs}ms (5xx attempt ${attempt5xx}/${MAX_RETRIES})`
+      );
+      await sleep(delayMs);
+
+      const cancelledAgain = await checkCancellation(dbCampaignId);
+      if (cancelledAgain) {
+        logger.info(`[${requestId || 'no-req-id'}] Campaign ${dbCampaignId} cancelled by user during backoff — aborting retry`);
+        return;
       }
     }
   }
