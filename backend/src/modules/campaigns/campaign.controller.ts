@@ -149,7 +149,7 @@ export const RETRY_DELAYS_MS = [60_000, 90_000, 120_000, 120_000];
 
 export const MAX_429_RETRIES = 1;
 export const DEFAULT_429_RETRY_DELAY_MS = 5_000;
-export const MAX_429_RETRY_DELAY_MS = 10_000;
+export const MAX_429_RETRY_DELAY_MS = 60_000;
 const isCreativeHookMatrixEnabled = () => process.env.ENABLE_CREATIVE_HOOK_MATRIX === 'true' || process.env.ENABLE_CREATIVE_HOOK_MATRIX === '1';
 
 /**

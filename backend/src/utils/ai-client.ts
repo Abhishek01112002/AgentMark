@@ -228,18 +228,7 @@ const getHeaders = (requestId?: string) => ({
 
 export const aiServiceClient = {
   async warmUp(timeoutMs = 75_000): Promise<void> {
-    const start = Date.now();
-    const pollInterval = 5_000;
-    while (Date.now() - start < timeoutMs) {
-      try {
-        const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 8_000 });
-        if (res.status === 200) return;
-      } catch {
-        // Service still waking — wait and retry
-      }
-      await new Promise((r) => setTimeout(r, pollInterval));
-    }
-    throw new Error(`AI service did not respond within ${timeoutMs}ms`);
+    return warmUpAIService(timeoutMs);
   },
 
   async runCampaign(payload: AIServiceCampaignRequest, requestId?: string): Promise<AIServiceCampaignResponse> {
@@ -375,13 +364,31 @@ export async function runAIWorkflowBackground(
  */
 export const warmUpAIService = async (timeoutMs = 75_000): Promise<void> => {
   const start = Date.now();
-  const pollInterval = 5_000;
+  // Phase 1: Patient initial probe. Render free-tier cold-starts take ~45-50s.
+  // Render holds incoming connections while starting the container.
+  // An 8s timeout repeatedly aborts connections (5-8 times in 50s), which triggers
+  // Cloudflare Layer 7 rate limits (HTTP 429). A patient probe waits for Render to finish booting smoothly.
+  try {
+    const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: Math.min(50_000, timeoutMs) });
+    if (res.status === 200) return;
+  } catch (err: any) {
+    if (err.response?.status === 429) {
+      logger.warn('[Warmup] Encountered 429 from edge proxy — backing off 12s to allow rate limit to clear');
+      await new Promise((r) => setTimeout(r, 12_000));
+    }
+  }
+
+  // Phase 2: Gentle fallback polling if container took longer than 50s
+  const pollInterval = 6_000;
   while (Date.now() - start < timeoutMs) {
     try {
-      const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 8_000 });
+      const res = await axios.get(`${AI_SERVICE_URL}/health`, { timeout: 15_000 });
       if (res.status === 200) return;
-    } catch {
-      // Service still waking — wait and retry
+    } catch (err: any) {
+      if (err.response?.status === 429) {
+        logger.warn('[Warmup] 429 during polling — backing off 10s');
+        await new Promise((r) => setTimeout(r, 10_000));
+      }
     }
     await new Promise((r) => setTimeout(r, pollInterval));
   }

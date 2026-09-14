@@ -313,10 +313,10 @@ describe('Campaign Dispatch & HTTP 429 Policy Tests', () => {
       expect(mockIo.to(`campaign:${campaignId}`).emit).not.toHaveBeenCalled();
     }, 10000);
 
-    it('fails fast immediately with 0 retries when Retry-After > 10s (e.g. 30s)', async () => {
+    it('fails fast immediately with 0 retries when Retry-After > MAX_429_RETRY_DELAY_MS (e.g. 70s)', async () => {
       const err429: any = new Error('Upstream gateway rate limit (HTTP 429 via Cloudflare edge proxy): Too Many Requests');
       err429.status = 429;
-      err429.retryAfterMs = 30000; // 30s > 10s threshold
+      err429.retryAfterMs = 70000; // 70s > 60s threshold
 
       (aiServiceClient.createCampaign as jest.Mock).mockRejectedValueOnce(err429);
 
