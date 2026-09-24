@@ -1,6 +1,6 @@
-# AgentMark — Enterprise Multi-Agent AI Marketing Platform
+# AgentMark — Production-Style Multi-Agent AI Marketing Platform
 
-> AI-powered campaign orchestration platform that turns market research and brand context into strategy, copy, visual prompts, evaluation, human approval, and publishing workflows.\n\n<div align="center"><a href="https://agentmark.ahishek0111.workers.dev/"><img src="https://img.shields.io/badge/LIVE%20DEMO-2563EB?style=for-the-badge&logo=cloudflare&logoColor=white"/></a>&nbsp;<a href="https://github.com/Abhishek01112002/AgentMark"><img src="https://img.shields.io/badge/SOURCE%20CODE-111827?style=for-the-badge&logo=github&logoColor=white"/></a></div>
+> Production-style AI campaign orchestration platform that turns market research and brand context into strategy, copy, visual prompts, evaluation, human approval, and publishing workflows.\n\n<div align="center"><a href="https://agentmark.ahishek0111.workers.dev/"><img src="https://img.shields.io/badge/LIVE%20DEMO-2563EB?style=for-the-badge&logo=cloudflare&logoColor=white"/></a>&nbsp;<a href="https://github.com/Abhishek01112002/AgentMark"><img src="https://img.shields.io/badge/SOURCE%20CODE-111827?style=for-the-badge&logo=github&logoColor=white"/></a></div>
 
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python)](https://www.python.org/)
